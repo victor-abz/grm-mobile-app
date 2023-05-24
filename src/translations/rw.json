@@ -1,0 +1,264 @@
+{
+	//Headers
+	"citizen_input_header": "Kwinjiza ikibazo",
+	"summary_of_your_work": "Summary of Your Work",
+	//Onboarding
+	"used_app_before": "Wigeze ukoresha iyi porogaramu mbere?",
+	"yes": "YEGO",
+	"no": "OYA",
+	"welcome_login": "Murakaza Neza! Injirira hano.",
+	"email": "Imeri",
+	"password": "Ijambo ry'ibanga",
+	"login": "Injira",
+	"email_provided": "Shyiramo imeri wahawe n'ukuyobora kandi ukoreshe n'ijambo ry'ibanga uzajya wibuka",
+	"choose_password": "Hitamo ijambo ry'ibanga",
+	"enter_new_password": "Shyiramo Ijambo ry'ibanga.  Rigomba kuba rigizwe byibura n'inyuguti 8",
+	"last_validation": "Igenzura rya nyuma!",
+	"please_enter_code": "Shyiramo imibare wahawe n'umukoresha",
+	"account_create_success": "Konti yawe yafunguwe neza!",
+	"logout": "sohoka",
+	//GRM
+	"diagnostics": "Isuzumabikorwa",
+
+	"information": "Amakuru",
+
+	"collect_reports": "Gukusanya raporo z'abenegihugu",
+
+	"search_reports": "Shakisha raporo",
+
+	"sync_files": "Guhuza dosiye",
+
+	//GRM-Intro
+	"intro_text_0": "Icyitonderwa kubakangurambaga: ",
+
+	"intro_text_1": "Kuvuga ingingo zifasha abenegihugu gushyira mu ngiro. Mu gutangira, reka abantu bamenye ibi bikurikira:",
+
+	"intro_text_2": "Mbashimiye ibitekerezo muduhaye mutugaragariza  ibikorwa neza n'ibitagenda neza mu mushinga wacu.  uru rutonde rw'ibibazo rugizwe n'ibice 6. Biri bwihute kandi biraba byoroshye. Mbere yo gutangira hari ibintu bike mugomba kumenya.",
+
+	"intro_text_3": "Mwemerewe kudatanga umwirondoro wanyu niba mubishaka, Gusa kuduha amakuru ni ingenzi mu kubafasha gukemura ikibazo cyanyu",
+
+	"intro_text_4": "Amakuru yose muduha aradufasha kubasha kumva no gukemura ikibazo mufite. ariko ntibibahangayikishe niba ntacyo mwaba mwibuka.",
+
+	"intro_text_5": "Ikibazo cyawe kirabikwa muri sisiteme kandi kizakemurwa na komite ishinzwe gukemura ibibazo(GRC) mu minsi mike",
+
+	"intro_text_6": "Tugerageza gukemura ibibazo mwatugejejeho mugihe {x} cy’umunsi mwabitanzeho.",
+
+	//step 1
+	"welcome_citizen_input": "Murakaza neza!",
+
+	"step_1_subtitle": "Duha agaciro gakomeye ibyo mutugezaho, kandi twiuza gukorana mu gukemura ikibazo icyo aricyo cyose cyangwa mu kunoza umurimo wacu",
+
+	"step_1": "Intambwe ya 1",
+
+	"stay_touch_question": "Uburyo buhari  bw’itumanaho",
+
+	"step_1_hint_1": "Umukangurambaga:”Niba ubyifuza, dushobora kukugezahao amakuru ku kibazo cyanyu dukoresheje imeri cg ubutumwa bugufi kuri telephone. Ariko niba udashaka kugaragaza imyirondoro, turaguha kodi wakoresha ukurikirana ikibazo cyawe cyangwa se ukaba waza kundeba nkagufasha. Ushaka gukoresha ubuhe buryo?”",
+
+	"step_1_option_1": "Kutagaragaza imyirondoro",
+
+	"step_1_option_2": " Kwakira amakuru ku kibazo binyuze k'umukangurambaga",
+
+	"step_1_option_3": "Kohererezwa amakuru",
+
+	"step_1_method_1": " Ubutumwa bugufi (Text / SMS)",
+
+	"step_1_method_2": "WhatsApp",
+
+	"step_1_method_3": "Imeri",
+
+	"step_1_placeholder_1": "Uburyo bw’itumanaho",
+
+	"step_1_placeholder_2": " Injiza umwirondoro hano",
+
+	//contact step
+	"contact_step_title": "Imyirondoro",
+
+	"contact_step_subtitle": "Izina ry’umuntu cyangwa itsinda",
+
+	"contact_step_explanation": "Umukangurambaga ku muntu utifuza gutangaza imyirondoro ye: “Wifuje kudatangaza imyirondoro yawe, niyo mpamvu ngiye kwandika “Anonymous” hano” \n\n Umukangurambaga kubifuza ko imyirondoro yabo itangazwa: “Ngiye kwandika izina ryawe hano”",
+
+	"contact_step_placeholder_1": "Injiza izina ry’ufite ikibazo",
+
+	"contact_step_placeholder_2": "Injiza ikiciro cy'imyaka (Singombwa)",
+
+	"contact_step_placeholder_3": "Hitamo igitsina (Singombwa)",
+
+	"contact_step_placeholder_4": "Uyu muntu ari kuzuriza ikibazo undi muntu.",
+
+	//step 2//step 2
+	"step_2": "Intambwe ya 2",
+
+	"step_2_select_date": "Kanda hano uhitemo itariki",
+
+	"step_2_subtitle": "Ikibazo cyangwa ibisubizo muburyo burambuye",
+
+	"step_2_explanation": "Umukangurambaga: “Nshaka kwandika itariki ibi byabereye. Niba utibuka itariki neza ntuhangayike ikibazo cyawe kizakuriranwa”",
+
+	"step_2_ongoing_hint": "Ibi Biracyaba cg biba inshuro nyinshi zitandukanye?",
+
+	"step_2_set_today": "Itariki y'uyu munsi",
+
+	"step_2_placeholder_1": "Ni ayahe makuru uzanye?",
+
+	"step_2_placeholder_2": "Hitamo ubwoko bw'ikibazo",
+
+	"step_2_placeholder_3": "Andika ikibazo mu magambo make",
+
+	"step_2_placeholder_4": "Tanga andi makuru y'ingenzi kuri iki kibazo",
+
+	"step_2_share_photos": "Shyiraho video, amafoto yangwa amajwi nk'ibimemyetso cg ibisobanuro",
+
+	"step_2_upload_attachment": "Hitamo ifoto",
+
+	"step_2_keep_name_confidential": "Hisha amazina yanjye. Keretse umuntu uzakemura iki kibazo niwe gusa uzabona amazina.",
+	"step_2_on_behalf_of_someone": "Ikibazo gitanzwe n'umuntu uhagarariye undi.",
+	"step_2_organization_behalf_someone": "Ni itsinda ritanze ikibazo rihagarariye undi muntu.",
+
+	//step 3
+	"step_3": "Intambwe ya 3",
+
+	"step_3_confirmation": "Kwemeza amakuru",
+
+	"step_3_subtitle": "Genzura ko amakuru watanze ariyo maze ubyemeze.Niba ukeneye guhindura amakuru ayo ari yo yose, kanda buto yo guhindura.",
+
+	"step_3_field_title_1": "Itariki y'ikibazo:",
+
+	"step_3_field_title_2": "Iki ni:",
+
+	"step_3_field_title_3": "Iki kibazo kijyanye:",
+
+	"step_3_field_title_4": "Ubusobanuro ku kibazo:",
+
+	"step_3_attachments": "Umugereka:",
+
+	//location step
+	"step_4": "Intambwe ya 4",
+
+	"step_location_description": "Ibi byabereye he?",
+
+	"step_location_body": "Umukangurambaga: Ugomba gusobanura neza mu buryo bwumvikana aho ikibazo cyabereye\nMu gukemura ikibazo. Akarere, umudugudu, ubusobanuro ndetse n'ibiranga aho ikibazo cyabereye \nbirafasha cyane. Niba iki ari ikibazo cy'ibanga,\nhitamo kugeza ku mudugudu andi makuru uyihorere.",
+
+	"step_location_dropdown_placeholder": "Kanda kugirango uhitemo",
+
+	"step_location_input_explanation": "Injiza andi makuru yaho byabereye ashobora mu gufasha gukemura ikibazo(urugero: Munsi y'ikiraro, hirya y'inziri ku giti cy'umwembe,...).",
+
+	"step_4_subtitle": "Birarangiye!",
+
+	"step_4_description": "Ikibazo cyashyizwe muri sisiteme kandi cyagejejwe ku mukozi ubishinzwe. Kumenya aho ikibazo kigeze gikemuka, uzakoresha iyi code iri hano hepfo. (Umukangurambaga: Shishikariza Umwenegihugu kwandika iyi kode cyangwa kuyisubiramo akayifata)",
+
+	"step_4_issue_code": "Kode y'ikibazo:",
+
+	"step_4_short_code": "Kode ngufi",
+
+	"step_4_two_word_code": "Code y'amagambo abiri",
+
+	"step_4_back_text": "Subira ahabanza",
+
+	"step_en": "Step 5",
+	"step_5": "Intwambwe ya 5",
+
+	"step_6": "Intambwe ya 6",
+
+	//general
+	"save_button_text": "BIKA & UKOMEZE",
+
+	"next": "IBIKURIKIRA",
+
+	"submit_button_text": "OHEREZA",
+
+	"male": "Gabo",
+	"female": "Gore",
+	"other": "Ikindi",
+	"rather_not_say":  "Ahubwo ntukavuge",
+
+	//issue detail
+	"description_label": "Ibisobanuro",
+
+	"reported_label": "Byatanzwe",
+
+	"status_label": "Aho bigeze",
+
+	"assigned_to_label": "Ugishinzwe",
+
+	"reporter_label": "Uwatanze amakuru",
+
+	"citizen_label": "Umwenegihugu",
+
+	"privacy_label": "Kugirirwa ibanga",
+
+	"category_label": "Icyiciro",
+
+	"issue_type_label": "Ubwoko bw'ikibazo",
+
+	"attachments_label": "Umugereka",
+
+	"comment_placeholder": "Andika igitekerezo...",
+
+	"information_not_available": "Nta makuru ahari",
+
+	"confidential": "Ibanga",
+
+	//issue search
+	"overdue_label": "Ibibazo byarengeje igihe",
+
+	"assigned_to_you_label": "Ibibazo wahawe",
+
+	"resolved_by_you_label": "Ibibazo byakemuwe nawe",
+
+	"average_days_label": "Impuzandengo y'iminsi yo gukemura ibibazo",
+
+	"average_satisfaction_label": "Impuzandengo yo kunyurwa",
+
+	"your_issues_label": "Ibibazo byawe bifunguye",
+	"open": "Ibitrakemuka",
+	"assigned": "Ibyo nshinzwe",
+	"resolved": "Ibyakemutse",
+	"issue_was_accepted": "Ikibazo cyemewe",
+	"issue_was_rejected": "Ikibazo ntikemewe",
+	"issue_was_escalated": "kibazo cyameshejwe inzego zo hejuru",
+	"issue_was_resolved": "Ikibazo cyakemutse",
+
+	// issue detail
+	"are_you_accepting": "Uremera ko iki kibazo kijyanye n'uyu mushinga? cyangwa ntikemewe kuberako ntaho gihuriye n'umushinga?",
+	"you_have_accepted": "Wemeye Iki kibazo muri porogaramu. Ubutumwa bwohererejwe umuturage bdetse nuwashyize ikibazo muri porogaramu.",
+	"finished": "Byarangiye",
+	"actions": "IBIKORWA",
+	"details": "BIRAMBUYE",
+	"history": "AMATEKA",
+	"days_ago": "iminsi",
+	"view_details": "Reba birambuye",
+	"accept_issue": "Emera Ikibazo",
+	"record_steps_taken": "Shyiraho Ibyakozwe",
+	"record_resolution": "Shyiraho imyanzuro",
+	"rate_appeal": "Igipimo & kujurira",
+	"escalate": "Inzego zikurikiyeho",
+	"lodged_by": "Cyashyizwemo na:",
+	"name": "Amazina:",
+	"age": "Imyaka:",
+	"location": "Aho aherereye:",
+	"category": "Ikiciro:",
+	"assigned_to": "Cyashinzwe:",
+	"decision": "Icyemezo",
+	"satisfaction": "Kunyurwa",
+	"appeal_reason": "Impamvu yo kujurira",
+	"back": "Subira Inyuma",
+	"record_steps_text": "Sibanura igikorwa hano hepfo. Hano wavuga ku bwumvikane cyangwa amasezerano yabayeho, Ibikorwa by'igenzura cyangwa iperereza, cyangwa se andi makuru yabonetse ku kibazo. Wibuke gushyiraho amatiki yingenzi. Ubu busobanuro buzabonwa n'ikipe mukorana, umuturage nyiri ikibazo, ndetse n'uwagishyize muri porogaramu.",
+	"recorded_comment": "Igitekerezo cyawe cyanditswe ndetse cyashyizwe no muro porogaramu.",
+	"cancel": "Hagarika",
+	"submit": "Ohereza",
+	"view_history": "Reba ibyahise",
+	"summarize_resolution": "Andika mu magambo make umwanzuro wafashwe ndetse nibyavuyemo.",
+	"please_confirm_resolution": "Emeza ko iki kibazo cyakemutse.",
+	"confirm": "Emeza",
+	"you_are_escalating": "Iki kibazo ugiye kugishinga inzego zo hejuru. SObanura neza impamvu itumye ucyohereza mu nzego zigukuriye",
+	"escalated_text": "Iki kibazo cyoherejwe ku nzego zo hejuru. NUbutumwa burohererezwa uwagishyize muri porogaramu ndetse no ku muturage.",
+	"accept": "Cyemere",
+	"reject": "Cyange",
+	"you_are_rejecting": "Wanze iki kibazo ngo ntikazakemurwe muri uyu mushinga.\nSobanura neza impamvu.",
+	"complaint_rejected": "Iki kibazo ntabwo cyemewe. Ubutumwa burohererezwa uwagishyize muri porogaramu ndetse n'umuturage.",
+	"play_recorded_audio": "Play Recorded Audio",
+
+	
+  //login page
+  "error_message_for_code": "Nyamuneka wuzuze selile zose"
+}
