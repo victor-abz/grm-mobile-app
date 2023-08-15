@@ -1,26 +1,26 @@
-import React, { useState } from "react";
+import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import moment from 'moment';
+import 'moment/locale/fr';
+import React, { useState } from 'react';
 import {
-  View,
+  Alert,
   FlatList,
-  TouchableOpacity,
-  Text,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
-} from "react-native";
-import { Divider, Modal } from "react-native-paper";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { styles } from "./RegisterSubprojects.style";
-import moment from "moment";
-import "moment/locale/fr";
-import CustomGreenButton from "../../../components/CustomGreenButton/CustomGreenButton";
-import { colors } from "../../../utils/colors";
-import LocalDatabase from "../../../utils/databaseManager";
-import { useNavigation, useRoute } from "@react-navigation/native";
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Divider, Modal } from 'react-native-paper';
+import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreenButton';
+import { colors } from '../../../utils/colors';
+import LocalDatabase from '../../../utils/databaseManager';
+import { styles } from './RegisterSubprojects.style';
 
-moment.locale("fr");
+moment.locale('fr');
 
 function RegisterSubprojects() {
   const navigation = useNavigation();
@@ -29,25 +29,25 @@ function RegisterSubprojects() {
   const [createProjectModal, setCreateProjectModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [bpProjects, setBpProjects] = useState(eadl.bp_projects || []);
-  const [subProjectName, setSubProjectName] = useState("");
-  const [subProjectDesc, setSubProjectDesc] = useState("");
-  const [subProjectLocation, setSubProjectLocation] = useState("");
+  const [subProjectName, setSubProjectName] = useState('');
+  const [subProjectDesc, setSubProjectDesc] = useState('');
+  const [subProjectLocation, setSubProjectLocation] = useState('');
   const [projectToEdit, setProjectToEdit] = useState();
   const incrementId = () => {
     const last = eadl.bp_projects[eadl.bp_projects.length - 1];
     if (!eadl.bp_projects[0]) return 1;
-    else return parseInt(last.id.split("-")[1]) + 1;
+    else return parseInt(last.id.split('-')[1]) + 1;
   };
   const dismissModal = () => {
     setLoading(false);
-    setSubProjectName("");
-    setSubProjectDesc("");
-    setSubProjectLocation("");
+    setSubProjectName('');
+    setSubProjectDesc('');
+    setSubProjectLocation('');
     setProjectToEdit(undefined);
     setCreateProjectModal(false);
   };
   const upsertTasks = () => {
-    LocalDatabase.upsert(eadl._id, function (doc) {
+    LocalDatabase.upsert(eadl?._id, function (doc) {
       doc = eadl;
       return doc;
     })
@@ -55,18 +55,13 @@ function RegisterSubprojects() {
         dismissModal();
       })
       .catch(function (err) {
-        console.log("Error", err);
+        console.log('Error', err);
         // error
       });
   };
   const addSubproject = () => setCreateProjectModal(!createProjectModal);
 
-  const editSubproject = ({
-    id,
-    district_name,
-    subproject_name,
-    subproject_description,
-  }) => {
+  const editSubproject = ({ id, district_name, subproject_name, subproject_description }) => {
     setCreateProjectModal(!createProjectModal);
     setProjectToEdit(id);
     setSubProjectName(subproject_name);
@@ -75,19 +70,17 @@ function RegisterSubprojects() {
   };
 
   const removeProject = (project) => {
-    Alert.alert("Attention", "Voulez-vous vraiment supprimer ce projet?", [
-      { text: "Non", style: "cancel" },
+    Alert.alert('Attention', 'Voulez-vous vraiment supprimer ce projet?', [
+      { text: 'Non', style: 'cancel' },
       {
-        text: "Oui",
+        text: 'Oui',
         onPress: async () => {
-          const updatedSubProjects = bpProjects.filter(
-            (item) => item.id !== project.id
-          );
+          const updatedSubProjects = bpProjects.filter((item) => item.id !== project.id);
           setBpProjects(updatedSubProjects);
           eadl.bp_projects = updatedSubProjects;
           upsertTasks();
         },
-        style: "yes",
+        style: 'yes',
       },
     ]);
     return;
@@ -122,12 +115,12 @@ function RegisterSubprojects() {
           subproject_name: subProjectName,
           subproject_description: subProjectDesc,
           budget_allocated: [],
-          vote_ym: "",
-          vote_yf: "",
-          vote_mm: "",
-          vote_mf: "",
-          vote_om: "",
-          vote_of: "",
+          vote_ym: '',
+          vote_yf: '',
+          vote_mm: '',
+          vote_mf: '',
+          vote_om: '',
+          vote_of: '',
         },
       ]);
       eadl.bp_projects = [
@@ -138,12 +131,12 @@ function RegisterSubprojects() {
           subproject_name: subProjectName,
           subproject_description: subProjectDesc,
           budget_allocated: [],
-          vote_ym: "",
-          vote_yf: "",
-          vote_mm: "",
-          vote_mf: "",
-          vote_om: "",
-          vote_of: "",
+          vote_ym: '',
+          vote_yf: '',
+          vote_mm: '',
+          vote_mf: '',
+          vote_om: '',
+          vote_of: '',
         },
       ];
     }
@@ -152,16 +145,16 @@ function RegisterSubprojects() {
   const onSaveTask = async () => {
     if (!!subProjectName && !!subProjectLocation) {
       Alert.alert(
-        "Attention",
+        'Attention',
         projectToEdit
-          ? "Êtes-vous sûr de vouloir modifier ce projet?"
-          : "Êtes-vous sûr de vouloir créer ce projet?",
+          ? 'Êtes-vous sûr de vouloir modifier ce projet?'
+          : 'Êtes-vous sûr de vouloir créer ce projet?',
         [
-          { text: "Non", style: "cancel" },
+          { text: 'Non', style: 'cancel' },
           {
-            text: "Oui",
+            text: 'Oui',
             onPress: async () => await doSave(),
-            style: "yes",
+            style: 'yes',
           },
         ]
       );
@@ -189,7 +182,7 @@ function RegisterSubprojects() {
               <TouchableOpacity onPress={() => editSubproject(item)}>
                 <View>
                   <View style={styles.cardHeader}>
-                    <View style={{ flexDirection: "row", flex: 1 }}>
+                    <View style={{ flexDirection: 'row', flex: 1 }}>
                       <View style={{ flex: 1 }}>
                         <Text numberOfLines={2} style={styles.cardNameText}>
                           {item.subproject_name}
@@ -197,9 +190,7 @@ function RegisterSubprojects() {
                       </View>
                     </View>
                   </View>
-                  <Divider
-                    style={{ marginVertical: 8, backgroundColor: "#f6f6f6" }}
-                  />
+                  <Divider style={{ marginVertical: 8, backgroundColor: '#f6f6f6' }} />
                   <View style={styles.cardFooter}>
                     <View>
                       <Text style={styles.footerTitle}>Location</Text>
@@ -210,9 +201,7 @@ function RegisterSubprojects() {
                           size={15}
                           color="#f5ba74"
                         />
-                        <Text style={styles.cardDateText}>
-                          {item.district_name}
-                        </Text>
+                        <Text style={styles.cardDateText}>{item.district_name}</Text>
                       </View>
                     </View>
                     <TouchableOpacity onPress={() => removeProject(item)}>
@@ -221,8 +210,8 @@ function RegisterSubprojects() {
                           styles.cardDateContainer,
                           {
                             backgroundColor: colors.inProgress,
-                            alignItems: "center",
-                            justifyContent: "center",
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           },
                         ]}
                       >
@@ -232,9 +221,7 @@ function RegisterSubprojects() {
                           size={15}
                           color="#f5ba74"
                         />
-                        <Text style={[styles.cardDateText, { color: "white" }]}>
-                          REMOVE
-                        </Text>
+                        <Text style={[styles.cardDateText, { color: 'white' }]}>REMOVE</Text>
                       </View>
                     </TouchableOpacity>
                   </View>
@@ -257,16 +244,13 @@ function RegisterSubprojects() {
         visible={createProjectModal}
         contentContainerStyle={{ padding: 20 }}
       >
-        <KeyboardAvoidingView
-          enabled
-          behavior={Platform.OS === "android" ? undefined : "position"}
-        >
+        <KeyboardAvoidingView enabled behavior={Platform.OS === 'android' ? undefined : 'position'}>
           <ScrollView>
             <View style={styles.modalContainerStyle}>
               <View
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
                 }}
               >
                 <Text style={styles.modalTitle}>Register Activity</Text>

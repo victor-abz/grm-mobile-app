@@ -1,4 +1,4 @@
-const baseURL = '<your-domain>';
+const baseURL = 'http://192.168.43.236:8000';
 export { baseURL };
 function handleErrors(response) {
   if (response.non_field_errors) {

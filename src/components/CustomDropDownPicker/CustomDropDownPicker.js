@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState } from 'react';
 import { Dimensions, Platform, View } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { colors } from '../../utils/colors';
 import { styles } from './CustomDropDownPicker.style';
 
@@ -26,6 +26,7 @@ function CustomDropDownPicker({
   onOpen = () => null,
   onClose = () => null,
   onSelectItem = () => null,
+  loading = false,
 }) {
   const [dropdownVisible, setDropdownVisible] = React.useState(false);
   const [open, setOpen] = useState(false);
@@ -40,6 +41,7 @@ function CustomDropDownPicker({
       ]}
     >
       <DropDownPicker
+        loading={loading}
         zIndex={zIndex}
         dropDownDirection="BOTTOM"
         zIndexInverse={zIndexInverse}

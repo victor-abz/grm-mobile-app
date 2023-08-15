@@ -98,27 +98,29 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
         </View>
 
         {!uniqueRegion && communes && (
-          <CustomDropDownPicker
-            schema={{
-              label: 'name',
-              value: 'administrative_id',
-            }}
-            placeholder={i18n.t('step_location_dropdown_placeholder')}
-            value={commune1}
-            disabled={!!uniqueRegion}
-            items={filterCommunes(null)}
-            setPickerValue={(val) => {
-              setCommune1(val());
-              if (val() && val() !== commune1) handlePickCommune(val());
-            }}
-            onSelectItem={(item) => setLocation(item)}
-            // onChangeValue={(value) => {
-            //   if (value) handlePickCommune(value);
-            // }}
-          />
+          <View key="firstLevel">
+            <CustomDropDownPicker
+              schema={{
+                label: 'name',
+                value: 'administrative_id',
+              }}
+              placeholder={i18n.t('step_location_dropdown_placeholder')}
+              value={commune1}
+              disabled={!!uniqueRegion}
+              items={filterCommunes(null)}
+              setPickerValue={(val) => {
+                setCommune1(val());
+                if (val() && val() !== commune1) handlePickCommune(val());
+              }}
+              onSelectItem={(item) => setLocation(item)}
+              // onChangeValue={(value) => {
+              //   if (value) handlePickCommune(value);
+              // }}
+            />
+          </View>
         )}
         {communesPickers.map((parent, index) => (
-          <View style={{ zIndex: 1000 + index }}>
+          <View style={{ zIndex: 1000 + index }} key={{ index }}>
             <CustomDropDownPicker
               schema={{
                 label: 'name',
@@ -152,10 +154,11 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
                 height: 100,
                 justifyContent: 'flex-start',
                 textAlignVertical: 'top',
+                fontSize: 14
               },
             ]}
-            placeholder={i18n.t('step_2_placeholder_4')}
-            outlineColor="#f6f6f6"
+            placeholder={i18n.t('step_2_placeholder_3')}
+            outlineColor="#dedede"
             theme={theme}
             mode="outlined"
             value={additionalDetails}

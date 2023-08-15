@@ -1,58 +1,71 @@
-import React, { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native';
+import React from 'react';
+import { SafeAreaView, ScrollView, View } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import Content from './containers/Content';
+import { useFind } from 'use-pouchdb';
 import { styles } from './CitizenReportLocationStep.styles';
-import LocalDatabase, { LocalCommunesDatabase } from '../../../utils/databaseManager';
+import Content from './containers/Content';
 
 function CitizenReportLocationStep({ route }) {
   const { params } = route;
-  const [issueCommunes, setIssueCommunes] = useState();
-  const [uniqueRegion, setUniqueRegion] = useState();
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { docs: uniqueRegion, loading: uniqueRegionLoading } = useFind({
+    // Ensure that this index exist, create it if not. And use it.
+    index: {
+      fields: ['representative.email'],
+    },
+    selector: {
+      'representative.email': username,
+    },
+    db: 'LocalDatabase',
+  });
 
-  useEffect(() => {
-    if (username) {
-      LocalDatabase.find({
-        selector: { 'representative.email': username },
-        // fields: ["_id", "commune", "phases"],
-      })
-        .then((result) => {
-          if (result.docs[0] && result.docs[0]?.unique_region === 1) {
-            LocalCommunesDatabase.find({
-              selector: { administrative_id: result.docs[0].administrative_region },
-            }).then((regions) => {
-              setUniqueRegion(regions.docs[0]);
-            });
-          }
-
-          // handle result
-        })
-        .catch((err) => {
-          console.log('ERROR FETCHING EADL', err);
-        });
-    }
-  }, [username]);
-
-  useEffect(() => {
-    // FETCH LOCATIONS
-    LocalCommunesDatabase.find({
-      selector: { type: 'administrative_level' },
-    }).then((result) => {
-      setIssueCommunes(result?.docs);
-    });
-  }, []);
+  const { docs: issueCommunes, loading: issueCommunesLoading } = useFind({
+    // Ensure that this index exist, create it if not. And use it.
+    index: {
+      fields: ['type'],
+    },
+    selector: {
+      type: 'administrative_level',
+    },
+    db: 'LocalCommunesDatabase',
+  });
 
   const customStyles = styles();
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content
-        stepOneParams={params.stepOneParams}
-        stepTwoParams={params.stepTwoParams}
-        issueCommunes={issueCommunes}
-        uniqueRegion={uniqueRegion}
-      />
+      {uniqueRegionLoading || issueCommunesLoading ? (
+        <ScrollView
+          style={{
+            backgroundColor: 'white',
+            flex: 1,
+          }}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          <View
+            style={{
+              zIndex: 20,
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <ActivityIndicator size="large" color="#24c38b" />
+          </View>
+        </ScrollView>
+      ) : (
+        <Content
+          stepOneParams={params.stepOneParams}
+          stepTwoParams={params.stepTwoParams}
+          issueCommunes={issueCommunes}
+          uniqueRegion={uniqueRegion?.[0]}
+        />
+      )}
     </SafeAreaView>
   );
 }

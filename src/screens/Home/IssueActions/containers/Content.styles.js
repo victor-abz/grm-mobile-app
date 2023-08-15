@@ -108,4 +108,17 @@ export const styles = StyleSheet.create({
     borderColor: "#dedede",
     elevation: 3,
   },
+  optionButtonContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+  },
+  ratingInfoSection: {
+    flex: 1,
+    alignItems: 'center',
+    textAlign: 'center',
+    marginBottom: 20,
+    flexDirection: 'row',
+  }
 });

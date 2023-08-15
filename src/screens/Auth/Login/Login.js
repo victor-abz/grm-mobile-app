@@ -7,9 +7,9 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   TouchableOpacity,
-  ScrollView,
+  ScrollView
 } from 'react-native';
-import { ActivityIndicator, Button, Title, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Button, TextInput , Title } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { Controller, useForm } from 'react-hook-form';
 import { login } from '../../../store/ducks/authentication.duck';
@@ -22,6 +22,17 @@ import API from '../../../services/API';
 import { getEncryptedData } from '../../../utils/storageManager';
 import { titles } from '../../Onboarding/containers/Content/utils';
 import i18n from 'i18n-js';
+import { colors } from '../../../utils/colors';
+
+const theme = {
+  roundness: 12,
+  colors: {
+    ...colors,
+    background: 'white',
+    placeholder: '#dedede',
+    text: '#707070',
+  },
+};
 
 function Login() {
   const dispatch = useDispatch();
@@ -104,13 +115,7 @@ function Login() {
                     control={control}
                     render={({ onChange, onBlur, value }) => (
                       <TextInput
-                        theme={{
-                          roundness: 10,
-                          colors: {
-                            primary: '#24c38b',
-                            placeholder: '#dedede',
-                          },
-                        }}
+                        theme={theme}
                         autoCapitalize="none"
                         label={i18n.t('email')}
                         mode="outlined"
@@ -140,13 +145,7 @@ function Login() {
                     control={control}
                     render={({ onChange, onBlur, value }) => (
                       <TextInput
-                        theme={{
-                          roundness: 10,
-                          colors: {
-                            primary: '#24c38b',
-                            placeholder: '#dedede',
-                          },
-                        }}
+                        theme={theme}
                         mode="outlined"
                         placeholderColor="#dedede"
                         label={i18n.t('password')}
@@ -196,14 +195,14 @@ function Login() {
               </View>
             </KeyboardAvoidingView>
             {loading ? (
-              <ActivityIndicator color="#24c38b" />
+              <ActivityIndicator size="large" color="#24c38b" />
             ) : (
               <Button
+                // theme={theme}
                 style={[
                   styles.loginButton,
                   {
                     backgroundColor: errors ? '#24c38b' : '#dedede',
-                    marginTop: '40%',
                   },
                 ]}
                 onPress={handleSubmit(onLoginPress)}

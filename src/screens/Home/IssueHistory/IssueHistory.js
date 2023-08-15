@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
-import Content from './containers/Content';
 import { styles } from './IssueHistory.styles';
+import Content from './containers/Content';
 
 function IssueHistory({ route }) {
   const { params } = route;

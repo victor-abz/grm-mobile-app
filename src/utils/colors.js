@@ -4,4 +4,6 @@ export const colors = {
   inProgress: "#f5ba74",
   lightgray: "#dedede",
   error: "#ef6a78",
+  secondary: "#707070",
+  white: "#ffffff"
 };

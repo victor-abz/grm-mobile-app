@@ -1,8 +1,8 @@
 import React from "react";
 import { ImageBackground, Dimensions, View } from "react-native";
 import { Card, Headline } from "react-native-paper";
+import RightChevron from '../../../../../assets/right-chevron.svg';
 const screenWidth = Dimensions.get("window").width;
-import RightChevron from "../../../../../assets/right-chevron.svg";
 
 function SmallCard({ onCardPress, image, title, icon }) {
   return (

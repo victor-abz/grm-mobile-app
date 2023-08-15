@@ -11,7 +11,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  ToastAndroid,
+  ToastAndroid
 } from "react-native";
 import { ActivityIndicator, Button, Provider } from "react-native-paper";
 
@@ -29,6 +29,7 @@ import {
   useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
 
+
 import MESSAGES from "../../../utils/formErrorMessages";
 import { emailRegex, passwordRegex } from "../../../utils/formUtils";
 import CodeLogo from "../../../../assets/code_logo.svg";
@@ -40,6 +41,15 @@ import i18n from 'i18n-js';
 
 
 const CELL_COUNT = 6;
+const theme = {
+  roundness: 12,
+  colors: {
+    ...colors,
+    background: 'white',
+    placeholder: '#dedede',
+    text: '#707070',
+  },
+};
 
 function SignUp({ route }) {
   const dispatch = useDispatch();
@@ -268,13 +278,7 @@ function SignUp({ route }) {
                     control={control}
                     render={({ onChange, onBlur, value }) => (
                       <TextInput
-                        theme={{
-                          roundness: 10,
-                          colors: {
-                            primary: "#24c38b",
-                            placeholder: "#dedede",
-                          },
-                        }}
+                        theme={theme}
                         mode={"outlined"}
                         label={i18n.t('email')}
                         labelColor="#dedede"
@@ -307,22 +311,16 @@ function SignUp({ route }) {
                     control={control}
                     render={({ onChange, onBlur, value }) => (
                       <TextInput
-                        theme={{
-                          roundness: 10,
-                          colors: {
-                            primary: "#24c38b",
-                            placeholder: "#dedede",
-                          },
-                        }}
+                        theme={theme}
                         mode={"outlined"}
                         label={i18n.t('choose_password')}
-                        placeholderColor={"#dedede"}
+                        labelColor="#dedede"
                         style={styles.loginFormTextInput}
                         left={
                           <TextInput.Icon
                               onPress={() => setIsPasswordSecure(!isPasswordSecure)}
                               name={isPasswordSecure ? "eye-off-outline" : "eye-outline"}
-                              color={"#24c38b"}
+                              color="#24c38b"
                           />
                         }
                         value={value}
@@ -366,6 +364,7 @@ function SignUp({ route }) {
                 </View>
               </View>
               <Button
+                theme={theme}
                 style={[
                   styles.loginButton,
                   {

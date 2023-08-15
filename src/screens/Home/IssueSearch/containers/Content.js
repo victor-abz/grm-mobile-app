@@ -1,47 +1,46 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, TouchableOpacity, Text, StatusBar, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import i18n from 'i18n-js';
+import moment from 'moment';
+import React, { useEffect, useState } from 'react';
+import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import i18n from 'i18n-js';
 import ListHeader from '../components/ListHeader';
 
 function Content({ issues, eadl, statuses }) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
-  const [status, setStatus] = useState('assigned');
+  const [status, setStatus] = useState('reported');
   const [_issues, setIssues] = useState([]);
+  const [currentDate, setCurrentDate] = useState(moment());
+
+  const sortByCreationDateDesc = (data) =>
+    data.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   useEffect(() => {
     setIssues(issues);
   }, []);
 
   useEffect(() => {
-    let filteredIssues;
+    let filteredIssues = [];
     let foundStatus;
     switch (status) {
       case 'assigned':
         filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id);
+        filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
-      case 'open':
-        foundStatus = statuses.find((el) => el.final_status === false);
-        foundStatus = statuses.find((el) => el.final_status === false);
-        filteredIssues = issues.filter(
-          (issue) =>
-            ((issue.assignee && issue.assignee.id === eadl._id) ||
-              (issue.reporter && issue.reporter.id === eadl._id)) &&
-            issue.status.id === foundStatus.id
-        );
+      case 'reported':
+        filteredIssues = issues.filter((issue) => issue.reporter && issue.reporter.id === eadl._id);
+        filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'resolved':
         foundStatus = statuses.find((el) => el.final_status === true);
         filteredIssues = issues.filter(
           (issue) =>
-            ((issue.assignee && issue.assignee.id === eadl._id) ||
-              (issue.reporter && issue.reporter.id === eadl._id)) &&
-            issue.status.id === foundStatus.id
+            issue.assignee && issue.assignee.id === eadl._id && issue.status.id === foundStatus?.id
         );
+        filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       default:
         filteredIssues = _issues.map((issue) => issue);
@@ -52,16 +51,32 @@ function Content({ issues, eadl, statuses }) {
   function Item({ item, onPress, backgroundColor, textColor }) {
     return (
       <TouchableOpacity onPress={onPress} style={[styles.item]}>
-        <Text style={[styles.title, { flexShrink: 1 }]}>{item.category?.name?.length > 40 ? `${item.category.name.substring(0, 40)}...` : item.category?.name}</Text>
-        <Text style={[styles.subTitle, { flexShrink: 1 }]}>{item.description?.length > 40 ? `${item.description.substring(0, 40)}...` : item.description}</Text>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Text style={[styles.subTitle]}>Code: {item.tracking_code}</Text>
+        <View style={styles.itemContainer}>
+          <View>
+            <Text style={[styles.title]}>
+              {item.issue_type?.name} - {i18n.t('label_reference')} {item.tracking_code}
+            </Text>
+            <Text style={[styles.subTitle]} numberOfLines={1}>
+              {item.title ? item.title : item.description}
+            </Text>
+            <Text style={[styles.subTitle]}>
+              {item.citizen}, {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')},{' '}
+              {item.intake_date && currentDate.diff(item.intake_date, 'days')} {i18n.t('days_ago')}
+            </Text>
+            <Text style={styles.subTitle}>
+              {i18n.t('status_label')}:{' '}
+              <Text
+                style={{
+                  color:
+                    item.status?.id === 1 || item.status?.id === 2
+                      ? colors.inProgress
+                      : colors.primary,
+                }}
+              >
+                {item.status?.name}
+              </Text>
+            </Text>
+          </View>
           <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />
         </View>
         {/* <Text style={[styles.title]}>{item.description}</Text> */}
@@ -70,7 +85,6 @@ function Content({ issues, eadl, statuses }) {
   }
 
   const renderItem = ({ item }) => {
-    console.log(item)
     const backgroundColor = item.id === selectedId ? '#6e3b6e' : '#f9c2ff';
     const color = item.id === selectedId ? 'white' : 'black';
 
@@ -89,39 +103,77 @@ function Content({ issues, eadl, statuses }) {
     );
   };
 
-  const renderHeader = () => (
-    <ListHeader overdue={issues.overdue} length={issues.length} average={issues.average} />
-  );
+  const renderHeader = () => <ListHeader status={status} />;
   return (
     <>
       <ToggleButton.Row
-        style={{ justifyContent: 'space-between' }}
-        onValueChange={(value) => setStatus(value)}
+        style={{ justifyContent: 'space-between', padding: 10 }}
+        onValueChange={(value) => {
+          if (value) {
+            setStatus(value);
+          }
+        }}
         value={status}
       >
         <ToggleButton
-          style={{ flex: 1 }}
+          style={{
+            flex: 1,
+            backgroundColor: status === 'reported' ? colors.disabled : colors.white,
+            borderBottomColor: status === 'reported' ? colors.primary : colors.white,
+            borderBottomWidth: 3,
+          }}
           icon={() => (
             <View>
-              <Text style={{ color: colors.primary }}>{i18n.t('assigned')}</Text>
+              <Text
+                style={{
+                  color: status === 'reported' ? colors.primary : colors.secondary,
+                  fontWeight: status === 'reported' ? 'bold' : 'normal',
+                }}
+              >
+                {i18n.t('reported')}
+              </Text>
+            </View>
+          )}
+          value="reported"
+        />
+        <ToggleButton
+          style={{
+            flex: 1,
+            backgroundColor: status === 'assigned' ? colors.disabled : colors.white,
+            borderBottomColor: status === 'assigned' ? colors.primary : colors.white,
+            borderBottomWidth: 3,
+          }}
+          icon={() => (
+            <View>
+              <Text
+                style={{
+                  color: status === 'assigned' ? colors.primary : colors.secondary,
+                  fontWeight: status === 'assigned' ? 'bold' : 'normal',
+                }}
+              >
+                {i18n.t('assigned')}
+              </Text>
             </View>
           )}
           value="assigned"
         />
         <ToggleButton
-          style={{ flex: 1 }}
+          style={{
+            flex: 1,
+            backgroundColor: status === 'resolved' ? colors.disabled : colors.white,
+            borderBottomColor: status === 'resolved' ? colors.primary : colors.white,
+            borderBottomWidth: 3,
+          }}
           icon={() => (
             <View>
-              <Text style={{ color: colors.primary }}>{i18n.t('open')}</Text>
-            </View>
-          )}
-          value="open"
-        />
-        <ToggleButton
-          style={{ flex: 1 }}
-          icon={() => (
-            <View>
-              <Text style={{ color: colors.primary }}>{i18n.t('resolved')}</Text>
+              <Text
+                style={{
+                  color: status === 'resolved' ? colors.primary : colors.secondary,
+                  fontWeight: status === 'resolved' ? 'bold' : 'normal',
+                }}
+              >
+                {i18n.t('resolved')}
+              </Text>
             </View>
           )}
           value="resolved"
@@ -144,18 +196,24 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: StatusBar.currentHeight || 0,
   },
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   item: {
     flex: 1,
     padding: 20,
+    paddingBottom: 5,
     marginVertical: 8,
-    marginHorizontal: 23,
+    marginHorizontal: 5,
     borderBottomWidth: 1,
-    borderColor: '#f6f6f6',
+    borderColor: colors.lightgray,
   },
   title: {
-    fontFamily: 'Poppins_500Medium',
+    fontFamily: 'Poppins_400Regular',
     // fontSize: 12,
-    fontWeight: 'normal',
+    fontWeight: 'bold',
     fontStyle: 'normal',
     // lineHeight: 10,
     letterSpacing: 0,
@@ -163,14 +221,13 @@ const styles = StyleSheet.create({
     color: '#707070',
   },
   subTitle: {
-    fontFamily: 'Poppins_300Light',
+    fontFamily: 'Poppins_400Regular',
     fontSize: 12,
     fontWeight: 'normal',
     fontStyle: 'normal',
-    // lineHeight: 10,
     letterSpacing: 0,
     // textAlign: "left",
-    color: '#707070',
+    // color: '#707070',
   },
   statisticsText: {
     fontFamily: 'Poppins_700Bold',

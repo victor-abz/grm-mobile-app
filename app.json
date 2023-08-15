@@ -6,16 +6,13 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
-//      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -44,10 +41,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-location",
-      "expo-image-picker",
-      "expo-av"
-    ]
+    "plugins": ["expo-location", "expo-image-picker", "expo-av"]
   }
 }

@@ -1,28 +1,28 @@
-import React, { useState } from "react";
+import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import 'intl';
+import 'intl/locale-data/jsonp/en';
+import moment from 'moment';
+import 'moment/locale/fr';
+import React, { useState } from 'react';
 import {
-  View,
+  Alert,
   FlatList,
-  TouchableOpacity,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Text,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  Modal,
-} from "react-native";
-import { Divider } from "react-native-paper";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { styles } from "./BudgetAllocation.styles";
-import moment from "moment";
-import "moment/locale/fr";
-import CustomGreenButton from "../../../components/CustomGreenButton/CustomGreenButton";
-import { colors } from "../../../utils/colors";
-import LocalDatabase from "../../../utils/databaseManager";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import "intl";
-import "intl/locale-data/jsonp/en";
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Divider } from 'react-native-paper';
+import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreenButton';
+import { colors } from '../../../utils/colors';
+import LocalDatabase from '../../../utils/databaseManager';
+import { styles } from './BudgetAllocation.styles';
 
-moment.locale("fr");
+moment.locale('fr');
 
 function RegisterSubprojects() {
   const navigation = useNavigation();
@@ -31,14 +31,15 @@ function RegisterSubprojects() {
   const [loading, setLoading] = useState(false);
   const [bpProjects, setBpProjects] = useState(eadl.bp_projects || []);
   const [mandatoryError, setMandatoryError] = useState(false);
-  const [projectAmount, setProjectAmount] = useState(0);e
+  const [projectAmount, setProjectAmount] = useState(0);
+  e;
   const [projectAmountFormatted, setProjectAmountFormatted] = useState(0);
-  const [subProjectDesc, setSubProjectDesc] = useState("");
+  const [subProjectDesc, setSubProjectDesc] = useState('');
   const [selectedProjectIndex, setSelectedProjectIndex] = useState();
   const [recordBudgetModal, setRecordBudgetModal] = useState(false);
 
   const upsertRecord = () => {
-    LocalDatabase.upsert(eadl._id, function (doc) {
+    LocalDatabase.upsert(eadl?._id, function (doc) {
       doc = eadl;
       return doc;
     })
@@ -46,13 +47,13 @@ function RegisterSubprojects() {
         hideRecordBudgetModal();
       })
       .catch(function (err) {
-        console.log("Error", err);
+        console.log('Error', err);
         // error
       });
   };
 
   const goToBudgetLog = (project) => {
-    navigation.navigate("BudgetLog", { project });
+    navigation.navigate('BudgetLog', { project });
   };
 
   const showRecordBudgetModal = (item, index) => {
@@ -61,15 +62,15 @@ function RegisterSubprojects() {
   };
   const hideRecordBudgetModal = () => {
     setLoading(false);
-    setSubProjectDesc("");
-    setProjectAmount("");
-    setProjectAmountFormatted("");
+    setSubProjectDesc('');
+    setProjectAmount('');
+    setProjectAmountFormatted('');
     setSelectedProjectIndex();
     setRecordBudgetModal(false);
   };
 
   const onChangeAmount = (text) => {
-    const unformatted = text.replace(/,/g, "");
+    const unformatted = text.replace(/,/g, '');
     const amountFormatted = new Intl.NumberFormat().format(unformatted);
     setProjectAmount(unformatted);
     setProjectAmountFormatted(amountFormatted);
@@ -92,12 +93,12 @@ function RegisterSubprojects() {
   };
   const onRegisterBudget = async () => {
     if (!!projectAmountFormatted && !!subProjectDesc) {
-      Alert.alert("Attention", "Êtes-vous sûr de vouloir modifier ce projet?", [
-        { text: "Non", style: "cancel" },
+      Alert.alert('Attention', 'Êtes-vous sûr de vouloir modifier ce projet?', [
+        { text: 'Non', style: 'cancel' },
         {
-          text: "Oui",
+          text: 'Oui',
           onPress: async () => await doSave(),
-          style: "yes",
+          style: 'yes',
         },
       ]);
       return;
@@ -107,10 +108,7 @@ function RegisterSubprojects() {
   };
 
   const calculateBudgetUsed = ({ budget_allocated }) => {
-    const result = budget_allocated.reduce(
-      (total, obj) => parseInt(obj.amount) + total,
-      0
-    );
+    const result = budget_allocated.reduce((total, obj) => parseInt(obj.amount) + total, 0);
     const amountFormatted = new Intl.NumberFormat().format(result);
     return <Text>{amountFormatted}</Text>;
   };
@@ -135,7 +133,7 @@ function RegisterSubprojects() {
               <View style={styles.cardContainer}>
                 <View>
                   <View style={styles.cardHeader}>
-                    <View style={{ flexDirection: "row", flex: 1 }}>
+                    <View style={{ flexDirection: 'row', flex: 1 }}>
                       <View style={{ flex: 1 }}>
                         <Text numberOfLines={2} style={styles.cardNameText}>
                           {item.subproject_name}
@@ -143,28 +141,21 @@ function RegisterSubprojects() {
                       </View>
                     </View>
                   </View>
-                  <Divider
-                    style={{ marginVertical: 8, backgroundColor: "#f6f6f6" }}
-                  />
+                  <Divider style={{ marginVertical: 8, backgroundColor: '#f6f6f6' }} />
                   <View style={[styles.cardFooter, { marginBottom: 8 }]}>
                     <View>
-                      <Text style={{ color: "#707070", marginLeft: 10 }}>
-                        Total Amount:
-                      </Text>
+                      <Text style={{ color: '#707070', marginLeft: 10 }}>Total Amount:</Text>
                       <Text
-                        style={[
-                          styles.cardVotesText,
-                          { color: colors.primary, marginLeft: 10 },
-                        ]}
+                        style={[styles.cardVotesText, { color: colors.primary, marginLeft: 10 }]}
                       >
                         {calculateBudgetUsed(item)}
                       </Text>
                     </View>
                   </View>
                 </View>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <TouchableOpacity
-                    style={{ alignSelf: "flex-start", marginRight: 7 }}
+                    style={{ alignSelf: 'flex-start', marginRight: 7 }}
                     onPress={() => goToBudgetLog(item)}
                   >
                     <View
@@ -172,17 +163,12 @@ function RegisterSubprojects() {
                         styles.cardDateContainer,
                         {
                           // backgroundColor: colors.inProgress,
-                          alignItems: "center",
-                          justifyContent: "center",
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         },
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.cardDateText,
-                          { color: colors.inProgress },
-                        ]}
-                      >
+                      <Text style={[styles.cardDateText, { color: colors.inProgress }]}>
                         View Log
                       </Text>
                     </View>
@@ -196,8 +182,8 @@ function RegisterSubprojects() {
                         styles.cardDateContainer,
                         {
                           backgroundColor: colors.primary,
-                          alignItems: "center",
-                          justifyContent: "center",
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         },
                       ]}
                     >
@@ -224,16 +210,13 @@ function RegisterSubprojects() {
         visible={recordBudgetModal}
         contentContainerStyle={{ padding: 20 }}
       >
-        <KeyboardAvoidingView
-          enabled
-          behavior={Platform.OS === "android" ? undefined : "position"}
-        >
+        <KeyboardAvoidingView enabled behavior={Platform.OS === 'android' ? undefined : 'position'}>
           <View>
             <View style={styles.modalContainerStyle}>
               <View
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
                 }}
               >
                 <Text style={styles.modalTitle}>Register Budget</Text>
@@ -246,19 +229,15 @@ function RegisterSubprojects() {
                   />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.modalFieldTitle}>
-                Entrer le montant du budget
-              </Text>
+              <Text style={styles.modalFieldTitle}>Entrer le montant du budget</Text>
               <TextInput
-                keyboardType={"numeric"}
+                keyboardType={'numeric'}
                 style={styles.modalInput}
                 onChangeText={onChangeAmount}
                 value={`${projectAmountFormatted}`}
               />
 
-              <Text style={styles.modalFieldTitle}>
-                Entrer le motif du budget
-              </Text>
+              <Text style={styles.modalFieldTitle}>Entrer le motif du budget</Text>
               <TextInput
                 multiline
                 style={[styles.modalInput, { height: 80 }]}
@@ -266,9 +245,7 @@ function RegisterSubprojects() {
                 value={subProjectDesc}
               />
               {mandatoryError && (
-                <Text style={styles.errorText}>
-                  Les champs montant et motif sont obligatoires
-                </Text>
+                <Text style={styles.errorText}>Les champs montant et motif sont obligatoires</Text>
               )}
               <CustomGreenButton
                 onPress={onRegisterBudget}

@@ -1,24 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { Audio } from 'expo-av';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
+import i18n from 'i18n-js';
+import moment from 'moment';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
+  ImageBackground,
+  KeyboardAvoidingView,
+  TextInput as NativeTextInput,
+  Platform,
   ScrollView,
   Text,
-  Platform,
-  KeyboardAvoidingView,
-  ImageBackground,
+  ToastAndroid,
   TouchableOpacity,
-  TextInput as NativeTextInput,
+  View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { Button, Checkbox, IconButton, TextInput } from 'react-native-paper';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
-import moment from 'moment';
-import { Audio } from 'expo-av';
-import i18n from 'i18n-js';
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  IconButton,
+  Paragraph,
+  Portal,
+  TextInput,
+} from 'react-native-paper';
+import { useFind } from 'use-pouchdb';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { colors } from '../../../../utils/colors';
+import RecordingCard from '../../GRM/components/RecordingCard';
 import { styles } from './Content.styles';
 
 const theme = {
@@ -31,31 +42,89 @@ const theme = {
   },
 };
 
-function Content({ stepOneParams, issueCategories, issueTypes }) {
+function Content({ stepOneParams }) {
   const navigation = useNavigation();
   const [pickerValue, setPickerValue] = useState(null);
   const [pickerValue2, setPickerValue2] = useState(null);
+  const [pickerValue3, setPickerValue3] = useState(null);
+  const [pickerComponent, setPickerComponent] = useState(null);
+  const [pickerSubComponent, setPickerSubComponent] = useState(null);
   const [checked, setChecked] = useState(false);
   const [additionalDetails, setAdditionalDetails] = useState(null);
   const [date, setDate] = useState(null);
-  const [attachments, setAttachments] = useState([]);
+  const [attachment, setAttachment] = useState({});
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [recording, setRecording] = useState();
-  const [items, setItems] = useState(issueTypes ?? []);
+  const [recording, setRecording] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [current, setCurrent] = useState(null);
+  //   const [items, setItems] = useState(issueTypes ?? []);
   const [recordingURI, setRecordingURI] = useState();
-  const [items2, setItems2] = useState(issueCategories ?? []);
+  //   const [items2, setItems2] = useState(issueCategories ?? []);
+  //   const [itemsSubTypes, setItemsSubTypes] = useState(issueSubTypes ?? []);
+  //   const [components, setComponents] = useState(issueComponents ?? []);
+  //   const [subComponents, setSubComponents] = useState(issueSubComponents ?? []);
   const [sound, setSound] = React.useState();
-  const [issueTypeCategoryError, setIssueTypeCategoryError] = React.useState(false);
   const [selectedIssueType, setSelectedIssueType] = useState(null);
+  const [selectedIssueSubType, setSelectedIssueSubType] = useState(null);
+  const [selectedIssueComponent, setSelectedIssueComponent] = useState(null);
+  const [selectedIssueSubComponent, setSelectedIssueSubComponent] = useState(null);
+  const [showDialog, setShowDialog] = useState(false);
 
-  useEffect(() => {
-    if (issueTypes) {
-      setItems(issueTypes);
-    }
-    if (issueCategories) {
-      setItems2(issueCategories);
-    }
-  }, [issueTypes, issueCategories]);
+  const _hideDialog = () => setShowDialog(false);
+  const _showDialog = () => setShowDialog(true);
+
+  const { docs: items2, loading: issueCategoriesLoading } = useFind({
+    // Ensure that this index exist, create it if not. And use it.
+    index: {
+      fields: ['type'],
+    },
+    selector: {
+      type: 'issue_category',
+    },
+    db: 'LocalGRMDatabase',
+  });
+  const { docs: items, loading: issueTypesLoading } = useFind({
+    // Ensure that this index exist, create it if not. And use it.
+    index: {
+      fields: ['type'],
+    },
+    selector: {
+      type: 'issue_type',
+    },
+    db: 'LocalGRMDatabase',
+  });
+  const { docs: itemsSubTypes, loading: issueSubTypesLoading } = useFind({
+    // Ensure that this index exist, create it if not. And use it.
+    index: {
+      fields: ['type'],
+    },
+    selector: {
+      type: 'issue_sub_type',
+    },
+    db: 'LocalGRMDatabase',
+  });
+
+  const { docs: components, loading: issueComponentsLoading } = useFind({
+    // Ensure that this index exist, create it if not. And use it.
+    index: {
+      fields: ['type'],
+    },
+    selector: {
+      type: 'issue_component',
+    },
+    db: 'LocalGRMDatabase',
+  });
+
+  const { docs: subComponents, loading: issueSubComponentsLoading } = useFind({
+    // Ensure that this index exist, create it if not. And use it.
+    index: {
+      fields: ['type'],
+    },
+    selector: {
+      type: 'issue_sub_component',
+    },
+    db: 'LocalGRMDatabase',
+  });
 
   React.useEffect(
     () =>
@@ -92,6 +161,10 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
     hideDatePicker();
   };
 
+  const onRecordingStatusUpdate = (recordingStatus) => {
+    setCurrent(milliSecondToHHMMSS(recordingStatus.durationMillis));
+  };
+
   const startRecording = async () => {
     try {
       // console.log("Requesting permissions..");
@@ -103,8 +176,11 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
       // console.log("Starting recording..");
       const recording = new Audio.Recording();
       await recording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
-      await recording.startAsync();
+      await recording.startAsync().then((status) => {
+        console.log('recording status: ', status);
+      });
       setRecording(recording);
+      recording.setOnRecordingStatusUpdate(onRecordingStatusUpdate);
       // console.log("Recording started");
     } catch (err) {
       // console.error("Failed to start recording", err);
@@ -120,13 +196,48 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
     // console.log("Recording stopped and stored at", uri);
   };
 
+  /**
+   * Converts a milli second value to second, minute hour format : HH:mm:ss
+   * @param value the millisecond value to convert
+   */
+  const milliSecondToHHMMSS = (value) => {
+    const milliSecond = Number(value / 1000);
+    const hour = Math.floor(milliSecond / 3600);
+    const minute = Math.floor((milliSecond % 3600) / 60);
+    const second = Math.floor((milliSecond % 3600) % 60);
+
+    const hrs = hour > 0 ? (hour < 10 ? `0${hour}:` : `${hour}:`) : '';
+    const mins = minute > 0 ? (minute < 10 ? `0${minute}:` : `${minute}:`) : '00:';
+    const scnds = second > 0 ? (second < 10 ? `0${second}` : second) : '00';
+    return `${hrs}${mins}${scnds}`;
+  };
+
+  const onPlaybackStatusUpdate = (playbackStatus) => {
+    if (playbackStatus.didJustFinish) {
+      setPlaying(false);
+      setCurrent(milliSecondToHHMMSS(0));
+    }
+    setCurrent(milliSecondToHHMMSS(playbackStatus.positionMillis));
+  };
+
   const playSound = async () => {
     // console.log("Loading Sound");
-    const { sound } = await Audio.Sound.createAsync({ uri: recordingURI });
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: recordingURI },
+      null,
+      onPlaybackStatusUpdate
+    );
     setSound(sound);
 
     // console.log("Playing Sound");
     await sound.playAsync();
+    setPlaying(true);
+    setCurrent(milliSecondToHHMMSS(0));
+  };
+
+  const stopSound = async () => {
+    await sound.stopAsync();
+    setPlaying(false);
   };
 
   useEffect(() => {
@@ -141,113 +252,108 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
   }, []);
 
   const openCamera = async () => {
-    if (attachments.length < 3) {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: false,
-        quality: 1,
-      });
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
 
-      if (!result.cancelled) {
-        const manipResult = await ImageManipulator.manipulateAsync(
-          result.localUri || result.uri,
-          [{ resize: { width: 1000, height: 1000 } }],
-          { compress: 1, format: ImageManipulator.SaveFormat.PNG }
-        );
-        setAttachments([...attachments, { ...manipResult, id: new Date() }]);
-      }
-
+    if (!result.cancelled) {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        result.localUri || result.uri,
+        [{ resize: { width: 1000, height: 1000 } }],
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+      );
+      setAttachment({ ...manipResult, id: new Date() });
     }
   };
 
   const pickImage = async () => {
-    try {
-      if(attachments.length < 3){
-        const result = await ImagePicker.launchImageLibraryAsync({
-          presentationStyle: 0,
-          mediaTypes: ImagePicker.MediaTypeOptions.All,
-          allowsEditing: false,
-
-          quality: 1,
-        });
-        if (!result.cancelled) {
-          const manipResult = await ImageManipulator.manipulateAsync(
-            result.localUri || result.uri,
-            [{ resize: { width: 1000, height: 1000 } }],
-            { compress: 1, format: ImageManipulator.SaveFormat.PNG },
-          );
-          setAttachments([...attachments, { ...manipResult, id: new Date() }]);
-        }
-      }
-    } catch (e) {
-      console.log(e)
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      // aspect: [4, 3],
+      quality: 1,
+    });
+    if (!result.cancelled) {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        result.localUri || result.uri,
+        [{ resize: { width: 1000, height: 1000 } }],
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+      );
+      setAttachment({ ...manipResult, id: new Date() });
     }
   };
 
   const getCategory = (value) => {
-    const result = issueCategories.filter((obj) => obj.name === value);
-    let _category;
-    if(result[0]) {
-      _category = {
-        id: result[0].id,
-        name: result[0].name,
-        confidentiality_level: result[0].confidentiality_level,
-        assigned_department: result[0].assigned_department?.id,
-        administrative_level: result[0].assigned_department?.administrative_level,
-      };
-
-    }
+    const result = items2.filter((obj) => obj.name === value);
+    const _category = {
+      id: result[0].id,
+      name: result[0].name,
+      confidentiality_level: result[0].confidentiality_level,
+      assigned_department: result[0].assigned_department?.id,
+      administrative_level: result[0].assigned_department?.administrative_level,
+    };
     return _category;
   };
 
-  const goToNextStep = () => {
-      if (pickerValue2 !== null && selectedIssueType !== null) {
-        setIssueTypeCategoryError(false)
-        navigation.navigate('CitizenReportLocationStep', {
-          stepOneParams,
-          stepTwoParams: {
-            date: date ? date.toISOString() : undefined,
-            issueType: selectedIssueType
-              ? { id: selectedIssueType.id, name: selectedIssueType.name }
-              : null,
-            ongoingEvent: checked,
-            attachments: attachments.length > 0
-              ? attachments.map((attachment) => ({
-                  url: '',
-                  id: attachment?.id,
-                  uploaded: false,
-                  local_url: attachment?.uri,
-                  name: attachment?.uri.split('/').pop(),
-                }))
-              : undefined,
-            recording: recordingURI
-              ? {
-                url: '',
-                id: recordingURI.split('/').pop(),
-                uploaded: false,
-                local_url: recordingURI,
-                isAudio: true,
-                name: recordingURI.split('/').pop(),
-              }
-              : undefined,
-            category: getCategory(pickerValue2),
-            additionalDetails,
-          },
-        });
-      } else {
-        setIssueTypeCategoryError(true)
-      }
-    };
+  const filterSubType = () => itemsSubTypes.filter((obj) => obj.parent_id === selectedIssueType.id);
 
+  const filterCategory = () => items2.filter((obj) => obj.parent_id === selectedIssueSubType.id);
 
-  function removeAttachment(index) {
-    const array = [...attachments];
-    array.splice(index, 1);
-    setAttachments(array);
-  }
+  const filterSubComponent = () =>
+    subComponents.filter((obj) => obj.parent_id === selectedIssueComponent.id);
+
+  const showToast = (message) => {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  };
+
+  const onNext = () => {
+    navigation.navigate('CitizenReportLocationStep', {
+      stepOneParams,
+      stepTwoParams: {
+        date: date ? date.toISOString() : undefined,
+        issueType: selectedIssueType
+          ? { id: selectedIssueType.id, name: selectedIssueType.name }
+          : null,
+        issueSubType: selectedIssueSubType
+          ? { id: selectedIssueSubType.id, name: selectedIssueSubType.name }
+          : null,
+        issueComponent: selectedIssueComponent
+          ? { id: selectedIssueComponent.id, name: selectedIssueComponent.name }
+          : null,
+        issueSubComponent: selectedIssueSubComponent
+          ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.name }
+          : null,
+        ongoingEvent: checked,
+        attachment: attachment.uri
+          ? {
+              url: '',
+              id: attachment?.id,
+              uploaded: false,
+              local_url: attachment?.uri,
+              name: attachment?.uri.split('/').pop(),
+            }
+          : undefined,
+        recording: recordingURI
+          ? {
+              url: '',
+              id: recordingURI.split('/').pop(),
+              uploaded: false,
+              local_url: recordingURI,
+              isAudio: true,
+              name: recordingURI.split('/').pop(),
+            }
+          : undefined,
+        category: getCategory(pickerValue2),
+        additionalDetails,
+      },
+    });
+  };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
+    <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : null}>
         <View style={{ padding: 23 }}>
           <Text style={styles.stepText}>{i18n.t('step_3')}</Text>
@@ -344,12 +450,31 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
               label: 'name',
               value: 'name',
             }}
+            zIndex={3000}
+            zIndexInverse={2000}
             placeholder={i18n.t('step_2_placeholder_1')}
             value={pickerValue}
             items={items}
             setPickerValue={setPickerValue}
-            setItems={setItems}
+            loading={issueTypesLoading}
             onSelectItem={(item) => setSelectedIssueType(item)}
+          />
+        </View>
+        <View style={{ zIndex: 2000 }}>
+          <CustomDropDownPicker
+            schema={{
+              label: 'name',
+              value: 'name',
+            }}
+            zIndex={3000}
+            zIndexInverse={2000}
+            placeholder={i18n.t('step_2_placeholder_5')}
+            value={pickerValue3}
+            items={selectedIssueType ? filterSubType() : []}
+            setPickerValue={setPickerValue3}
+            // setItems={setItemsSubTypes}
+            loading={issueSubTypesLoading}
+            onSelectItem={(item) => setSelectedIssueSubType(item)}
           />
         </View>
         <View style={{ zIndex: 1000 }}>
@@ -361,15 +486,49 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
               confidentiality_level: 'confidentiality_level',
               assigned_department: 'assigned_department',
             }}
+            zIndex={3000}
+            zIndexInverse={2000}
             placeholder={i18n.t('step_2_placeholder_2')}
             value={pickerValue2}
-            items={items2}
+            items={selectedIssueSubType ? filterCategory() : []}
             setPickerValue={setPickerValue2}
-            setItems={setItems2}
+            loading={issueCategoriesLoading}
+            // setItems={setItems2}
           />
         </View>
-        {issueTypeCategoryError && <Text style={styles.errorText}>{i18n.t('please_select_option')}</Text>}
-
+        <View>
+          <CustomDropDownPicker
+            schema={{
+              label: 'name',
+              value: 'name',
+            }}
+            zIndex={3000}
+            zIndexInverse={2000}
+            placeholder={i18n.t('step_2_placeholder_6')}
+            value={pickerComponent}
+            items={components}
+            setPickerValue={setPickerComponent}
+            loading={issueComponentsLoading}
+            // setItems={setComponents}
+            onSelectItem={(item) => setSelectedIssueComponent(item)}
+          />
+        </View>
+        <View>
+          <CustomDropDownPicker
+            schema={{
+              label: 'name',
+              value: 'name',
+            }}
+            zIndex={3000}
+            zIndexInverse={2000}
+            placeholder={i18n.t('step_2_placeholder_7')}
+            value={pickerSubComponent}
+            items={selectedIssueComponent ? filterSubComponent() : []}
+            setPickerValue={setPickerSubComponent}
+            loading={issueSubComponentsLoading}
+            onSelectItem={(item) => setSelectedIssueSubComponent(item)}
+          />
+        </View>
         <View style={{ paddingHorizontal: 50 }}>
           <TextInput
             multiline
@@ -380,10 +539,11 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
                 height: 100,
                 justifyContent: 'flex-start',
                 textAlignVertical: 'top',
+                fontSize: 14,
               },
             ]}
             placeholder={i18n.t('step_2_placeholder_3')}
-            outlineColor="#f6f6f6"
+            outlineColor="#dedede"
             theme={theme}
             mode="outlined"
             value={additionalDetails}
@@ -403,7 +563,7 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
             )}
           />
         </View>
-        <View style={{ paddingHorizontal: 40 }}>
+        <View style={{ paddingHorizontal: 50 }}>
           <Text
             style={{
               fontFamily: 'Poppins_400Regular',
@@ -419,33 +579,30 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
           >
             {i18n.t('step_2_share_photos')}
           </Text>
-          <View style={{flexDirection: 'row'}}>
-            {attachments.length > 0 && attachments.map((attachment, index) => (
-                  <ImageBackground
-                    source={{ uri: attachment.uri }}
-                    style={{
-                      height: 80,
-                      width: 80,
-                      marginHorizontal: 1,
-                      alignSelf: 'center',
-                      justifyContent: 'flex-end',
-                      marginVertical: 20,
-                    }}
-                  >
-                    <TouchableOpacity
-                      onPress={() => removeAttachment(index)}
-                      style={{
-                        alignItems: 'center',
-                        padding: 5,
-                        backgroundColor: 'rgba(36, 195, 139, 1)',
-                      }}
-                    >
-                      <Text style={{ color: 'white' }}>X</Text>
-                    </TouchableOpacity>
-                  </ImageBackground>
-                )
-            )
-            }
+          <View>
+            {attachment.uri && (
+              <ImageBackground
+                source={{ uri: attachment.uri }}
+                style={{
+                  height: 160,
+                  width: 160,
+                  alignSelf: 'center',
+                  justifyContent: 'flex-end',
+                  marginVertical: 20,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => setAttachment({})}
+                  style={{
+                    alignItems: 'center',
+                    padding: 5,
+                    backgroundColor: 'rgba(36, 195, 139, 1)',
+                  }}
+                >
+                  <Text style={{ color: 'white' }}>X</Text>
+                </TouchableOpacity>
+              </ImageBackground>
+            )}
           </View>
           <View
             style={{
@@ -466,60 +623,95 @@ function Content({ stepOneParams, issueCategories, issueTypes }) {
             <View style={styles.iconButtonStyle}>
               <IconButton icon="camera" color={colors.primary} size={24} onPress={openCamera} />
             </View>
-            <View style={styles.iconButtonStyle}>
-              <IconButton
-                icon={recording ? 'record-circle-outline' : 'microphone'}
-                color={recording ? '#f80102' : colors.primary}
-                size={24}
-                onPress={recording ? stopRecording : startRecording}
-              />
-            </View>
+            {!recording && !recordingURI && (
+              <View style={styles.iconButtonStyle}>
+                <IconButton
+                  icon={recording ? 'record-circle-outline' : 'microphone'}
+                  color={recording ? '#f80102' : colors.primary}
+                  size={24}
+                  onPress={recording ? stopRecording : startRecording}
+                />
+              </View>
+            )}
           </View>
         </View>
-        {recordingURI && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <IconButton icon="play" color={colors.primary} size={24} onPress={playSound} />
-            <Text
-              style={{
-                fontFamily: 'Poppins_400Regular',
-                fontSize: 12,
-                fontWeight: 'normal',
-                fontStyle: 'normal',
-                lineHeight: 18,
-                letterSpacing: 0,
-                textAlign: 'left',
-                color: '#707070',
-                marginVertical: 13,
-              }}
-            >
-              Play Recorded Audio
-            </Text>
-            <IconButton
-              icon="close"
-              color={colors.primary}
-              size={24}
-              onPress={() => setRecordingURI()}
-            />
-          </View>
+        {(recordingURI || recording) && (
+          <RecordingCard
+            recording={recording}
+            onPlay={playSound}
+            onPause={stopSound}
+            playing={playing}
+            current={current}
+            onDelete={setRecordingURI}
+            onStopRecording={stopRecording}
+          />
         )}
+
         <View style={{ paddingHorizontal: 50 }}>
           <Button
             theme={theme}
             style={{ alignSelf: 'center', margin: 24 }}
             labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
             mode="contained"
-            onPress={goToNextStep}
+            onPress={() => {
+              if (
+                selectedIssueType === null ||
+                selectedIssueSubType === null ||
+                pickerValue2 === null
+              ) {
+                showToast(i18n.t('please_choose_value_for_required_field'));
+                return;
+              }
+
+              const selectedCategory = getCategory(pickerValue2);
+              if (selectedCategory && selectedCategory.confidentiality_level === 'Confidential') {
+                _showDialog();
+                return;
+              }
+              onNext();
+            }}
           >
             {i18n.t('next')}
           </Button>
         </View>
       </KeyboardAvoidingView>
+
+      <Portal>
+        <Dialog visible={showDialog} onDismiss={_hideDialog}>
+          <Dialog.Title>{i18n.t('warning')}</Dialog.Title>
+          <Dialog.Content>
+            <Paragraph>{i18n.t('confidential_complaint')}</Paragraph>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
+              theme={theme}
+              style={{
+                alignSelf: 'center',
+                backgroundColor: '#E74C3C',
+                paddingLeft: 15,
+                paddingRight: 15,
+              }}
+              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
+              mode="contained"
+              onPress={_hideDialog}
+            >
+              {i18n.t('no')}
+            </Button>
+            <Button
+              theme={theme}
+              style={{ alignSelf: 'center', margin: 24, paddingLeft: 15, paddingRight: 15 }}
+              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
+              mode="contained"
+              onPress={() => {
+                _hideDialog();
+                onNext();
+              }}
+            >
+              {i18n.t('yes')}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </ScrollView>
   );
 }

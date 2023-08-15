@@ -18,11 +18,14 @@ export const styles = StyleSheet.create({
     fontStyle: "normal",
     letterSpacing: 0,
     color: "#707070",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightgray,
   },
   greenCircle: {
     backgroundColor: colors.primary,
-    height: 20,
-    width: 20,
+    height: 10,
+    width: 10,
     borderRadius: 10,
     marginRight: 10
   },
@@ -63,12 +66,18 @@ export const styles = StyleSheet.create({
   },
   radioLabel: {
     fontFamily: "Poppins_400Regular",
-    fontWeight: "normal",
+    fontWeight: "700",
     fontStyle: "normal",
     lineHeight: 18,
     letterSpacing: 0,
     textAlign: "left",
     color: "#707070",
+    fontSize: 13,
+  },
+  dateLabel: {
+    fontSize: 11,
+    color: "#707070",
+    textAlign: "right"
   },
   grmInput: {
     height: 40,

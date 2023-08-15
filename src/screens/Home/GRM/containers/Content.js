@@ -45,7 +45,7 @@ function Content() {
         >
             <SmallCard
                 image={require("../../../../../assets/BG_1.png")}
-                onCardPress={() => alert("Upcoming feature")}
+                onCardPress={() => navigation.navigate("Statistics")}
                 title={i18n.t("diagnostics")}
                 icon={<Chart />}
             />
