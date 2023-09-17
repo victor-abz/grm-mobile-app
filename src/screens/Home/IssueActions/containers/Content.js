@@ -1,7 +1,7 @@
 import { AntDesign, Feather } from '@expo/vector-icons';
-import i18n from 'i18n-js';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -41,6 +41,7 @@ const WHATSAPP_LINK = 'http://api.whatsapp.com/send?phone=223';
 const PHONE_CALL_LINK = 'tel://+223';
 
 function Content({ issue, navigation, statuses = [], eadl }) {
+  const { t } = useTranslation();
   const LocalGRMDb = usePouch('LocalGRMDatabase');
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
@@ -148,7 +149,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     issue.comments?.push({
       name: issue.reporter.name,
       id: eadl?._id,
-      comment: i18n.t('issue_was_accepted'),
+      comment: t('issue_was_accepted'),
       due_at: moment(),
     });
     saveIssueStatus(newStatus, 'accept');
@@ -159,7 +160,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     issue.comments?.push({
       name: issue.reporter.name,
       id: eadl?._id,
-      comment: i18n.t('issue_was_rejected'),
+      comment: t('issue_was_rejected'),
       due_at: moment(),
     });
     saveIssueStatus(newStatus, 'reject');
@@ -170,7 +171,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       issue.comments?.push({
         name: issue.reporter.name,
         id: eadl?._id,
-        comment: i18n.t('issue_was_rated'),
+        comment: t('issue_was_rated'),
         due_at: moment(),
       });
     }
@@ -189,7 +190,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     issue.comments?.push({
       name: issue.reporter.name,
       id: eadl?._id,
-      comment: i18n.t('issue_was_appealed'),
+      comment: t('issue_was_appealed'),
       due_at: moment(),
     });
     issue.escalate_flag = true;
@@ -209,7 +210,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     issue.comments?.push({
       name: issue.reporter.name,
       id: eadl?._id,
-      comment: i18n.t('issue_was_escalated'),
+      comment: t('issue_was_escalated'),
       due_at: moment(),
     });
     saveIssueStatus();
@@ -238,7 +239,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     issue.comments?.push({
       name: issue.reporter.name,
       id: eadl?._id,
-      comment: i18n.t('issue_was_resolved'),
+      comment: t('issue_was_resolved'),
       due_at: moment(),
     });
     saveIssueStatus(newStatus, 'record_resolution');
@@ -268,14 +269,12 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     if (type === 'rejected') {
       issue.reject_reason = reason;
     }
-    console.log({ issue });
 
     LocalGRMDatabase.upsert(issue._id, (_doc) => {
       _doc = issue;
       return _doc;
     })
       .then((result) => {
-        console.log({ result });
         updateActionButtons();
         if (type === 'accept') {
           setAcceptedDialog(true);
@@ -323,10 +322,10 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         <View style={{ padding: 23 }}>
           <Text style={styles.stepDescription}>
             {citizenName}, {issue.intake_date && moment(issue.intake_date).format('DD-MMM-YYYY')}{' '}
-            {issue.intake_date && currentDate.diff(issue.intake_date, 'days')} {i18n.t('days_ago')}
+            {issue.intake_date && currentDate.diff(issue.intake_date, 'days')} {t('days_ago')}
           </Text>
           <Text style={styles.stepDescription}>
-            {i18n.t('status_label')}:{' '}
+            {t('status_label')}:{' '}
             <Text
               style={{
                 color:
@@ -347,7 +346,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
               mode="contained"
               onPress={goToDetails}
             >
-              {i18n.t('view_details')}
+              {t('view_details')}
             </Button>
 
             {/* THROUGH THOSE BUTTONS OYU CAN MAKE A WHATSAPP CALL, PHONE CALL AND SEND EMAIL TO THE COMPLAINER */}
@@ -376,9 +375,9 @@ function Content({ issue, navigation, statuses = [], eadl }) {
 
           <View style={styles.ratingInfoSection}>
             {!issue.rating ? (
-              <Text style={styles.radioLabel}>{i18n.t('not_rate_yet')}</Text>
+              <Text style={styles.radioLabel}>{t('not_rate_yet')}</Text>
             ) : (
-              <Text style={styles.radioLabel}>{i18n.t(`satisfaction_level_${issue.rating}`)}</Text>
+              <Text style={styles.radioLabel}>{t(`satisfaction_level_${issue.rating}`)}</Text>
             )}
             <StarRating
               starSize={30}
@@ -403,7 +402,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 marginVertical: 10,
               }}
             >
-              <Text style={styles.subtitle}>{i18n.t('accept_issue')}</Text>
+              <Text style={styles.subtitle}>{t('accept_issue')}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <AntDesign
                   style={{ marginRight: 5 }}
@@ -424,7 +423,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 marginVertical: 10,
               }}
             >
-              <Text style={styles.subtitle}>{i18n.t('record_steps_taken').substring(0, 28)}</Text>
+              <Text style={styles.subtitle}>{t('record_steps_taken').substring(0, 28)}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <AntDesign
                   style={{ marginRight: 5 }}
@@ -445,7 +444,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 marginVertical: 10,
               }}
             >
-              <Text style={styles.subtitle}>{i18n.t('record_resolution')}</Text>
+              <Text style={styles.subtitle}>{t('record_resolution')}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <AntDesign
                   style={{ marginRight: 5 }}
@@ -466,7 +465,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 marginVertical: 10,
               }}
             >
-              <Text style={styles.subtitle}>{i18n.t('rate_appeal')}</Text>
+              <Text style={styles.subtitle}>{t('rate_appeal')}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <AntDesign
                   style={{ marginRight: 5 }}
@@ -489,7 +488,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
               padding: 15,
             }}
           >
-            <Text style={styles.subtitle}>{i18n.t('escalate')}</Text>
+            <Text style={styles.subtitle}>{t('escalate')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <AntDesign
                 style={{ marginRight: 5 }}
@@ -508,9 +507,9 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       {/* FEEDBACK AND APPEAL MODAL */}
       <Portal>
         <Dialog visible={rateAppealDialog} onDismiss={_hideRateAppealDialog}>
-          <Dialog.Title>{i18n.t('confirmation')}?</Dialog.Title>
+          <Dialog.Title>{t('confirmation')}?</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>{i18n.t('confirm_your_choice')}</Paragraph>
+            <Paragraph>{t('confirm_your_choice')}</Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
@@ -525,7 +524,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
               mode="contained"
               onPress={_hideRateAppealDialog}
             >
-              {i18n.t('no')}
+              {t('no')}
             </Button>
             <Button
               theme={theme}
@@ -534,7 +533,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
               mode="contained"
               onPress={appealIssue}
             >
-              {i18n.t('yes')}
+              {t('yes')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -543,9 +542,9 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       {/* RATING MODAL */}
       <Portal>
         <Dialog visible={ratingDialog} onDismiss={_hideRatingDialog}>
-          <Dialog.Title>{i18n.t('rating')}?</Dialog.Title>
+          <Dialog.Title>{t('rating')}?</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>{i18n.t('rate_issue')}</Paragraph>
+            <Paragraph>{t('rate_issue')}</Paragraph>
             <RadioButton.Group
               onValueChange={(newValue) => {
                 if (newValue === rating) {
@@ -558,27 +557,27 @@ function Content({ issue, navigation, statuses = [], eadl }) {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
                 <RadioButton.Android value={5} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_5')} </Text>
+                <Text style={styles.radioLabel}>{t('satisfaction_level_5')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
                 <RadioButton.Android value={4} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_4')} </Text>
+                <Text style={styles.radioLabel}>{t('satisfaction_level_4')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
                 <RadioButton.Android value={3} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_3')} </Text>
+                <Text style={styles.radioLabel}>{t('satisfaction_level_3')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
                 <RadioButton.Android value={2} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_2')} </Text>
+                <Text style={styles.radioLabel}>{t('satisfaction_level_2')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
                 <RadioButton.Android value={1} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_1')} </Text>
+                <Text style={styles.radioLabel}>{t('satisfaction_level_1')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
                 <RadioButton.Android value={0} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_0')} </Text>
+                <Text style={styles.radioLabel}>{t('satisfaction_level_0')} </Text>
               </View>
             </RadioButton.Group>
           </Dialog.Content>
@@ -590,7 +589,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
               mode="contained"
               onPress={_hideRatingDialog}
             >
-              {i18n.t('cancel')}
+              {t('cancel')}
             </Button>
             <Button
               theme={theme}
@@ -599,7 +598,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
               mode="contained"
               onPress={rateIssue}
             >
-              {i18n.t('save_button_text')}
+              {t('save_button_text')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -610,9 +609,9 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         <Dialog visible={rejectDialog} onDismiss={_hideRejectDialog}>
           <Dialog.Content>
             {!rejectedDialog ? (
-              <Paragraph>{i18n.t('you_are_rejecting')}</Paragraph>
+              <Paragraph>{t('you_are_rejecting')}</Paragraph>
             ) : (
-              <Paragraph>{i18n.t('complaint_rejected')}</Paragraph>
+              <Paragraph>{t('complaint_rejected')}</Paragraph>
             )}
             {!rejectedDialog && (
               <TextInput
@@ -633,7 +632,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={_hideRejectDialog}
               >
-                {i18n.t('cancel')}
+                {t('cancel')}
               </Button>
               <Button
                 disabled={reason === ''}
@@ -643,7 +642,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={rejectIssue}
               >
-                {i18n.t('submit')}
+                {t('submit')}
               </Button>
             </Dialog.Actions>
           ) : (
@@ -655,7 +654,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={_hideRejectDialog}
               >
-                {i18n.t('finished')}
+                {t('finished')}
               </Button>
             </Dialog.Actions>
           )}
@@ -665,12 +664,12 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       {/* ACCEPT MODAL */}
       <Portal>
         <Dialog visible={acceptDialog} onDismiss={_hideDialog}>
-          {!acceptedDialog && <Dialog.Title>{i18n.t('accept_issue')}?</Dialog.Title>}
+          {!acceptedDialog && <Dialog.Title>{t('accept_issue')}?</Dialog.Title>}
           <Dialog.Content>
             {!acceptedDialog ? (
-              <Paragraph>{i18n.t('are_you_accepting')}</Paragraph>
+              <Paragraph>{t('are_you_accepting')}</Paragraph>
             ) : (
-              <Paragraph>{i18n.t('you_have_accepted')}</Paragraph>
+              <Paragraph>{t('you_have_accepted')}</Paragraph>
             )}
           </Dialog.Content>
           {!acceptedDialog ? (
@@ -682,7 +681,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={_showRejectDialog}
               >
-                {i18n.t('reject')}
+                {t('reject')}
               </Button>
               <Button
                 theme={theme}
@@ -691,7 +690,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={acceptIssue}
               >
-                {i18n.t('accept')}
+                {t('accept')}
               </Button>
             </Dialog.Actions>
           ) : (
@@ -703,7 +702,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={_hideDialog}
               >
-                {i18n.t('finished')}
+                {t('finished')}
               </Button>
             </Dialog.Actions>
           )}
@@ -715,9 +714,9 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         <Dialog visible={escalateDialog} onDismiss={_hideEscalateDialog}>
           <Dialog.Content>
             {!escalatedDialog ? (
-              <Paragraph>{i18n.t('you_are_escalating')}</Paragraph>
+              <Paragraph>{t('you_are_escalating')}</Paragraph>
             ) : (
-              <Paragraph>{i18n.t('escalated_text')}</Paragraph>
+              <Paragraph>{t('escalated_text')}</Paragraph>
             )}
             {!escalatedDialog && (
               <TextInput
@@ -738,7 +737,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={_hideEscalateDialog}
               >
-                {i18n.t('cancel')}
+                {t('cancel')}
               </Button>
               <Button
                 disabled={escalateComment === ''}
@@ -748,7 +747,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={escalateIssue}
               >
-                {i18n.t('submit')}
+                {t('submit')}
               </Button>
             </Dialog.Actions>
           ) : (
@@ -763,7 +762,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                   setEscalatedDialog(false);
                 }}
               >
-                {i18n.t('finished')}
+                {t('finished')}
               </Button>
             </Dialog.Actions>
           )}
@@ -775,9 +774,9 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         <Dialog visible={recordStepsDialog} onDismiss={_hideRecordStepsDialog}>
           <Dialog.Content>
             {!recordedSteps ? (
-              <Paragraph>{i18n.t('record_steps_text')}</Paragraph>
+              <Paragraph>{t('record_steps_text')}</Paragraph>
             ) : (
-              <Paragraph>{i18n.t('recorded_comment')}</Paragraph>
+              <Paragraph>{t('recorded_comment')}</Paragraph>
             )}
             {!recordedSteps && (
               <TextInput
@@ -798,7 +797,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={_hideRecordStepsDialog}
               >
-                {i18n.t('cancel')}
+                {t('cancel')}
               </Button>
               <Button
                 disabled={comment === ''}
@@ -808,7 +807,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={recordStep}
               >
-                {i18n.t('submit')}
+                {t('submit')}
               </Button>
             </Dialog.Actions>
           ) : (
@@ -823,7 +822,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                   setRecordedSteps(false);
                 }}
               >
-                {i18n.t('finished')}
+                {t('finished')}
               </Button>
               <Button
                 theme={theme}
@@ -832,7 +831,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={goToHistory}
               >
-                {i18n.t('view_history')}
+                {t('view_history')}
               </Button>
             </Dialog.Actions>
           )}
@@ -843,9 +842,9 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         <Dialog visible={recordResolutionDialog} onDismiss={_hideRecordResolutionDialog}>
           <Dialog.Content>
             {!recordedResolution ? (
-              <Paragraph>{i18n.t('summarize_resolution')}</Paragraph>
+              <Paragraph>{t('summarize_resolution')}</Paragraph>
             ) : (
-              <Paragraph>{i18n.t('please_confirm_resolution')}</Paragraph>
+              <Paragraph>{t('please_confirm_resolution')}</Paragraph>
             )}
             {!recordedResolution ? (
               <TextInput
@@ -870,7 +869,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={_hideRecordResolutionDialog}
               >
-                {i18n.t('cancel')}
+                {t('cancel')}
               </Button>
               <Button
                 disabled={resolution === ''}
@@ -880,7 +879,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={recordResolution}
               >
-                {i18n.t('submit')}
+                {t('submit')}
               </Button>
             </Dialog.Actions>
           ) : (
@@ -892,7 +891,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={() => setRecordedResolution(false)}
               >
-                {i18n.t('cancel')}
+                {t('cancel')}
               </Button>
               <Button
                 theme={theme}
@@ -901,7 +900,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                 mode="contained"
                 onPress={recordResolutionConfirmation}
               >
-                {i18n.t('confirm')}
+                {t('confirm')}
               </Button>
             </Dialog.Actions>
           )}

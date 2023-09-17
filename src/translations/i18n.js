@@ -1,21 +1,32 @@
-import * as Localization from "expo-localization";
-import i18n from "i18n-js";
-import en from './fr.json'; //TODO FIX THIS!!!
+import i18n from 'i18next';
+import 'intl-pluralrules';
+import { initReactI18next } from 'react-i18next';
+import en from './en.json';
 import fr from './fr.json';
 import rw from './rw.json';
 
-// Set the key-value pairs for the different languages you want to support.
-i18n.translations = {
-  fr,
-  rw,
-  en,
-};
-// Set the locale once at the beginning of your app.
-i18n.defaultLocale = 'fr';
-i18n.locale = 'fr';
-i18n.locale = Localization.locale;
+// set default fallback language
+export const DEFAULT_LANGUAGE = 'rw';
 
-// Set the locale once at the beginning of your app.
-i18n.locale = Localization.locale;
-// When a value is missing from a language it'll fallback to another language with the key present.
-i18n.fallbacks = true;
+const resources = {
+  en: {
+    translation: en,
+  },
+  rw: {
+    translation: rw,
+  },
+  fr: {
+    translation: fr,
+  },
+};
+
+i18n.use(initReactI18next).init({
+  resources,
+  // language to use if translations in user language are not available
+  fallbackLng: 'rw',
+  interpolation: {
+    escapeValue: false, // not needed for react!!
+  },
+});
+
+export default i18n;

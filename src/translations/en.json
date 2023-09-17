@@ -12,11 +12,13 @@
   "login": "Login",
   "email_provided": "Please enter the email provided by your supervisor and use a password of your preference.",
   "choose_password": "Choose your password",
-  "enter_new_password":  "Enter your new password. Must contain at least 8 characters long",
+  "enter_new_password": "Enter your new password. Must contain at least 8 characters long",
   "last_validation": "We need a last validation!",
   "please_enter_code": "Please use the code provided by your supervisor",
   "account_create_success": "Your account has been successfully created",
   "logout": "logout",
+  "connect": "Connect",
+
   //GRM
   "diagnostics": "Diagnostics",
   "information": "Information",
@@ -56,8 +58,8 @@
   "contact_step_placeholder_2": "Enter Age Group (Optional)",
   "contact_step_placeholder_3": "Choose Gender (Optional)",
   "contact_step_placeholder_4": "This person is filling the complaint on somebody else’s behalf.",
-
-
+  "contact_step_placeholder_5": "Occupation",
+  "contact_step_placeholder_6": "Level of education",
 
   //step 2
   "step_2": "Step 2",
@@ -75,6 +77,9 @@
   "step_2_keep_name_confidential": "Keep name confidential. Only the person resolving the issue will see the name.",
   "step_2_on_behalf_of_someone": "This is an individual filing on behalf of someone else.",
   "step_2_organization_behalf_someone": "This is an organization filing on behalf of someone else.",
+  "step_2_placeholder_5": "What Type?",
+  "step_2_placeholder_6": "Component (optional)",
+  "step_2_placeholder_7": "Sub Component (optional)",
 
   //step 3
   "step_3": "Step 3",
@@ -85,6 +90,9 @@
   "step_3_field_title_3": "This issue is about:",
   "step_3_field_title_4": "Description of Issue:",
   "step_3_attachments": "Attachments:",
+  "step_3_field_title_2_1": "Issue Sub Type:",
+  "step_3_field_title_5": "Component:",
+  "step_3_field_title_6": "Sub Component:",
 
   //location step
   "step_4": "Step 4",
@@ -92,7 +100,6 @@
   "step_location_body": "Tell the citizen: You should try to get as specific a location as needed\nto solve the issue. Addresses, street corners, descriptions of the\narea can all be helpful. If this is a confidential or sensitive issue,\nsimply select the locale and collect no further detalls.",
   "step_location_dropdown_placeholder": "Tap to select",
   "step_location_input_explanation": "Please enter additional details about the location\nthat might help resolve the issue (e.g. street\naddress, street corner, or description of location).",
-
 
   "step_4_subtitle": "You’re done!",
   "step_4_description": "The issue has been captured and will be assigned to a government representative.  To track progress on this issue, please use the code below. (Facilitators: please encourage the citizen to write down or repeat the code below).",
@@ -102,7 +109,8 @@
   "step_4_back_text": "Back to Citizen Input Home",
   "step_5": "Step 5",
   "step_6": "Step 6",
-
+  "step_5_description": "To follow up your request or complaint with the village focal point or community animators, you can use the code below. Please write it down and keep it safe. If you happen to lose the code, you can contact me to find it.",
+  "step_6_description": "",
 
   //general
   "save_button_text": "SAVE & NEXT",
@@ -111,7 +119,7 @@
   "male": "Male",
   "female": "Female",
   "other": "Other",
-  "rather_not_say":  "Rather not say",
+  "rather_not_say": "Rather not say",
 
   //issue detail
   "description_label": "Description",
@@ -127,6 +135,16 @@
   "comment_placeholder": "Write a comment...",
   "information_not_available": "information not available",
   "confidential": "Confidential",
+  "reported": "Reported",
+  "issue_was_appealed": "The complainant is not part of the resolution, so he decided to appeal.",
+  "issue_was_rated": "The complaint has been evaluated. The complainant gave a rating of: ",
+
+  "profession": "Profession:",
+  "educational_level": "Educational Level",
+  "type": "Type of issue:",
+  "sub_type": "Issue Sub Type:",
+  "component": "Component:",
+  "sub_component": "Sub Component:",
 
   //issue search
   "overdue_label": "Overdue Issues",
@@ -185,5 +203,56 @@
   "play_recorded_audio": "Play Recorded Audio",
 
   //login page
-  "error_message_for_code": "Please fill in all cells"
+  "error_message_for_code": "Please fill in all cells",
+  "delete": "Delete",
+  "close": "Close",
+  "confirmation": "Confirmation",
+  "confirm_your_choice": "Are you sure you want to appeal?",
+  "confirm_deletion": "Are you sure you want to delete?",
+  "rate_issue": "Tell us how satisfied you are?",
+  "reference": "Reference",
+  "label_reference": "N°:",
+  "label_grm": "eGRM",
+  "label_category": "Category:",
+  "summary": "Your summary",
+  "grm_management": "Complaint management",
+  "activity_label": "Activities",
+  "detail_title": "Details",
+  "your_complaint_count": "Number of your complaints",
+  "your_personal_info": "Your personal information",
+  "full_name": "Full Name",
+  "phone": "Phone",
+  "department": "Departement",
+  "is_village_secretary": "Is eGRM secretary?",
+  "synchronize": "Synchronize",
+  "rating": "Evaluation",
+  "rate": "Rate",
+  "appeal": "Appeal",
+  "search": "Search",
+  "satisfaction_level_5": "Very satisfied",
+  "satisfaction_level_4": "Satisfied",
+  "satisfaction_level_3": "Neither satisfied nor dissatisfied",
+  "satisfaction_level_2": "Not satisfied",
+  "satisfaction_level_1": "Not at all satisfied",
+  "satisfaction_level_0": "I would like to appeal",
+  "add_file": "Add Attachment",
+  "do_you_want_to_attach_file": "Would you like to attach a file?",
+  "not_rate_yet": "Not yet rated",
+  "recording_in_progress": "Recording in progress...",
+  "playing_in_progress": "Currently playing...",
+  "warning": "Attention",
+  "by_label": "By ",
+  "confidential_complaint": "You are in the process of recording a sensitive complaint (Corruption/GBV), you will no longer have access to it once the recording is complete. Would you like to continue?",
+  "please_choose_value_for_required_field": "Please select a value for the required fields.",
+  "no_notifications": "No notifications",
+  "no_attachment_to_sync": "No attachments to sync.",
+
+  "stat_nb_issue_by_age_range": "The number of complaints by age group",
+  "stat_nb_issue_by_occupation_status": "The number of complaints per occupancy situation",
+  "stat_nb_issue_by_education_level": "The number of complaints by level of education",
+  "stat_nb_issue_by_issue_type": "The number of complaints by Type",
+  "stat_nb_issue_by_issue_category": "The number of complaints by Category",
+  "stat_nb_issue_by_issue_component": "The number of complaints per Component",
+  "stat_nb_issue_by_issue_sub_component": "The number of complaints by Sub-Component",
+  "stat_nb_issue_by_per_date": "The number of complaints per day"
 }

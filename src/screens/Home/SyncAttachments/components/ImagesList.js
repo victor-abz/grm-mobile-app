@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, Text, View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ActivityIndicator, Card } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import i18n from 'i18n-js';
 
 function ImagesList({ attachments }) {
+  const { t } = useTranslation();
+
   const [_attachments, _setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
   function AttachmentComponent({ attachment }) {
@@ -16,7 +18,7 @@ function ImagesList({ attachments }) {
           alignItems: 'center',
           marginVertical: 0,
           // backgroundColor: '#fff',
-          marginBottom: 1
+          marginBottom: 1,
           // justifyContent: 'space-around'
         }}
       >
@@ -32,19 +34,21 @@ function ImagesList({ attachments }) {
             ) : (
               <Image
                 style={styles.imageContainer}
-                source={require("../../../../../assets/audio.png")}
+                source={require('../../../../../assets/audio.png')}
               />
             )}
           </View>
           <View style={styles.textView}>
-            <Text style={styles.cardTitle}>{i18n.t('reference')}: {attachment?.tracking_code}</Text>
+            <Text style={styles.cardTitle}>
+              {t('reference')}: {attachment?.tracking_code}
+            </Text>
             <Text style={styles.cardContent}>
               {!attachment.taskOrdinal &&
-              `Fichier appartenant à un problème${
-                attachment?.attachment?.isAudio ? ' [Audio Recording].' : ' [Image].'
+                `Fichier appartenant à un problème${
+                  attachment?.attachment?.isAudio ? ' [Audio Recording].' : ' [Image].'
                 }`}
               {attachment.taskOrdinal &&
-              `Attachment on task ${attachment?.taskOrdinal} of \n phase ${attachment?.phaseOrdinal}`}
+                `Attachment on task ${attachment?.taskOrdinal} of \n phase ${attachment?.phaseOrdinal}`}
             </Text>
           </View>
         </Card>
@@ -91,13 +95,13 @@ const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: '#ffffff',
     flex: 1,
-    flexDirection: "row",
+    flexDirection: 'row',
     padding: 10,
     marginVertical: 5,
-    borderColor: '#fff'
+    borderColor: '#fff',
   },
   cardTitle: {
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   cardContent: {
     fontFamily: 'Poppins_400Regular',
@@ -113,13 +117,13 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     left: 0,
-    width: '20%'
+    width: '20%',
   },
   textView: {
     flex: 1,
     flexDirection: 'column',
-    position: "absolute",
+    position: 'absolute',
     right: 0,
-    width: '80%'
-  }
+    width: '80%',
+  },
 });

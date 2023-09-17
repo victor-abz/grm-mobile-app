@@ -1,14 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import i18n from 'i18n-js';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 import ListHeader from '../components/ListHeader';
 
 function Content({ issues, eadl, statuses }) {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('assigned');
@@ -26,7 +27,6 @@ function Content({ issues, eadl, statuses }) {
     let filteredIssues = [];
     let foundStatus;
 
-    console.log({ status });
     switch (status) {
       case 'assigned':
         foundStatus = statuses.find((el) => el.final_status === true);
@@ -68,17 +68,17 @@ function Content({ issues, eadl, statuses }) {
         <View style={styles.itemContainer}>
           <View>
             <Text style={[styles.title]}>
-              {item.issue_type?.name} - {i18n.t('label_reference')} {item.tracking_code}
+              {item.issue_type?.name} - {t('label_reference')} {item.tracking_code}
             </Text>
             <Text style={[styles.subTitle]} numberOfLines={1}>
               {item.title ? item.title : item.description}
             </Text>
             <Text style={[styles.subTitle]}>
               {item.citizen}, {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')},{' '}
-              {item.intake_date && currentDate.diff(item.intake_date, 'days')} {i18n.t('days_ago')}
+              {item.intake_date && currentDate.diff(item.intake_date, 'days')} {t('days_ago')}
             </Text>
             <Text style={styles.subTitle}>
-              {i18n.t('status_label')}:{' '}
+              {t('status_label')}:{' '}
               <Text
                 style={{
                   color:
@@ -144,7 +144,7 @@ function Content({ issues, eadl, statuses }) {
                   fontWeight: status === 'open' ? 'bold' : 'normal',
                 }}
               >
-                {i18n.t('open')}
+                {t('open')}
               </Text>
             </View>
           )}
@@ -165,7 +165,7 @@ function Content({ issues, eadl, statuses }) {
                   fontWeight: status === 'assigned' ? 'bold' : 'normal',
                 }}
               >
-                {i18n.t('assigned')}
+                {t('assigned')}
               </Text>
             </View>
           )}
@@ -186,7 +186,7 @@ function Content({ issues, eadl, statuses }) {
                   fontWeight: status === 'resolved' ? 'bold' : 'normal',
                 }}
               >
-                {i18n.t('resolved')}
+                {t('resolved')}
               </Text>
             </View>
           )}

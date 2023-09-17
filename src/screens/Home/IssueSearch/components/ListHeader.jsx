@@ -1,15 +1,17 @@
-import { StyleSheet, Text, View } from 'react-native';
-import i18n from 'i18n-js';
 import * as PropTypes from 'prop-types';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../../../utils/colors';
 
 export default function ListHeader(props) {
+  const { t } = useTranslation();
+
   return (
     <View>
       <View style={{ paddingLeft: 15 }}>
         <Text style={styles.listHeader}>
-          {i18n.t('your_issues_label')}{' '}{props.status ? i18n.t(props.status) : ''}
+          {t('your_issues_label')} {props.status ? t(props.status) : ''}
         </Text>
       </View>
     </View>
@@ -48,7 +50,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.lightgray,
-    textTransform: 'uppercase'
+    textTransform: 'uppercase',
   },
   statisticsText: {
     fontFamily: 'Poppins_700Bold',
@@ -59,16 +61,16 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     color: '#707070',
     lineHeight: 18,
-    width: '80%'
+    width: '80%',
   },
   statisticsValueDanger: {
     color: '#ef6a78',
     width: '20%',
-    textAlign: 'center'
+    textAlign: 'center',
   },
   statisticsValuePrimary: {
     color: colors.primary,
     width: '20%',
-    textAlign: 'center'
-  }
+    textAlign: 'center',
+  },
 });

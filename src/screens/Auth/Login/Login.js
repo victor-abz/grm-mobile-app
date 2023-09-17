@@ -1,28 +1,24 @@
 import React, { useState } from 'react';
 
+import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
   Keyboard,
-  Text,
-  View,
-  TouchableWithoutFeedback,
   KeyboardAvoidingView,
-  TouchableOpacity,
-  ScrollView
+  ScrollView,
+  Text,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
-import { ActivityIndicator, Button, TextInput , Title } from 'react-native-paper';
+import { ActivityIndicator, Button, TextInput } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
-import { Controller, useForm } from 'react-hook-form';
+import API from '../../../services/API';
 import { login } from '../../../store/ducks/authentication.duck';
-import MapBg from '../../../../assets/map-bg.svg';
-import EADLLogo from '../../../../assets/eadl-logo.svg';
-import styles from './Login.style';
+import { colors } from '../../../utils/colors';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
-import API from '../../../services/API';
 import { getEncryptedData } from '../../../utils/storageManager';
-import { titles } from '../../Onboarding/containers/Content/utils';
-import i18n from 'i18n-js';
-import { colors } from '../../../utils/colors';
+import styles from './Login.style';
 
 const theme = {
   roundness: 12,
@@ -35,6 +31,7 @@ const theme = {
 };
 
 function Login() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [isPasswordSecure, setIsPasswordSecure] = useState(true);
@@ -103,8 +100,8 @@ function Login() {
               color: '#707070',
             }}
           >
-          {i18n.t('welcome_login')}
-        </Text>
+            {t('welcome_login')}
+          </Text>
         </View>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.loginScreenContainer}>
@@ -117,7 +114,7 @@ function Login() {
                       <TextInput
                         theme={theme}
                         autoCapitalize="none"
-                        label={i18n.t('email')}
+                        label={t('email')}
                         mode="outlined"
                         labelColor="#dedede"
                         style={styles.loginFormTextInput}
@@ -148,7 +145,7 @@ function Login() {
                         theme={theme}
                         mode="outlined"
                         placeholderColor="#dedede"
-                        label={i18n.t('password')}
+                        label={t('password')}
                         style={styles.loginFormTextInput}
                         left={
                           <TextInput.Icon
@@ -208,7 +205,7 @@ function Login() {
                 onPress={handleSubmit(onLoginPress)}
                 color="white"
               >
-                {i18n.t('login')}
+                {t('login')}
               </Button>
             )}
           </View>

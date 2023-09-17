@@ -1,6 +1,6 @@
-import i18n from 'i18n-js';
 import moment from 'moment';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView, View } from 'react-native';
 import { Button, Dialog, Paragraph, Portal, Text } from 'react-native-paper';
 import UpdatableList from '../../../../components/UpdatableList';
@@ -43,6 +43,7 @@ const generateMockData = (amount) => {
 };
 
 function Content() {
+  const { t } = useTranslation();
   const [data, setData] = useState(generateMockData(10));
   const [selected, setSelected] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -113,7 +114,7 @@ function Content() {
         <SafeAreaView style={{ flex: 1 }}>
           <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
             <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 22 }}>
-              {i18n.t('no_notifications')}
+              {t('no_notifications')}
             </Text>
           </View>
         </SafeAreaView>
@@ -143,7 +144,7 @@ function Content() {
               labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
               onPress={_hideDialog}
             >
-              {i18n.t('close')}
+              {t('close')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -151,9 +152,9 @@ function Content() {
 
       <Portal>
         <Dialog visible={showConfirmDialog} onDismiss={_hideConfirmDialog}>
-          <Dialog.Title>{i18n.t('confirmation')}?</Dialog.Title>
+          <Dialog.Title>{t('confirmation')}?</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>{i18n.t('confirm_deletion')}</Paragraph>
+            <Paragraph>{t('confirm_deletion')}</Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
@@ -168,7 +169,7 @@ function Content() {
               mode="contained"
               onPress={_hideConfirmDialog}
             >
-              {i18n.t('no')}
+              {t('no')}
             </Button>
             <Button
               theme={theme}
@@ -177,7 +178,7 @@ function Content() {
               mode="contained"
               onPress={removeItem}
             >
-              {i18n.t('yes')}
+              {t('yes')}
             </Button>
           </Dialog.Actions>
         </Dialog>

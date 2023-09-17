@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
-import i18n from 'i18n-js';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { Button, RadioButton, TextInput } from 'react-native-paper';
 import { useFind } from 'use-pouchdb';
@@ -19,6 +19,7 @@ const theme = {
 };
 
 function Content({ stepOneParams }) {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [name, setName] = useState('');
   const [checked, setChecked] = useState(false);
@@ -32,10 +33,10 @@ function Content({ stepOneParams }) {
 
   const [pickerGenderValue, setPickerGenderValue] = useState(null);
   const [genders, setGenders] = useState([
-    { label: i18n.t('male'), value: 'male' },
-    { label: i18n.t('female'), value: 'female' },
-    // { label: i18n.t('other'), value: 'other' },
-    // { label: i18n.t('rather_not_say'), value: 'rather_not_say' },
+    { label: t('male'), value: 'male' },
+    { label: t('female'), value: 'female' },
+    // { label: t('other'), value: 'other' },
+    // { label: t('rather_not_say'), value: 'rather_not_say' },
   ]);
 
   const { docs: ages, loading: agesLoading } = useFind({
@@ -62,15 +63,15 @@ function Content({ stepOneParams }) {
     <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : null}>
         <View style={{ padding: 23 }}>
-          <Text style={styles.stepText}>{i18n.t('step_2')}</Text>
-          <Text style={styles.stepDescription}>{i18n.t('contact_step_subtitle')}</Text>
-          <Text style={styles.stepNote}>{i18n.t('contact_step_explanation')}</Text>
+          <Text style={styles.stepText}>{t('step_2')}</Text>
+          <Text style={styles.stepDescription}>{t('contact_step_subtitle')}</Text>
+          <Text style={styles.stepNote}>{t('contact_step_explanation')}</Text>
         </View>
 
         <View style={{ paddingHorizontal: 50 }}>
           <TextInput
             style={styles.grmInput}
-            placeholder={i18n.t('contact_step_placeholder_1')}
+            placeholder={t('contact_step_placeholder_1')}
             outlineColor="#dedede"
             theme={theme}
             mode="outlined"
@@ -93,15 +94,15 @@ function Content({ stepOneParams }) {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
               <RadioButton.Android value={1} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>{i18n.t('step_2_keep_name_confidential')} </Text>
+              <Text style={styles.radioLabel}>{t('step_2_keep_name_confidential')} </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
               <RadioButton.Android value={2} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>{i18n.t('step_2_on_behalf_of_someone')} </Text>
+              <Text style={styles.radioLabel}>{t('step_2_on_behalf_of_someone')} </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
               <RadioButton.Android value={3} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>{i18n.t('step_2_organization_behalf_someone')} </Text>
+              <Text style={styles.radioLabel}>{t('step_2_organization_behalf_someone')} </Text>
             </View>
           </RadioButton.Group>
         </View>
@@ -114,7 +115,7 @@ function Content({ stepOneParams }) {
           zIndex={4000}
           zIndexInverse={1000}
           onSelectItem={(item) => setSelectedAge(item)}
-          placeholder={i18n.t('contact_step_placeholder_2')}
+          placeholder={t('contact_step_placeholder_2')}
           value={pickerAgeValue}
           onOpen={() => setIsPreviousPickerClosed(false)}
           onClose={() => setIsPreviousPickerClosed(true)}
@@ -126,7 +127,7 @@ function Content({ stepOneParams }) {
         {isPreviousPickerClosed && (
           <>
             <CustomDropDownPicker
-              placeholder={i18n.t('contact_step_placeholder_3')}
+              placeholder={t('contact_step_placeholder_3')}
               value={pickerGenderValue}
               items={genders}
               zIndex={3000}
@@ -141,7 +142,7 @@ function Content({ stepOneParams }) {
               }}
               zIndex={2000}
               zIndexInverse={3000}
-              placeholder={i18n.t('contact_step_placeholder_5')}
+              placeholder={t('contact_step_placeholder_5')}
               value={selectedCitizenGroupI}
               items={_citizenGroupsI}
               setPickerValue={setSelectedCitizenGroupI}
@@ -153,7 +154,7 @@ function Content({ stepOneParams }) {
                 label: 'name',
                 value: 'id',
               }}
-              placeholder={i18n.t('contact_step_placeholder_6')}
+              placeholder={t('contact_step_placeholder_6')}
               value={selectedCitizenGroupII}
               zIndex={4000}
               zIndexInverse={4000}
@@ -183,7 +184,7 @@ function Content({ stepOneParams }) {
                   });
                 }}
               >
-                {i18n.t('next')}
+                {t('next')}
               </Button>
             </View>
           </>

@@ -1,9 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
-import i18n from 'i18n-js';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Platform, ScrollView, Text, View } from 'react-native';
 import { Button, Dialog, Paragraph, Portal } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
@@ -22,6 +22,7 @@ const theme = {
 };
 
 function Content({ issue, eadl }) {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
 
@@ -53,7 +54,7 @@ function Content({ issue, eadl }) {
         ...(issue?.recording ? [issue.recording] : []),
       ],
       status: {
-        name: i18n.t('open'),
+        name: t('open'),
         id: 2,
       },
       confirmed: true,
@@ -161,21 +162,21 @@ function Content({ issue, eadl }) {
   return (
     <ScrollView>
       <View style={{ padding: 23 }}>
-        <Text style={styles.stepText}>{i18n.t('step_5')}</Text>
-        <Text style={styles.stepSubtitle}>{i18n.t('step_3_confirmation')}</Text>
-        <Text style={styles.stepDescription}>{i18n.t('step_3_subtitle')}</Text>
+        <Text style={styles.stepText}>{t('step_5')}</Text>
+        <Text style={styles.stepSubtitle}>{t('step_3_confirmation')}</Text>
+        <Text style={styles.stepDescription}>{t('step_3_subtitle')}</Text>
       </View>
 
       {/* STEP 3 SUMMARY */}
       <View style={styles.cardConfirm}>
         {/*
         <View style={{ flexDirection: 'row' }}>
-          <Text style={styles.stepLittleText}>{i18n.t('step_3')}</Text>
+          <Text style={styles.stepLittleText}>{t('step_3')}</Text>
           <IconButton icon={'pencil'} size={26} color={colors.primary}/>
         </View>
         */}
         <View>
-          <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_1')}</Text>
+          <Text style={styles.stepSubtitle}>{t('step_3_field_title_1')}</Text>
           <Text style={styles.stepDescription}>
             {issue.date !== 'null' && !!issue.date
               ? moment(issue.date).format('DD-MMMM-YYYY')
@@ -184,36 +185,36 @@ function Content({ issue, eadl }) {
         </View>
 
         <View>
-          <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_2')}</Text>
+          <Text style={styles.stepSubtitle}>{t('step_3_field_title_2')}</Text>
           <Text style={styles.stepDescription}>{issue.issueType.name ?? '--'}</Text>
         </View>
 
         <View>
-          <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_2_1')}</Text>
+          <Text style={styles.stepSubtitle}>{t('step_3_field_title_2_1')}</Text>
           <Text style={styles.stepDescription}>{issue.issueSubType?.name ?? '--'}</Text>
         </View>
 
         <View>
-          <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_3')}</Text>
+          <Text style={styles.stepSubtitle}>{t('step_3_field_title_3')}</Text>
           <Text style={styles.stepDescription}>{issue.category?.name ?? '--'}</Text>
         </View>
 
         <View>
-          <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_5')}</Text>
+          <Text style={styles.stepSubtitle}>{t('step_3_field_title_5')}</Text>
           <Text style={styles.stepDescription}>{issue.issueComponent?.name ?? '--'}</Text>
         </View>
 
         <View>
-          <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_6')}</Text>
+          <Text style={styles.stepSubtitle}>{t('step_3_field_title_6')}</Text>
           <Text style={styles.stepDescription}>{issue.issueSubComponent?.name ?? '--'}</Text>
         </View>
 
         <View>
-          <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_4')}</Text>
+          <Text style={styles.stepSubtitle}>{t('step_3_field_title_4')}</Text>
           <Text style={styles.stepDescription}>{issue.additionalDetails ?? '--'}</Text>
         </View>
 
-        <Text style={styles.stepSubtitle}>{i18n.t('step_3_attachments')}</Text>
+        <Text style={styles.stepSubtitle}>{t('step_3_attachments')}</Text>
         {issue.attachment && (
           <Text style={styles.stepDescription}>
             Image: {JSON.stringify(issue?.attachment?.id) ?? '--'}
@@ -239,15 +240,15 @@ function Content({ issue, eadl }) {
             submitIssue();
           }}
         >
-          {i18n.t('submit_button_text')}
+          {t('submit_button_text')}
         </Button>
       </View>
 
       <Portal>
         <Dialog visible={showDialog} onDismiss={_hideDialog}>
-          <Dialog.Title>{i18n.t('warning')}</Dialog.Title>
+          <Dialog.Title>{t('warning')}</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>{i18n.t('confidential_complaint')}</Paragraph>
+            <Paragraph>{t('confidential_complaint')}</Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
@@ -262,7 +263,7 @@ function Content({ issue, eadl }) {
               mode="contained"
               onPress={_hideDialog}
             >
-              {i18n.t('no')}
+              {t('no')}
             </Button>
             <Button
               theme={theme}
@@ -274,7 +275,7 @@ function Content({ issue, eadl }) {
                 submitIssue();
               }}
             >
-              {i18n.t('yes')}
+              {t('yes')}
             </Button>
           </Dialog.Actions>
         </Dialog>

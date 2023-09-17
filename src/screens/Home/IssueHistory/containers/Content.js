@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import moment from 'moment';
-import { styles } from './Content.styles';
-import i18n from 'i18n-js';
-import { Button, Dialog, Paragraph, Portal, Divider } from 'react-native-paper';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { Button, Dialog, Divider, Paragraph, Portal } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
+import { styles } from './Content.styles';
 
 const theme = {
   roundness: 12,
@@ -17,6 +17,7 @@ const theme = {
 };
 
 function Content({ issue }) {
+  const { t } = useTranslation();
   const [comments, setComments] = useState();
   const [showDialog, setShowDialog] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -40,13 +41,15 @@ function Content({ issue }) {
             <Text style={styles.radioLabel}>{item.name}</Text>
           </View>
         </View>
-        <Text style={styles.stepNote} numberOfLines={2}>{item.comment}</Text>
+        <Text style={styles.stepNote} numberOfLines={2}>
+          {item.comment}
+        </Text>
         <Text style={styles.dateLabel}>{moment(item.due_at).format('LLL')}</Text>
       </TouchableOpacity>
     </View>
   );
 
-  const listHeader = () => <Text style={styles.title}>{i18n.t('activity_label')}</Text>;
+  const listHeader = () => <Text style={styles.title}>{t('activity_label')}</Text>;
 
   useEffect(() => {
     if (issue) {
@@ -71,17 +74,16 @@ function Content({ issue }) {
         <Dialog visible={showDialog} onDismiss={_hideDialog}>
           <Dialog.Title>{selected?.name}</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>
-              {selected?.comment}
-            </Paragraph>
+            <Paragraph>{selected?.comment}</Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
               theme={theme}
               style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
               labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              onPress={_hideDialog}>
-              {i18n.t('close')}
+              onPress={_hideDialog}
+            >
+              {t('close')}
             </Button>
           </Dialog.Actions>
         </Dialog>

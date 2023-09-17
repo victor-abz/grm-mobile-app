@@ -2,9 +2,9 @@ import { useNavigation } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import i18n from 'i18n-js';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ImageBackground,
   KeyboardAvoidingView,
@@ -43,6 +43,7 @@ const theme = {
 };
 
 function Content({ stepOneParams }) {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [pickerValue, setPickerValue] = useState(null);
   const [pickerValue2, setPickerValue2] = useState(null);
@@ -336,9 +337,9 @@ function Content({ stepOneParams }) {
     <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : null}>
         <View style={{ padding: 23 }}>
-          <Text style={styles.stepText}>{i18n.t('step_3')}</Text>
-          <Text style={styles.stepDescription}>{i18n.t('step_2_subtitle')}</Text>
-          <Text style={styles.stepNote}>{i18n.t('step_2_explanation')}</Text>
+          <Text style={styles.stepText}>{t('step_3')}</Text>
+          <Text style={styles.stepDescription}>{t('step_2_subtitle')}</Text>
+          <Text style={styles.stepNote}>{t('step_2_explanation')}</Text>
         </View>
         <View
           style={{
@@ -373,7 +374,7 @@ function Content({ stepOneParams }) {
             mode="contained"
             onPress={showDatePicker}
           >
-            {date ? moment(date).format('DD-MMMM-YY') : i18n.t('step_2_select_date')}
+            {date ? moment(date).format('DD-MMMM-YY') : t('step_2_select_date')}
           </Button>
           <Button
             compact
@@ -387,7 +388,7 @@ function Content({ stepOneParams }) {
             uppercase={false}
             onPress={() => setDate(new Date())}
           >
-            {i18n.t('step_2_set_today')}
+            {t('step_2_set_today')}
           </Button>
         </View>
         <View
@@ -405,7 +406,7 @@ function Content({ stepOneParams }) {
               setChecked(!checked);
             }}
           />
-          <Text style={[styles.stepNote, { flex: 1 }]}>{i18n.t('step_2_ongoing_hint')}</Text>
+          <Text style={[styles.stepNote, { flex: 1 }]}>{t('step_2_ongoing_hint')}</Text>
         </View>
         <View
           style={{
@@ -432,7 +433,7 @@ function Content({ stepOneParams }) {
             }}
             zIndex={3000}
             zIndexInverse={2000}
-            placeholder={i18n.t('step_2_placeholder_1')}
+            placeholder={t('step_2_placeholder_1')}
             value={pickerValue}
             items={items}
             setPickerValue={setPickerValue}
@@ -448,7 +449,7 @@ function Content({ stepOneParams }) {
             }}
             zIndex={3000}
             zIndexInverse={2000}
-            placeholder={i18n.t('step_2_placeholder_5')}
+            placeholder={t('step_2_placeholder_5')}
             value={pickerValue3}
             items={selectedIssueType ? filterSubType() : []}
             setPickerValue={setPickerValue3}
@@ -468,7 +469,7 @@ function Content({ stepOneParams }) {
             }}
             zIndex={3000}
             zIndexInverse={2000}
-            placeholder={i18n.t('step_2_placeholder_2')}
+            placeholder={t('step_2_placeholder_2')}
             value={pickerValue2}
             items={selectedIssueSubType ? filterCategory() : []}
             setPickerValue={setPickerValue2}
@@ -484,7 +485,7 @@ function Content({ stepOneParams }) {
             }}
             zIndex={3000}
             zIndexInverse={2000}
-            placeholder={i18n.t('step_2_placeholder_6')}
+            placeholder={t('step_2_placeholder_6')}
             value={pickerComponent}
             items={components}
             setPickerValue={setPickerComponent}
@@ -501,7 +502,7 @@ function Content({ stepOneParams }) {
             }}
             zIndex={3000}
             zIndexInverse={2000}
-            placeholder={i18n.t('step_2_placeholder_7')}
+            placeholder={t('step_2_placeholder_7')}
             value={pickerSubComponent}
             items={selectedIssueComponent ? filterSubComponent() : []}
             setPickerValue={setPickerSubComponent}
@@ -522,7 +523,7 @@ function Content({ stepOneParams }) {
                 fontSize: 14,
               },
             ]}
-            placeholder={i18n.t('step_2_placeholder_3')}
+            placeholder={t('step_2_placeholder_3')}
             outlineColor="#dedede"
             theme={theme}
             mode="outlined"
@@ -557,7 +558,7 @@ function Content({ stepOneParams }) {
               marginVertical: 13,
             }}
           >
-            {i18n.t('step_2_share_photos')}
+            {t('step_2_share_photos')}
           </Text>
           <View>
             {attachment.uri && (
@@ -598,7 +599,7 @@ function Content({ stepOneParams }) {
               onPress={pickImage}
               uppercase={false}
             >
-              {i18n.t('step_2_upload_attachment')}
+              {t('step_2_upload_attachment')}
             </Button>
             <View style={styles.iconButtonStyle}>
               <IconButton icon="camera" color={colors.primary} size={24} onPress={openCamera} />
@@ -639,7 +640,7 @@ function Content({ stepOneParams }) {
                 selectedIssueSubType === null ||
                 pickerValue2 === null
               ) {
-                showToast(i18n.t('please_choose_value_for_required_field'));
+                showToast(t('please_choose_value_for_required_field'));
                 return;
               }
 
@@ -651,16 +652,16 @@ function Content({ stepOneParams }) {
               onNext();
             }}
           >
-            {i18n.t('next')}
+            {t('next')}
           </Button>
         </View>
       </KeyboardAvoidingView>
 
       <Portal>
         <Dialog visible={showDialog} onDismiss={_hideDialog}>
-          <Dialog.Title>{i18n.t('warning')}</Dialog.Title>
+          <Dialog.Title>{t('warning')}</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>{i18n.t('confidential_complaint')}</Paragraph>
+            <Paragraph>{t('confidential_complaint')}</Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
@@ -675,7 +676,7 @@ function Content({ stepOneParams }) {
               mode="contained"
               onPress={_hideDialog}
             >
-              {i18n.t('no')}
+              {t('no')}
             </Button>
             <Button
               theme={theme}
@@ -687,7 +688,7 @@ function Content({ stepOneParams }) {
                 onNext();
               }}
             >
-              {i18n.t('yes')}
+              {t('yes')}
             </Button>
           </Dialog.Actions>
         </Dialog>

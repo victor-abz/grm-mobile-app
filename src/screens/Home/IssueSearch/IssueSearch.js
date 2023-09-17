@@ -15,9 +15,7 @@ function IssueSearch() {
     include_docs: true,
     db: 'LocalGRMDatabase',
   });
-  console.log(rows, { rows: rows.length }, state);
-  // {"rows": 300} done
-  // {rows: 300} 'done'
+
 
   if (state === 'error') {
     console.log('Error', state);
@@ -45,7 +43,6 @@ function IssueSearch() {
     },
     db: 'LocalGRMDatabase',
   });
-  console.log({issues})
 
   if (!issues || !eadl || !statuses || issuesLoading || statusesLoading || eadlLoading) {
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;

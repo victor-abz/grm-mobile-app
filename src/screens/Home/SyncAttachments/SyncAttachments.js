@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getInfoAsync } from 'expo-file-system';
-import i18n from 'i18n-js';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Platform, Text, View } from 'react-native';
 import { ActivityIndicator, Snackbar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
@@ -17,6 +17,8 @@ import ImagesList from './components/ImagesList';
 const FILE_READ_ERROR = 'Cannot read all the files.';
 
 function SyncAttachments({ navigation }) {
+  const { t } = useTranslation();
+
   const [loading, setLoading] = useState(true);
   const [attachments, setAttachments] = useState([]);
   const [successModal, setSuccessModal] = useState(false);
@@ -209,7 +211,7 @@ function SyncAttachments({ navigation }) {
               color: '#ffffff',
             }}
           >
-            {i18n.t('close')}
+            {t('close')}
           </CustomGreenButton>
         </View>
       </Modal>
@@ -237,7 +239,7 @@ function SyncAttachments({ navigation }) {
               color: '#ffffff',
             }}
           >
-            {i18n.t('synchronize')}
+            {t('synchronize')}
           </CustomGreenButton>
         </View>
       )}
