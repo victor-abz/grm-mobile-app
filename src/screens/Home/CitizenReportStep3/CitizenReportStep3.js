@@ -9,13 +9,8 @@ import Content from './containers/Content';
 function CitizenReportStep3({ route }) {
   const { params } = route;
   const customStyles = styles();
-  //   const [eadl, setEadl] = useState(false);
   const { username } = useSelector((state) => state.get('authentication').toObject());
   const { docs: eadl, loading: eadlLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['representative.email'],
-    },
     selector: { 'representative.email': username },
     db: 'LocalDatabase',
   });

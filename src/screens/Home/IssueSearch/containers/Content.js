@@ -11,7 +11,7 @@ import ListHeader from '../components/ListHeader';
 function Content({ issues, eadl, statuses }) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
-  const [status, setStatus] = useState('reported');
+  const [status, setStatus] = useState('assigned');
   const [_issues, setIssues] = useState([]);
   const [currentDate, setCurrentDate] = useState(moment());
 
@@ -25,20 +25,34 @@ function Content({ issues, eadl, statuses }) {
   useEffect(() => {
     let filteredIssues = [];
     let foundStatus;
+
+    console.log({ status });
     switch (status) {
       case 'assigned':
-        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id);
+        foundStatus = statuses.find((el) => el.final_status === true);
+        filteredIssues = issues.filter(
+          (issue) =>
+            issue.assignee && issue.assignee.id === eadl?._id && issue.status.id !== foundStatus?.id
+        );
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
-      case 'reported':
-        filteredIssues = issues.filter((issue) => issue.reporter && issue.reporter.id === eadl._id);
+      case 'open':
+        foundStatus = statuses.find((el) => el.final_status === true);
+        filteredIssues = issues.filter(
+          (issue) =>
+            ((issue.assignee && issue.assignee.id === eadl?._id) ||
+              (issue.reporter && issue.reporter.id === eadl?._id)) &&
+            issue.status.id !== foundStatus?.id
+        );
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'resolved':
         foundStatus = statuses.find((el) => el.final_status === true);
         filteredIssues = issues.filter(
           (issue) =>
-            issue.assignee && issue.assignee.id === eadl._id && issue.status.id === foundStatus?.id
+            ((issue.assignee && issue.assignee.id === eadl?._id) ||
+              (issue.reporter && issue.reporter.id === eadl?._id)) &&
+            issue.status.id === foundStatus.id
         );
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
@@ -118,23 +132,23 @@ function Content({ issues, eadl, statuses }) {
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: status === 'reported' ? colors.disabled : colors.white,
-            borderBottomColor: status === 'reported' ? colors.primary : colors.white,
+            backgroundColor: status === 'open' ? colors.disabled : colors.white,
+            borderBottomColor: status === 'open' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
           icon={() => (
             <View>
               <Text
                 style={{
-                  color: status === 'reported' ? colors.primary : colors.secondary,
-                  fontWeight: status === 'reported' ? 'bold' : 'normal',
+                  color: status === 'open' ? colors.primary : colors.secondary,
+                  fontWeight: status === 'open' ? 'bold' : 'normal',
                 }}
               >
-                {i18n.t('reported')}
+                {i18n.t('open')}
               </Text>
             </View>
           )}
-          value="reported"
+          value="open"
         />
         <ToggleButton
           style={{

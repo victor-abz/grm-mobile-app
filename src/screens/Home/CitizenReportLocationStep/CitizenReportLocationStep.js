@@ -11,10 +11,6 @@ function CitizenReportLocationStep({ route }) {
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
   const { docs: uniqueRegion, loading: uniqueRegionLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['representative.email'],
-    },
     selector: {
       'representative.email': username,
     },
@@ -22,10 +18,6 @@ function CitizenReportLocationStep({ route }) {
   });
 
   const { docs: issueCommunes, loading: issueCommunesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'administrative_level',
     },

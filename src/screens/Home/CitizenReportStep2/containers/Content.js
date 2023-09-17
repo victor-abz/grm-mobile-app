@@ -74,30 +74,18 @@ function Content({ stepOneParams }) {
   const _showDialog = () => setShowDialog(true);
 
   const { docs: items2, loading: issueCategoriesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_category',
     },
     db: 'LocalGRMDatabase',
   });
   const { docs: items, loading: issueTypesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_type',
     },
     db: 'LocalGRMDatabase',
   });
   const { docs: itemsSubTypes, loading: issueSubTypesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_sub_type',
     },
@@ -105,10 +93,6 @@ function Content({ stepOneParams }) {
   });
 
   const { docs: components, loading: issueComponentsLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_component',
     },
@@ -116,10 +100,6 @@ function Content({ stepOneParams }) {
   });
 
   const { docs: subComponents, loading: issueSubComponentsLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_sub_component',
     },

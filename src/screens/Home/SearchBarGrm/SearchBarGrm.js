@@ -11,17 +11,11 @@ function SearchBarGrm() {
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
   const { docs: eadl, loading: eadlLoading } = useFind({
-    index: {
-      fields: ['representative.email'],
-    },
     selector: { 'representative.email': username },
     db: 'LocalDatabase',
   });
 
   const { docs: issues, loading: issuesLoading } = useFind({
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue',
       $or: [{ 'reporter.id': eadl?.[0]?._id }, { 'assignee.id': eadl?.[0]?._id }],

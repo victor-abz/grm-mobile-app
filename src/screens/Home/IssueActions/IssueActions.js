@@ -12,10 +12,6 @@ function IssueActions({ route, navigation }) {
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
   const { docs: statuses, loading: statusesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_status',
     },
@@ -23,10 +19,6 @@ function IssueActions({ route, navigation }) {
   });
 
   const { docs: eadl, loading: eadlLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['representative.email'],
-    },
     selector: { 'representative.email': username },
     db: 'LocalDatabase',
   });

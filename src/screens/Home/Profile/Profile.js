@@ -11,25 +11,16 @@ function Profile() {
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
   const { docs: statuses, loading: statusesLoading } = useFind({
-    index: {
-      fields: ['type'],
-    },
     selector: { type: 'issue_status' },
     db: 'LocalGRMDatabase',
   });
 
   const { docs: eadl, loading: eadlLoading } = useFind({
-    index: {
-      fields: ['representative.email'],
-    },
     selector: { 'representative.email': username },
     db: 'LocalDatabase',
   });
 
   const { docs: department, loading: departmentLoading } = useFind({
-    index: {
-      fields: ['type', 'id'],
-    },
     selector: {
       type: 'issue_department',
       id: eadl?.[0]?.department,
@@ -37,9 +28,6 @@ function Profile() {
     db: 'LocalGRMDatabase',
   });
   const { docs: issues, loading: issuesLoading } = useFind({
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue',
       $or: [{ 'reporter.id': eadl?.[0]?._id }, { 'assignee.id': eadl?.[0]?._id }],

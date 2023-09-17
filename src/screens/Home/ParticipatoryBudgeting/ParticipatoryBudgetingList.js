@@ -12,9 +12,6 @@ function ParticipatoryBudgetingList() {
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
   const { docs: eadl, loading: eadlLoading } = useFind({
-    index: {
-      fields: ['representative.email'],
-    },
     selector: { 'representative.email': username },
     db: 'LocalDatabase',
   });

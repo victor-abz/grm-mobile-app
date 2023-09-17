@@ -39,10 +39,6 @@ function Content({ stepOneParams }) {
   ]);
 
   const { docs: ages, loading: agesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_age_group',
     },
@@ -50,20 +46,12 @@ function Content({ stepOneParams }) {
   });
 
   const { docs: _citizenGroupsI, loading: citizenGroupsILoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_citizen_group_1',
     },
     db: 'LocalGRMDatabase',
   });
   const { docs: _citizenGroupsII, loading: citizenGroupsIILoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_citizen_group_2',
     },

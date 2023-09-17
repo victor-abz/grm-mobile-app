@@ -17,7 +17,7 @@ const LocalDatabase = new PouchDB('eadl', {
 
 export const LocalGRMDatabase = new PouchDB('grm', {
   adapter: 'asyncstorage',
-  cache:false
+  ajax: { cache: false },
 });
 
 export const LocalCommunesDatabase = new PouchDB('commune', {
@@ -29,34 +29,34 @@ export const ResourceUrl = RESOURCE_URL;
 export const SyncToRemoteDatabase = async ({ username, password }, userEmail) => {
   const remoteDB = new PouchDB(`${BASE_URL}/eadls`, {
     skip_setup: true,
-    auto_compaction: true
+    auto_compaction: true,
   });
-  
+
   const grmRemoteDB = new PouchDB(`${BASE_URL}/grm`, {
     skip_setup: true,
-    cache: false,
-    auto_compaction: true
+    ajax: { cache: false },
+    auto_compaction: true,
   });
-  
+
   const communesRemoteDB = new PouchDB(`${BASE_URL}/eadls`, {
     skip_setup: true,
-    auto_compaction: true
+    auto_compaction: true,
   });
-  
+
   const result = { levels: [] };
-  
+
   if (result.levels.length === 0) {
     await fetch(
       `${RESOURCE_URL}/authentication/get-adl-administrative-region?${new URLSearchParams({
         email: userEmail,
       })}`
-      )
+    )
       .then((response) => response.json())
       .then((a) => {
         result.levels = a?.levels;
       })
       .catch((error) => ({ error }));
-    }
+  }
 
   await remoteDB.login(username, password);
   await grmRemoteDB.login(username, password);
@@ -82,8 +82,8 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
     live: true,
     retry: true,
     batch_size: 500,
-    batches_limit: 50
-  })
+    batches_limit: 50,
+  });
   const syncStates = ['change', 'paused', 'active', 'denied', 'complete', 'error'];
   syncStates.forEach((state) => {
     sync.on(state, (currState) =>
@@ -98,6 +98,14 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
       console.log(`[Sync GRM ${state}: ${JSON.stringify(currState)}]`)
     );
   });
+
+  // Cancel synchronization after 10 seconds
+  setTimeout(() => {
+    sync.cancel();
+    syncCommunes.cancel();
+    syncGRM.cancel();
+    console.log('Synchronization cancelled');
+  }, 20000);
 };
 
 export default LocalDatabase;

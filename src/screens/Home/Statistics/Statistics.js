@@ -140,10 +140,6 @@ function Statistics() {
   // }, [eadl]);
 
   const { docs: statuses, loading: statusesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_status',
     },
@@ -151,10 +147,6 @@ function Statistics() {
   });
 
   const { docs: ageGroup, loading: agesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_age_group',
     },
@@ -162,20 +154,12 @@ function Statistics() {
   });
 
   const { docs: citizenGroup1, loading: citizenGroup1Loading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_citizen_group_1',
     },
     db: 'LocalGRMDatabase',
   });
   const { docs: citizenGroup2, loading: citizenGroup2Loading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_citizen_group_2',
     },
@@ -183,10 +167,6 @@ function Statistics() {
   });
 
   const { docs: issueCategory, loading: issueCategoriesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_category',
     },
@@ -194,10 +174,6 @@ function Statistics() {
   });
 
   const { docs: issueType, loading: issueTypesLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_type',
     },
@@ -205,10 +181,6 @@ function Statistics() {
   });
 
   const { docs: issueComponent, loading: issueComponentLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_component',
     },
@@ -216,10 +188,6 @@ function Statistics() {
   });
 
   const { docs: issueSubComponent, loading: issueSubComponentsLoading } = useFind({
-    // Ensure that this index exist, create it if not. And use it.
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_sub_component',
     },
@@ -227,17 +195,11 @@ function Statistics() {
   });
 
   const { docs: eadl, loading: eadlLoading } = useFind({
-    index: {
-      fields: ['representative.email'],
-    },
     selector: { 'representative.email': username },
     db: 'LocalDatabase',
   });
 
   const { docs: issues, loading: issuesLoading } = useFind({
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue',
       $or: [{ 'reporter.id': eadl?.[0]?._id }, { 'assignee.id': eadl?.[0]?._id }],

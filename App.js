@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unknown-property */
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Provider as PouchProvider } from 'use-pouchdb';
@@ -9,7 +9,6 @@ import './src/translations/i18n';
 import LocalDatabase, {
   LocalCommunesDatabase,
   LocalGRMDatabase,
-  SyncToRemoteDatabase,
 } from './src/utils/databaseManager';
 
 if (__DEV__) {
@@ -18,9 +17,6 @@ if (__DEV__) {
 }
 
 function App() {
-  useEffect(() => {
-    SyncToRemoteDatabase({ username: 'admin', password: 'admin' }, 'test@rbc.gov.rw');
-  });
   return (
     <ReduxProvider store={store}>
       <PouchProvider

@@ -2,7 +2,7 @@ import React from 'react';
 import { SafeAreaView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useFind } from 'use-pouchdb';
+import { useAllDocs, useFind } from 'use-pouchdb';
 import { colors } from '../../../utils/colors';
 import { styles } from './IssueSearch.style';
 import Content from './containers';
@@ -11,18 +11,24 @@ function IssueSearch() {
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
+  const { rows, loading, state, error } = useAllDocs({
+    include_docs: true,
+    db: 'LocalGRMDatabase',
+  });
+  console.log(rows, { rows: rows.length }, state);
+  // {"rows": 300} done
+  // {rows: 300} 'done'
+
+  if (state === 'error') {
+    console.log('Error', state);
+  }
+
   const { docs: eadl, loading: eadlLoading } = useFind({
-    index: {
-      fields: ['representative.email'],
-    },
     selector: { 'representative.email': username },
     db: 'LocalDatabase',
   });
 
   const { docs: statuses, loading: statusesLoading } = useFind({
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue_status',
     },
@@ -30,9 +36,6 @@ function IssueSearch() {
   });
 
   const { docs: issues, loading: issuesLoading } = useFind({
-    index: {
-      fields: ['type'],
-    },
     selector: {
       type: 'issue',
       $or: [
@@ -42,6 +45,7 @@ function IssueSearch() {
     },
     db: 'LocalGRMDatabase',
   });
+  console.log({issues})
 
   if (!issues || !eadl || !statuses || issuesLoading || statusesLoading || eadlLoading) {
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
@@ -52,5 +56,6 @@ function IssueSearch() {
     </SafeAreaView>
   );
 }
+
 
 export default IssueSearch;
