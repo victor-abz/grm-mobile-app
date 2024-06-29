@@ -3,15 +3,19 @@ import PouchAuth from 'pouchdb-authentication';
 import PouchFind from 'pouchdb-find';
 import PouchDB from 'pouchdb-react-native';
 
-const BASE_URL = 'http://192.168.43.236:5984';
-const RESOURCE_URL = 'http://192.168.43.236:8000';
+PouchDB.debug.enable('*');
+PouchDB.debug.enable('pouchdb:find')
+
+
+const BASE_URL = 'http://197.243.25.128:5984';
+const RESOURCE_URL = 'http://197.243.25.128';
 PouchDB.plugin(PouchAuth);
 PouchDB.plugin(PouchFind);
 PouchDB.plugin(require('pouchdb-upsert'));
 
 PouchDB.plugin(PouchAsyncStorage);
 
-const LocalDatabase = new PouchDB('eadl', {
+export const LocalDatabase = new PouchDB('eadl', {
   adapter: 'asyncstorage',
 });
 
@@ -20,7 +24,7 @@ export const LocalGRMDatabase = new PouchDB('grm', {
   ajax: { cache: false },
 });
 
-export const LocalCommunesDatabase = new PouchDB('commune', {
+export const LocalCommunesDatabase = new PouchDB('eadl', {
   adapter: 'asyncstorage',
 });
 
@@ -31,42 +35,43 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
     skip_setup: true,
     auto_compaction: true,
   });
-
+  
   const grmRemoteDB = new PouchDB(`${BASE_URL}/grm`, {
     skip_setup: true,
     ajax: { cache: false },
     auto_compaction: true,
   });
-
+  
   const communesRemoteDB = new PouchDB(`${BASE_URL}/eadls`, {
     skip_setup: true,
     auto_compaction: true,
   });
 
   const result = { levels: [] };
-
+  
   if (result.levels.length === 0) {
     await fetch(
       `${RESOURCE_URL}/authentication/get-adl-administrative-region?${new URLSearchParams({
         email: userEmail,
       })}`
     )
-      .then((response) => response.json())
-      .then((a) => {
-        result.levels = a?.levels;
-      })
-      .catch((error) => ({ error }));
+    .then((response) => response.json())
+    .then((a) => {
+      result.levels = a?.levels;
+    })
+    .catch((error) => ({ error }));
   }
-
+  
   await remoteDB.login(username, password);
   await grmRemoteDB.login(username, password);
-
+  
   const sync = LocalDatabase.sync(remoteDB, {
     live: true,
     retry: true,
     filter: 'eadl/by_user_email',
     query_params: { email: userEmail },
   });
+  console.log({result})
 
   const syncCommunes = LocalCommunesDatabase.sync(communesRemoteDB, {
     live: true,

@@ -2,7 +2,7 @@ import React from 'react';
 import { SafeAreaView, ScrollView, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useFind } from 'use-pouchdb';
+import { useView } from 'use-pouchdb';
 import { styles } from './IssueActions.styles';
 import Content from './containers/Content';
 
@@ -11,17 +11,21 @@ function IssueActions({ route, navigation }) {
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  const { docs: statuses, loading: statusesLoading } = useFind({
-    selector: {
-      type: 'issue_status',
-    },
+  const { rows: issue_status, loading: statusesLoading } = useView('issues/by_type', {
     db: 'LocalGRMDatabase',
+    key: 'issue_status',
+    include_docs: true,
   });
+  const statuses = issue_status.map((d) => d.doc);
 
-  const { docs: eadl, loading: eadlLoading } = useFind({
-    selector: { 'representative.email': username },
+  const { rows: representative, loading: eadlLoading } = useView('issues/by_representative_email', {
+    key: username,
+    include_docs: true,
     db: 'LocalDatabase',
   });
+  
+
+  const eadl = representative.map((d) => d.doc);
 
   return (
     <SafeAreaView style={customStyles.container}>

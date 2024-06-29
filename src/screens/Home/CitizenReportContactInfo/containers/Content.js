@@ -1,9 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { Button, RadioButton, TextInput } from 'react-native-paper';
-import { useFind } from 'use-pouchdb';
+import { ActivityIndicator, Button, RadioButton, TextInput } from 'react-native-paper';
+import { useView } from 'use-pouchdb';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
@@ -22,42 +22,78 @@ function Content({ stepOneParams }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [name, setName] = useState('');
-  const [checked, setChecked] = useState(false);
-  const [contactMethodError, setContactMethodError] = React.useState();
+  const [confidentialValue, setConfidentialValue] = useState(null);
   const [isPreviousPickerClosed, setIsPreviousPickerClosed] = useState(true);
   const [pickerAgeValue, setPickerAgeValue] = useState(null);
   const [selectedAge, setSelectedAge] = useState(null);
-  const [confidentialValue, setConfidentialValue] = useState(null);
+  const [pickerGenderValue, setPickerGenderValue] = useState(null);
   const [selectedCitizenGroupI, setSelectedCitizenGroupI] = useState(null);
   const [selectedCitizenGroupII, setSelectedCitizenGroupII] = useState(null);
 
-  const [pickerGenderValue, setPickerGenderValue] = useState(null);
-  const [genders, setGenders] = useState([
+  const genders = useMemo(() => [
     { label: t('male'), value: 'male' },
     { label: t('female'), value: 'female' },
-    // { label: t('other'), value: 'other' },
-    // { label: t('rather_not_say'), value: 'rather_not_say' },
-  ]);
+  ], [t]);
 
-  const { docs: ages, loading: agesLoading } = useFind({
-    selector: {
-      type: 'issue_age_group',
-    },
+  // Fetch all issue types at once
+  const { rows: allIssueTypes, loading: allIssueTypesLoading } = useView('issues/all_issue_types', {
     db: 'LocalGRMDatabase',
+    include_docs: true,
   });
 
-  const { docs: _citizenGroupsI, loading: citizenGroupsILoading } = useFind({
-    selector: {
-      type: 'issue_citizen_group_1',
-    },
-    db: 'LocalGRMDatabase',
-  });
-  const { docs: _citizenGroupsII, loading: citizenGroupsIILoading } = useFind({
-    selector: {
-      type: 'issue_citizen_group_2',
-    },
-    db: 'LocalGRMDatabase',
-  });
+  // Memoize the grouped issue types
+  const groupedIssueTypes = useMemo(() => {
+    const grouped = {};
+    allIssueTypes.forEach((row) => {
+      const [type] = row.key;
+      if (!grouped[type]) {
+        grouped[type] = [];
+      }
+      grouped[type].push(row.doc);
+    });
+    return grouped;
+  }, [allIssueTypes]);
+
+  // Extract specific issue types
+  const ages = useMemo(() => groupedIssueTypes.issue_age_group || [], [groupedIssueTypes]);
+  const citizenGroupsI = useMemo(() => groupedIssueTypes.issue_citizen_group_1 || [], [groupedIssueTypes]);
+  const citizenGroupsII = useMemo(() => groupedIssueTypes.issue_citizen_group_2 || [], [groupedIssueTypes]);
+
+  console.log(ages)
+
+  const handleConfidentialValueChange = useCallback((newValue) => {
+    setConfidentialValue(prevValue => newValue === prevValue ? null : newValue);
+  }, []);
+
+  const handleNameChange = useCallback((text) => {
+    setName(text);
+  }, []);
+
+  const handleNavigateToStep2 = useCallback(() => {
+    navigation.navigate('CitizenReportStep2', {
+      stepOneParams: {
+        ...stepOneParams,
+        name,
+        ageGroup: selectedAge,
+        citizen_type: confidentialValue,
+        citizen_group_1: selectedCitizenGroupI,
+        citizen_group_2: selectedCitizenGroupII,
+        gender: pickerGenderValue,
+      },
+    });
+  }, [navigation, stepOneParams, name, selectedAge, confidentialValue, selectedCitizenGroupI, selectedCitizenGroupII, pickerGenderValue]);
+
+  const renderRadioButton = useCallback((value, label) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
+      <RadioButton.Android
+        value={value}
+        uncheckedColor="#dedede"
+        color={colors.primary}
+        onPress={() => handleConfidentialValueChange(value)}
+      />
+      <Text style={styles.radioLabel}>{label}</Text>
+    </View>
+  ), [handleConfidentialValueChange]);
 
   return (
     <ScrollView>
@@ -76,34 +112,13 @@ function Content({ stepOneParams }) {
             theme={theme}
             mode="outlined"
             value={name}
-            error={contactMethodError}
-            onChangeText={(text) => {
-              setName(text);
-            }}
+            onChangeText={handleNameChange}
           />
           <Text />
-          <RadioButton.Group
-            onValueChange={(newValue) => {
-              if (newValue === confidentialValue) {
-                setConfidentialValue(0);
-              } else {
-                setConfidentialValue(newValue);
-              }
-            }}
-            value={confidentialValue}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-              <RadioButton.Android value={1} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>{t('step_2_keep_name_confidential')} </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-              <RadioButton.Android value={2} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>{t('step_2_on_behalf_of_someone')} </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-              <RadioButton.Android value={3} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>{t('step_2_organization_behalf_someone')} </Text>
-            </View>
+          <RadioButton.Group onValueChange={handleConfidentialValueChange} value={confidentialValue}>
+            {renderRadioButton(1, t('step_2_keep_name_confidential'))}
+            {renderRadioButton(2, t('step_2_on_behalf_of_someone'))}
+            {renderRadioButton(3, t('step_2_organization_behalf_someone'))}
           </RadioButton.Group>
         </View>
         <Text />
@@ -114,15 +129,13 @@ function Content({ stepOneParams }) {
           }}
           zIndex={4000}
           zIndexInverse={1000}
-          onSelectItem={(item) => setSelectedAge(item)}
+          onSelectItem={setSelectedAge}
           placeholder={t('contact_step_placeholder_2')}
           value={pickerAgeValue}
           onOpen={() => setIsPreviousPickerClosed(false)}
           onClose={() => setIsPreviousPickerClosed(true)}
           items={ages}
           setPickerValue={setPickerAgeValue}
-          loading={agesLoading}
-          //   setItems={setAges}
         />
         {isPreviousPickerClosed && (
           <>
@@ -133,7 +146,7 @@ function Content({ stepOneParams }) {
               zIndex={3000}
               zIndexInverse={2000}
               setPickerValue={setPickerGenderValue}
-              setItems={setGenders}
+              loading={allIssueTypesLoading}
             />
             <CustomDropDownPicker
               schema={{
@@ -144,10 +157,8 @@ function Content({ stepOneParams }) {
               zIndexInverse={3000}
               placeholder={t('contact_step_placeholder_5')}
               value={selectedCitizenGroupI}
-              items={_citizenGroupsI}
+              items={citizenGroupsI}
               setPickerValue={setSelectedCitizenGroupI}
-              loading={citizenGroupsILoading}
-              //   setItems={setCitizenGroupsI}
             />
             <CustomDropDownPicker
               schema={{
@@ -156,12 +167,10 @@ function Content({ stepOneParams }) {
               }}
               placeholder={t('contact_step_placeholder_6')}
               value={selectedCitizenGroupII}
-              zIndex={4000}
+              zIndex={1000}
               zIndexInverse={4000}
-              items={_citizenGroupsII}
+              items={citizenGroupsII}
               setPickerValue={setSelectedCitizenGroupII}
-              loading={citizenGroupsIILoading}
-              //   setItems={setCitizenGroupsII}
             />
             <View style={{ paddingHorizontal: 50 }}>
               <Button
@@ -169,20 +178,7 @@ function Content({ stepOneParams }) {
                 style={{ alignSelf: 'center', margin: 24 }}
                 labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
                 mode="contained"
-                onPress={() => {
-                  navigation.navigate('CitizenReportStep2', {
-                    stepOneParams: {
-                      ...stepOneParams,
-                      name,
-                      ageGroup: selectedAge,
-                      citizen_type: confidentialValue,
-                      citizen_group_1: selectedCitizenGroupI,
-                      citizen_group_2: selectedCitizenGroupII,
-                      gender: pickerGenderValue,
-                      filledOnSomebodyElseBehalf: checked,
-                    },
-                  });
-                }}
+                onPress={handleNavigateToStep2}
               >
                 {t('next')}
               </Button>
@@ -194,4 +190,4 @@ function Content({ stepOneParams }) {
   );
 }
 
-export default Content;
+export default React.memo(Content);

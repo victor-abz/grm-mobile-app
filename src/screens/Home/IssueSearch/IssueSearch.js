@@ -2,7 +2,7 @@ import React from 'react';
 import { SafeAreaView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useAllDocs, useFind } from 'use-pouchdb';
+import { useAllDocs, useView } from 'use-pouchdb';
 import { colors } from '../../../utils/colors';
 import { styles } from './IssueSearch.style';
 import Content from './containers';
@@ -16,33 +16,32 @@ function IssueSearch() {
     db: 'LocalGRMDatabase',
   });
 
-
   if (state === 'error') {
     console.log('Error', state);
   }
 
-  const { docs: eadl, loading: eadlLoading } = useFind({
-    selector: { 'representative.email': username },
+  const { rows: representative, loading: eadlLoading } = useView('issues/by_representative_email', {
+    key: username,
+    include_docs: true,
     db: 'LocalDatabase',
   });
 
-  const { docs: statuses, loading: statusesLoading } = useFind({
-    selector: {
-      type: 'issue_status',
-    },
-    db: 'LocalGRMDatabase',
-  });
+  const eadl = representative.map((d) => d.doc);
 
-  const { docs: issues, loading: issuesLoading } = useFind({
-    selector: {
-      type: 'issue',
-      $or: [
-        { 'reporter.name': eadl?.[0]?.representative?.name },
-        { 'assignee.name': eadl?.[0]?.representative?.name },
-      ],
-    },
+  const { rows: issue_status, loading: statusesLoading } = useView('issues/by_type', {
+    db: 'LocalGRMDatabase',
+    key: 'issue_status',
+    include_docs: true,
+  });
+  const statuses = issue_status.map((d) => d.doc);
+
+  const { rows: grmIssues, loading: issuesLoading } = useView('issues/by_type_and_user', {
+    startkey: ['issue', eadl?.[0]?._id],
+    endkey: ['issue', eadl?.[0]?._id, {}],
+    include_docs: true,
     db: 'LocalGRMDatabase',
   });
+  const issues = grmIssues.map((r) => r.doc);
 
   if (!issues || !eadl || !statuses || issuesLoading || statusesLoading || eadlLoading) {
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
@@ -53,6 +52,5 @@ function IssueSearch() {
     </SafeAreaView>
   );
 }
-
 
 export default IssueSearch;

@@ -1,40 +1,46 @@
 import React from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useFind } from 'use-pouchdb';
+import { useView } from 'use-pouchdb';
+import { colors } from '../../../utils/colors';
 import { styles } from './Profile.style';
 import Content from './containers';
-import { ActivityIndicator } from 'react-native-paper';
-import { colors } from '../../../utils/colors';
 
 function Profile() {
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  const { docs: statuses, loading: statusesLoading } = useFind({
-    selector: { type: 'issue_status' },
+  const { rows: issue_status, loading: statusesLoading } = useView('issues/by_type', {
     db: 'LocalGRMDatabase',
+    key: 'issue_status',
+    include_docs: true,
   });
+  const statuses = issue_status.map((d) => d.doc);
 
-  const { docs: eadl, loading: eadlLoading } = useFind({
-    selector: { 'representative.email': username },
+  const { rows, loading: eadlLoading } = useView('issues/by_representative_email', {
+    key: username,
+    include_docs: true,
     db: 'LocalDatabase',
   });
 
-  const { docs: department, loading: departmentLoading } = useFind({
-    selector: {
-      type: 'issue_department',
-      id: eadl?.[0]?.department,
-    },
+  const eadl = rows.map((d) => d.doc);
+
+  const { rows: issue_department, loading: departmentLoading } = useView('issues/by_type_and_id', {
+    startkey: ['issue_department', eadl?.[0]?.department],
+    endkey: ['issue_department', eadl?.[0]?.department, {}],
+    include_docs: true,
     db: 'LocalGRMDatabase',
   });
-  const { docs: issues, loading: issuesLoading } = useFind({
-    selector: {
-      type: 'issue',
-      $or: [{ 'reporter.id': eadl?.[0]?._id }, { 'assignee.id': eadl?.[0]?._id }],
-    },
+  const department = issue_department.map((d) => d.doc);
+
+  const { rows: grmIssues, loading: issuesLoading } = useView('issues/by_type_and_user', {
+    startkey: ['issue', eadl?.[0]?._id],
+    endkey: ['issue', eadl?.[0]?._id, {}],
+    include_docs: true,
     db: 'LocalGRMDatabase',
   });
 
+  const issues = grmIssues.map((r) => r.doc);
 
   if (!issues || !eadl || issuesLoading || statusesLoading || eadlLoading || departmentLoading) {
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;

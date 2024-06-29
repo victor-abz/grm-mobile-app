@@ -10,16 +10,20 @@
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "enabled": false,
+      "url": "https://u.expo.dev/13cc8fd9-97c4-46f0-9f52-d0b0043066cd"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
-      }
+      },
+      "bundleIdentifier": "com.leonardogutierrezh.grmapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -36,11 +40,24 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "package": "com.leonardogutierrezh.grmapp"
+      "package": "com.rtda.grmapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-location", "expo-image-picker", "expo-av"]
+    "plugins": [
+      "expo-location",
+      "expo-image-picker",
+      "expo-av",
+      "expo-updates"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "13cc8fd9-97c4-46f0-9f52-d0b0043066cd"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    }
   }
 }

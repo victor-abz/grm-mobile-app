@@ -1,246 +1,79 @@
-import React, { useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useFind } from 'use-pouchdb';
+import { useView } from 'use-pouchdb';
 import { colors } from '../../../utils/colors';
 import { styles } from './Statistics.style';
 import Content from './containers';
 
+const ITEMS_PER_PAGE = 20; // Adjust as needed
+
 function Statistics() {
   const customStyles = styles();
-  // const [issues, setIssues] = useState();
-  // const [issueType, setIssueType] = useState();
-  // const [statuses, setStatuses] = useState();
-  // const [ageGroup, setAgeGroup] = useState();
-  // const [citizenGroup1, setCitizenGroup1] = useState();
-  // const [citizenGroup2, setCitizenGroup2] = useState();
-  // const [issueCategory, setIssueCategory] = useState();
-  // const [issueComponent, setIssueComponent] = useState();
-  // const [issueSubComponent, setIssueSubComponent] = useState();
-  // const [eadl, setEadl] = useState(false);
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  useEffect(() => {
-    // LocalGRMDatabase.find({
-    //   selector: { type: 'issue_status' },
-    // })
-    //   .then((result) => {
-    //     setStatuses(result.docs);
-    //   })
-    //   .catch((err) => {
-    //     alert(`Unable to retrieve statuses. ${JSON.stringify(err)}`);
-    //   });
-    // // Getting issue_age_group
-    // LocalGRMDatabase.find({
-    //   selector: { type: 'issue_age_group' },
-    // })
-    //   .then((result) => {
-    //     setAgeGroup(result.docs);
-    //   })
-    //   .catch((err) => {
-    //     alert(`Unable to retrieve issue age group. ${JSON.stringify(err)}`);
-    //   });
-    // // Getting issue_citizen_group_1
-    // LocalGRMDatabase.find({
-    //   selector: { type: 'issue_citizen_group_1' },
-    // })
-    //   .then((result) => {
-    //     setCitizenGroup1(result.docs);
-    //   })
-    //   .catch((err) => {
-    //     alert(`Unable to retrieve issue citizen group 1. ${JSON.stringify(err)}`);
-    //   });
-    // // Getting issue_citizen_group_2
-    // LocalGRMDatabase.find({
-    //   selector: { type: 'issue_citizen_group_2' },
-    // })
-    //   .then((result) => {
-    //     setCitizenGroup2(result.docs);
-    //   })
-    //   .catch((err) => {
-    //     alert(`Unable to retrieve issue citizen group 2. ${JSON.stringify(err)}`);
-    //   });
-    // // Getting issue_type
-    // LocalGRMDatabase.find({
-    //   selector: { type: 'issue_type' },
-    // })
-    //   .then((result) => {
-    //     setIssueType(result.docs);
-    //   })
-    //   .catch((err) => {
-    //     alert(`Unable to retrieve issue type. ${JSON.stringify(err)}`);
-    //   });
-    // // Getting issue_category
-    // LocalGRMDatabase.find({
-    //   selector: { type: 'issue_category' },
-    // })
-    //   .then((result) => {
-    //     setIssueCategory(result.docs);
-    //   })
-    //   .catch((err) => {
-    //     alert(`Unable to retrieve issue category. ${JSON.stringify(err)}`);
-    //   });
-    // // Getting issue_component
-    // LocalGRMDatabase.find({
-    //   selector: { type: 'issue_component' },
-    // })
-    //   .then((result) => {
-    //     setIssueComponent(result.docs);
-    //   })
-    //   .catch((err) => {
-    //     alert(`Unable to retrieve issue component. ${JSON.stringify(err)}`);
-    //   });
-    // // Getting issue_sub_component
-    // LocalGRMDatabase.find({
-    //   selector: { type: 'issue_sub_component' },
-    // })
-    //   .then((result) => {
-    //     setIssueSubComponent(result.docs);
-    //   })
-    //   .catch((err) => {
-    //     alert(`Unable to retrieve issue sub component. ${JSON.stringify(err)}`);
-    //   });
-  }, []);
-
-  // useEffect(() => {
-  //   if (username) {
-  //     LocalDatabase.find({
-  //       selector: { 'representative.email': username },
-  //       // fields: ["_id", "commune", "phases"],
-  //     })
-  //       .then((result) => {
-  //         setEadl(result.docs[0]);
-
-  //         // handle result
-  //       })
-  //       .catch((err) => {
-  //         console.log('ERROR FETCHING EADL', err);
-  //       });
-  //   }
-  // }, [username]);
-
-  // useEffect(() => {
-  //   // FETCH ISSUE CATEGORY
-  //   if (eadl) {
-  //     LocalGRMDatabase.find({
-  //       selector: {
-  //         type: 'issue',
-  //         'reporter.id': eadl?._id,
-  //         //'reporter.name': eadl.representative.name,
-  //       },
-  //     })
-  //       .then((result) => {
-  //         setIssues(result?.docs);
-  //       })
-  //       .catch((err) => {
-  //         console.log(err);
-  //       });
-  //   }
-  // }, [eadl]);
-
-  const { docs: statuses, loading: statusesLoading } = useFind({
-    selector: {
-      type: 'issue_status',
-    },
+  const { rows: allIssueTypes, loading: allIssueTypesLoading } = useView('issues/all_issue_types', {
     db: 'LocalGRMDatabase',
+    include_docs: true,
   });
 
-  const { docs: ageGroup, loading: agesLoading } = useFind({
-    selector: {
-      type: 'issue_age_group',
-    },
-    db: 'LocalGRMDatabase',
-  });
-
-  const { docs: citizenGroup1, loading: citizenGroup1Loading } = useFind({
-    selector: {
-      type: 'issue_citizen_group_1',
-    },
-    db: 'LocalGRMDatabase',
-  });
-  const { docs: citizenGroup2, loading: citizenGroup2Loading } = useFind({
-    selector: {
-      type: 'issue_citizen_group_2',
-    },
-    db: 'LocalGRMDatabase',
-  });
-
-  const { docs: issueCategory, loading: issueCategoriesLoading } = useFind({
-    selector: {
-      type: 'issue_category',
-    },
-    db: 'LocalGRMDatabase',
-  });
-
-  const { docs: issueType, loading: issueTypesLoading } = useFind({
-    selector: {
-      type: 'issue_type',
-    },
-    db: 'LocalGRMDatabase',
-  });
-
-  const { docs: issueComponent, loading: issueComponentLoading } = useFind({
-    selector: {
-      type: 'issue_component',
-    },
-    db: 'LocalGRMDatabase',
-  });
-
-  const { docs: issueSubComponent, loading: issueSubComponentsLoading } = useFind({
-    selector: {
-      type: 'issue_sub_component',
-    },
-    db: 'LocalGRMDatabase',
-  });
-
-  const { docs: eadl, loading: eadlLoading } = useFind({
-    selector: { 'representative.email': username },
+  const { rows: representative, loading: eadlLoading } = useView('issues/by_representative_email', {
+    key: username,
+    include_docs: true,
     db: 'LocalDatabase',
   });
 
-  const { docs: issues, loading: issuesLoading } = useFind({
-    selector: {
-      type: 'issue',
-      $or: [{ 'reporter.id': eadl?.[0]?._id }, { 'assignee.id': eadl?.[0]?._id }],
-    },
+  const eadl = useMemo(() => representative.map((d) => d.doc), [representative]);
+
+  const { rows, loading: issuesLoading } = useView('issues/by_type_and_user', {
+    startkey: ['issue', eadl?.[0]?._id],
+    endkey: ['issue', eadl?.[0]?._id, {}],
+    include_docs: true,
+    // limit: ITEMS_PER_PAGE,
     db: 'LocalGRMDatabase',
   });
 
-  if (
-    !issues ||
-    !eadl ||
-    issuesLoading ||
-    eadlLoading ||
-    statusesLoading ||
-    agesLoading ||
-    citizenGroup1Loading ||
-    citizenGroup2Loading ||
-    issueCategoriesLoading ||
-    issueSubComponentsLoading ||
-    issueComponentLoading ||
-    issueTypesLoading
-  ) {
+  const issues = useMemo(() => rows.map((r) => r.doc), [rows]);
+
+  const groupedIssueTypes = useMemo(() => {
+    const grouped = {};
+    allIssueTypes.forEach((row) => {
+      const [type] = row.key;
+      if (!grouped[type]) {
+        grouped[type] = [];
+      }
+      grouped[type].push(row.doc);
+    });
+    return grouped;
+  }, [allIssueTypes]);
+
+  const isLoading = useCallback(() => {
+    return !issues || !eadl || issuesLoading || eadlLoading || allIssueTypesLoading;
+  }, [issues, eadl, issuesLoading, eadlLoading, allIssueTypesLoading]);
+
+  if (isLoading()) {
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
   }
+
   return (
     <SafeAreaView style={customStyles.container}>
       <ScrollView>
         <Content
           issues={issues}
           eadl={eadl?.[0]}
-          statuses={statuses}
-          ageGroup={ageGroup}
-          citizenGroup1={citizenGroup1}
-          citizenGroup2={citizenGroup2}
-          issueType={issueType}
-          issueCategory={issueCategory}
-          issueComponent={issueComponent}
-          issueSubComponent={issueSubComponent}
+          statuses={groupedIssueTypes.issue_status || []}
+          ageGroup={groupedIssueTypes.issue_age_group || []}
+          citizenGroup1={groupedIssueTypes.issue_citizen_group_1 || []}
+          citizenGroup2={groupedIssueTypes.issue_citizen_group_2 || []}
+          issueType={groupedIssueTypes.issue_type || []}
+          issueCategory={groupedIssueTypes.issue_category || []}
+          issueComponent={groupedIssueTypes.issue_component || []}
+          issueSubComponent={groupedIssueTypes.issue_sub_component || []}
         />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-export default Statistics;
+export default React.memo(Statistics);

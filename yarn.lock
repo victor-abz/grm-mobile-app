@@ -4903,6 +4903,13 @@ expo-dev-menu@2.0.2:
     expo-dev-menu-interface "1.0.0"
     semver "^7.3.5"
 
+expo-document-picker@11.0.1:
+  version "11.0.1"
+  resolved "https://registry.yarnpkg.com/expo-document-picker/-/expo-document-picker-11.0.1.tgz#1655e1cfacc20fe70ba81e310365048804bcf803"
+  integrity sha512-mLpk5a6yP/wK8DfGMQj9YoPlxiK87Vhxo6S+NnQgKCove8z+cJdkjEcXCpSsH6LXe1HJBDFt5LkwjhSff7bhMg==
+  dependencies:
+    uuid "^3.3.2"
+
 expo-eas-client@~0.4.0:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/expo-eas-client/-/expo-eas-client-0.4.1.tgz#4ccdafb5faeac97394fb3fa4c777ec22b2017f1d"
@@ -4913,7 +4920,7 @@ expo-error-recovery@~4.0.1:
   resolved "https://registry.yarnpkg.com/expo-error-recovery/-/expo-error-recovery-4.0.1.tgz#3e3333e134c992c234539d3773fe78915c883755"
   integrity sha512-wceptnRX+N3qCSVTNbIchUFu3GmY30onRH5L66OF8HMLpAIQfrZMLxJfz7SAMJTcr3jxsJ11vSa2l2RaPKgHsQ==
 
-expo-file-system@~15.1.0, expo-file-system@~15.1.1:
+expo-file-system@15.1.1, expo-file-system@~15.1.0, expo-file-system@~15.1.1:
   version "15.1.1"
   resolved "https://registry.yarnpkg.com/expo-file-system/-/expo-file-system-15.1.1.tgz#724090f83ff1e6378cadc0a64b83552f769eb16b"
   integrity sha512-MYYDKxjLo9VOkvGHqym5EOAUS+ero9O66X5zI+EXJzqNznKvnfScdXeeAaQzShmWtmLkdVDCoYFGOaTvTA1wTQ==
@@ -4932,7 +4939,7 @@ expo-image-loader@~4.0.0:
   resolved "https://registry.yarnpkg.com/expo-image-loader/-/expo-image-loader-4.0.0.tgz#a17e5f95a4c1671791168dd5dfc221bf2f88480c"
   integrity sha512-hVMhXagsO1cSng5s70IEjuJAuHy2hX/inu5MM3T0ecJMf7L/7detKf22molQBRymerbk6Tzu+20h11eU0n/3jQ==
 
-expo-image-manipulator@~11.0.0:
+expo-image-manipulator@11.0.0:
   version "11.0.0"
   resolved "https://registry.yarnpkg.com/expo-image-manipulator/-/expo-image-manipulator-11.0.0.tgz#f863bfcbc1534d92e9efc6f9265cf152cf7988c1"
   integrity sha512-CDiqOrhN1TSWw/4t7Xo97U+Xzoc437oCHbZH7+4RhhmPBlu5/2b4UjoEiw/gPWu9DD7OS/TRvO027axod9QNDQ==
@@ -5039,7 +5046,7 @@ expo-updates-interface@~0.8.0:
   resolved "https://registry.yarnpkg.com/expo-updates-interface/-/expo-updates-interface-0.8.1.tgz#baeeeb01a77439682432be83ba78bc2e00547c4e"
   integrity sha512-1TPFCTQFHMZbltFGnxig3PbN/b6nO4T0RyL8XqdmYvQY0ElOCprZXQQ8vNDqeLYHgausG1lD4OyJwFzh2SNBSA==
 
-expo-updates@~0.15.6:
+expo-updates@0.15.6:
   version "0.15.6"
   resolved "https://registry.yarnpkg.com/expo-updates/-/expo-updates-0.15.6.tgz#99e3faa3e38312ebddb77afb697863fa1f1f6a03"
   integrity sha512-g5BuCmWdyiLqFaVkVz+m7r6U7MHJrLKvqybs04H6ArMNpTEf6FhUwSzmnCyOkSSP35KFNkC/I0dYlgW3Vcf1sw==
@@ -5212,6 +5219,14 @@ fetch-cookie@0.11.0:
   integrity sha512-BQm7iZLFhMWFy5CZ/162sAGjBfdNWb7a8LEqqnzsHFhxT/X/SVj/z2t2nu3aJvjlbQkrAlTUApplPRjWyH4mhA==
   dependencies:
     tough-cookie "^2.3.3 || ^3.0.1 || ^4.0.0"
+
+fetch-cookie@2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/fetch-cookie/-/fetch-cookie-2.2.0.tgz#01086b6b5b1c3e08f15ffd8647b02ca100377365"
+  integrity sha512-h9AgfjURuCgA2+2ISl8GbavpUdR+WGAM2McW/ovn4tVccegp8ZqCKWSBR8uRdM8dDNlx5WdKRWxBYUwteLDCNQ==
+  dependencies:
+    set-cookie-parser "^2.4.8"
+    tough-cookie "^4.0.0"
 
 fetch-retry@^4.1.1:
   version "4.1.1"
@@ -8047,6 +8062,13 @@ node-fetch@2.6.7:
   dependencies:
     whatwg-url "^5.0.0"
 
+node-fetch@2.6.9:
+  version "2.6.9"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.9.tgz#7c7f744b5cc6eb5fd404e0c7a9fec630a55657e6"
+  integrity sha512-DJm/CJkZkRjKKj4Zi4BsKVZh3ValV5IR5s7LVZnW+6YMh0W1BfNA8XSs6DLMGYlId5F3KnA70uu2qepcR08Qqg==
+  dependencies:
+    whatwg-url "^5.0.0"
+
 node-fetch@^2.2.0, node-fetch@^2.6.0, node-fetch@^2.6.1, node-fetch@^2.6.12, node-fetch@^2.6.7:
   version "2.7.0"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.7.0.tgz#d0f0fa6e3e2dc1d27efcd8ad99d550bda94d187d"
@@ -8656,19 +8678,18 @@ pouchdb-abstract-mapreduce@6.4.3:
     pouchdb-promise "6.4.3"
     pouchdb-utils "6.4.3"
 
-pouchdb-abstract-mapreduce@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-abstract-mapreduce/-/pouchdb-abstract-mapreduce-7.3.1.tgz#96ff4a0f41cbe273f3f52fde003b719005a2093c"
-  integrity sha512-0zKXVFBvrfc1KnN0ggrB762JDmZnUpePHywo9Bq3Jy+L1FnoG7fXM5luFfvv5/T0gEw+ZTIwoocZECMnESBI9w==
+pouchdb-abstract-mapreduce@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-abstract-mapreduce/-/pouchdb-abstract-mapreduce-9.0.0.tgz#d5f189a6f8980931835c41ea1f0b692368ce4686"
+  integrity sha512-SnTtqwAEiAa3uxKbc1J7LfiBViwEkKe2xkK92zxyTXPqWBvMnh4UU3GXxx7GrXTM4L9llsQ3lSjpbH4CNqG1Mw==
   dependencies:
-    pouchdb-binary-utils "7.3.1"
-    pouchdb-collate "7.3.1"
-    pouchdb-collections "7.3.1"
-    pouchdb-errors "7.3.1"
-    pouchdb-fetch "7.3.1"
-    pouchdb-mapreduce-utils "7.3.1"
-    pouchdb-md5 "7.3.1"
-    pouchdb-utils "7.3.1"
+    pouchdb-binary-utils "9.0.0"
+    pouchdb-collate "9.0.0"
+    pouchdb-errors "9.0.0"
+    pouchdb-fetch "9.0.0"
+    pouchdb-mapreduce-utils "9.0.0"
+    pouchdb-md5 "9.0.0"
+    pouchdb-utils "9.0.0"
 
 pouchdb-adapter-asyncstorage@6.4.1, pouchdb-adapter-asyncstorage@^6.4.1:
   version "6.4.1"
@@ -8746,19 +8767,17 @@ pouchdb-binary-utils@6.4.3, pouchdb-binary-utils@~6.4.0:
   dependencies:
     buffer-from "0.1.1"
 
-pouchdb-binary-utils@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-binary-utils/-/pouchdb-binary-utils-7.3.1.tgz#eea22d9a5f880fcd95062476f4f5484cdf61496f"
-  integrity sha512-crZJNfAEOnUoRk977Qtmk4cxEv6sNKllQ6vDDKgQrQLFjMUXma35EHzNyIJr1s76J77Q4sqKQAmxz9Y40yHGtw==
-  dependencies:
-    buffer-from "1.1.2"
-
 pouchdb-binary-utils@8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/pouchdb-binary-utils/-/pouchdb-binary-utils-8.0.1.tgz#aa77248b9c0ad2a68f75f8f7cf2b594fe3dbd559"
   integrity sha512-WsuR/S0aoUlcA0Alt99czkXsfuXWcrYXAcvGiTW02zawVXOafCnb/qHjA09TUaV0oy5HeHmYaNnDckoOUqspeA==
   dependencies:
     buffer-from "1.1.2"
+
+pouchdb-binary-utils@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-binary-utils/-/pouchdb-binary-utils-9.0.0.tgz#eafed32c21e92ef4b253456f9e53c4cf2cfd99fd"
+  integrity sha512-2OMtgDZi82vqs+zNDE0YiYjOaWkYCUcZJZKK3WkRr+XYRu+2B7umJrnygJFhUwoGedBbHSrlQBLhdNV3F1AX1A==
 
 pouchdb-changes-filter@6.4.3:
   version "6.4.3"
@@ -8792,25 +8811,20 @@ pouchdb-collate@6.4.3:
   resolved "https://registry.yarnpkg.com/pouchdb-collate/-/pouchdb-collate-6.4.3.tgz#55a77a1a3e1c2cf86fe4d02aea171e10c2a3f944"
   integrity sha512-iwKAdc8vjLx8AzxBFnfV24Hp4FkbADTUcuQl/2IUOaF8JzZ/wVYa0DgBd+uErk2rj5yf1HxFp+5/9EgHV4PxAw==
 
-pouchdb-collate@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-collate/-/pouchdb-collate-7.3.1.tgz#19d7b87dd173d1c765da8cc9987c5aa9eb24f11f"
-  integrity sha512-o4gyGqDMLMSNzf6EDTr3eHaH/JRMoqRhdc+eV+oA8u00nTBtr9wD+jypVe2LbgKLJ4NWqx2qVkXiTiQdUFtsLQ==
-
 pouchdb-collate@8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/pouchdb-collate/-/pouchdb-collate-8.0.1.tgz#14b6ad9330d2831fd8ef135de680060366502a1b"
   integrity sha512-DTuNz1UJjBTGZMUlWS1klSE1rPsmHy8IIDie3MFH1ZTz/C+SwGgGwkiAyUDv/n00D18EMLgXq5mu+r7L6K1BwQ==
 
+pouchdb-collate@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-collate/-/pouchdb-collate-9.0.0.tgz#654f6766927ada60603ba25b6b2ae533564fa302"
+  integrity sha512-TrnEDNZEmIIl+W3xKUO8h+geqVLQ90oZe5ujPkl8myUzpREULWXWQBnV5EzPXVEKDBpJlb8T3I6oy/zdWGQpdA==
+
 pouchdb-collections@6.4.3:
   version "6.4.3"
   resolved "https://registry.yarnpkg.com/pouchdb-collections/-/pouchdb-collections-6.4.3.tgz#2b70ca3143134c361dba6e466518b4f4d8e92ff4"
   integrity sha512-uWb9+hvjiijeyrCeEz/FUND1oj0AQK/f166egBOTofNlAwQLNrJUTn+uJ34b3NODAmKhg7+ZeDVvnl9D2pijuQ==
-
-pouchdb-collections@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-collections/-/pouchdb-collections-7.3.1.tgz#4f1819cf4dd6936a422c29f7fa26a9b5dca428f5"
-  integrity sha512-yUyDqR+OJmtwgExOSJegpBJXDLAEC84TWnbAYycyh+DZoA51Yw0+XVQF5Vh8Ii90/Ut2xo88fmrmp0t6kqom8w==
 
 pouchdb-collections@8.0.1:
   version "8.0.1"
@@ -8859,26 +8873,15 @@ pouchdb-errors@6.4.3:
   dependencies:
     inherits "2.0.3"
 
-pouchdb-errors@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-errors/-/pouchdb-errors-7.3.1.tgz#78be36721e2edc446fac158a236a9218c7bcdb14"
-  integrity sha512-Zktz4gnXEUcZcty8FmyvtYUYsHskoST05m6H5/E2gg/0mCfEXq/XeyyLkZHaZmqD0ZPS9yNmASB1VaFWEKEaDw==
-  dependencies:
-    inherits "2.0.4"
-
 pouchdb-errors@8.0.1, pouchdb-errors@^8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/pouchdb-errors/-/pouchdb-errors-8.0.1.tgz#d57afd57e07490d8d0b4ef19c10bfc85dbf27ae5"
   integrity sha512-H+ZsQxcG/JV3Tn29gnM6c9+lRPCN91ZYOkoIICsLjVRYgOTzN1AvNUD/G5JCB+81aI/u3fxZec0LEaZh6g6NHA==
 
-pouchdb-fetch@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-fetch/-/pouchdb-fetch-7.3.1.tgz#d54b1807be0f0a5d4b6d06e416c7d54952bbc348"
-  integrity sha512-205xAtvdHRPQ4fp1h9+RmT9oQabo9gafuPmWsS9aEl3ER54WbY8Vaj1JHZGbU4KtMTYvW7H5088zLS7Nrusuag==
-  dependencies:
-    abort-controller "3.0.0"
-    fetch-cookie "0.11.0"
-    node-fetch "2.6.7"
+pouchdb-errors@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-errors/-/pouchdb-errors-9.0.0.tgz#f84269ce3327abef9455c0a90a51c26d7dca20c6"
+  integrity sha512-961PSMLhW0UqqdJ566g+CdLZ5pkBJRd6l4WWpCDdD0USvE4xYfYGzv43w7nZZBw1k3Xdy092yqPge7yX/tfnyw==
 
 pouchdb-fetch@8.0.1:
   version "8.0.1"
@@ -8889,18 +8892,26 @@ pouchdb-fetch@8.0.1:
     fetch-cookie "0.11.0"
     node-fetch "2.6.7"
 
-pouchdb-find@^7.2.2:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-find/-/pouchdb-find-7.3.1.tgz#07a633d5ee2bd731dae9f991281cd25212088d29"
-  integrity sha512-AeqUfAVY1c7IFaY36BRT0vIz9r4VTKq/YOWTmiqndOZUQ/pDGxyO2fNFal6NN3PyYww0JijlD377cPvhnrhJVA==
+pouchdb-fetch@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-fetch/-/pouchdb-fetch-9.0.0.tgz#a2cf407c75c9fc68a1924b08c9b574d28e1be7dd"
+  integrity sha512-TbE3cUcAJQrwb9kr44tDP0X+NAbcqgjsTvcL30L4xzBNJeCPTIRjukYX80s154SHJUXBxcWRiPsMmNqpXsjfCA==
   dependencies:
-    pouchdb-abstract-mapreduce "7.3.1"
-    pouchdb-collate "7.3.1"
-    pouchdb-errors "7.3.1"
-    pouchdb-fetch "7.3.1"
-    pouchdb-md5 "7.3.1"
-    pouchdb-selector-core "7.3.1"
-    pouchdb-utils "7.3.1"
+    fetch-cookie "2.2.0"
+    node-fetch "2.6.9"
+
+pouchdb-find@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-find/-/pouchdb-find-9.0.0.tgz#3d1b80d2adc9f9fd86c2ad559cd0144e406cb539"
+  integrity sha512-vvVhq4eEOmSkwSRwf2NBYtdhURB7ryJ7sUI4WDN00GuLUj2g8jAXBJuZIryVgdYt/5S5cfn70iRL6Eow+LFhpA==
+  dependencies:
+    pouchdb-abstract-mapreduce "9.0.0"
+    pouchdb-collate "9.0.0"
+    pouchdb-errors "9.0.0"
+    pouchdb-fetch "9.0.0"
+    pouchdb-md5 "9.0.0"
+    pouchdb-selector-core "9.0.0"
+    pouchdb-utils "9.0.0"
 
 pouchdb-generate-replication-id@6.4.3:
   version "6.4.3"
@@ -8928,15 +8939,12 @@ pouchdb-mapreduce-utils@6.4.3:
     pouchdb-collections "6.4.3"
     pouchdb-utils "6.4.3"
 
-pouchdb-mapreduce-utils@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-mapreduce-utils/-/pouchdb-mapreduce-utils-7.3.1.tgz#f0ac2c8400fbedb705e9226082453ac7d3f2a066"
-  integrity sha512-oUMcq82+4pTGQ6dtrhgORHOVHZSr6w/5tFIUGlv7RABIDvJarL4snMawADjlpiEwPdiQ/ESG8Fqt8cxqvqsIgg==
+pouchdb-mapreduce-utils@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-mapreduce-utils/-/pouchdb-mapreduce-utils-9.0.0.tgz#8a2edf30ca0fa24d095eabcfbe8ebb8f3f1160e3"
+  integrity sha512-Bjh8W6QXqp1j7MKmHhYYp5cYlcQsm5drD8Jd/F+ZlfNt18uiD2SQXWzGM5797+tiW/LszFGb8ttw0uHWjxufCQ==
   dependencies:
-    argsarray "0.0.1"
-    inherits "2.0.4"
-    pouchdb-collections "7.3.1"
-    pouchdb-utils "7.3.1"
+    pouchdb-utils "9.0.0"
 
 pouchdb-mapreduce@6.4.3:
   version "6.4.3"
@@ -8955,20 +8963,20 @@ pouchdb-md5@6.4.3:
     pouchdb-binary-utils "6.4.3"
     spark-md5 "3.0.0"
 
-pouchdb-md5@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-md5/-/pouchdb-md5-7.3.1.tgz#70fae44f9d27eb4c6a8e7106156b4593d31c1762"
-  integrity sha512-aDV8ui/mprnL3xmt0gT/81DFtTtJiKyn+OxIAbwKPMfz/rDFdPYvF0BmDC9QxMMzGfkV+JJUjU6at0PPs2mRLg==
-  dependencies:
-    pouchdb-binary-utils "7.3.1"
-    spark-md5 "3.0.2"
-
 pouchdb-md5@8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/pouchdb-md5/-/pouchdb-md5-8.0.1.tgz#5a3df4939102423727e0594c2a9bb91b82a444ed"
   integrity sha512-shVcs/K/iilrcAhDEERpLIrGm/cnDVsXiocOzs7kycJEuBqYnLD9nj58VwWDcum26wfa8T9cznvEGE1jlYVNPQ==
   dependencies:
     pouchdb-binary-utils "8.0.1"
+    spark-md5 "3.0.2"
+
+pouchdb-md5@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-md5/-/pouchdb-md5-9.0.0.tgz#f67a2ba627309e65f8d1ce4d4baf6a5f29164617"
+  integrity sha512-58xUYBvW3/s+aH0j4uOhhN8yCk0LQ254cxBzI/gbKA9PrfwHpe4zrr0L/ia5ml3A30oH1f8aTnuVMwWDkFcuww==
+  dependencies:
+    pouchdb-binary-utils "9.0.0"
     spark-md5 "3.0.2"
 
 pouchdb-merge@6.4.3:
@@ -9021,14 +9029,6 @@ pouchdb-selector-core@6.4.3:
     pouchdb-collate "6.4.3"
     pouchdb-utils "6.4.3"
 
-pouchdb-selector-core@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-selector-core/-/pouchdb-selector-core-7.3.1.tgz#08245662de3d61f16ab8dae2b56ef622935b3fb3"
-  integrity sha512-HBX+nNGXcaL9z0uNpwSMRq2GNZd3EZXW+fe9rJHS0hvJohjZL7aRJLoaXfEdHPRTNW+CpjM3Rny60eGekQdI/w==
-  dependencies:
-    pouchdb-collate "7.3.1"
-    pouchdb-utils "7.3.1"
-
 pouchdb-selector-core@8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/pouchdb-selector-core/-/pouchdb-selector-core-8.0.1.tgz#d52119b79bd34b69c27f4596dbb9e16373bbd92e"
@@ -9036,6 +9036,14 @@ pouchdb-selector-core@8.0.1:
   dependencies:
     pouchdb-collate "8.0.1"
     pouchdb-utils "8.0.1"
+
+pouchdb-selector-core@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-selector-core/-/pouchdb-selector-core-9.0.0.tgz#6fee1df82cd5ecdbd0a034b38e6c604557d2e22a"
+  integrity sha512-ZYHYsdoedwm8j5tYofz+3+uUSK8i+7tRCBb01T0OuqDQb17+w5mzjHF8Ppi160xdPUPaWCo1Un+nLWGJzkmA3g==
+  dependencies:
+    pouchdb-collate "9.0.0"
+    pouchdb-utils "9.0.0"
 
 pouchdb-upsert@^2.2.0:
   version "2.2.0"
@@ -9058,20 +9066,6 @@ pouchdb-utils@6.4.3, pouchdb-utils@~6.4.0:
     pouchdb-promise "6.4.3"
     uuid "3.2.1"
 
-pouchdb-utils@7.3.1:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/pouchdb-utils/-/pouchdb-utils-7.3.1.tgz#d25f0a034427f388ba5ae37d9ae3fbed210e8720"
-  integrity sha512-R3hHBo1zTdTu/NFs3iqkcaQAPwhIH0gMIdfVKd5lbDYlmP26rCG5pdS+v7NuoSSFLJ4xxnaGV+Gjf4duYsJ8wQ==
-  dependencies:
-    argsarray "0.0.1"
-    clone-buffer "1.0.0"
-    immediate "3.3.0"
-    inherits "2.0.4"
-    pouchdb-collections "7.3.1"
-    pouchdb-errors "7.3.1"
-    pouchdb-md5 "7.3.1"
-    uuid "8.3.2"
-
 pouchdb-utils@8.0.1, pouchdb-utils@^8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/pouchdb-utils/-/pouchdb-utils-8.0.1.tgz#3fb0c9fe00f52e4d8404278a609f277c1c155b70"
@@ -9082,6 +9076,15 @@ pouchdb-utils@8.0.1, pouchdb-utils@^8.0.1:
     pouchdb-collections "8.0.1"
     pouchdb-errors "8.0.1"
     pouchdb-md5 "8.0.1"
+    uuid "8.3.2"
+
+pouchdb-utils@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/pouchdb-utils/-/pouchdb-utils-9.0.0.tgz#b68f3259add50163998201d1a6d16e6a35d5d57f"
+  integrity sha512-xWZE5c+nAslgmLC8JBZbky8AYgdz7pKtv7KTSi6CD2tuQD0WyNKib0YnhZndeE84dksTeZlqlg56RQHsHoB2LQ==
+  dependencies:
+    pouchdb-errors "9.0.0"
+    pouchdb-md5 "9.0.0"
     uuid "8.3.2"
 
 prelude-ls@^1.2.1:
@@ -10237,6 +10240,11 @@ set-blocking@^2.0.0:
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
   integrity sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==
 
+set-cookie-parser@^2.4.8:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/set-cookie-parser/-/set-cookie-parser-2.6.0.tgz#131921e50f62ff1a66a461d7d62d7b21d5d15a51"
+  integrity sha512-RVnVQxTXuerk653XfuliOxBP81Sf0+qfQE73LIYKcyMYHG94AuH0kgrQpRDuTZnSmjpysHmzxJXKNfa6PjFhyQ==
+
 set-value@^2.0.0, set-value@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/set-value/-/set-value-2.0.1.tgz#a18d40530e6f07de4228c7defe4227af8cad005b"
@@ -11073,6 +11081,16 @@ toidentifier@1.0.1:
   version "4.1.3"
   resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-4.1.3.tgz#97b9adb0728b42280aa3d814b6b999b2ff0318bf"
   integrity sha512-aX/y5pVRkfRnfmuX+OdbSdXvPe6ieKX/G2s7e98f4poJHnqH3281gDPm/metm6E/WRamfx7WC4HUqkWHfQHprw==
+  dependencies:
+    psl "^1.1.33"
+    punycode "^2.1.1"
+    universalify "^0.2.0"
+    url-parse "^1.5.3"
+
+tough-cookie@^4.0.0:
+  version "4.1.4"
+  resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-4.1.4.tgz#945f1461b45b5a8c76821c33ea49c3ac192c1b36"
+  integrity sha512-Loo5UUvLD9ScZ6jh8beX1T6sO1w2/MpCRpEP7V280GKMVUQ0Jzar2U3UJPsrdbziLEMMhu3Ujnq//rhiFuIeag==
   dependencies:
     psl "^1.1.33"
     punycode "^2.1.1"

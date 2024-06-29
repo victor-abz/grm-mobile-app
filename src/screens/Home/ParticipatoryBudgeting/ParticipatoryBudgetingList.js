@@ -1,20 +1,21 @@
 import React from 'react';
 import { ActivityIndicator, SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useFind } from 'use-pouchdb';
 import { colors } from '../../../utils/colors';
 import { styles } from './ParticipatoryBudgetingList.styles';
 import Content from './containers/Content';
 
 function ParticipatoryBudgetingList() {
   const customStyles = styles();
-  // const [eadl, setEadl] = useState();
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  const { docs: eadl, loading: eadlLoading } = useFind({
-    selector: { 'representative.email': username },
+  const { rows: representative, loading: eadlLoading } = useView('issues/by_representative_email', {
+    key: username,
+    include_docs: true,
     db: 'LocalDatabase',
   });
+
+  const eadl = representative.map((d) => d.doc);
 
   return (
     <SafeAreaView style={customStyles.container}>

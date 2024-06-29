@@ -2,7 +2,7 @@ import React from 'react';
 import { SafeAreaView, ScrollView, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useFind } from 'use-pouchdb';
+import { useAllDocs, useView } from 'use-pouchdb';
 import { styles } from './CitizenReportLocationStep.styles';
 import Content from './containers/Content';
 
@@ -10,20 +10,27 @@ function CitizenReportLocationStep({ route }) {
   const { params } = route;
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
-  const { docs: uniqueRegion, loading: uniqueRegionLoading } = useFind({
-    selector: {
-      'representative.email': username,
-    },
-    db: 'LocalDatabase',
-  });
 
-  const { docs: issueCommunes, loading: issueCommunesLoading } = useFind({
-    selector: {
-      type: 'administrative_level',
-    },
+  const { rows: representative, loading: uniqueRegionLoading } = useView(
+    'eadl/by_representative_email',
+    {
+      key: username,
+      include_docs: true,
+      db: 'LocalCommunesDatabase',
+    }
+  );
+
+  const uniqueRegion = representative.map((d) => d.doc);
+
+  const { rows: issueCommunes, loading: issueCommunesLoading } = useView('communes/by_type', {
     db: 'LocalCommunesDatabase',
+    key: 'administrative_level',
+    include_docs: true,
   });
 
+  const { rows } = useAllDocs({ db: 'LocalCommunesDatabase' });
+
+  console.log({ representative, issueCommunes, rows });
   const customStyles = styles();
   return (
     <SafeAreaView style={customStyles.container}>
@@ -54,7 +61,7 @@ function CitizenReportLocationStep({ route }) {
         <Content
           stepOneParams={params.stepOneParams}
           stepTwoParams={params.stepTwoParams}
-          issueCommunes={issueCommunes}
+          issueCommunes={issueCommunes.map((commune) => commune.doc)}
           uniqueRegion={uniqueRegion?.[0]}
         />
       )}
