@@ -9,10 +9,10 @@ function ParticipatoryBudgetingList() {
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  const { rows: representative, loading: eadlLoading } = useView('issues/by_representative_email', {
+  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
     key: username,
     include_docs: true,
-    db: 'LocalDatabase',
+    db: 'LocalCommunesDatabase',
   });
 
   const eadl = representative.map((d) => d.doc);

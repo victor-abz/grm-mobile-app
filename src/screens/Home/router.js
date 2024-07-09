@@ -246,6 +246,8 @@ function NotificationsStackScreen() {
 }
 
 function IssueDetailTabsStack(props) {
+  const { t } = useTranslation();
+
   const temp = props.route.params.item;
   return (
     <TopTab.Navigator

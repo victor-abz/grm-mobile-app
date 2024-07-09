@@ -481,7 +481,7 @@ function Content({ stepOneParams }) {
                 uploaded: false,
                 local_url: attachment?.uri,
                 name: attachment?.uri.split('/').pop(),
-                user_id: eadl?.representative?.id,
+                user_id: eadl?.representative?.email,
                 user_name: eadl?.representative?.name,
               }))
             : undefined,

@@ -20,10 +20,10 @@ function IssueSearch() {
     console.log('Error', state);
   }
 
-  const { rows: representative, loading: eadlLoading } = useView('issues/by_representative_email', {
+  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
     key: username,
     include_docs: true,
-    db: 'LocalDatabase',
+    db: 'LocalCommunesDatabase',
   });
 
   const eadl = representative.map((d) => d.doc);

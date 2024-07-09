@@ -18,10 +18,10 @@ function Statistics() {
     include_docs: true,
   });
 
-  const { rows: representative, loading: eadlLoading } = useView('issues/by_representative_email', {
+  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
     key: username,
     include_docs: true,
-    db: 'LocalDatabase',
+    db: 'LocalCommunesDatabase',
   });
 
   const eadl = useMemo(() => representative.map((d) => d.doc), [representative]);
