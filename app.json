@@ -39,7 +39,7 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "package": "com.leonardogutierrezh.grmapp"
+      "package": "com.setcobj.grmapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -51,7 +51,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "8a8b6694-4f32-4d91-87f4-5c9f4ee286cb"
+        "projectId": "c92cc584-53fe-4be4-9eeb-8f2034a73d5f"
       }
     }
   }
