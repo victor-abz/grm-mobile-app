@@ -1,6 +1,6 @@
 export const citizenTypes = [
-    "Organization on behalf of others",
-    "Citizen on behalf of others",
-    "Complainant",
-    "Complainant"
+    "Une organisation au nom d'un citoyen",
+    "Un citoyen au nom d'un autre",
+    "Un plaignant",
+    "Un plaigant"
 ]

@@ -8,7 +8,7 @@ const CitizenReportContactInfo = ({ route }) => {
   const customStyles = styles();
   const { params } = route;
   const [issueAges, setIssueAges] = useState();
-  const [citizenGroupsI, setCitizenGroupsI] = useState();
+  const [citizenGroups, setCitizenGroups] = useState();
   const [citizenGroupsII, setCitizenGroupsII] = useState();
 
 
@@ -25,10 +25,10 @@ const CitizenReportContactInfo = ({ route }) => {
         });
     //FETCH CITIZEN GROUP 1
     LocalGRMDatabase.find({
-      selector: { type: "issue_citizen_group_1" },
+      selector: { type: "issue_citizen_group" },
     })
         .then(function (result) {
-          setCitizenGroupsI(result?.docs);
+          setCitizenGroups(result?.docs);
         })
         .catch(function (err) {
           console.log(err);
@@ -51,7 +51,7 @@ const CitizenReportContactInfo = ({ route }) => {
           stepOneParams={params.stepOneParams}
           issueAges={issueAges}
           citizenGroupsII={citizenGroupsII}
-          citizenGroupsI={citizenGroupsI}
+          citizenGroups={citizenGroups}
       />
     </SafeAreaView>
   );

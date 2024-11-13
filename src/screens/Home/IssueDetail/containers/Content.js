@@ -141,7 +141,7 @@ function Content({ issue }) {
               <Text
                 style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_age_group?.name ?? i18n.t('information_not_available')}</Text>
             </Text>
-            <View>
+            {/* <View>
               <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('profession')}{' '}</Text>
               <Text style={[styles.text, {marginBottom: 5}]}>
                 {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_group_1?.name ?? i18n.t('information_not_available')}
@@ -152,7 +152,7 @@ function Content({ issue }) {
               <Text style={[styles.text, {marginBottom: 5}]}>
                 {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_group_2?.name ?? i18n.t('information_not_available')}
               </Text>
-            </View>
+            </View> */}
             <View>
               <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('sub_type')}{' '}</Text>
               <Text style={[styles.text, {marginBottom: 5}]}>
@@ -194,11 +194,11 @@ function Content({ issue }) {
               <Text
                 style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.component?.name ?? i18n.t('information_not_available')}</Text>
             </Text>
-            <Text style={styles.subtitle}>
+            {/* <Text style={styles.subtitle}>
               {i18n.t('sub_component')}{' '}
               <Text
                 style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.sub_component?.name ?? i18n.t('information_not_available')}</Text>
-            </Text>
+            </Text> */}
 
           </View>
         </Collapsible>

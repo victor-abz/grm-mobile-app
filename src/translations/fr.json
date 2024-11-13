@@ -55,7 +55,7 @@
   "contact_step_placeholder_2": "Entrez le groupe d’âge (facultatif)",
   "contact_step_placeholder_3": "Choisissez le sexe (facultatif)",
   "contact_step_placeholder_4": "Cette personne dépose la plainte au nom de quelqu’un d’autre.",
-  "contact_step_placeholder_5": "Situation d'occupation (facultatif)",
+  "contact_step_placeholder_5": "Groupe socio-professionnel (facultatif)",
   "contact_step_placeholder_6": "Niveau d'instuction (facultatif)",
 
 
@@ -91,6 +91,7 @@
   "step_3_field_title_4": "Description:",
   "step_3_field_title_5": "Composante:",
   "step_3_field_title_6": "Sous Composante:",
+  "step_3_field_title_7": "Groupe Socio-professionnel:",
   "step_3_attachments": "Pièces jointes:",
 
   //location step
@@ -116,8 +117,8 @@
   "save_button_text": "ENREGISTRER",
   "next": "SUIVANT",
   "submit_button_text": "ENREGISTRER",
-  "male": "Mâle",
-  "female": "Femelle",
+  "male": "Masculin",
+  "female": "Féminin",
   "other": "Autre",
   "rather_not_say":  "Préfère ne rien dire",
 

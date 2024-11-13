@@ -17,7 +17,7 @@ const theme = {
   },
 };
 
-function Content({ stepOneParams, issueAges, citizenGroupsI, citizenGroupsII }) {
+function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII }) {
   const navigation = useNavigation();
   const [name, setName] = useState('');
   const [checked, setChecked] = useState(false);
@@ -26,9 +26,9 @@ function Content({ stepOneParams, issueAges, citizenGroupsI, citizenGroupsII }) 
   const [pickerAgeValue, setPickerAgeValue] = useState(null);
   const [selectedAge, setSelectedAge] = useState(null);
   const [confidentialValue, setConfidentialValue] = useState(null);
-  const [selectedCitizenGroupI, setSelectedCitizenGroupI] = useState(null);
+  const [selectedCitizenGroup, setSelectedCitizenGroup] = useState(null);
   const [selectedCitizenGroupII, setSelectedCitizenGroupII] = useState(null);
-  const [_citizenGroupsI, setCitizenGroupsI] = useState(citizenGroupsI ?? []);
+  const [_citizenGroups, setCitizenGroups] = useState(citizenGroups ?? []);
   const [_citizenGroupsII, setCitizenGroupsII] = useState(citizenGroupsII ?? []);
   const [ages, setAges] = useState(issueAges ?? []);
   const [pickerGenderValue, setPickerGenderValue] = useState(null);
@@ -40,8 +40,8 @@ function Content({ stepOneParams, issueAges, citizenGroupsI, citizenGroupsII }) 
   ]);
 
   useEffect(() => {
-    if (citizenGroupsI) {
-      setCitizenGroupsI(citizenGroupsI);
+    if (citizenGroups) {
+      setCitizenGroups(citizenGroups);
     }
     if (citizenGroupsII) {
       setCitizenGroupsII(citizenGroupsII);
@@ -49,7 +49,7 @@ function Content({ stepOneParams, issueAges, citizenGroupsI, citizenGroupsII }) 
     if (issueAges) {
       setAges(issueAges);
     }
-  }, [citizenGroupsI, citizenGroupsII]);
+  }, [citizenGroups, citizenGroupsII]);
 
   return (
     <ScrollView>
@@ -132,7 +132,7 @@ function Content({ stepOneParams, issueAges, citizenGroupsI, citizenGroupsII }) 
               setPickerValue={setPickerGenderValue}
               setItems={setGenders}
             />
-            <CustomDropDownPicker
+             {/* <CustomDropDownPicker
               schema={{
                 label: 'name',
                 value: 'id',
@@ -140,12 +140,12 @@ function Content({ stepOneParams, issueAges, citizenGroupsI, citizenGroupsII }) 
               zIndex={2000}
               zIndexInverse={3000}
               placeholder={i18n.t('contact_step_placeholder_5')}
-              value={selectedCitizenGroupI}
-              items={_citizenGroupsI}
-              setPickerValue={setSelectedCitizenGroupI}
-              setItems={setCitizenGroupsI}
-            />
-            <CustomDropDownPicker
+              value={selectedCitizenGroup}
+              items={_citizenGroups}
+              setPickerValue={setSelectedCitizenGroup}
+              setItems={setCitizenGroups}
+            /> */}
+           {/* <CustomDropDownPicker
               schema={{
                 label: 'name',
                 value: 'id',
@@ -157,7 +157,7 @@ function Content({ stepOneParams, issueAges, citizenGroupsI, citizenGroupsII }) 
               items={_citizenGroupsII}
               setPickerValue={setSelectedCitizenGroupII}
               setItems={setCitizenGroupsII}
-            />
+            /> */}
             <View style={{ paddingHorizontal: 50 }}>
               <Button
                 theme={theme}
@@ -171,8 +171,8 @@ function Content({ stepOneParams, issueAges, citizenGroupsI, citizenGroupsII }) 
                       name,
                       ageGroup: selectedAge,
                       citizen_type: confidentialValue,
-                      citizen_group_1: selectedCitizenGroupI,
-                      citizen_group_2: selectedCitizenGroupII,
+                      citizen_group: selectedCitizenGroup,
+                      // citizen_group_2: selectedCitizenGroupII,
                       gender: pickerGenderValue,
                       filledOnSomebodyElseBehalf: checked,
                     },

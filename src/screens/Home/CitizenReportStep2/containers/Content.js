@@ -281,9 +281,9 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
         issueComponent: selectedIssueComponent
           ? { id: selectedIssueComponent.id, name: selectedIssueComponent.name }
           : null,
-        issueSubComponent: selectedIssueSubComponent
-          ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.name }
-          : null,
+        // issueSubComponent: selectedIssueSubComponent
+        //   ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.name }
+        //   : null,
         ongoingEvent: checked,
         attachment: attachment.uri
           ? {
@@ -468,7 +468,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
             onSelectItem={(item) => setSelectedIssueComponent(item)}
           />
         </View>
-        <View>
+        {/* <View>
           <CustomDropDownPicker
             schema={{
               label: 'name',
@@ -482,7 +482,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
             setPickerValue={setPickerSubComponent}
             onSelectItem={(item) => setSelectedIssueSubComponent(item)}
           />
-        </View>
+        </View> */}
         <View style={{ paddingHorizontal: 50 }}>
           <TextInput
             multiline

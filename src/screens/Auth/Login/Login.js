@@ -52,6 +52,7 @@ function Login() {
         .then((response) => {
           setLoading(false);
           if (response.error) {
+            console.log ("Login_page_error : ", response.error)
             return;
           }
           dispatch(login(response, data));

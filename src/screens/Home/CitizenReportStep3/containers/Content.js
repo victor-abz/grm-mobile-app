@@ -63,7 +63,7 @@ function Content({ issue, eadl }) {
       citizen: issue.name ?? '',
       contact_medium: issue.typeOfPerson,
       citizen_type: issue.citizen_type,
-      citizen_group_1: issue.citizen_group_1,
+      citizen_group: issue.citizen_group,
       citizen_group_2: issue.citizen_group_2,
       location_info: {
         issue_location: issue.issueLocation,
@@ -170,10 +170,15 @@ function Content({ issue, eadl }) {
           <Text style={styles.stepDescription}>{issue.issueComponent?.name ?? '--'}</Text>
         </View>
 
-        <View>
+        {/* <View>
+          <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_7')}</Text>
+          <Text style={styles.stepDescription}>{issue.citizen_group?.name ?? '--'}</Text>
+        </View> */}
+
+        {/* <View>
           <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_6')}</Text>
           <Text style={styles.stepDescription}>{issue.issueSubComponent?.name ?? '--'}</Text>
-        </View>
+        </View> */}
 
         <View>
           <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_4')}</Text>
