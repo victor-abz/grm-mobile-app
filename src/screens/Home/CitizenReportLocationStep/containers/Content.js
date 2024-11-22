@@ -85,7 +85,7 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
   const filterCommunes = (parent) => {
     let _communes = communes.slice();
     _communes = _communes.filter((commune) => commune.parent_id === parent);
-
+    console.log("filter communes : "+_communes.docs) 
     return _communes;
   };
   return (

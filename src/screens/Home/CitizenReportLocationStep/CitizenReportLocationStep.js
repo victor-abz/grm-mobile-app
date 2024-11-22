@@ -24,9 +24,10 @@ function CitizenReportLocationStep({ route }) {
               selector: { administrative_id: result.docs[0].administrative_region },
             }).then((regions) => {
               setUniqueRegion(regions.docs[0]);
+              console.log("unique region : "+ regions.docs[0]);
             });
           }
-
+          console.log("no unique region : ");
           // handle result
         })
         .catch((err) => {
@@ -41,6 +42,7 @@ function CitizenReportLocationStep({ route }) {
       selector: { type: 'administrative_level' },
     }).then((result) => {
       setIssueCommunes(result?.docs);
+      console.log("issue communes : " + result?.docs[0]);
     });
   }, []);
 
