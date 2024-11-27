@@ -12,9 +12,10 @@ URL for Web App
 `src/services/API.js`
 
 ### Development 
+`export NODE_OPTIONS=--openssl-legacy-provider`
 `expo start`
 ### Build the App
 Build the app for android
-`eas build -p android --profile preview `
+`eas build -p android --profile preview`
 
 `eas build:run -p android --latest`
