@@ -36,7 +36,7 @@ Build the app for android
 - `yarn remove react-native-code-input`
 - `yarn add react-native-confirmation-code-field@^7.3.1`
 
-3. We had changed the following file as follows: [JDK](https://github.com/Corasec/grm-mobile/blob/update_project_expo_43_to_expo_47/src/screens/Auth/SignUp/SignUp.js)
+3. We had changed the following file as follows: [SignUp.js](https://github.com/Corasec/grm-mobile/blob/update_project_expo_43_to_expo_47/src/screens/Auth/SignUp/SignUp.js)
 
 4. We had also installed the “react-i18next” library for translation management.
 - `yarn add react-i18next@^12.2.0`
