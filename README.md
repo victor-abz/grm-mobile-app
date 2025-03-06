@@ -57,10 +57,13 @@ def downloadBoost = tasks.create('downloadBoost', Download) {
 
 
 # Build the App
-Build the app for android
-- `eas build -p android --profile preview`
-
-- `eas build:run -p android --latest`
+Build the app for android (Make sure the project runs correctly)
+<!-- - `eas build -p android --profile preview`
+- `eas build:run -p android --latest` -->
+- `cd android`
+- `.\gradlew clean`
+- `.\gradlew assembleRelease`
+- You'll find the release app `app-release.apk` file on the `android\app\build\outputs\apk\release` folder
 
 # Update Version
 
@@ -100,7 +103,7 @@ Build the app for android
 2. Eject your project
 - `expo eject`
 
-For versions less than or equal to expo 47, you probably encounter a problem related to the “boost_1_76_0.tar.gz” file when executing the `yarn android` command, you need to follow the steps below to solve this problem (Good luck).
+For versions less than or equal to expo 47, you probably encounter a problem related to the `boost_1_76_0.tar.gz` file when executing the `yarn android` command, you need to follow the steps below to solve this problem (Good luck).
 
 [Guide to solving the problem](https://github.com/expo/expo/issues/26302#issuecomment-1881188095)
 
