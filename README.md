@@ -72,8 +72,9 @@ Build the app for android (Make sure the project runs correctly)
 1. Make sure that the Git repository you are going to clone is with expo 43
 - `git clone -b deploy https://github.com/Corasec/grm-mobile.git`
 - `cd grm-mobile`
-- `yarn add react-native@0.68.2`
-- `yarn add react-dom@18.0.0`
+- `yarn install`
+- `npx expo install expo@~47.0.0`
+- `npx expo install --fix`
 - `yarn add react@18.0.0 react-dom@18.0.0 react-native@0.68.2`
 - `npx expo install --fix`
 
