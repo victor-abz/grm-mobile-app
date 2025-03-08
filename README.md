@@ -13,6 +13,7 @@ URLs for CouchDB Database
 URL for Web App
 `src/services/API.js`
 
+
 # Development 
 <!-- - `export NODE_OPTIONS=--openssl-legacy-provider` -->
 <!-- - `expo start` -->
@@ -20,17 +21,20 @@ URL for Web App
 - `rm -rf yarn.lock`
 - `yarn install`
 - `yarn android`
+If you receive this message : `CommandError: No development build (com.setcobj.grmapp) for this project is installed. Please make and install a development build on the device first.`, this is not an execution abort error, but just a reminder that an application (your current application) is not installed on your laptop. In our case, with the `yarn android` command, the application will be installed within a few seconds of the message being displayed.
 
 
 # Build the App
 Build the app for android (Make sure the project runs correctly)
 <!-- - `eas build -p android --profile preview`
 - `eas build:run -p android --latest` -->
+- `rm -rf package-lock.json`
+- `rm -rf yarn.lock`
+- `yarn install`
 - `cd android`
 - `.\gradlew clean`
-- `.\gradlew assembleRelease`
+- `.\gradlew assembleRelease`, this command allow you to build the apk
 - You'll find the release app `app-release.apk` file on the `android\app\build\outputs\apk\release` folder
-
 
 
 # Update Version
