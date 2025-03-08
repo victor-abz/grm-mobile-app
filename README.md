@@ -14,7 +14,7 @@ URL for Web App
 `src/services/API.js`
 
 # Development 
-- `export NODE_OPTIONS=--openssl-legacy-provider`
+<!-- - `export NODE_OPTIONS=--openssl-legacy-provider` -->
 <!-- - `expo start` -->
 - `rm -rf package-lock.json`
 - `rm -rf yarn.lock`
