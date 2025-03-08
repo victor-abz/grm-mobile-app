@@ -47,7 +47,10 @@
     "plugins": [
       "expo-location",
       "expo-image-picker",
-      "expo-av"
+      "expo-av",
+      "expo-font",
+      "expo-localization",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {
