@@ -20,6 +20,7 @@ URL for Web App
 - `rm -rf package-lock.json`
 - `rm -rf yarn.lock`
 - `yarn install`
+- `npx expo prebuild --clean`
 - `yarn android`
 
 If you receive this message : `CommandError: No development build (com.setcobj.grmapp) for this project is installed. Please make and install a development build on the device first.`, this is not an execution abort error, but just a reminder that an application (your current application) is not installed on your laptop. In our case, with the `yarn android` command, the application will be installed within a few seconds of the message being displayed.
@@ -32,6 +33,7 @@ Build the app for android (Make sure the project runs correctly)
 - `rm -rf package-lock.json`
 - `rm -rf yarn.lock`
 - `yarn install`
+- `npx expo prebuild --clean`
 - `cd android`
 - `.\gradlew clean`
 - `.\gradlew assembleRelease`, this command allow you to build the apk
