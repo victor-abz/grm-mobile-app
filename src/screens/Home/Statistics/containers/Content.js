@@ -1,15 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../../utils/colors';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import moment from 'moment';
 import PieChartGrm from '../components/PieChartGrm';
-import LineChartGrm from '../components/LineChartGrm';
-import BezierLineChartGrm from '../components/BezierLineChartGrm';
 import BarChartGrm from '../components/BarChartGrm';
-import StackedBarChartGrm from '../components/StackedBarChartGrm';
-import ProgressChartGrm from '../components/ProgressChartGrm';
 
 function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup2, issueType, issueCategory, issueComponent, issueSubComponent }) {
   const [_issues, setIssues] = useState([]);

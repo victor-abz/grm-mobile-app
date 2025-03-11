@@ -5,7 +5,7 @@ import { SafeAreaView, View } from "react-native";
 import { Button, Dialog, Paragraph, Portal, Text } from 'react-native-paper';
 import { colors } from "../../../../utils/colors";
 import SectionList from '../components/NotificationItem/SectionList';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import moment from 'moment';
 const randomRange = (min, max) => Math.floor(Math.random() * (max - min)) + min;
 

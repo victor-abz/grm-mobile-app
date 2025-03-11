@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Button, TextInput, Checkbox, RadioButton } from 'react-native-paper';
-import i18n from 'i18n-js';
+import { Button, TextInput, RadioButton } from 'react-native-paper';
+import { i18n } from "../../../../translations/i18n";
 import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';

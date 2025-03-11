@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import moment from 'moment';
 import { Audio } from 'expo-av';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';

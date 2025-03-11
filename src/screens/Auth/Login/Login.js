@@ -6,22 +6,19 @@ import {
   View,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
-  TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { ActivityIndicator, Button, Title, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Button, TextInput } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { Controller, useForm } from 'react-hook-form';
 import { login } from '../../../store/ducks/authentication.duck';
-import MapBg from '../../../../assets/map-bg.svg';
 import EADLLogo from '../../../../assets/eadl-logo.svg';
 import styles from './Login.style';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
 import API from '../../../services/API';
 import { getEncryptedData } from '../../../utils/storageManager';
-import { titles } from '../../Onboarding/containers/Content/utils';
-import i18n from 'i18n-js';
+import { i18n } from "../../../translations/i18n";
 import { colors } from '../../../utils/colors';
 
 const theme = {

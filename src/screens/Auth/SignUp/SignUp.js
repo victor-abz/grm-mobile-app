@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-
+import { i18n } from "../../../translations/i18n";
 import { Controller, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Keyboard,
@@ -25,8 +24,6 @@ import { useDispatch } from 'react-redux';
 import styles from './SignUp.style';
 
 import { signUp } from '../../../store/ducks/authentication.duck';
-// import CodeInput from "react-native-code-input";
-
 import BigCheck from '../../../../assets/big-check.svg';
 import CodeLogo from '../../../../assets/code_logo.svg';
 import SuccessLogo from '../../../../assets/success_logo.svg';
@@ -38,7 +35,6 @@ import { emailRegex, passwordRegex } from '../../../utils/formUtils';
 const CELL_COUNT = 6;
 
 function SignUp({ route }) {
-  const { t } = useTranslation();
   const dispatch = useDispatch();
   const [codeModal, setCodeModal] = React.useState(false);
   const [credentials, setCredentials] = React.useState();
@@ -107,7 +103,7 @@ function SignUp({ route }) {
         <ScrollView contentContainerStyle={{ flex: 1, alignItems: 'center' }}>
           <KeyboardAvoidingView style={{ flex: 1 }} behavior="position">
             <CodeLogo />
-            <Text style={modalStyles.title}>{t('last_validation')}</Text>
+            <Text style={modalStyles.title}>{i18n.t('last_validation')}</Text>
             <Text
               style={{
                 marginTop: 20,
@@ -122,7 +118,7 @@ function SignUp({ route }) {
                 color: '#707070',
               }}
             >
-              {t('please_enter_code')}
+              {i18n.t('please_enter_code')}
             </Text>
             {/* <CodeInput
               // secureTextEntry
@@ -177,12 +173,12 @@ function SignUp({ route }) {
                 if (value.length === 6) {
                   onSignUp(value);
                 } else {
-                  ToastAndroid.show(`${t('error_message_for_code')}`, ToastAndroid.SHORT);
+                  ToastAndroid.show(`${i18n.t('error_message_for_code')}`, ToastAndroid.SHORT);
                 }
               }}
               color="white"
             >
-              {t('next')}
+              {i18n.t('next')}
             </Button>
           </KeyboardAvoidingView>
         </ScrollView>
@@ -209,7 +205,7 @@ function SignUp({ route }) {
               color: '#707070',
             }}
           >
-            {t('account_create_success')}
+            {i18n.t('account_create_success')}
           </Text>
         </View>
       </Modal>
@@ -248,7 +244,7 @@ function SignUp({ route }) {
                 color: '#707070',
               }}
             >
-              {t('email_provided')}
+              {i18n.t('email_provided')}
             </Text>
           </View>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -267,7 +263,7 @@ function SignUp({ route }) {
                           },
                         }}
                         mode="outlined"
-                        label={t('email')}
+                        label={i18n.t('email')}
                         labelColor="#dedede"
                         style={styles.loginFormTextInput}
                         left={<TextInput.Icon name="account" color="#24c38b" />}
@@ -302,7 +298,7 @@ function SignUp({ route }) {
                           },
                         }}
                         mode="outlined"
-                        label={t('choose_password')}
+                        label={i18n.t('choose_password')}
                         placeholderColor="#dedede"
                         style={styles.loginFormTextInput}
                         left={
@@ -345,7 +341,7 @@ function SignUp({ route }) {
                 </View>
 
                 <View style={styles.hintContainer}>
-                  <Text style={styles.textHint}>{t('enter_new_password')}</Text>
+                  <Text style={styles.textHint}>{i18n.t('enter_new_password')}</Text>
                 </View>
               </View>
               <Button
@@ -359,7 +355,7 @@ function SignUp({ route }) {
                 onPress={handleSubmit(onPressSignUp)}
                 color="white"
               >
-                {t('next')}
+                {i18n.t('next')}
               </Button>
             </View>
           </TouchableWithoutFeedback>

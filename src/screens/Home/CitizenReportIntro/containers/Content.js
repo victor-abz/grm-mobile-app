@@ -2,7 +2,7 @@ import React from 'react';
 import { View, ScrollView, Text, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from 'react-native-paper';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import CrowdImage from '../../../../../assets/crowd.svg';
 import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';

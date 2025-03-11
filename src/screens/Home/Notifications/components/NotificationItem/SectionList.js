@@ -9,8 +9,7 @@ import {
 import { SwipeListView } from 'react-native-swipe-list-view';
 import Svg, { Circle } from 'react-native-svg';
 import moment from 'moment';
-import i18n from 'i18n-js';
-import { colors } from "../../../../../utils/colors";
+import { i18n } from "../../../../../translations/i18n";
 
 export default function SectionList({ id, author, title, description, isRead, date, onItemPress, onItemDelete }) {
   const [listData, setListData] = useState(

@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Button, Dialog, IconButton, Paragraph, Portal } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import { LocalGRMDatabase } from '../../../../utils/databaseManager';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';

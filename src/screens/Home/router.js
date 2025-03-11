@@ -27,7 +27,7 @@ import CitizenReportContactInfo from './CitizenReportContactInfo/CitizenReportCo
 import IssueDetail from './IssueDetail/IssueDetail';
 import CitizenReportIntro from './CitizenReportIntro/CitizenReportIntro';
 import { colors } from '../../utils/colors';
-import i18n from 'i18n-js';
+import { i18n } from "../../translations/i18n";
 import CitizenReportLocationStep from './CitizenReportLocationStep/CitizenReportLocationStep';
 import IssueActions from './IssueActions/IssueActions';
 import IssueHistory from './IssueHistory/IssueHistory';

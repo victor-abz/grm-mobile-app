@@ -38,7 +38,7 @@
     "expo-splash-screen": "~0.27.7",
     "expo-status-bar": "~1.12.1",
     "expo-updates": "~0.25.28",
-    "i18n-js": "^3.8.0",
+    "i18n-js": "^4.5.1",
     "immutable": "^4.0.0-rc.12",
     "intl": "^1.2.5",
     "lodash": "^4.17.21",

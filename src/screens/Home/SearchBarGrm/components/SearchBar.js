@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, TextInput, View, Keyboard, Button } from "react-native";
 import { Feather, Entypo } from "@expo/vector-icons";
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import { colors } from "../../../../utils/colors";
 
 

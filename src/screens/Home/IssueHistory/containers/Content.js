@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import moment from 'moment';
 import { styles } from './Content.styles';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import { Button, Dialog, Paragraph, Portal, Divider } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 
