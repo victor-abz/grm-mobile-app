@@ -347,12 +347,12 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                   <Text style={styles.radioLabel}>{i18n.t(`satisfaction_level_${issue.rating}`)}</Text>
                 )
             }
-            <StarRating
+{/*            <StarRating
               starSize={30}
               rating={() => issue.rating ? issue.rating : 0}
               maxStars={5}
               onChange={() => null}
-              emptyColor="#dddddd"/>
+              emptyColor="#dddddd"/>*/}
 
           </View>
 
@@ -443,30 +443,30 @@ function Content({ issue, navigation, statuses = [], eadl }) {
               </View>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={_showEscalateDialog}
-            disabled={disableEscalation || !isRecordResolutionEnabled}
-            style={{
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              marginVertical: 10,
-              padding: 15,
-            }}
-          >
-            <Text style={styles.subtitle}>{i18n.t('escalate')}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <AntDesign
-                style={{ marginRight: 5 }}
-                name="rightsquare"
-                size={35}
-                color={
-                  !disableEscalation && isRecordResolutionEnabled ? colors.primary : colors.disabled
-                }
-              />
-              <Feather name="help-circle" size={24} color="gray"/>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={_showEscalateDialog}
+              disabled={disableEscalation || !isRecordResolutionEnabled}
+              style={{
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginVertical: 10,
+                padding: 15,
+              }}
+            >
+              <Text style={styles.subtitle}>{i18n.t('escalate')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AntDesign
+                  style={{ marginRight: 5 }}
+                  name="rightsquare"
+                  size={35}
+                  color={
+                    !disableEscalation && isRecordResolutionEnabled ? colors.primary : colors.disabled
+                  }
+                />
+                <Feather name="help-circle" size={24} color="gray"/>
+              </View>
+            </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
 
