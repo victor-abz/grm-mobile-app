@@ -14,7 +14,7 @@ URL for Web App
 `src/services/API.js`
 
 
-# Development 
+# Development (see SDK version details for specific instuctions)
 <!-- - `export NODE_OPTIONS=--openssl-legacy-provider` -->
 <!-- - `expo start` -->
 - `rm -rf package-lock.json`
@@ -148,7 +148,7 @@ If you encounter any problems, follow these steps to clean and reinstall package
 - `yarn add pouchdb@^7.3.0 pouchdb-adapter-asyncstorage@https://github.com/e3tools/pouchdb-adapter-asyncstorage pouchdb-authentication@^1.1.3 pouchdb-find@^7.3.0 pouchdb-react-native@https://github.com/e3tools/pouchdb-react-native pouchdb-upsert@^2.2.0`
 - `yarn add react-native-gradle-plugin react-native-svg-transformer@^1.3.0 metro`
 
-2. Configuring gradle fihciers in `android` to adapt to SDK expo 51. 
+2. Configuring gradle files in `android` to adapt to SDK expo 51. 
 - Modify your `android/gradle/wrapper/gradle-wrapper.properties` file like this : 
 ```
 distributionBase=GRADLE_USER_HOME
@@ -255,18 +255,21 @@ module.exports = (async () => {
 })();
 ```
 
-4. Cleaning and reinstalling dependencies
+4. Cleaning dependencies
 - `rm -rf node_modules`
 - `rm -rf package-lock.json`
 - `yarn cache clean`
 - `rm -rf android/.gradle/caches/`
 - `rm -rf yarn.lock`
+
+5. Installing dependencies
 - `yarn install`
 
-5. Execute this command to build dependencies
+6. Execute this command to build dependencies
 - `npx expo prebuild --clean`
+- Change your `android/build.gradle` file like recommanded in step 2
 
-6. Start the project 
+7. Start the project 
 - `yarn android`
 
 If you receive this message : `CommandError: No development build (com.setcobj.grmapp) for this project is installed. Please make and install a development build on the device first.`, this is not an execution abort error, but just a reminder that an application (your current application) is not installed on your laptop. In our case, with the `yarn android` command, the application will be installed within a few seconds of the message being displayed.

@@ -4,7 +4,7 @@ import PouchAuth from 'pouchdb-authentication';
 import PouchFind from 'pouchdb-find';
 import PouchAsyncStorage from 'pouchdb-adapter-asyncstorage';
 import { baseURL } from '../services/API';
-const BASE_URL = 'https://mgp.coso.gouv.bj/couchdb';
+const BASE_URL = 'https://cdd.coso.gouv.bj/couchdb';
 // const BASE_URL = 'http://10.0.2.2:5984';
 const RESOURCE_URL = baseURL;
 PouchDB.plugin(PouchAuth);
@@ -42,6 +42,7 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
 
   const result = {levels: []};
   if (result.levels.length === 0) {
+    console.log("BASE_URL : " + BASE_URL + "/grm")
     await fetch(`${RESOURCE_URL}/authentication/get-adl-administrative-region?${new URLSearchParams({email: userEmail})}`)
       .then((response) => response.json())
       .then((a) => {result.levels = a?.levels})

@@ -21,7 +21,7 @@ const CitizenReportContactInfo = ({ route }) => {
           setIssueAges(result?.docs);
         })
         .catch(function (err) {
-          console.log(err);
+          console.log("issue_age error :" + err);
         });
     //FETCH CITIZEN GROUP 1
     LocalGRMDatabase.find({
