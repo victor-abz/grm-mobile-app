@@ -132,107 +132,249 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     });
   };
 
+  // const acceptIssue = () => {
+  //   const newStatus = statuses.find((x) => x.open_status === true);
+  //   issue.comments?.push({
+  //     name: issue.reporter.name,
+  //     id: eadl._id,
+  //     comment: i18n.t('issue_was_accepted'),
+  //     due_at: moment(),
+  //   });
+  //   saveIssueStatus(newStatus, 'accept');
+  // };
+
+  // const rejectIssue = () => {
+  //   const newStatus = statuses.find((x) => x.rejected_status === true);
+  //   issue.comments?.push({
+  //     name: issue.reporter.name,
+  //     id: eadl._id,
+  //     comment: i18n.t('issue_was_rejected'),
+  //     due_at: moment(),
+  //   });
+  //   saveIssueStatus(newStatus, 'reject');
+  // };
+
+  // const rateIssue = () => {
+  //   if (rating > 0) {
+  //     issue.comments?.push({
+  //       name: issue.reporter.name,
+  //       id: eadl._id,
+  //       comment: i18n.t('issue_was_rated'),
+  //       due_at: moment(),
+  //     });
+  //   }
+
+  //   issue.rating = rating;
+  //   saveIssueStatus();
+
+  //   if (rating === 0) {
+  //     _showRateAppealDialog();
+  //   }
+  //   _hideRatingDialog();
+  // };
+
+  // const appealIssue = () => {
+  //   const newStatus = statuses.find((x) => x.open_status === true);
+  //   issue.comments?.push({
+  //     name: issue.reporter.name,
+  //     id: eadl._id,
+  //     comment: i18n.t('issue_was_appealed'),
+  //     due_at: moment(),
+  //   });
+  //   issue.escalate_flag = true;
+  //   saveIssueStatus(newStatus);
+  //   _hideRateAppealDialog();
+  //   showToast('Votre demande a bien été prise en compte.');
+  // };
+
+  // const escalateIssue = () => {
+  //   issue.escalate_flag = true;
+  //   issue.escalation_reasons?.push({
+  //     id: eadl?._id,
+  //     name: eadl?.representative?.name,
+  //     comment: escalateComment,
+  //     due_at: moment(),
+  //   });
+  //   issue.comments?.push({
+  //     name: issue.reporter.name,
+  //     id: eadl._id,
+  //     comment: i18n.t('issue_was_escalated'),
+  //     due_at: moment(),
+  //   });
+  //   saveIssueStatus();
+  //   setDisableEscalation(true);
+  //   setEscalatedDialog(true);
+  // };
+
+  // const recordStep = () => {
+  //   issue.comments?.push({
+  //     name: issue.reporter.name,
+  //     id: eadl._id,
+  //     comment,
+  //     due_at: moment(),
+  //   });
+  //   saveIssueStatus();
+  //   setRecordedSteps(true);
+  // };
+
+  // const recordResolution = () => {
+  //   setRecordedResolution(true);
+  // };
+
+  // const recordResolutionConfirmation = () => {
+  //   issue.research_result = resolution;
+  //   const newStatus = statuses.find((x) => x.final_status === true);
+  //   issue.comments?.push({
+  //     name: issue.reporter.name,
+  //     id: eadl._id,
+  //     comment: i18n.t('issue_was_resolved'),
+  //     due_at: moment(),
+  //   });
+  //   saveIssueStatus(newStatus, 'record_resolution');
+  //   _hideRecordResolutionDialog();
+  // };
+
+  /****  new code for updating Issue ****/
+  const updateIssueWithComment = (issue, commentData) => {
+    const newComments = [
+      ...issue.comments,
+      commentData,
+    ];
+  
+    return {
+      ...issue,
+      comments: newComments,
+    };
+  };
+  
   const acceptIssue = () => {
     const newStatus = statuses.find((x) => x.open_status === true);
-    issue.comments?.push({
+    const updatedIssue = updateIssueWithComment(issue, {
       name: issue.reporter.name,
       id: eadl._id,
       comment: i18n.t('issue_was_accepted'),
       due_at: moment(),
     });
+    issue = { ...issue, ...updatedIssue };
     saveIssueStatus(newStatus, 'accept');
   };
-
+  
   const rejectIssue = () => {
     const newStatus = statuses.find((x) => x.rejected_status === true);
-    issue.comments?.push({
+    const updatedIssue = updateIssueWithComment(issue, {
       name: issue.reporter.name,
       id: eadl._id,
       comment: i18n.t('issue_was_rejected'),
       due_at: moment(),
     });
+    issue = { ...issue, ...updatedIssue };
     saveIssueStatus(newStatus, 'reject');
   };
-
+  
   const rateIssue = () => {
     if (rating > 0) {
-      issue.comments?.push({
+      const updatedIssue = updateIssueWithComment(issue, {
         name: issue.reporter.name,
         id: eadl._id,
         comment: i18n.t('issue_was_rated'),
         due_at: moment(),
       });
+      updatedIssue.rating = rating;
+      issue = { ...issue, ...updatedIssue };
+      saveIssueStatus();
     }
-
-    issue.rating = rating;
-    saveIssueStatus();
-
+  
     if (rating === 0) {
       _showRateAppealDialog();
     }
     _hideRatingDialog();
   };
-
+  
   const appealIssue = () => {
     const newStatus = statuses.find((x) => x.open_status === true);
-    issue.comments?.push({
+    const updatedIssue = updateIssueWithComment(issue, {
       name: issue.reporter.name,
       id: eadl._id,
       comment: i18n.t('issue_was_appealed'),
       due_at: moment(),
     });
-    issue.escalate_flag = true;
+    updatedIssue.escalate_flag = true;
+    issue = { ...issue, ...updatedIssue };
     saveIssueStatus(newStatus);
     _hideRateAppealDialog();
     showToast('Votre demande a bien été prise en compte.');
   };
-
+  
   const escalateIssue = () => {
-    issue.escalate_flag = true;
-    issue.escalation_reasons?.push({
-      id: eadl?._id,
-      name: eadl?.representative?.name,
-      comment: escalateComment,
-      due_at: moment(),
-    });
-    issue.comments?.push({
-      name: issue.reporter.name,
-      id: eadl._id,
-      comment: i18n.t('issue_was_escalated'),
-      due_at: moment(),
-    });
+    const escalationReasons = issue.escalation_reasons || [];
+    const comments = issue.comments || [];
+
+    const updatedIssue = {
+      ...issue,
+      escalate_flag: true,
+      escalation_reasons: [
+        ...escalationReasons,
+        {
+          id: eadl?._id,
+          name: eadl?.representative?.name,
+          comment: escalateComment,
+          due_at: moment(),
+        },
+      ],
+      comments: [
+        ...comments,
+        {
+          name: issue.reporter.name,
+          id: eadl._id,
+          comment: i18n.t('issue_was_escalated'),
+          due_at: moment(),
+        },
+      ],
+    };
+  
+    issue = { ...issue, ...updatedIssue };
     saveIssueStatus();
     setDisableEscalation(true);
     setEscalatedDialog(true);
   };
-
+  
   const recordStep = () => {
-    issue.comments?.push({
+    const updatedIssue = updateIssueWithComment(issue, {
       name: issue.reporter.name,
       id: eadl._id,
       comment,
       due_at: moment(),
     });
+    issue = { ...issue, ...updatedIssue };
     saveIssueStatus();
     setRecordedSteps(true);
   };
-
+  
   const recordResolution = () => {
     setRecordedResolution(true);
   };
 
   const recordResolutionConfirmation = () => {
-    issue.research_result = resolution;
     const newStatus = statuses.find((x) => x.final_status === true);
-    issue.comments?.push({
-      name: issue.reporter.name,
-      id: eadl._id,
-      comment: i18n.t('issue_was_resolved'),
-      due_at: moment(),
-    });
+    const updatedIssue = {
+      ...issue,
+      research_result: resolution,
+      comments: [
+        ...issue.comments,
+        {
+          name: issue.reporter.name,
+          id: eadl._id,
+          comment: i18n.t('issue_was_resolved'),
+          due_at: moment(),
+        },
+      ],
+    };
+    issue = { ...issue, ...updatedIssue };
     saveIssueStatus(newStatus, 'record_resolution');
     _hideRecordResolutionDialog();
   };
+  /**** END ****/
+
 
   const saveIssueStatus = (newStatus, type = 'none') => {
     if (newStatus) {
@@ -258,11 +400,13 @@ function Content({ issue, navigation, statuses = [], eadl }) {
           setRecordedResolution(false);
           _hideRecordResolutionDialog();
         }
+
       })
       .catch((err) => {
         console.log('Error', err);
       });
   };
+  
 
   useEffect(() => {
     function _isIssueAssignedToMe() {
@@ -338,7 +482,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
 
           </View>
 
-          <View style={styles.ratingInfoSection}>
+          {/*<View style={styles.ratingInfoSection}>
             {
               !issue.rating ?
                 (
@@ -347,14 +491,14 @@ function Content({ issue, navigation, statuses = [], eadl }) {
                   <Text style={styles.radioLabel}>{i18n.t(`satisfaction_level_${issue.rating}`)}</Text>
                 )
             }
-{/*            <StarRating
+            <StarRating
               starSize={30}
               rating={() => issue.rating ? issue.rating : 0}
               maxStars={5}
               onChange={() => null}
-              emptyColor="#dddddd"/>*/}
+              emptyColor="#dddddd"/>
 
-          </View>
+          </View>*/}
 
           {/* ACTION BUTTONS */}
           <View style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}>

@@ -6,7 +6,7 @@ import {
   FlatList,
   SafeAreaView, TouchableOpacity, StatusBar,
 } from 'react-native';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import { colors } from '../../../../utils/colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import moment from 'moment';

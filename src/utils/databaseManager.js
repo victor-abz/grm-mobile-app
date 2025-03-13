@@ -42,7 +42,6 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
 
   const result = {levels: []};
   if (result.levels.length === 0) {
-    console.log("BASE_URL : " + BASE_URL + "/grm")
     await fetch(`${RESOURCE_URL}/authentication/get-adl-administrative-region?${new URLSearchParams({email: userEmail})}`)
       .then((response) => response.json())
       .then((a) => {result.levels = a?.levels})

@@ -11,7 +11,7 @@ import { styles } from "./Content.styles";
 import { Button, RadioButton, TextInput } from "react-native-paper";
 import { colors } from "../../../../utils/colors";
 import CustomDropDownPicker from "../../../../components/CustomDropDownPicker/CustomDropDownPicker";
-import i18n from "i18n-js";
+import { i18n } from "../../../../translations/i18n";
 
 const theme = {
   roundness: 12,
