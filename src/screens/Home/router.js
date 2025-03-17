@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from "react";
 import { Platform, View, StyleSheet, Pressable } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -239,7 +239,10 @@ function NotificationsStackScreen() {
 }
 
 function IssueDetailTabsStack(props) {
-  const temp = props.route.params.item;
+  console.log('props.route.params', props.route.params)
+  const issue = props.route.params.item;
+  const {updateIssue} = props.route.params;
+
   return (
     <TopTab.Navigator
       screenOptions={{
@@ -247,22 +250,22 @@ function IssueDetailTabsStack(props) {
         tabBarIndicatorStyle: { backgroundColor: colors.primary },
       }}
       initialRouteName="Actions"
-    >
+     >
       <TopTab.Screen
         name="Actions"
-        initialParams={{ item: temp }}
+        initialParams={{ item: issue, updateIssue }}
         options={{ tabBarLabel: i18n.t('actions') }}
         component={IssueActions}
       />
       <TopTab.Screen
         name="IssueDetail"
-        initialParams={{ item: temp }}
+        initialParams={{ item: issue }}
         options={{ tabBarLabel: i18n.t('details') }}
         component={IssueDetail}
       />
       <TopTab.Screen
         name="History"
-        initialParams={{ item: temp }}
+        initialParams={{ item: issue }}
         options={{ tabBarLabel: i18n.t('history') }}
         component={IssueHistory}
       />

@@ -22,7 +22,7 @@ function IssueActions({ route, navigation }) {
       .catch((err) => {
         alert(`Unable to retrieve statuses. ${JSON.stringify(err)}`);
       });
-  }, []);
+  });
 
   useEffect(() => {
     if (username) {
@@ -43,9 +43,10 @@ function IssueActions({ route, navigation }) {
 
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content eadl={eadl} issue={params.item} navigation={navigation} statuses={statuses} />
+      <Content eadl={eadl} item={params.item} navigation={navigation} statuses={statuses} updateIssue={params.updateIssue}/>
     </SafeAreaView>
   );
 }
 
 export default IssueActions;
+

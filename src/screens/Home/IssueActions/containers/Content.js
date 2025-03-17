@@ -31,7 +31,8 @@ const theme = {
 const WHATSAPP_LINK = 'http://api.whatsapp.com/send?phone=223';
 const PHONE_CALL_LINK = 'tel://+223';
 
-function Content({ issue, navigation, statuses = [], eadl }) {
+function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
+  const [issue, setIssue] = useState(item);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
   const [recordStepsDialog, setRecordStepsDialog] = useState(false);
@@ -57,6 +58,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [rating, setRating] = useState(0);
   const [status, setStatus] = useState(null);
+
   const goToDetails = () => navigation.jumpTo('IssueDetail');
   const goToHistory = () => {
     setRecordedSteps(false);
@@ -132,121 +134,18 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     });
   };
 
-  // const acceptIssue = () => {
-  //   const newStatus = statuses.find((x) => x.open_status === true);
-  //   issue.comments?.push({
-  //     name: issue.reporter.name,
-  //     id: eadl._id,
-  //     comment: i18n.t('issue_was_accepted'),
-  //     due_at: moment(),
-  //   });
-  //   saveIssueStatus(newStatus, 'accept');
-  // };
-
-  // const rejectIssue = () => {
-  //   const newStatus = statuses.find((x) => x.rejected_status === true);
-  //   issue.comments?.push({
-  //     name: issue.reporter.name,
-  //     id: eadl._id,
-  //     comment: i18n.t('issue_was_rejected'),
-  //     due_at: moment(),
-  //   });
-  //   saveIssueStatus(newStatus, 'reject');
-  // };
-
-  // const rateIssue = () => {
-  //   if (rating > 0) {
-  //     issue.comments?.push({
-  //       name: issue.reporter.name,
-  //       id: eadl._id,
-  //       comment: i18n.t('issue_was_rated'),
-  //       due_at: moment(),
-  //     });
-  //   }
-
-  //   issue.rating = rating;
-  //   saveIssueStatus();
-
-  //   if (rating === 0) {
-  //     _showRateAppealDialog();
-  //   }
-  //   _hideRatingDialog();
-  // };
-
-  // const appealIssue = () => {
-  //   const newStatus = statuses.find((x) => x.open_status === true);
-  //   issue.comments?.push({
-  //     name: issue.reporter.name,
-  //     id: eadl._id,
-  //     comment: i18n.t('issue_was_appealed'),
-  //     due_at: moment(),
-  //   });
-  //   issue.escalate_flag = true;
-  //   saveIssueStatus(newStatus);
-  //   _hideRateAppealDialog();
-  //   showToast('Votre demande a bien été prise en compte.');
-  // };
-
-  // const escalateIssue = () => {
-  //   issue.escalate_flag = true;
-  //   issue.escalation_reasons?.push({
-  //     id: eadl?._id,
-  //     name: eadl?.representative?.name,
-  //     comment: escalateComment,
-  //     due_at: moment(),
-  //   });
-  //   issue.comments?.push({
-  //     name: issue.reporter.name,
-  //     id: eadl._id,
-  //     comment: i18n.t('issue_was_escalated'),
-  //     due_at: moment(),
-  //   });
-  //   saveIssueStatus();
-  //   setDisableEscalation(true);
-  //   setEscalatedDialog(true);
-  // };
-
-  // const recordStep = () => {
-  //   issue.comments?.push({
-  //     name: issue.reporter.name,
-  //     id: eadl._id,
-  //     comment,
-  //     due_at: moment(),
-  //   });
-  //   saveIssueStatus();
-  //   setRecordedSteps(true);
-  // };
-
-  // const recordResolution = () => {
-  //   setRecordedResolution(true);
-  // };
-
-  // const recordResolutionConfirmation = () => {
-  //   issue.research_result = resolution;
-  //   const newStatus = statuses.find((x) => x.final_status === true);
-  //   issue.comments?.push({
-  //     name: issue.reporter.name,
-  //     id: eadl._id,
-  //     comment: i18n.t('issue_was_resolved'),
-  //     due_at: moment(),
-  //   });
-  //   saveIssueStatus(newStatus, 'record_resolution');
-  //   _hideRecordResolutionDialog();
-  // };
-
-  /****  new code for updating Issue ****/
   const updateIssueWithComment = (issue, commentData) => {
     const newComments = [
       ...issue.comments,
       commentData,
     ];
-  
+
     return {
       ...issue,
       comments: newComments,
     };
   };
-  
+
   const acceptIssue = () => {
     const newStatus = statuses.find((x) => x.open_status === true);
     const updatedIssue = updateIssueWithComment(issue, {
@@ -255,10 +154,10 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       comment: i18n.t('issue_was_accepted'),
       due_at: moment(),
     });
-    issue = { ...issue, ...updatedIssue };
-    saveIssueStatus(newStatus, 'accept');
+   setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
+   saveIssueStatus(newStatus, 'accept');
   };
-  
+
   const rejectIssue = () => {
     const newStatus = statuses.find((x) => x.rejected_status === true);
     const updatedIssue = updateIssueWithComment(issue, {
@@ -267,10 +166,10 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       comment: i18n.t('issue_was_rejected'),
       due_at: moment(),
     });
-    issue = { ...issue, ...updatedIssue };
+    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
     saveIssueStatus(newStatus, 'reject');
   };
-  
+
   const rateIssue = () => {
     if (rating > 0) {
       const updatedIssue = updateIssueWithComment(issue, {
@@ -280,16 +179,16 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         due_at: moment(),
       });
       updatedIssue.rating = rating;
-      issue = { ...issue, ...updatedIssue };
+      setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
       saveIssueStatus();
     }
-  
+
     if (rating === 0) {
       _showRateAppealDialog();
     }
     _hideRatingDialog();
   };
-  
+
   const appealIssue = () => {
     const newStatus = statuses.find((x) => x.open_status === true);
     const updatedIssue = updateIssueWithComment(issue, {
@@ -299,12 +198,12 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       due_at: moment(),
     });
     updatedIssue.escalate_flag = true;
-    issue = { ...issue, ...updatedIssue };
+    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
     saveIssueStatus(newStatus);
     _hideRateAppealDialog();
     showToast('Votre demande a bien été prise en compte.');
   };
-  
+
   const escalateIssue = () => {
     const escalationReasons = issue.escalation_reasons || [];
     const comments = issue.comments || [];
@@ -331,13 +230,13 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         },
       ],
     };
-  
-    issue = { ...issue, ...updatedIssue };
+
+    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
     saveIssueStatus();
     setDisableEscalation(true);
     setEscalatedDialog(true);
   };
-  
+
   const recordStep = () => {
     const updatedIssue = updateIssueWithComment(issue, {
       name: issue.reporter.name,
@@ -345,11 +244,11 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       comment,
       due_at: moment(),
     });
-    issue = { ...issue, ...updatedIssue };
+    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
     saveIssueStatus();
     setRecordedSteps(true);
   };
-  
+
   const recordResolution = () => {
     setRecordedResolution(true);
   };
@@ -369,7 +268,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         },
       ],
     };
-    issue = { ...issue, ...updatedIssue };
+    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
     saveIssueStatus(newStatus, 'record_resolution');
     _hideRecordResolutionDialog();
   };
@@ -377,20 +276,23 @@ function Content({ issue, navigation, statuses = [], eadl }) {
 
 
   const saveIssueStatus = (newStatus, type = 'none') => {
-    if (newStatus) {
-      issue.status = {
+    if (!newStatus) return;
+
+    const updatedIssue = {
+      ...issue,
+      status: {
         id: newStatus.id,
         name: newStatus.name,
-      };
-    }
-    if (type === 'rejected') {
-      issue.reject_reason = reason;
-    }
+      },
+      ...(type === 'rejected' && { reject_reason: reason }),
+    };
+
+    setIssue(updatedIssue);
+    updateIssue(updatedIssue);
     LocalGRMDatabase.upsert(issue._id, (doc) => {
-      doc = issue;
+      doc = updatedIssue;
       return doc;
-    })
-      .then(() => {
+    }).then(() => {
         updateActionButtons();
         if (type === 'accept') {
           setAcceptedDialog(true);
@@ -400,13 +302,12 @@ function Content({ issue, navigation, statuses = [], eadl }) {
           setRecordedResolution(false);
           _hideRecordResolutionDialog();
         }
-
       })
       .catch((err) => {
         console.log('Error', err);
       });
   };
-  
+
 
   useEffect(() => {
     function _isIssueAssignedToMe() {
