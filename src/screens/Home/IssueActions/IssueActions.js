@@ -49,4 +49,3 @@ function IssueActions({ route, navigation }) {
 }
 
 export default IssueActions;
-

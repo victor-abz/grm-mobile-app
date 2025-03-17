@@ -49,7 +49,6 @@ const searchFilter = (issue, searchPhrase, eadl) => {
 const List = (props) => {
   const renderItem = ({ item }) => {
     if (searchFilter(item, props.searchPhrase, props.eadl, props.updateIssue)) {
-      console.log(props.updateIssue)
       return <Item item={item}
                    onPress={() =>
                      props.navigation.navigate('IssueDetailTabs', {

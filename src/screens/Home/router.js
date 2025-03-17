@@ -239,7 +239,6 @@ function NotificationsStackScreen() {
 }
 
 function IssueDetailTabsStack(props) {
-  console.log('props.route.params', props.route.params)
   const issue = props.route.params.item;
   const {updateIssue} = props.route.params;
 
