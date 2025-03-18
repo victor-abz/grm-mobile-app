@@ -238,6 +238,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
   };
 
   const recordStep = () => {
+    console.log("recordStep issue at start : ", issue);
     const updatedIssue = updateIssueWithComment(issue, {
       name: issue.reporter.name,
       id: eadl._id,
@@ -245,6 +246,8 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
       due_at: moment(),
     });
     setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
+    console.log("recordStep updated issue comments : ", issue.comments);
+    console.log("recordStep updatedIssue comments : ", updatedIssue.comments);
     saveIssueStatus();
     setRecordedSteps(true);
   };
@@ -268,27 +271,43 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
         },
       ],
     };
+
     setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
+    // check if setIssue update issue value
+    console.log("recordResConf updated issue comments : ", issue.comments);
+    console.log("recordResConf updatedIssue comments : ", updatedIssue.comments);
     saveIssueStatus(newStatus, 'record_resolution');
     _hideRecordResolutionDialog();
   };
-  /**** END ****/
 
 
   const saveIssueStatus = (newStatus, type = 'none') => {
-    if (!newStatus) return;
+    // if function called with no newStatus, keep old status 
+    let tosaveStatus = issue.status
+    if (newStatus) {
+      tosaveStatus = {
+        id: newStatus.id,
+        name: newStatus.name,
+      };
+    }
 
     const updatedIssue = {
       ...issue,
-      status: {
-        id: newStatus.id,
-        name: newStatus.name,
-      },
-      ...(type === 'rejected' && { reject_reason: reason }),
+      status: tosaveStatus,
     };
-
+    
+    // only add/update reject_reason if type == 'rejected'
+    if (type === 'rejected') {
+      updatedIssue = {
+        ...updatedIssue,
+        reject_reason: reason,
+      };
+    }
+    
     setIssue(updatedIssue);
     updateIssue(updatedIssue);
+    // check if setIssue update issue value
+    console.log("saveIssueStatus updated issue comments : ", issue.status);
     LocalGRMDatabase.upsert(issue._id, (doc) => {
       doc = updatedIssue;
       return doc;
