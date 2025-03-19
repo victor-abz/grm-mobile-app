@@ -79,7 +79,7 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
       console.log(`[Sync COMMUNES: ${JSON.stringify(currState)}]`)
     );
 
-    syncGRM.on(state, (currState) => console.log(`[Sync GRM: ${JSON.stringify(currState)}]`));
+    syncGRM.on(state, (currState) => console.log(`[Sync GRM: ${JSON.stringify(currState).tracking_code}]`));
   });
 };
 

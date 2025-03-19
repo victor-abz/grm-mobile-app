@@ -17,6 +17,7 @@ const theme = {
 };
 
 function Content({ issue }) {
+  //console.log("propsIssue.comments : ", issue.comments);
   const [comments, setComments] = useState();
   const [showDialog, setShowDialog] = useState(false);
   const [selected, setSelected] = useState(null);

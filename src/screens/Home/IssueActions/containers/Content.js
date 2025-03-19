@@ -63,7 +63,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
   const goToHistory = () => {
     setRecordedSteps(false);
     _hideRecordStepsDialog();
-    navigation.jumpTo('History');
+    navigation.navigate('History', { issue });
   };
   const _showDialog = () => setAcceptDialog(true);
   const _showEscalateDialog = () => setEscalateDialog(true);
@@ -134,7 +134,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
     });
   };
 
-  const updateIssueWithComment = (issue, commentData) => {
+  const updateIssueWithComments = (issue, newStatus, commentData) => {
     const newComments = [
       ...issue.comments,
       commentData,
@@ -142,115 +142,123 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
 
     return {
       ...issue,
+      status : newStatus,
       comments: newComments,
     };
   };
 
   const acceptIssue = () => {
     const newStatus = statuses.find((x) => x.open_status === true);
-    const updatedIssue = updateIssueWithComment(issue, {
-      name: issue.reporter.name,
-      id: eadl._id,
-      comment: i18n.t('issue_was_accepted'),
-      due_at: moment(),
+    setIssue((prevIssue) => {
+      const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
+        name: prevIssue.reporter.name,
+        id: eadl._id,
+        comment: i18n.t('issue_was_accepted'),
+        due_at: moment(),
+      });
+      return updatedIssue;
     });
-   setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
-   saveIssueStatus(newStatus, 'accept');
   };
 
   const rejectIssue = () => {
     const newStatus = statuses.find((x) => x.rejected_status === true);
-    const updatedIssue = updateIssueWithComment(issue, {
-      name: issue.reporter.name,
-      id: eadl._id,
-      comment: i18n.t('issue_was_rejected'),
-      due_at: moment(),
+    setIssue((prevIssue) => {
+      const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
+        name: prevIssue.reporter.name,
+        id: eadl._id,
+        comment: i18n.t('issue_was_rejected'),
+        due_at: moment(),
+      });
+      return updatedIssue;
     });
-    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
-    saveIssueStatus(newStatus, 'reject');
   };
 
   const rateIssue = () => {
     if (rating > 0) {
-      const updatedIssue = updateIssueWithComment(issue, {
-        name: issue.reporter.name,
-        id: eadl._id,
-        comment: i18n.t('issue_was_rated'),
-        due_at: moment(),
-      });
-      updatedIssue.rating = rating;
-      setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
-      saveIssueStatus();
-    }
-
-    if (rating === 0) {
-      _showRateAppealDialog();
+        setIssue((prevIssue) => {
+          const updatedIssue = updateIssueWithComments(prevIssue, prevIssue.status, {
+            name: prevIssue.reporter.name,
+            id: eadl._id,
+            comment: i18n.t('issue_was_rated'),
+            due_at: moment(),
+          });
+          updatedIssue.rating = rating;
+          return updatedIssue;
+        });
+    } else {
+        _showRateAppealDialog();
     }
     _hideRatingDialog();
   };
 
   const appealIssue = () => {
     const newStatus = statuses.find((x) => x.open_status === true);
-    const updatedIssue = updateIssueWithComment(issue, {
-      name: issue.reporter.name,
-      id: eadl._id,
-      comment: i18n.t('issue_was_appealed'),
-      due_at: moment(),
+    setIssue((prevIssue) => {
+      const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
+        name: prevIssue.reporter.name,
+        id: eadl._id,
+        comment: i18n.t('issue_was_appealed'),
+        due_at: moment(),
+      });
+      updatedIssue.escalate_flag = true;
+      return updatedIssue;
     });
-    updatedIssue.escalate_flag = true;
-    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
-    saveIssueStatus(newStatus);
     _hideRateAppealDialog();
     showToast('Votre demande a bien été prise en compte.');
   };
 
   const escalateIssue = () => {
-    const escalationReasons = issue.escalation_reasons || [];
-    const comments = issue.comments || [];
-
-    const updatedIssue = {
-      ...issue,
-      escalate_flag: true,
-      escalation_reasons: [
-        ...escalationReasons,
-        {
-          id: eadl?._id,
-          name: eadl?.representative?.name,
-          comment: escalateComment,
-          due_at: moment(),
-        },
-      ],
-      comments: [
-        ...comments,
-        {
-          name: issue.reporter.name,
-          id: eadl._id,
-          comment: i18n.t('issue_was_escalated'),
-          due_at: moment(),
-        },
-      ],
-    };
-
-    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
-    saveIssueStatus();
+    setIssue((prevIssue) => {
+        const updatedIssue = {
+            ...prevIssue,
+            escalate_flag: true,
+            escalation_reasons: [
+                ...(prevIssue.escalation_reasons || []),
+                {
+                    id: eadl?._id,
+                    name: eadl?.representative?.name,
+                    comment: escalateComment,
+                    due_at: moment(),
+                },
+            ],
+            comments: [
+                ...(prevIssue.comments || []),
+                {
+                    name: prevIssue.reporter.name,
+                    id: eadl._id,
+                    comment: i18n.t('issue_was_escalated'),
+                    due_at: moment(),
+                },
+            ],
+        };
+        console.log("escalate : ", updatedIssue.comments);
+        return updatedIssue;
+    });
     setDisableEscalation(true);
     setEscalatedDialog(true);
   };
 
   const recordStep = () => {
-    console.log("recordStep issue at start : ", issue);
-    const updatedIssue = updateIssueWithComment(issue, {
-      name: issue.reporter.name,
-      id: eadl._id,
-      comment,
-      due_at: moment(),
+    setIssue(prevIssue => {
+        const updatedIssue = updateIssueWithComments(prevIssue, issue.status, {
+            name: prevIssue.reporter.name,
+            id: eadl._id,
+            comment,
+            due_at: moment(),
+        });
+                
+        return updatedIssue;
     });
-    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
-    console.log("recordStep updated issue comments : ", issue.comments);
-    console.log("recordStep updatedIssue comments : ", updatedIssue.comments);
-    saveIssueStatus();
+
     setRecordedSteps(true);
   };
+
+  useEffect(() => {
+    if (recordedSteps || recordResolutionConfirmation || escalateIssue ) {
+        // console.log("Issue has been updated, saving status... : ", issue.comments);
+        saveIssueStatus();
+    }
+  }, [issue]);
 
   const recordResolution = () => {
     setRecordedResolution(true);
@@ -258,58 +266,39 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
 
   const recordResolutionConfirmation = () => {
     const newStatus = statuses.find((x) => x.final_status === true);
-    const updatedIssue = {
-      ...issue,
-      research_result: resolution,
-      comments: [
-        ...issue.comments,
-        {
-          name: issue.reporter.name,
-          id: eadl._id,
-          comment: i18n.t('issue_was_resolved'),
-          due_at: moment(),
-        },
-      ],
-    };
-
-    setIssue((prevIssue) => ({ ...prevIssue, ...updatedIssue }));
-    // check if setIssue update issue value
-    console.log("recordResConf updated issue comments : ", issue.comments);
-    console.log("recordResConf updatedIssue comments : ", updatedIssue.comments);
-    saveIssueStatus(newStatus, 'record_resolution');
+    setIssue((prevIssue) => {
+        const updatedIssue = {
+            ...prevIssue,
+            research_result: resolution,
+            status : newStatus,
+            comments: [
+                ...prevIssue.comments,
+                {
+                    name: prevIssue.reporter.name,
+                    id: eadl._id,
+                    comment: i18n.t('issue_was_resolved'),
+                    due_at: moment(),
+                },
+            ],
+        };
+        return updatedIssue;
+    });
     _hideRecordResolutionDialog();
   };
 
-
   const saveIssueStatus = (newStatus, type = 'none') => {
-    // if function called with no newStatus, keep old status 
-    let tosaveStatus = issue.status
-    if (newStatus) {
-      tosaveStatus = {
-        id: newStatus.id,
-        name: newStatus.name,
-      };
-    }
-
-    const updatedIssue = {
-      ...issue,
-      status: tosaveStatus,
-    };
-    
+ 
     // only add/update reject_reason if type == 'rejected'
-    if (type === 'rejected') {
-      updatedIssue = {
-        ...updatedIssue,
-        reject_reason: reason,
-      };
-    }
-    
-    setIssue(updatedIssue);
-    updateIssue(updatedIssue);
-    // check if setIssue update issue value
-    console.log("saveIssueStatus updated issue comments : ", issue.status);
+    // if (type === 'rejected') {
+    //   updatedIssue = {
+    //     ...updatedIssue,
+    //     reject_reason: reason,
+    //   };
+    // }
+    // console.log("toSaveIssue.comments : ", issue.comments);
     LocalGRMDatabase.upsert(issue._id, (doc) => {
-      doc = updatedIssue;
+      doc = issue;
+      console.log("saving issue +++");
       return doc;
     }).then(() => {
         updateActionButtons();
@@ -323,7 +312,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
         }
       })
       .catch((err) => {
-        console.log('Error', err);
+        console.log('Save issue error', err);
       });
   };
 
