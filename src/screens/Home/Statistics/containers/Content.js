@@ -7,6 +7,7 @@ import PieChartGrm from '../components/PieChartGrm';
 import BarChartGrm from '../components/BarChartGrm';
 
 function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup2, issueType, issueCategory, issueComponent, issueSubComponent }) {
+  console.log ("stats issue : ", issues);
   const [_issues, setIssues] = useState([]);
 
   const [dataAgeGroup, setDataAgeGroup] = useState([]);
@@ -142,7 +143,7 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
 
     issues.forEach(item => {
       // Age group data filling
-      let index = _dataAgeGroup.findIndex(value => value.code === item.citizen_age_group.id);
+      let index = _dataAgeGroup.findIndex(value => value.code === item.citizen_age_group?.id);
       if (index !== -1) {
         _dataAgeGroup[index].population += 1;
         setDataAgeGroup(_dataAgeGroup);
@@ -222,7 +223,7 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
           <PieChartGrm data={dataAgeGroup} />
         </View>
 
-        <View>
+        {/* <View>
           <View style={styles.container}>
             <Text style={styles.statisticsText}>{i18n.t('stat_nb_issue_by_occupation_status')}</Text>
           </View>
@@ -234,7 +235,7 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
             <Text style={styles.statisticsText}>{i18n.t('stat_nb_issue_by_education_level')}</Text>
           </View>
           <PieChartGrm data={dataCitizenGroup2} />
-        </View>
+        </View> */}
 
         <View>
           <View style={styles.container}>
@@ -257,12 +258,12 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
           <PieChartGrm data={dataIssueComponent} />
         </View>
 
-        <View>
+        {/* <View>
           <View style={styles.container}>
             <Text style={styles.statisticsText}>{i18n.t('stat_nb_issue_by_issue_sub_component')}</Text>
           </View>
           <PieChartGrm data={dataIssueSubComponent} />
-        </View>
+        </View> */}
       </View>
     </View>
   );
@@ -285,6 +286,13 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     marginBottom: 1,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   statisticsText: {
     fontFamily: 'Poppins_700Bold',

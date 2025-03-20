@@ -69,7 +69,7 @@ const customHeaderRightIcon = ({ navigation }) => ({
             navigation.navigate('SearchBarGrm')
           }}>
           <Icon type="ionicon" color={colors.primary} size={35}
-                name={Platform.OS === "ios" ? "ios-search" : "md-search"}/>
+                name={Platform.OS === "ios" ? "ios-search" : "search"}/>
         </Pressable>
       </View>
   )
@@ -311,7 +311,6 @@ function HomeRouter() {
       <Tab.Screen
         name="Diagnostics"
         options={{
-          header: true,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedIonicons
               pose={focused ? 'focused' : 'unfocused'}

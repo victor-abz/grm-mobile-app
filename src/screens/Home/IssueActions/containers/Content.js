@@ -63,7 +63,8 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
   const goToHistory = () => {
     setRecordedSteps(false);
     _hideRecordStepsDialog();
-    navigation.navigate('History', { issue });
+    navigation.setParams({ item: issue });
+    navigation.navigate('History');
   };
   const _showDialog = () => setAcceptDialog(true);
   const _showEscalateDialog = () => setEscalateDialog(true);

@@ -126,11 +126,11 @@ function Content({ issue }) {
                 {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.issue_type?.name ?? i18n.t('information_not_available')}
               </Text>
             </Text>
-            <Text style={styles.subtitle}>
+            {/* <Text style={styles.subtitle}>
               {i18n.t('lodged_by')}
               <Text
                 style={styles.text}> {citizenTypes[issue.citizen_type] ?? i18n.t('information_not_available')}</Text>
-            </Text>
+            </Text> */}
             <Text style={styles.subtitle}>
               {i18n.t('name')}
               <Text
