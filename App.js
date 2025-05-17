@@ -4,6 +4,8 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Provider as PouchProvider } from 'use-pouchdb';
 import Router from './src/router';
+import { AuthProvider } from './src/providers/AuthProvider';
+import { FrappeProvider } from './src/providers/FrappeProvider';
 import store from './src/store';
 import './src/translations/i18n';
 import LocalDatabase, {
@@ -19,18 +21,22 @@ if (__DEV__) {
 function App() {
   return (
     <ReduxProvider store={store}>
-      <PouchProvider
-        default="localGRMDatabase"
-        databases={{
-          LocalGRMDatabase,
-          LocalDatabase,
-          LocalCommunesDatabase,
-        }}
-      >
-        <PaperProvider>
-          <Router />
-        </PaperProvider>
-      </PouchProvider>
+      <AuthProvider>
+        <FrappeProvider>
+          <PouchProvider
+            default="localGRMDatabase"
+            databases={{
+              LocalGRMDatabase,
+              LocalDatabase,
+              LocalCommunesDatabase,
+            }}
+          >
+            <PaperProvider>
+              <Router />
+            </PaperProvider>
+          </PouchProvider>
+        </FrappeProvider>
+      </AuthProvider>
     </ReduxProvider>
   );
 }

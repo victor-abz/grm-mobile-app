@@ -8,17 +8,19 @@ import {
   useFonts,
 } from '@expo-google-fonts/poppins';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { init } from '../store/ducks/authentication.duck';
 import { getEncryptedData } from '../utils/storageManager';
+import { AuthContext } from '../providers/AuthProvider';
 import PrivateRoutes from './privateRoutes';
 import PublicRoutes from './publicRoutes';
 
 function Router({ theme }) {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useContext(AuthContext);
 
   const { userPassword } = useSelector((state) => state.get('authentication').toObject());
 
@@ -53,7 +55,7 @@ function Router({ theme }) {
 
   return (
     <NavigationContainer theme={theme || DefaultTheme}>
-      {userPassword ? <PrivateRoutes /> : <PublicRoutes />}
+      {userPassword || isAuthenticated ? <PrivateRoutes /> : <PublicRoutes />}
     </NavigationContainer>
   );
 }

@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-
+import React, { useState, useContext } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,13 +10,9 @@ import {
   View,
 } from 'react-native';
 import { ActivityIndicator, Button, TextInput } from 'react-native-paper';
-import { useDispatch } from 'react-redux';
-import API from '../../../services/API';
-import { login } from '../../../store/ducks/authentication.duck';
+import { AuthContext } from '../../../providers/AuthProvider';
 import { colors } from '../../../utils/colors';
 import MESSAGES from '../../../utils/formErrorMessages';
-import { emailRegex, passwordRegex } from '../../../utils/formUtils';
-import { getEncryptedData } from '../../../utils/storageManager';
 import styles from './Login.style';
 
 const theme = {
@@ -32,31 +27,24 @@ const theme = {
 
 function Login() {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
+  const { login } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [isPasswordSecure, setIsPasswordSecure] = useState(true);
+  const [error, setError] = useState('');
 
   const onLoginPress = async (data) => {
     setLoading(true);
-    const dbConfig = await getEncryptedData(
-      `dbCredentials_${data?.password}_${data?.email.replace('@', '')}`
-    );
-    if (dbConfig) {
-      dispatch(login(dbConfig, { email: data?.email, password: data?.password }));
-    } else {
-      new API()
-        .login({ email: data?.email, password: data?.password })
-        .then((response) => {
-          setLoading(false);
-          if (response.error) {
-            return;
-          }
-          dispatch(login(response, data));
-        })
-        .catch((error) => {
-          setLoading(false);
-          console.error(error);
-        });
+    setError('');
+    try {
+      const success = await login(data.login, data.password);
+      if (!success) {
+        setError(t('invalid_credentials'));
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(t('login_error'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,30 +102,27 @@ function Login() {
                       <TextInput
                         theme={theme}
                         autoCapitalize="none"
-                        label={t('email')}
+                        label={t('login_identifier')}
                         mode="outlined"
                         labelColor="#dedede"
                         style={styles.loginFormTextInput}
                         left={<TextInput.Icon name="account" color="#24c38b" />}
                         onBlur={onBlur}
-                        onChangeText={(value) => onChange(value)}
+                        onChangeText={onChange}
                         value={value}
+                        placeholder={t('login_identifier_placeholder')}
                       />
                     )}
-                    name="email"
+                    name="login"
                     rules={{
                       required: {
                         value: true,
                         message: MESSAGES.required,
                       },
-                      pattern: {
-                        value: emailRegex,
-                        message: 'Please enter a valid email address',
-                      },
                     }}
                     defaultValue=""
                   />
-                  {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+                  {errors.login && <Text style={styles.errorText}>{errors.login.message}</Text>}
                   <Controller
                     control={control}
                     render={({ onChange, onBlur, value }) => (
@@ -166,14 +151,6 @@ function Login() {
                         value: true,
                         message: MESSAGES.required,
                       },
-                      minLength: {
-                        value: 8,
-                        message: MESSAGES.minLength,
-                      },
-                      pattern: {
-                        value: passwordRegex,
-                        message: MESSAGES.password,
-                      },
                       maxLength: {
                         value: 40,
                         message: MESSAGES.maxLength,
@@ -184,18 +161,14 @@ function Login() {
                   {errors.password && (
                     <Text style={styles.errorText}>{errors.password.message}</Text>
                   )}
+                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 </View>
-
-                {/* <TouchableOpacity style={styles.hintContainer}> */}
-                {/*  <Text style={styles.textHint}>Forgo?</Text> */}
-                {/* </TouchableOpacity> */}
               </View>
             </KeyboardAvoidingView>
             {loading ? (
               <ActivityIndicator size="large" color="#24c38b" />
             ) : (
               <Button
-                // theme={theme}
                 style={[
                   styles.loginButton,
                   {

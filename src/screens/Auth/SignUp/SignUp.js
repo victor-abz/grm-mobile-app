@@ -325,11 +325,7 @@ function SignUp({ route }) {
                         value: passwordRegex,
                         message: MESSAGES.password,
                       },
-                      minLength: {
-                        value: 8,
-                        message: MESSAGES.minLength,
-                      },
-                      maxLength: {
+                      Length: {
                         value: 16,
                         message: MESSAGES.maxLength,
                       },

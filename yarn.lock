@@ -3035,6 +3035,15 @@ axios@^1.2.0:
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
+axios@^1.8.2:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.9.0.tgz#25534e3b72b54540077d33046f77e3b8d7081901"
+  integrity sha512-re4CqKTJaURpzbLHtIi6XpDv20/CnpXOtjRY5/CU32L8gU8ek9UIivcfvSWvmKEngmVbrUtPpdDwWDWL7DNHvg==
+  dependencies:
+    follow-redirects "^1.15.6"
+    form-data "^4.0.0"
+    proxy-from-env "^1.1.0"
+
 axobject-query@^3.1.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/axobject-query/-/axobject-query-3.2.1.tgz#39c378a6e3b06ca679f29138151e45b2b32da62a"
@@ -5018,10 +5027,10 @@ expo-network@~5.0.0:
   resolved "https://registry.yarnpkg.com/expo-network/-/expo-network-5.0.0.tgz#688d00a7ed2e2d00c43e464aa42a33bae0554e47"
   integrity sha512-t1pzOdPDBfuMI8SN15IJy+5b6o76YQyvsvBvsuhVp5S02TjFHHygzGekGwbmVYPjMfc8AfQm/8ggGCqlGz2u6g==
 
-expo-secure-store@~12.0.0:
-  version "12.0.0"
-  resolved "https://registry.yarnpkg.com/expo-secure-store/-/expo-secure-store-12.0.0.tgz#8baec10779708965169df3aa6406a801e4201514"
-  integrity sha512-Rz5lYr2NxrnFvIPwuWcseUSbdUjFxNZG0oVulqM9puuK7t5lDG3/SAy+J22ELBhaltuci2VVO6hCdFwRoRiG/Q==
+expo-secure-store@^14.2.3:
+  version "14.2.3"
+  resolved "https://registry.yarnpkg.com/expo-secure-store/-/expo-secure-store-14.2.3.tgz#8e74da512e671cec5f7b88679def3d54b59cd49d"
+  integrity sha512-hYBbaAD70asKTFd/eZBKVu+9RTo9OSTMMLqXtzDF8ndUGjpc6tmRCoZtrMHlUo7qLtwL5jm+vpYVBWI8hxh/1Q==
 
 expo-splash-screen@~0.17.5:
   version "0.17.5"
@@ -5360,6 +5369,11 @@ follow-redirects@^1.15.0:
   resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.2.tgz#b460864144ba63f2681096f274c4e57026da2c13"
   integrity sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==
 
+follow-redirects@^1.15.6:
+  version "1.15.9"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.9.tgz#a604fa10e443bf98ca94228d9eebcc2e8a2c8ee1"
+  integrity sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==
+
 fontfaceobserver@^2.1.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/fontfaceobserver/-/fontfaceobserver-2.3.0.tgz#5fb392116e75d5024b7ec8e4f2ce92106d1488c8"
@@ -5427,6 +5441,13 @@ fragment-cache@^0.2.1:
   integrity sha512-GMBAbW9antB8iZRHLoGw0b3HANt57diZYFO/HL1JGIC1MjKrdmhxvrJbupnVvpys0zsz7yBApXdQyfepKly2kA==
   dependencies:
     map-cache "^0.2.2"
+
+frappe-js-sdk@^1.9.0:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/frappe-js-sdk/-/frappe-js-sdk-1.9.0.tgz#535b098718de704a3dad80cbe4f87c490c299f3a"
+  integrity sha512-LFxXaOFH84dcEnESiUe8iPrU6pHP3vgDR8F8v/en9We9YhARbds4RLfPnB/6cks0OGOEbQ8IGhnmf4rMtkpzeA==
+  dependencies:
+    axios "^1.8.2"
 
 freeport-async@2.0.0:
   version "2.0.0"
