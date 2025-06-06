@@ -8,8 +8,6 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Icon } from 'react-native-elements';
 import posed from 'react-native-pose';
 import { colors } from '../../utils/colors';
-import BudgetAllocation from './BudgetAllocation/BudgetAllocation';
-import BudgetLog from './BudgetLog/BudgetLog';
 import CitizenReport from './CitizenReport/CitizenReport';
 import CitizenReportContactInfo from './CitizenReportContactInfo/CitizenReportContactInfo';
 import CitizenReportIntro from './CitizenReportIntro/CitizenReportIntro';
@@ -18,18 +16,13 @@ import CitizenReportStep2 from './CitizenReportStep2/CitizenReportStep2';
 import CitizenReportStep3 from './CitizenReportStep3/CitizenReportStep3';
 import CitizenReportStep4 from './CitizenReportStep4/CitizenReportStep4';
 import Diagnostics from './Diagnostics';
-import DocumentTask from './DocumentTask/DocumentTask';
 import GRM from './GRM/GRM';
 import IssueActions from './IssueActions/IssueActions';
 import IssueDetail from './IssueDetail/IssueDetail';
 import IssueHistory from './IssueHistory/IssueHistory';
 import IssueSearch from './IssueSearch/IssueSearch';
 import Notifications from './Notifications';
-import ParticipatoryBudgetingList from './ParticipatoryBudgeting/ParticipatoryBudgetingList';
-import PhaseTasks from './PhaseTasks/PhaseTasks';
 import Profile from './Profile/Profile';
-import RegisterSubprojects from './RegisterSubprojects/RegisterSubprojects';
-import RegisterVotesActivity from './RegisterVotesActivity/RegisterVotesActivity';
 import SearchBarGrm from './SearchBarGrm/SearchBarGrm';
 import Statistics from './Statistics/Statistics';
 import SyncAttachments from './SyncAttachments/SyncAttachments';
@@ -174,42 +167,6 @@ function DashboardStackScreen() {
         name="IssueDetailTabs"
         component={IssueDetailTabsStack}
         options={({ navigation, route }) => customHeaderOptions(t('grm_management'))}
-      />
-
-      <HomeStack.Screen
-        name="RegisterSubprojects"
-        component={RegisterSubprojects}
-        options={({ navigation, route }) => customHeaderOptions('Engagement Citoyen')}
-      />
-      <HomeStack.Screen
-        name="BudgetAllocation"
-        component={BudgetAllocation}
-        options={({ navigation, route }) => customHeaderOptions('Budgetisation')}
-      />
-      <HomeStack.Screen
-        name="BudgetLog"
-        component={BudgetLog}
-        options={({ navigation, route }) => customHeaderOptions('Budget Log')}
-      />
-      <HomeStack.Screen
-        name="RegisterVotesActivity"
-        component={RegisterVotesActivity}
-        options={({ navigation, route }) => customHeaderOptions('Enregistrer les votes')}
-      />
-      <HomeStack.Screen
-        name="ParticipatoryBudgetingList"
-        component={ParticipatoryBudgetingList}
-        options={({ navigation, route }) => customHeaderOptions('Budget Participatif')}
-      />
-      <HomeStack.Screen
-        name="PhaseTasks"
-        component={PhaseTasks}
-        options={({ navigation, route }) => customHeaderOptions('Phase Tasks')}
-      />
-      <HomeStack.Screen
-        name="DocumentTask"
-        component={DocumentTask}
-        options={({ navigation, route }) => customHeaderOptions('Document Task')}
       />
       <HomeStack.Screen
         name="SyncAttachments"
