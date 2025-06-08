@@ -44,6 +44,7 @@ function AuthProvider({ children }) {
     try {
       const frappe = new FrappeApp(FRAPPE_BASE_URL);
       const auth = frappe.auth();
+      console.log({ auth });
       await auth.loginWithUsernamePassword({ username, password });
 
       const call = frappe.call();

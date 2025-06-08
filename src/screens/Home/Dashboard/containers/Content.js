@@ -1,84 +1,185 @@
-import React from "react";
-import {
-  View,
-  ScrollView,
-  Dimensions,
-  ImageBackground,
-  Image,
-} from "react-native";
-const screenWidth = Dimensions.get("window").width;
-import { useNavigation } from "@react-navigation/native";
-import SmallCard from "../components/SmallCard";
-import BigCard from "../components/BigCard";
-import Chart from "../../../../../assets/chart_line_solid.svg";
-import FileIcon from "../../../../../assets/file_alt_regular.svg";
-import TeamWorkIcon from "../../../../../assets/team-work.svg";
-import SyncIcon from "../../../../../assets/sync_alt_solid.svg";
+import React, { useEffect, useState } from 'react';
+import { View, ScrollView, Dimensions, ImageBackground, Image, Alert } from 'react-native';
+import { Button } from 'react-native-paper';
+const screenWidth = Dimensions.get('window').width;
+import { useNavigation } from '@react-navigation/native';
+import { useData } from '../../../../providers/DataProvider';
+import lookupDataManager from '../../../../services/LookupDataManager';
+import SmallCard from '../components/SmallCard';
+import BigCard from '../components/BigCard';
+import Chart from '../../../../../assets/chart_line_solid.svg';
+import FileIcon from '../../../../../assets/file_alt_regular.svg';
+import TeamWorkIcon from '../../../../../assets/team-work.svg';
+import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
+import dataManager from '../../../../services/DataManager';
 
 function Content() {
   const navigation = useNavigation();
+  const { performNuclearReset, refreshLookupData } = useData();
+  const [isResetting, setIsResetting] = useState(false);
+
+  // Trigger background sync when home page loads
+  useEffect(() => {
+    const triggerBackgroundSync = async () => {
+      try {
+        console.log('🏠 Home page loaded, triggering background sync...');
+        await lookupDataManager.performBackgroundSync();
+        console.log('✅ Background sync completed on home page');
+      } catch (error) {
+        console.warn('⚠️ Background sync failed on home page:', error.message);
+      }
+    };
+
+    // Trigger sync after a short delay to not block initial render
+    const timer = setTimeout(triggerBackgroundSync, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Sync pending changes on Home page load
+  useEffect(() => {
+    const syncPendingChanges = async () => {
+      try {
+        const syncStatus = await dataManager.getSyncStatus();
+        console.log('[Home] Pending changes on load:', syncStatus.pendingChanges);
+        if (syncStatus.pendingChanges > 0 && syncStatus.isOnline) {
+          console.log('[Home] Syncing pending changes...');
+          await dataManager.performSync();
+          const syncStatusAfter = await dataManager.getSyncStatus();
+          console.log('[Home] Pending changes after sync:', syncStatusAfter.pendingChanges);
+        } else {
+          console.log('[Home] No pending changes to sync or offline.');
+        }
+      } catch (err) {
+        console.log('[Home] Error syncing pending changes:', err.message);
+      }
+    };
+    syncPendingChanges();
+  }, []);
+
+  const handleNuclearReset = () => {
+    Alert.alert(
+      '⚠️ Emergency Database Reset',
+      "This will completely clear all local data and recreate databases. Only use if you're experiencing severe storage issues.\n\nThis action cannot be undone. Continue?",
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset Databases',
+          style: 'destructive',
+          onPress: async () => {
+            setIsResetting(true);
+            try {
+              console.log('💥 User initiated nuclear reset from Dashboard');
+              const success = await performNuclearReset();
+
+              if (success) {
+                Alert.alert(
+                  '✅ Reset Successful',
+                  'Databases have been reset successfully. The app should now work normally.'
+                );
+              } else {
+                Alert.alert(
+                  '❌ Reset Failed',
+                  'Database reset failed. Please restart the app and try again.'
+                );
+              }
+            } catch (error) {
+              console.error('Nuclear reset error:', error);
+              Alert.alert(
+                '❌ Reset Error',
+                'An error occurred during reset. Please restart the app.'
+              );
+            } finally {
+              setIsResetting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <ScrollView style={{ backgroundColor: "white" }}>
+    <ScrollView style={{ backgroundColor: 'white' }}>
       <ImageBackground
         style={{
           width: screenWidth,
           height: 120.4,
-          justifyContent: "flex-end",
-          alignItems: "flex-end",
-          backgroundColor: "white",
+          justifyContent: 'flex-end',
+          alignItems: 'flex-end',
+          backgroundColor: 'white',
         }}
-        source={require("../../../../../assets/drawable-xhdpi/group_8043.png")}
+        source={require('../../../../../assets/drawable-xhdpi/group_8043.png')}
       >
         <View>
           <Image
             style={{ height: 70, width: 180 }}
-            resizeMode={"contain"}
-            source={require("../../../../../assets/drawable-xhdpi/group_2.png")}
+            resizeMode={'contain'}
+            source={require('../../../../../assets/drawable-xhdpi/group_2.png')}
           />
         </View>
       </ImageBackground>
       <View
         style={{
-          flexDirection: "row",
-          justifyContent: "space-evenly",
+          flexDirection: 'row',
+          justifyContent: 'space-evenly',
           marginVertical: 20,
           borderRadius: 15,
         }}
       >
         <SmallCard
-          image={require("../../../../../assets/BG_1.png")}
-          onCardPress={() => alert("Upcoming feature")}
-          title={"PAI"}
+          image={require('../../../../../assets/BG_1.png')}
+          onCardPress={() => alert('Upcoming feature')}
+          title={'PAI'}
           icon={<Chart />}
         />
         <SmallCard
-          image={require("../../../../../assets/BG_2.png")}
-          onCardPress={() => alert("Upcoming feature")}
-          title={"Apprendre \n" + "et actualités"}
+          image={require('../../../../../assets/BG_2.png')}
+          onCardPress={() => alert('Upcoming feature')}
+          title={'Apprendre \n' + 'et actualités'}
           icon={<FileIcon />}
         />
       </View>
       <BigCard
-        image={require("../../../../../assets/BG_9.png")}
-        onCardPress={() => navigation.navigate("CitizenEngagement")}
-        title={"Mécanisme d’engagement des citoyens"}
+        image={require('../../../../../assets/BG_9.png')}
+        onCardPress={() => navigation.navigate('CitizenEngagement')}
+        title={"Mécanisme d'engagement des citoyens"}
         icon={<TeamWorkIcon />}
       />
       <View style={{ marginVertical: 20 }}>
         <BigCard
-          image={require("../../../../../assets/small-rectangle.png")}
-          onCardPress={() => navigation.navigate("SyncAttachments")}
-          title={"Sync Files"}
+          image={require('../../../../../assets/small-rectangle.png')}
+          onCardPress={() => navigation.navigate('SyncAttachments')}
+          title={'Sync Files'}
           icon={<SyncIcon />}
           cardHeight={79}
         />
       </View>
 
+      {/* Emergency Nuclear Reset Button - Only show in development or when needed */}
+      {__DEV__ && (
+        <View style={{ marginVertical: 20, paddingHorizontal: 20 }}>
+          <Button
+            mode="outlined"
+            icon="nuclear"
+            onPress={handleNuclearReset}
+            loading={isResetting}
+            disabled={isResetting}
+            style={{
+              borderColor: '#ff4444',
+              backgroundColor: 'rgba(255, 68, 68, 0.1)',
+            }}
+            labelStyle={{ color: '#ff4444' }}
+          >
+            {isResetting ? 'Resetting...' : '💥 Emergency Database Reset'}
+          </Button>
+        </View>
+      )}
+
       {/*<ReactNativeSwipeableViewStack*/}
       {/*  // onSwipe={(swipedIndex) => this.onCardSwipe(swipedIndex)}*/}
       {/*  initialSelectedIndex={1}*/}
-      {/*  data={[0, 1, 2, 3, 4, 5]}*/}
-      {/*  useNativeDrive={true}*/}
       {/*  stackSpacing={Platform.OS === "ios" ? 30 : 20}*/}
       {/*  onItemClicked={() => console.log("click")}*/}
       {/*  pointerEvents="none"*/}
@@ -107,7 +208,7 @@ function Content() {
       {/*        }}*/}
       {/*      >*/}
       {/*        Lorem Ipsum is simply dummy text of the printing and typesetting*/}
-      {/*        industry. Lorem Ipsum has been the industry’s standard dummy text*/}
+      {/*        industry. Lorem Ipsum has been the industry's standard dummy text*/}
       {/*        ever since the 1500s.*/}
       {/*      </Paragraph>*/}
       {/*      <Button*/}

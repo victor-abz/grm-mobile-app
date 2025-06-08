@@ -3,8 +3,8 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { ActivityIndicator, Button, RadioButton, TextInput } from 'react-native-paper';
-import { useView } from 'use-pouchdb';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
+import { useData } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 
@@ -21,6 +21,7 @@ const theme = {
 function Content({ stepOneParams }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const { lookupData, isDataInitialized } = useData();
   const [name, setName] = useState('');
   const [confidentialValue, setConfidentialValue] = useState(null);
   const [isPreviousPickerClosed, setIsPreviousPickerClosed] = useState(true);
@@ -30,39 +31,105 @@ function Content({ stepOneParams }) {
   const [selectedCitizenGroupI, setSelectedCitizenGroupI] = useState(null);
   const [selectedCitizenGroupII, setSelectedCitizenGroupII] = useState(null);
 
-  const genders = useMemo(() => [
-    { label: t('male'), value: 'male' },
-    { label: t('female'), value: 'female' },
-  ], [t]);
+  const genders = useMemo(
+    () => [
+      { label: t('male'), value: 'male' },
+      { label: t('female'), value: 'female' },
+    ],
+    [t]
+  );
 
-  // Fetch all issue types at once
-  const { rows: allIssueTypes, loading: allIssueTypesLoading } = useView('issues/all_issue_types', {
-    db: 'LocalGRMDatabase',
-    include_docs: true,
+  // Use lookup data from DataProvider instead of PouchDB views
+  const ages = useMemo(() => {
+    if (!isDataInitialized) {
+      console.log('🔍 [CONTACT] Age groups - not initialized, returning empty array');
+      return [];
+    }
+
+    const result = lookupData.ageGroups.map((ageGroup) => ({
+      ...ageGroup,
+      id: ageGroup._id || ageGroup.id,
+      label: ageGroup.name,
+      value: ageGroup._id || ageGroup.id,
+    }));
+
+    console.log('🔍 [CONTACT] Age groups processed:', result);
+    return result;
+  }, [lookupData.ageGroups, isDataInitialized]);
+
+  // Handle citizen groups - they might be an array or nested object
+  const citizenGroupsI = useMemo(() => {
+    if (!isDataInitialized) {
+      console.log('🔍 [CONTACT] Citizen groups I - not initialized, returning empty array');
+      return [];
+    }
+
+    // Check if citizenGroups is an array (flattened) or object (nested)
+    let groups = [];
+    if (Array.isArray(lookupData.citizenGroups)) {
+      // Filter for group_type 1 or use all if no group_type field
+      groups = lookupData.citizenGroups.filter(
+        (group) => !group.group_type || group.group_type === '1' || group.group_type === 1
+      );
+    } else if (lookupData.citizenGroups.citizen_group_1) {
+      // Handle nested structure
+      groups = lookupData.citizenGroups.citizen_group_1;
+    }
+
+    const result = groups.map((group) => ({
+      ...group,
+      id: group._id || group.id,
+      label: group.name,
+      value: group._id || group.id,
+    }));
+
+    console.log('🔍 [CONTACT] Citizen groups I processed:', result);
+    return result;
+  }, [lookupData.citizenGroups, isDataInitialized]);
+
+  const citizenGroupsII = useMemo(() => {
+    if (!isDataInitialized) {
+      console.log('🔍 [CONTACT] Citizen groups II - not initialized, returning empty array');
+      return [];
+    }
+
+    // Check if citizenGroups is an array (flattened) or object (nested)
+    let groups = [];
+    if (Array.isArray(lookupData.citizenGroups)) {
+      // Filter for group_type 2 or use subset if no group_type field
+      groups = lookupData.citizenGroups.filter(
+        (group) => group.group_type === '2' || group.group_type === 2
+      );
+    } else if (lookupData.citizenGroups.citizen_group_2) {
+      // Handle nested structure
+      groups = lookupData.citizenGroups.citizen_group_2;
+    }
+
+    const result = groups.map((group) => ({
+      ...group,
+      id: group._id || group.id,
+      label: group.name,
+      value: group._id || group.id,
+    }));
+
+    console.log('🔍 [CONTACT] Citizen groups II processed:', result);
+    return result;
+  }, [lookupData.citizenGroups, isDataInitialized]);
+
+  console.log('🔍 [CONTACT] Debug Info:', {
+    isDataInitialized,
+    ageGroupsCount: lookupData.ageGroups?.length || 0,
+    citizenGroupsType: Array.isArray(lookupData.citizenGroups) ? 'array' : 'object',
+    citizenGroupsCount: Array.isArray(lookupData.citizenGroups)
+      ? lookupData.citizenGroups.length
+      : Object.keys(lookupData.citizenGroups || {}).length,
+    ages: ages.length,
+    citizenGroupsI: citizenGroupsI.length,
+    citizenGroupsII: citizenGroupsII.length,
   });
 
-  // Memoize the grouped issue types
-  const groupedIssueTypes = useMemo(() => {
-    const grouped = {};
-    allIssueTypes.forEach((row) => {
-      const [type] = row.key;
-      if (!grouped[type]) {
-        grouped[type] = [];
-      }
-      grouped[type].push(row.doc);
-    });
-    return grouped;
-  }, [allIssueTypes]);
-
-  // Extract specific issue types
-  const ages = useMemo(() => groupedIssueTypes.issue_age_group || [], [groupedIssueTypes]);
-  const citizenGroupsI = useMemo(() => groupedIssueTypes.issue_citizen_group_1 || [], [groupedIssueTypes]);
-  const citizenGroupsII = useMemo(() => groupedIssueTypes.issue_citizen_group_2 || [], [groupedIssueTypes]);
-
-  console.log(ages)
-
   const handleConfidentialValueChange = useCallback((newValue) => {
-    setConfidentialValue(prevValue => newValue === prevValue ? null : newValue);
+    setConfidentialValue((prevValue) => (newValue === prevValue ? null : newValue));
   }, []);
 
   const handleNameChange = useCallback((text) => {
@@ -81,19 +148,47 @@ function Content({ stepOneParams }) {
         gender: pickerGenderValue,
       },
     });
-  }, [navigation, stepOneParams, name, selectedAge, confidentialValue, selectedCitizenGroupI, selectedCitizenGroupII, pickerGenderValue]);
+  }, [
+    navigation,
+    stepOneParams,
+    name,
+    selectedAge,
+    confidentialValue,
+    selectedCitizenGroupI,
+    selectedCitizenGroupII,
+    pickerGenderValue,
+  ]);
 
-  const renderRadioButton = useCallback((value, label) => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-      <RadioButton.Android
-        value={value}
-        uncheckedColor="#dedede"
-        color={colors.primary}
-        onPress={() => handleConfidentialValueChange(value)}
-      />
-      <Text style={styles.radioLabel}>{label}</Text>
-    </View>
-  ), [handleConfidentialValueChange]);
+  const renderRadioButton = useCallback(
+    (value, label) => (
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
+        <RadioButton.Android
+          value={value}
+          uncheckedColor="#dedede"
+          color={colors.primary}
+          onPress={() => handleConfidentialValueChange(value)}
+        />
+        <Text style={styles.radioLabel}>{label}</Text>
+      </View>
+    ),
+    [handleConfidentialValueChange]
+  );
+
+  // Show loading state while data is being initialized
+  if (!isDataInitialized) {
+    return (
+      <ScrollView>
+        <View style={{ padding: 23, alignItems: 'center' }}>
+          <Text style={styles.stepText}>{t('step_2')}</Text>
+          <Text style={styles.stepSubtitle}>Loading data...</Text>
+          <Text style={styles.stepDescription}>
+            Please wait while we load the age groups and citizen groups data.
+          </Text>
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView>
@@ -115,7 +210,10 @@ function Content({ stepOneParams }) {
             onChangeText={handleNameChange}
           />
           <Text />
-          <RadioButton.Group onValueChange={handleConfidentialValueChange} value={confidentialValue}>
+          <RadioButton.Group
+            onValueChange={handleConfidentialValueChange}
+            value={confidentialValue}
+          >
             {renderRadioButton(1, t('step_2_keep_name_confidential'))}
             {renderRadioButton(2, t('step_2_on_behalf_of_someone'))}
             {renderRadioButton(3, t('step_2_organization_behalf_someone'))}
@@ -146,7 +244,6 @@ function Content({ stepOneParams }) {
               zIndex={3000}
               zIndexInverse={2000}
               setPickerValue={setPickerGenderValue}
-              loading={allIssueTypesLoading}
             />
             <CustomDropDownPicker
               schema={{

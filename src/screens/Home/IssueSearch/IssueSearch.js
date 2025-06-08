@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useAllDocs, useView } from 'use-pouchdb';
+import { useData } from '../../../providers/DataProvider';
+import { getIssues, getIssueStatuses } from '../../../utils/databaseManager';
 import { colors } from '../../../utils/colors';
 import { styles } from './IssueSearch.style';
 import Content from './containers';
@@ -10,45 +11,50 @@ import Content from './containers';
 function IssueSearch() {
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { isDataInitialized } = useData();
 
-  const { rows, loading, state, error } = useAllDocs({
-    include_docs: true,
-    db: 'LocalGRMDatabase',
-  });
+  const [issues, setIssues] = useState([]);
+  const [statuses, setStatuses] = useState([]);
+  const [eadl, setEadl] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  if (state === 'error') {
-    console.log('Error', state);
-  }
+  useEffect(() => {
+    const loadData = async () => {
+      if (!isDataInitialized) return;
 
-  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
-    key: username,
-    include_docs: true,
-    db: 'LocalCommunesDatabase',
-  });
+      try {
+        setLoading(true);
 
-  const eadl = representative.map((d) => d.doc);
+        // Load issues and statuses using the new DataManager
+        const [issuesData, statusesData] = await Promise.all([getIssues(), getIssueStatuses()]);
 
-  const { rows: issue_status, loading: statusesLoading } = useView('issues/by_type', {
-    db: 'LocalGRMDatabase',
-    key: 'issue_status',
-    include_docs: true,
-  });
-  const statuses = issue_status.map((d) => d.doc);
+        setIssues(issuesData);
+        setStatuses(statusesData);
 
-  const { rows: grmIssues, loading: issuesLoading } = useView('issues/by_type_and_user', {
-    startkey: ['issue', eadl?.[0]?._id],
-    endkey: ['issue', eadl?.[0]?._id, {}],
-    include_docs: true,
-    db: 'LocalGRMDatabase',
-  });
-  const issues = grmIssues.map((r) => r.doc);
+        // For now, create a mock eadl object based on username
+        // This should be replaced with proper user data from Frappe
+        setEadl({
+          _id: username,
+          email: username,
+          name: username,
+        });
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (!issues || !eadl || !statuses || issuesLoading || statusesLoading || eadlLoading) {
+    loadData();
+  }, [isDataInitialized, username]);
+
+  if (!isDataInitialized || loading) {
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
   }
+
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content issues={issues} eadl={eadl?.[0]} statuses={statuses} />
+      <Content issues={issues} eadl={eadl} statuses={statuses} />
     </SafeAreaView>
   );
 }

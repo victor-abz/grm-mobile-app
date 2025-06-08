@@ -33,6 +33,7 @@ import {
 } from 'react-native-paper';
 import { useView } from 'use-pouchdb';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
+import { useData } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
 import { formatDuration } from '../../../../utils/functions';
 import { styles } from './Content.styles';
@@ -66,6 +67,7 @@ const styles_audio = StyleSheet.create({
 function Content({ stepOneParams }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const { lookupData, isDataInitialized } = useData();
   const [pickerValue, setPickerValue] = useState(null);
   const [pickerValue2, setPickerValue2] = useState(null);
   const [pickerValue3, setPickerValue3] = useState(null);
@@ -80,13 +82,8 @@ function Content({ stepOneParams }) {
   const [recording, setRecording] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(null);
-  //   const [items, setItems] = useState(issueTypes ?? []);
   const [recordingURI, setRecordingURI] = useState();
   const [recordingURIs, setRecordingURIs] = useState([]);
-  //   const [items2, setItems2] = useState(issueCategories ?? []);
-  //   const [itemsSubTypes, setItemsSubTypes] = useState(issueSubTypes ?? []);
-  //   const [components, setComponents] = useState(issueComponents ?? []);
-  //   const [subComponents, setSubComponents] = useState(issueSubComponents ?? []);
   const [sound, setSound] = React.useState();
   const [soundOnPause, setSoundOnPause] = useState(false);
   const [soundUrl, setSoundUrl] = React.useState();
@@ -100,67 +97,95 @@ function Content({ stepOneParams }) {
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
 
-  // Fetch all issue types at once
-  const { rows: allIssueTypes, loading: allIssueTypesLoading } = useView('issues/all_issue_types', {
-    db: 'LocalGRMDatabase',
-    include_docs: true,
-  });
-
   const { username } = useSelector((state) => state.get('authentication').toObject());
-  const { rows: representative, loading: eadlLoading } = useView(
-    'eadl/by_representative_email',
-    {
-      key: username,
-      include_docs: true,
-      db: 'LocalCommunesDatabase',
-    }
-  );
+
+  // Keep the user data loading from PouchDB for now
+  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
+    key: username,
+    include_docs: true,
+    db: 'LocalCommunesDatabase',
+  });
   const eadl = representative.map((d) => d.doc);
 
-  // Memoize the grouped issue types
-  const groupedIssueTypes = useMemo(() => {
-    const grouped = {};
-    allIssueTypes.forEach((row) => {
-      const [type] = row.key;
-      if (!grouped[type]) {
-        grouped[type] = [];
-      }
-      grouped[type].push(row.doc);
-    });
-    return grouped;
-  }, [allIssueTypes]);
+  // Use lookup data from DataProvider instead of PouchDB views
+  const items = useMemo(() => {
+    if (!isDataInitialized) {
+      console.log('🔍 [STEP2] Items (types) - not initialized, returning empty array');
+      return [];
+    }
 
-  // Extract specific issue types
-  const items = useMemo(() => groupedIssueTypes.issue_type || [], [groupedIssueTypes]);
-  const itemsSubTypes = useMemo(() => groupedIssueTypes.issue_sub_type || [], [groupedIssueTypes]);
-  const items2 = useMemo(() => groupedIssueTypes.issue_category || [], [groupedIssueTypes]);
-  const components = useMemo(() => groupedIssueTypes.issue_component || [], [groupedIssueTypes]);
-  const subComponents = useMemo(
-    () => groupedIssueTypes.issue_sub_component || [],
-    [groupedIssueTypes]
-  );
+    // Transform Frappe data format to match existing UI expectations
+    const result = lookupData.types.map((type) => ({
+      ...type,
+      id: type._id || type.id,
+      label: type.name,
+      value: type._id || type.id,
+    }));
 
-  const filterSubType = useMemo(
-    () =>
-      selectedIssueType
-        ? itemsSubTypes.filter((obj) => obj.parent_id === selectedIssueType.id)
-        : [],
-    [selectedIssueType, itemsSubTypes]
-  );
+    console.log('🔍 [STEP2] Items (types) processed:', result);
+    return result;
+  }, [lookupData.types, isDataInitialized]);
 
-  const filterCategory = useMemo(
-    () =>
-      selectedIssueSubType ? items2.filter((obj) => obj.parent_id === selectedIssueSubType.id) : [],
-    [selectedIssueSubType, items2]
-  );
+  const items2 = useMemo(() => {
+    if (!isDataInitialized) {
+      console.log('🔍 [STEP2] Items2 (categories) - not initialized, returning empty array');
+      return [];
+    }
 
-  const filterSubComponent = useMemo(
-    () =>
-      selectedIssueComponent
-        ? subComponents.filter((obj) => obj.parent_id === selectedIssueComponent.id)
-        : [],
-    [selectedIssueComponent, subComponents]
-  );
+    const result = lookupData.categories.map((category) => ({
+      ...category,
+      id: category._id || category.id,
+      label: category.name,
+      value: category._id || category.id,
+    }));
+
+    console.log('🔍 [STEP2] Items2 (categories) processed:', result);
+    return result;
+  }, [lookupData.categories, isDataInitialized]);
+
+  const itemsSubTypes = useMemo(() => {
+    // For now, return empty array as sub-types might need specific handling
+    // This can be enhanced based on your Frappe data structure
+    console.log('🔍 [STEP2] ItemsSubTypes - returning empty array (not implemented)');
+    return [];
+  }, []);
+
+  const components = useMemo(() => {
+    // For now, return empty array as components might need specific handling
+    // This can be enhanced based on your Frappe data structure
+    console.log('🔍 [STEP2] Components - returning empty array (not implemented)');
+    return [];
+  }, []);
+
+  const subComponents = useMemo(() => {
+    // For now, return empty array as sub-components might need specific handling
+    // This can be enhanced based on your Frappe data structure
+    console.log('🔍 [STEP2] SubComponents - returning empty array (not implemented)');
+    return [];
+  }, []);
+
+  // Update filtering logic to work with new data structure
+  const filterSubType = useMemo(() => {
+    const result = selectedIssueType
+      ? itemsSubTypes.filter((obj) => obj.parent_id === selectedIssueType.id)
+      : [];
+    console.log('🔍 [STEP2] FilterSubType result:', result);
+    return result;
+  }, [selectedIssueType, itemsSubTypes]);
+
+  const filterCategory = useMemo(() => {
+    // Show all categories for now, or implement filtering based on issue type
+    console.log('🔍 [STEP2] FilterCategory result (showing all categories):', items2);
+    return items2;
+  }, [items2]);
+
+  const filterSubComponent = useMemo(() => {
+    const result = selectedIssueComponent
+      ? subComponents.filter((obj) => obj.parent_id === selectedIssueComponent.id)
+      : [];
+    console.log('🔍 [STEP2] FilterSubComponent result:', result);
+    return result;
+  }, [selectedIssueComponent, subComponents]);
 
   React.useEffect(
     () =>
@@ -510,6 +535,58 @@ function Content({ stepOneParams }) {
     setAttachments(array);
   };
 
+  // Debug logging for lookup data
+  useEffect(() => {
+    console.log('🔍 CitizenReportStep2 Debug Info:', {
+      isDataInitialized,
+      categoriesCount: lookupData.categories.length,
+      typesCount: lookupData.types.length,
+      statusesCount: lookupData.statuses.length,
+      regionsCount: lookupData.regions.length,
+      categories: lookupData.categories.slice(0, 3), // First 3 categories for debugging
+      types: lookupData.types.slice(0, 3), // First 3 types for debugging
+    });
+  }, [isDataInitialized, lookupData]);
+
+  // Show loading state while data is being initialized
+  if (!isDataInitialized) {
+    return (
+      <ScrollView>
+        <View style={{ padding: 23, alignItems: 'center' }}>
+          <Text style={styles.stepText}>{t('step_2')}</Text>
+          <Text style={styles.stepSubtitle}>Loading data...</Text>
+          <Text style={styles.stepDescription}>
+            Please wait while we load the categories and other lookup data.
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // Show message if no categories are available
+  if (items2.length === 0) {
+    return (
+      <ScrollView>
+        <View style={{ padding: 23 }}>
+          <Text style={styles.stepText}>{t('step_2')}</Text>
+          <Text style={styles.stepSubtitle}>No categories available</Text>
+          <Text style={styles.stepDescription}>
+            No issue categories are available. Please check your internet connection or contact
+            support.
+          </Text>
+          <Text style={styles.stepDescription}>
+            Debug Info:{' '}
+            {JSON.stringify({
+              isDataInitialized,
+              categoriesCount: lookupData.categories.length,
+              typesCount: lookupData.types.length,
+            })}
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : null}>
@@ -614,25 +691,8 @@ function Content({ stepOneParams }) {
             value={pickerValue}
             items={items}
             setPickerValue={setPickerValue}
-            loading={allIssueTypesLoading}
+            loading={!isDataInitialized}
             onSelectItem={(item) => setSelectedIssueType(item)}
-          />
-        </View>
-        <View style={{ zIndex: 2000 }}>
-          <CustomDropDownPicker
-            schema={{
-              label: 'name',
-              value: 'name',
-            }}
-            zIndex={3000}
-            zIndexInverse={2000}
-            placeholder={t('step_2_placeholder_5')}
-            value={pickerValue3}
-            items={selectedIssueType ? filterSubType : []}
-            setPickerValue={setPickerValue3}
-            // setItems={setItemsSubTypes}
-            loading={allIssueTypesLoading}
-            onSelectItem={(item) => setSelectedIssueSubType(item)}
           />
         </View>
         <View style={{ zIndex: 1000 }}>
@@ -648,43 +708,10 @@ function Content({ stepOneParams }) {
             zIndexInverse={2000}
             placeholder={t('step_2_placeholder_2')}
             value={pickerValue2}
-            items={selectedIssueSubType ? filterCategory : []}
+            items={filterCategory}
             setPickerValue={setPickerValue2}
-            loading={allIssueTypesLoading}
+            loading={!isDataInitialized}
             // setItems={setItems2}
-          />
-        </View>
-        <View>
-          <CustomDropDownPicker
-            schema={{
-              label: 'name',
-              value: 'name',
-            }}
-            zIndex={3000}
-            zIndexInverse={2000}
-            placeholder={t('step_2_placeholder_6')}
-            value={pickerComponent}
-            items={components}
-            setPickerValue={setPickerComponent}
-            loading={allIssueTypesLoading}
-            // setItems={setComponents}
-            onSelectItem={(item) => setSelectedIssueComponent(item)}
-          />
-        </View>
-        <View>
-          <CustomDropDownPicker
-            schema={{
-              label: 'name',
-              value: 'name',
-            }}
-            zIndex={3000}
-            zIndexInverse={2000}
-            placeholder={t('step_2_placeholder_7')}
-            value={pickerSubComponent}
-            items={selectedIssueComponent ? filterSubComponent : []}
-            setPickerValue={setPickerSubComponent}
-            loading={allIssueTypesLoading}
-            onSelectItem={(item) => setSelectedIssueSubComponent(item)}
           />
         </View>
         <View style={{ paddingHorizontal: 50 }}>
@@ -882,22 +909,11 @@ function Content({ stepOneParams }) {
           <Button
             theme={theme}
             style={{ alignSelf: 'center', margin: 24 }}
-            disabled={
-              !additionalDetails ||
-              !date ||
-              !pickerValue2 ||
-              !selectedIssueType ||
-              !selectedIssueSubType
-            }
+            disabled={!additionalDetails || !date || !pickerValue2 || !selectedIssueType}
             labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
             mode="contained"
             onPress={() => {
-              if (
-                selectedIssueType === null ||
-                selectedIssueSubType === null ||
-                pickerValue2 === null ||
-                pickerValue2 === null
-              ) {
+              if (selectedIssueType === null || pickerValue2 === null || pickerValue2 === null) {
                 showToast(t('please_choose_value_for_required_field'));
                 return;
               }

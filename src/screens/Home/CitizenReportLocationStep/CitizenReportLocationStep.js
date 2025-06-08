@@ -1,40 +1,20 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { SafeAreaView, ScrollView, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
-import { useSelector } from 'react-redux';
-import { useAllDocs, useView } from 'use-pouchdb';
+import { DataContext } from '../../../providers/DataProvider';
 import { styles } from './CitizenReportLocationStep.styles';
 import Content from './containers/Content';
 
 function CitizenReportLocationStep({ route }) {
   const { params } = route;
+  const { isDataInitialized, isLoading } = useContext(DataContext);
 
-  const { username } = useSelector((state) => state.get('authentication').toObject());
-
-  const { rows: representative, loading: uniqueRegionLoading } = useView(
-    'eadl/by_representative_email',
-    {
-      key: username,
-      include_docs: true,
-      db: 'LocalCommunesDatabase',
-    }
-  );
-
-  const uniqueRegion = representative.map((d) => d.doc);
-
-  const { rows: issueCommunes, loading: issueCommunesLoading } = useView('communes/by_type', {
-    db: 'LocalCommunesDatabase',
-    key: 'administrative_level',
-    include_docs: true,
-  });
-
-  const { rows } = useAllDocs({ db: 'LocalCommunesDatabase' });
-
-  console.log({ representative, issueCommunes, rows });
   const customStyles = styles();
-  return (
-    <SafeAreaView style={customStyles.container}>
-      {uniqueRegionLoading || issueCommunesLoading ? (
+
+  // Show loading state while data is initializing
+  if (!isDataInitialized || isLoading) {
+    return (
+      <SafeAreaView style={customStyles.container}>
         <ScrollView
           style={{
             backgroundColor: 'white',
@@ -57,14 +37,13 @@ function CitizenReportLocationStep({ route }) {
             <ActivityIndicator size="large" color="#24c38b" />
           </View>
         </ScrollView>
-      ) : (
-        <Content
-          stepOneParams={params.stepOneParams}
-          stepTwoParams={params.stepTwoParams}
-          issueCommunes={issueCommunes.map((commune) => commune.doc)}
-          uniqueRegion={uniqueRegion?.[0]}
-        />
-      )}
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={customStyles.container}>
+      <Content stepOneParams={params.stepOneParams} stepTwoParams={params.stepTwoParams} />
     </SafeAreaView>
   );
 }

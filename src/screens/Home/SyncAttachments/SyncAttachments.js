@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import { getInfoAsync, uploadAsync } from 'expo-file-system';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Platform, Text, View } from 'react-native';
 import { ActivityIndicator, Snackbar } from 'react-native-paper';
@@ -14,6 +14,8 @@ import { colors } from '../../../utils/colors';
 import { SyncToRemoteDatabase } from '../../../utils/databaseManager';
 import { getEncryptedData } from '../../../utils/storageManager';
 import ImagesList from './components/ImagesList';
+import dataManager from '../../../services/DataManager';
+import frappeSyncManager from '../../../services/FrappeSyncManager';
 
 function SyncAttachments({ navigation }) {
   const { t } = useTranslation();
@@ -74,53 +76,55 @@ function SyncAttachments({ navigation }) {
 
   console.log({ issues, eadl, eadlLoading, attachments, loading });
 
+  // Log actual pending changes on mount
+  useEffect(() => {
+    console.log(
+      '[SyncAttachments] Actual pending changes in FrappeSyncManager:',
+      JSON.stringify(frappeSyncManager.pendingChanges, null, 2)
+    );
+  }, []);
+
   const uploadFile = async (file, dbConfig) => {
     try {
       const tmp = await getInfoAsync(file?.attachment?.local_url);
       if (tmp.exists) {
         try {
-          const response = await uploadAsync(
-            `${baseURL}${
-              file.taskOrdinal ? '/attachments/upload-to-task' : '/attachments/upload-to-issue'
-            }`,
-            Platform.OS === 'android'
-              ? file?.attachment?.local_url
-              : file?.attachment?.local_url.replace('file://', ''),
-            {
-              fieldName: 'file',
-              httpMethod: 'POST',
-              uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-              ContentType: 'multipart/form-data',
-              mimeType: file.attachment?.isAudio
-                ? 'audio/m4a'
-                : file?.attachment?.local_url.includes('.pdf')
-                ? 'application/pdf'
-                : 'image/*',
-              parameters: {
-                username: dbConfig?.username,
-                password: dbConfig?.password,
-                doc_id: file?.docId,
-                phase: file?.phaseOrdinal,
-                task: file?.taskOrdinal,
-                attachment_id: file?.attachment?.id,
-              },
-            }
-          );
-          // console.log(response);
-          if (response.status < 300) {
-            return {};
-          }
+          console.log('[SyncAttachments] Preparing to upload file:', file?.attachment?.local_url);
+
+          // Prepare file data for Frappe upload
+          const fileData = {
+            filename: file.attachment.filename || file.attachment.id,
+            content_type: file.attachment.isAudio
+              ? 'audio/m4a'
+              : file.attachment.local_url.includes('.pdf')
+              ? 'application/pdf'
+              : 'image/jpeg',
+            file_data: await FileSystem.readAsStringAsync(
+              Platform.OS === 'android'
+                ? file.attachment.local_url
+                : file.attachment.local_url.replace('file://', ''),
+              { encoding: FileSystem.EncodingType.Base64 }
+            ),
+          };
+
+          // Use frappeSyncManager to upload the attachment
+          const result = await frappeSyncManager.uploadAttachment(file.docId, fileData);
+
+          console.log('[SyncAttachments] File uploaded successfully:', result);
+          return {};
         } catch (e) {
           setErrorMessage(FILE_READ_ERROR);
           setErrorVisible(true);
+          console.log('[SyncAttachments] Error uploading file:', e.message);
           return { error: FILE_READ_ERROR };
         }
       }
       setErrorMessage(FILE_READ_ERROR);
       setErrorVisible(true);
+      console.log('[SyncAttachments] File does not exist:', file?.attachment?.local_url);
       return { error: FILE_READ_ERROR };
     } catch (e) {
-      console.log(e);
+      console.log('[SyncAttachments] Error reading file:', e.message);
       setErrorMessage(FILE_READ_ERROR_TRY_AGAIN);
       setErrorVisible(true);
       return { error: FILE_READ_ERROR_TRY_AGAIN };
@@ -128,21 +132,54 @@ function SyncAttachments({ navigation }) {
   };
 
   const syncImages = async () => {
-    const dbConfig = await getEncryptedData(
-      `dbCredentials_${userPassword}_${username.replace('@', '')}`
+    // Log pending changes before sync
+    console.log(
+      '[SyncAttachments] Pending changes before syncImages:',
+      JSON.stringify(frappeSyncManager.pendingChanges, null, 2)
     );
-    setLoading(true);
-    let isError = false;
-    for (let i = 0; i < attachments.length; i++) {
-      if (attachments[i]?.attachment?.uploaded === false) {
-        const response = await uploadFile(attachments[i], dbConfig);
-        if (response.error) isError = true;
-      }
-    }
-    setLoading(false);
-    if (!isError) setSuccessModal(true);
 
-    await SyncToRemoteDatabase(dbConfig, username);
+    let isError = false;
+    let syncedCount = 0;
+
+    try {
+      setLoading(true);
+      console.log(
+        '[SyncAttachments] Starting attachment sync. Total attachments:',
+        attachments.length
+      );
+      for (let i = 0; i < attachments.length; i++) {
+        if (attachments[i]?.attachment?.uploaded === false) {
+          console.log(
+            `[SyncAttachments] Uploading attachment ${i + 1}/${attachments.length}:`,
+            attachments[i]
+          );
+          const response = await uploadFile(attachments[i]);
+          if (response.error) {
+            isError = true;
+            console.log(`[SyncAttachments] Error uploading attachment:`, response.error);
+          } else {
+            syncedCount++;
+            console.log(`[SyncAttachments] Attachment uploaded successfully.`);
+          }
+        }
+      }
+
+      // Then perform a full sync to ensure all changes are pushed to Frappe
+      await frappeSyncManager.performSync();
+      console.log('[SyncAttachments] All pending changes synced successfully.');
+
+      if (!isError) setSuccessModal(true);
+    } catch (err) {
+      console.log('[SyncAttachments] Error during sync process:', err.message);
+      setErrorMessage(err.message || 'Sync failed');
+      setErrorVisible(true);
+      isError = true;
+    } finally {
+      setLoading(false);
+      console.log(
+        `[SyncAttachments] Attachment sync complete. Synced: ${syncedCount}, Errors: ${isError}`
+      );
+    }
   };
   return (
     <View style={{ flex: 1 }}>

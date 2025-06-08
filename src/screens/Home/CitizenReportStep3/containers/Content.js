@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, ScrollView, Text, View } from 'react-native';
 import { Button, Dialog, Paragraph, Portal } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import { LocalGRMDatabase } from '../../../../utils/databaseManager';
+import { createIssue as createIssueAPI } from '../../../../utils/databaseManager';
 import { styles } from './Content.styles';
 
 const SAMPLE_WORDS = ['car', 'house', 'tree', 'ball'];
@@ -40,83 +40,74 @@ function Content({ issue, eadl }) {
     const isAssignee =
       issue.category?.assigned_department === eadl?.department &&
       issue.category?.administrative_level === eadl?.administrative_level;
-    // submit params
-    const randomCodeNumber = Math.floor(Math.random() * 1000);
-    // const newId = incrementId();
+
+    // Format issue data according to Frappe API requirements
     const _issue = {
-      internal_code: '',
-      tracking_code: `${randomWord(SAMPLE_WORDS)}${randomCodeNumber}`,
-      auto_increment_id: '',
-      title: issue.issueSummary,
+      // Basic fields - remove title since app doesn't collect it
       description: issue.additionalDetails,
-      attachments: [
-        ...(issue?.attachments ? issue.attachments : []),
-        ...(issue?.recording ? [issue.recording] : []),
-      ],
-      status: {
-        name: t('open'),
-        id: 2,
-      },
-      confirmed: true,
-      assignee: isAssignee ? { id: eadl?._id, name: eadl.representative?.name } : '',
-      reporter: {
-        id: eadl?._id,
-        name: eadl.representative.name,
-      },
-      citizen_age_group: issue.ageGroup,
+
+      // Citizen information
       citizen: issue.name ?? '',
-      contact_medium: issue.typeOfPerson,
       citizen_type: issue.citizen_type,
-      citizen_group_1: issue.citizen_group_1,
-      citizen_group_2: issue.citizen_group_2,
-      location_info: {
-        issue_location: issue.issueLocation,
-        location_description: issue.locationDescription,
-      },
-      administrative_region: issue.issueLocation,
-      // category: {
-      //   id: 1,
-      //   name: "Environmental",
-      //   confidentiality_level: "Confidential",
-      // },
-      category: issue.category,
-      issue_type: issue.issueType,
-      issue_sub_type: issue.issueSubType,
-      component: issue.issueComponent,
-      sub_component: issue.issueSubComponent,
-      //   type: {
-      //   id: 1,
-      //   name: "Complaint",
-      // },
-      created_date: new Date(),
-      resolution_days: 0,
-      resolution_date: '',
-      intake_date: new Date(),
-      issue_date: issue.date,
-      ongoing_issue: issue.ongoingEvent,
-      comments: [],
+      gender: issue.gender,
+      contact_medium: issue.typeOfPerson,
+
+      // Contact information
       contact_information: {
         type: issue.methodOfContact,
         contact: issue.contactInfo,
       },
-      commune: {
-        code: eadl.commune,
-        name: eadl.name,
-        prefecture: '',
-      },
-      type: 'issue',
-    };
-    createIssue(_issue);
-    // navigation.navigate("CitizenReportStep4");
-  };
 
-  const createIssue = (_issue) => {
-    LocalGRMDatabase.post(_issue)
+      // Dates
+      intake_date: new Date().toISOString(),
+      issue_date: issue.date ? new Date(issue.date).toISOString() : new Date().toISOString(),
+
+      // Related entities - send IDs, not objects
+      category: issue.category?.id || issue.category?.name,
+      issue_type: issue.issueType?.id || issue.issueType?.name,
+      administrative_region: issue.issueLocation?.administrative_id || issue.issueLocation?.id,
+      citizen_age_group: issue.ageGroup?.id || issue.ageGroup?.name,
+      citizen_group_1: issue.citizen_group_1?.id || issue.citizen_group_1?.name,
+      citizen_group_2: issue.citizen_group_2?.id || issue.citizen_group_2?.name,
+
+      // Project - if available
+      project: eadl?.project || null,
+
+      // Flags
+      ongoing_issue: issue.ongoingEvent || false,
+      confirmed: true,
+
+      // Additional fields that might be needed
+      tracking_code: `${randomWord(SAMPLE_WORDS)}${Math.floor(Math.random() * 1000)}`,
+    };
+
+    // Add geolocation coordinates if available
+    if (issue.coordinates) {
+      _issue.coordinates = `${issue.coordinates.latitude},${issue.coordinates.longitude}`;
+    }
+
+    // Add assignee if applicable (this will be handled by Frappe based on category)
+    if (isAssignee && eadl?._id) {
+      _issue.assignee = eadl._id;
+    }
+
+    // Remove any undefined or null values to avoid API issues
+    Object.keys(_issue).forEach((key) => {
+      if (_issue[key] === undefined || _issue[key] === null || _issue[key] === '') {
+        delete _issue[key];
+      }
+    });
+
+    console.log('Submitting issue with data:', _issue);
+
+    createIssueAPI(_issue)
       .then((response) => {
-        navigation.navigate('CitizenReportStep4', { issue: _issue });
+        console.log('Issue created successfully:', response);
+        navigation.navigate('CitizenReportStep4', { issue: response });
       })
       .catch((err) => {
-        console.log(err);
+        console.error('Error creating issue:', err);
+        // Show error message to user
       });
   };
 

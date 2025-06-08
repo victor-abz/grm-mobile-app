@@ -22,9 +22,9 @@ import {
   TextInput,
 } from 'react-native-paper';
 import StarRating from 'react-native-star-rating-widget';
-import { usePouch } from 'use-pouchdb';
+import { useData } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
-import { LocalGRMDatabase } from '../../../../utils/databaseManager';
+import { updateIssue, getIssueStatuses } from '../../../../utils/databaseManager';
 import { styles } from './Content.styles';
 
 const theme = {
@@ -42,7 +42,7 @@ const PHONE_CALL_LINK = 'tel://+223';
 
 function Content({ issue, navigation, statuses = [], eadl }) {
   const { t } = useTranslation();
-  const LocalGRMDb = usePouch('LocalGRMDatabase');
+  const { dataManager } = useData();
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
   const [recordStepsDialog, setRecordStepsDialog] = useState(false);
@@ -68,6 +68,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [rating, setRating] = useState(0);
   const [status, setStatus] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const goToDetails = () => navigation.jumpTo('IssueDetail');
   const goToHistory = () => {
     setRecordedSteps(false);
@@ -144,150 +145,157 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       });
   };
 
-  const acceptIssue = () => {
-    const newStatus = statuses.find((x) => x.open_status === true);
-    issue.comments?.push({
-      name: issue.reporter.name,
-      id: eadl?._id,
-      comment: t('issue_was_accepted'),
-      due_at: moment(),
-    });
-    saveIssueStatus(newStatus, 'accept');
+  const saveIssueStatus = async (newStatus, type = 'none') => {
+    setIsUpdating(true);
+
+    try {
+      const updateData = {};
+
+      // Prepare update data based on action type
+      if (newStatus) {
+        updateData.status = newStatus.name || newStatus.id;
+      }
+
+      // Handle comments
+      if (!issue.comments) {
+        issue.comments = [];
+      }
+
+      const newComment = {
+        comment_by: eadl?._id,
+        comment_text: '',
+        comment_date: moment().toISOString(),
+      };
+
+      switch (type) {
+        case 'accept':
+          newComment.comment_text = t('issue_was_accepted');
+          break;
+        case 'reject':
+          newComment.comment_text = t('issue_was_rejected');
+          updateData.reject_reason = reason;
+          break;
+        case 'record_resolution':
+          newComment.comment_text = t('issue_was_resolved');
+          updateData.research_result = resolution;
+          updateData.resolution_date = moment().toISOString();
+          break;
+        default:
+          if (comment) {
+            newComment.comment_text = comment;
+          }
+      }
+
+      // Add comment if there's one
+      if (newComment.comment_text) {
+        updateData.comments = [...(issue.comments || []), newComment];
+      }
+
+      // Handle escalation
+      if (type === 'escalate') {
+        updateData.escalate_flag = true;
+        updateData.escalation_reasons = [
+          ...(issue.escalation_reasons || []),
+          {
+            reason_by: eadl?._id,
+            reason_text: escalateComment,
+            reason_date: moment().toISOString(),
+          },
+        ];
+      }
+
+      // Handle rating
+      if (rating > 0 && type === 'rate') {
+        updateData.rating = rating;
+      }
+
+      // Update the issue using DataManager
+      const updatedIssue = await updateIssue(issue._id, updateData);
+
+      // Update local issue object for UI
+      Object.assign(issue, updateData);
+      if (newStatus) {
+        issue.status = {
+          id: newStatus.id || newStatus.name,
+          name: newStatus.name,
+        };
+      }
+
+      updateActionButtons();
+
+      // Show appropriate dialog
+      switch (type) {
+        case 'accept':
+          setAcceptedDialog(true);
+          break;
+        case 'reject':
+          setRejectedDialog(true);
+          break;
+        case 'record_resolution':
+          setRecordedResolution(false);
+          _hideRecordResolutionDialog();
+          break;
+        case 'escalate':
+          setDisableEscalation(true);
+          setEscalatedDialog(true);
+          break;
+        case 'record_steps':
+          setRecordedSteps(true);
+          break;
+        case 'rate':
+          if (rating === 0) {
+            _showRateAppealDialog();
+          }
+          _hideRatingDialog();
+          break;
+      }
+
+      console.log('Issue updated successfully');
+    } catch (error) {
+      console.error('Error updating issue:', error);
+      // Show error message to user
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const rejectIssue = () => {
+  const acceptIssue = async () => {
+    const newStatus = statuses.find((x) => x.open_status === true);
+    await saveIssueStatus(newStatus, 'accept');
+  };
+
+  const rejectIssue = async () => {
     const newStatus = statuses.find((x) => x.rejected_status === true);
-    issue.comments?.push({
-      name: issue.reporter.name,
-      id: eadl?._id,
-      comment: t('issue_was_rejected'),
-      due_at: moment(),
-    });
-    saveIssueStatus(newStatus, 'reject');
+    await saveIssueStatus(newStatus, 'reject');
   };
 
-  const rateIssue = () => {
-    if (rating > 0) {
-      issue.comments?.push({
-        name: issue.reporter.name,
-        id: eadl?._id,
-        comment: t('issue_was_rated'),
-        due_at: moment(),
-      });
-    }
-
-    issue.rating = rating;
-    saveIssueStatus();
-
-    if (rating === 0) {
-      _showRateAppealDialog();
-    }
-    _hideRatingDialog();
+  const rateIssue = async () => {
+    await saveIssueStatus(null, 'rate');
   };
 
-  const appealIssue = () => {
+  const appealIssue = async () => {
     const newStatus = statuses.find((x) => x.open_status === true);
-    issue.comments?.push({
-      name: issue.reporter.name,
-      id: eadl?._id,
-      comment: t('issue_was_appealed'),
-      due_at: moment(),
-    });
-    issue.escalate_flag = true;
-    saveIssueStatus(newStatus);
+    await saveIssueStatus(newStatus, 'appeal');
     _hideRateAppealDialog();
     showToast('Votre demande a bien été prise en compte.');
   };
 
-  const escalateIssue = () => {
-    issue.escalate_flag = true;
-    issue.escalation_reasons?.push({
-      id: eadl?._id,
-      name: eadl?.representative?.name,
-      comment: escalateComment,
-      due_at: moment(),
-    });
-    issue.comments?.push({
-      name: issue.reporter.name,
-      id: eadl?._id,
-      comment: t('issue_was_escalated'),
-      due_at: moment(),
-    });
-    saveIssueStatus();
-    setDisableEscalation(true);
-    setEscalatedDialog(true);
+  const escalateIssue = async () => {
+    await saveIssueStatus(null, 'escalate');
   };
 
-  const recordStep = () => {
-    issue.comments?.push({
-      name: issue.reporter.name,
-      id: eadl?._id,
-      comment,
-      due_at: moment(),
-    });
-    saveIssueStatus();
-    setRecordedSteps(true);
+  const recordStep = async () => {
+    await saveIssueStatus(null, 'record_steps');
   };
 
   const recordResolution = () => {
     setRecordedResolution(true);
   };
 
-  const recordResolutionConfirmation = () => {
-    issue.research_result = resolution;
+  const recordResolutionConfirmation = async () => {
     const newStatus = statuses.find((x) => x.final_status === true);
-    issue.comments?.push({
-      name: issue.reporter.name,
-      id: eadl?._id,
-      comment: t('issue_was_resolved'),
-      due_at: moment(),
-    });
-    saveIssueStatus(newStatus, 'record_resolution');
+    await saveIssueStatus(newStatus, 'record_resolution');
     _hideRecordResolutionDialog();
-  };
-
-  function retryUntilWritten(doc) {
-    return LocalGRMDatabase.get(doc._id)
-      .then((origDoc) => {
-        doc._rev = origDoc._rev;
-        return LocalGRMDatabase.put(doc);
-      })
-      .catch((err) => {
-        if (err.status === 409) {
-          return retryUntilWritten(doc);
-        }
-      });
-  }
-
-  const saveIssueStatus = (newStatus, type = 'none') => {
-    if (newStatus) {
-      issue.status = {
-        id: newStatus.id,
-        name: newStatus.name,
-      };
-    }
-    if (type === 'rejected') {
-      issue.reject_reason = reason;
-    }
-
-    LocalGRMDatabase.upsert(issue._id, (_doc) => {
-      _doc = issue;
-      return _doc;
-    })
-      .then((result) => {
-        updateActionButtons();
-        if (type === 'accept') {
-          setAcceptedDialog(true);
-        } else if (type === 'reject') {
-          setRejectedDialog(true);
-        } else if (type === 'record_resolution') {
-          setRecordedResolution(false);
-          _hideRecordResolutionDialog();
-        }
-      })
-      .catch((err) => {
-        console.log('Error', err);
-      });
   };
 
   useEffect(() => {

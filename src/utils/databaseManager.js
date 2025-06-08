@@ -3,18 +3,19 @@ import PouchAuth from 'pouchdb-authentication';
 import PouchFind from 'pouchdb-find';
 import PouchDB from 'pouchdb-react-native';
 
-PouchDB.debug.enable('*');
-PouchDB.debug.enable('pouchdb:find')
+// Enable debugging for development
+if (__DEV__) {
+  PouchDB.debug.enable('*');
+  PouchDB.debug.enable('pouchdb:find');
+}
 
-
-const BASE_URL = 'http://197.243.25.128:5984';
-const RESOURCE_URL = 'http://197.243.25.128';
+// Configure PouchDB plugins
 PouchDB.plugin(PouchAuth);
 PouchDB.plugin(PouchFind);
 PouchDB.plugin(require('pouchdb-upsert'));
-
 PouchDB.plugin(PouchAsyncStorage);
 
+// Database instances for local storage (offline-first approach)
 export const LocalDatabase = new PouchDB('eadl', {
   adapter: 'asyncstorage',
 });
@@ -28,89 +29,242 @@ export const LocalCommunesDatabase = new PouchDB('eadl', {
   adapter: 'asyncstorage',
 });
 
-export const ResourceUrl = RESOURCE_URL;
-
+/**
+ * Legacy sync function - now uses the new DataManager
+ * @deprecated Use dataManager.performSync() instead
+ */
 export const SyncToRemoteDatabase = async ({ username, password }, userEmail) => {
-  const remoteDB = new PouchDB(`${BASE_URL}/eadls`, {
-    skip_setup: true,
-    auto_compaction: true,
-  });
-  
-  const grmRemoteDB = new PouchDB(`${BASE_URL}/grm`, {
-    skip_setup: true,
-    ajax: { cache: false },
-    auto_compaction: true,
-  });
-  
-  const communesRemoteDB = new PouchDB(`${BASE_URL}/eadls`, {
-    skip_setup: true,
-    auto_compaction: true,
-  });
+  console.warn('SyncToRemoteDatabase is deprecated. Use dataManager.performSync() instead.');
 
-  const result = { levels: [] };
-  
-  if (result.levels.length === 0) {
-    await fetch(
-      `${RESOURCE_URL}/authentication/get-adl-administrative-region?${new URLSearchParams({
-        email: userEmail,
-      })}`
-    )
-    .then((response) => response.json())
-    .then((a) => {
-      result.levels = a?.levels;
-    })
-    .catch((error) => ({ error }));
+  try {
+    const { default: dataManager } = await import('../services/DataManager');
+    const credentials = { username: userEmail || username, password };
+    await dataManager.setCredentials(credentials);
+    await dataManager.performSync();
+    console.log('Legacy sync completed using new system');
+  } catch (error) {
+    console.error('Legacy sync failed:', error);
+    throw error;
   }
-  
-  await remoteDB.login(username, password);
-  await grmRemoteDB.login(username, password);
-  
-  const sync = LocalDatabase.sync(remoteDB, {
-    live: true,
-    retry: true,
-    filter: 'eadl/by_user_email',
-    query_params: { email: userEmail },
-  });
-  console.log({result})
-
-  const syncCommunes = LocalCommunesDatabase.sync(communesRemoteDB, {
-    live: true,
-    retry: true,
-    // view: "eadl/all_administrative_levels",
-    // filter: "eadl/all_communes",
-    // query_params: { email: userEmail },
-    filter: 'eadl/by_user_administrative_region',
-    query_params: { ids: result?.levels },
-  });
-
-  const syncGRM = LocalGRMDatabase.sync(grmRemoteDB, {
-    live: true,
-    retry: true,
-    batch_size: 500,
-    batches_limit: 50,
-  });
-  const syncStates = ['change', 'paused', 'active', 'denied', 'complete', 'error'];
-  syncStates.forEach((state) => {
-    sync.on(state, (currState) =>
-      console.log(`[Sync EADL ${state}: ${JSON.stringify(currState)}]`)
-    );
-
-    syncCommunes.on(state, (currState) =>
-      console.log(currState, `[Sync COMMUNES ${state}: ${JSON.stringify(currState)}]`)
-    );
-
-    syncGRM.on(state, (currState) =>
-      console.log(`[Sync GRM ${state}: ${JSON.stringify(currState)}]`)
-    );
-  });
-
-  // Cancel synchronization after 10 seconds
-  setTimeout(() => {
-    sync.cancel();
-    syncCommunes.cancel();
-    syncGRM.cancel();
-    console.log('Synchronization cancelled');
-  }, 20000);
 };
 
+/**
+ * Data Manager utility functions
+ */
+const getDataManager = async () => {
+  const { default: dataManager } = await import('../services/DataManager');
+  return dataManager;
+};
+
+/**
+ * Initialize the data management system
+ */
+export const initializeDataManager = async (credentials = null) => {
+  try {
+    const dataManager = await getDataManager();
+    await dataManager.initialize(credentials);
+    console.log('✅ Data manager initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize data manager:', error);
+    throw error;
+  }
+};
+
+/**
+ * Set credentials for the data manager
+ */
+export const setDataManagerCredentials = async (credentials) => {
+  try {
+    const dataManager = await getDataManager();
+    await dataManager.setCredentials(credentials);
+    console.log('✅ Credentials set successfully');
+  } catch (error) {
+    console.error('❌ Failed to set data manager credentials:', error);
+    throw error;
+  }
+};
+
+/**
+ * Issue Management Functions
+ */
+export const getIssues = async (filters = {}) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getIssues(filters);
+};
+
+export const getIssue = async (issueId) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getIssue(issueId);
+};
+
+export const createIssue = async (issueData) => {
+  const dataManager = await getDataManager();
+  return await dataManager.createIssue(issueData);
+};
+
+export const updateIssue = async (issueId, updateData) => {
+  const dataManager = await getDataManager();
+  return await dataManager.updateIssue(issueId, updateData);
+};
+
+export const deleteIssue = async (issueId) => {
+  const dataManager = await getDataManager();
+  return await dataManager.deleteIssue(issueId);
+};
+
+/**
+ * Lookup Data Functions
+ */
+export const getAdministrativeRegions = async (filters = {}) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getAdministrativeRegions(filters);
+};
+
+export const getIssueCategories = async (projectId = null) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getIssueCategories(projectId);
+};
+
+export const getIssueTypes = async (projectId = null) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getIssueTypes(projectId);
+};
+
+export const getIssueStatuses = async () => {
+  const dataManager = await getDataManager();
+  return await dataManager.getIssueStatuses();
+};
+
+export const getAgeGroups = async () => {
+  const dataManager = await getDataManager();
+  return await dataManager.getAgeGroups();
+};
+
+export const getCitizenGroups = async () => {
+  const dataManager = await getDataManager();
+  return await dataManager.getCitizenGroups();
+};
+
+export const getDepartments = async () => {
+  const dataManager = await getDataManager();
+  return await dataManager.getDepartments();
+};
+
+export const getProjects = async () => {
+  const dataManager = await getDataManager();
+  return await dataManager.getProjects();
+};
+
+/**
+ * Attachment Functions
+ */
+export const uploadAttachment = async (issueId, attachmentData) => {
+  const dataManager = await getDataManager();
+  return await dataManager.uploadAttachment(issueId, attachmentData);
+};
+
+export const getIssueAttachments = async (issueId) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getIssueAttachments(issueId);
+};
+
+/**
+ * Search Functions
+ */
+export const searchIssues = async (searchTerm, filters = {}) => {
+  const dataManager = await getDataManager();
+  return await dataManager.searchIssues(searchTerm, filters);
+};
+
+/**
+ * User-specific Functions
+ */
+export const getUserAssignedIssues = async (userId) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getUserAssignedIssues(userId);
+};
+
+export const getUserReportedIssues = async (userId) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getUserReportedIssues(userId);
+};
+
+export const getIssuesByStatus = async (statusId, userId = null) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getIssuesByStatus(statusId, userId);
+};
+
+/**
+ * Statistics Functions
+ */
+export const getStatistics = async (userId = null) => {
+  const dataManager = await getDataManager();
+  return await dataManager.getStatistics(userId);
+};
+
+/**
+ * Sync Functions
+ */
+export const performSync = async (projectId = null) => {
+  const dataManager = await getDataManager();
+  return await dataManager.performSync(projectId);
+};
+
+export const getSyncStatus = async () => {
+  const dataManager = await getDataManager();
+  return dataManager.getSyncStatus();
+};
+
+export const addSyncListener = async (listener) => {
+  const dataManager = await getDataManager();
+  return dataManager.addSyncListener(listener);
+};
+
+export const removeSyncListener = async (listener) => {
+  const dataManager = await getDataManager();
+  return dataManager.removeSyncListener(listener);
+};
+
+export const forceFullResync = async (projectId = null) => {
+  const dataManager = await getDataManager();
+  return await dataManager.forceFullResync(projectId);
+};
+
+/**
+ * Network Functions
+ */
+export const isNetworkOnline = async () => {
+  const dataManager = await getDataManager();
+  return dataManager.isNetworkOnline();
+};
+
+/**
+ * Data Management Functions
+ */
+export const clearAllData = async () => {
+  const dataManager = await getDataManager();
+  return await dataManager.clearAllData();
+};
+
+export const exportData = async () => {
+  const dataManager = await getDataManager();
+  return await dataManager.exportData();
+};
+
+export const importData = async (backupData) => {
+  const dataManager = await getDataManager();
+  return await dataManager.importData(backupData);
+};
+
+export const forceCleanupDatabases = async () => {
+  try {
+    const dataManager = await getDataManager();
+    return await dataManager.forceCleanupDatabases();
+  } catch (error) {
+    console.error('❌ Failed to force cleanup databases:', error);
+    throw error;
+  }
+};
+
+// Export database instances for compatibility
 export default LocalDatabase;

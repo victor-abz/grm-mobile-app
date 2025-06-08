@@ -7,13 +7,15 @@ import { default as React, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Collapsible from 'react-native-collapsible';
-import { Button, IconButton } from 'react-native-paper';
+import { Button, IconButton, TextInput } from 'react-native-paper';
 import CustomSeparator from '../../../../components/CustomSeparator/CustomSeparator';
 import { baseURL } from '../../../../services/API';
 import { colors } from '../../../../utils/colors';
 import { LocalGRMDatabase } from '../../../../utils/databaseManager';
 import { citizenTypes } from '../../../../utils/utils';
 import { styles } from './Content.styles';
+import { useData } from '../../../../providers/DataProvider';
+import { updateIssue } from '../../../../utils/databaseManager';
 
 const theme = {
   roundness: 12,
@@ -27,6 +29,7 @@ const theme = {
 
 function Content({ issue }) {
   const { t } = useTranslation();
+  const { dataManager } = useData();
   const [comments, setComments] = useState(issue.comments);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
@@ -38,8 +41,8 @@ function Content({ issue }) {
   const [isAppealCollapsed, setIsAppealCollapsed] = useState(true);
   const [_sound, setSound] = useState();
   const [imageError, setImageError] = useState(false);
-
   const [playing, setPlaying] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const scrollViewRef = useRef();
 
@@ -71,22 +74,22 @@ function Content({ issue }) {
     setIsIssueAssignedToMe(_isIssueAssignedToMe());
   }, []);
 
-  const upsertNewComment = () => {
-    LocalGRMDatabase.upsert(issue._id, (doc) => {
-      doc = issue;
-      return doc;
-    });
+  const upsertNewComment = async () => {
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      // Update the issue with new comments using DataManager
+      await updateIssue(issue._id, {
+        comments: issue.comments,
+      });
+      console.log('Comment added successfully');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
-  React.useEffect(
-    () =>
-      _sound
-        ? () => {
-            // console.log("Unloading Sound");
-            _sound.unloadAsync();
-          }
-        : undefined,
-    [_sound]
-  );
 
   const playSound = async (recordingUri, remoteUrl) => {
     if (playing === false) {
@@ -124,32 +127,42 @@ function Content({ issue }) {
     // setPlaying(false)
   };
 
-  const onAddComment = () => {
-    if (newComment) {
-      const commentDate = moment().format('DD-MMM-YYYY');
-      issue.comments = [
-        ...issue.comments,
-        {
-          name: issue.reporter.name,
-          comment: newComment,
-          due_at: commentDate,
-        },
-      ];
-      setComments([
-        ...comments,
-        {
-          name: issue.reporter.name,
-          comment: newComment,
-          due_at: commentDate,
-        },
-      ]);
+  const onAddComment = async () => {
+    if (newComment && !isUpdating) {
+      const commentDate = moment().toISOString();
+      const newCommentObj = {
+        comment_by: issue.reporter.id, // Use proper user ID
+        comment_text: newComment,
+        comment_date: commentDate,
+      };
+
+      // Update issue comments
+      issue.comments = [...(issue.comments || []), newCommentObj];
+
+      // Update local state
+      setComments([...comments, newCommentObj]);
       setNewComment('');
+
+      // Scroll to end
       setTimeout(() => {
         scrollViewRef.current.scrollToEnd({ animated: true });
       }, 50);
+
+      // Save to database
+      await upsertNewComment();
     }
-    upsertNewComment();
   };
+
+  React.useEffect(
+    () =>
+      _sound
+        ? () => {
+            // console.log("Unloading Sound");
+            _sound.unloadAsync();
+          }
+        : undefined,
+    [_sound]
+  );
 
   return (
     <ScrollView ref={scrollViewRef} contentContainerStyle={{ alignItems: 'center', padding: 20 }}>
