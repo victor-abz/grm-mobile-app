@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ActivityIndicator, Card } from 'react-native-paper';
@@ -9,6 +9,8 @@ function ImagesList({ attachments }) {
 
   const [_attachments, _setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const timerRef = useRef(null);
+
   function AttachmentComponent({ attachment }) {
     return (
       <View
@@ -17,9 +19,7 @@ function ImagesList({ attachments }) {
           flexDirection: 'row',
           alignItems: 'center',
           marginVertical: 0,
-          // backgroundColor: '#fff',
           marginBottom: 1,
-          // justifyContent: 'space-around'
         }}
       >
         <Card style={styles.cardContainer}>
@@ -40,45 +40,69 @@ function ImagesList({ attachments }) {
           </View>
           <View style={styles.textView}>
             <Text style={styles.cardTitle}>
-              {t('reference')}: {attachment?.tracking_code}
+              {t('reference')}: {attachment?.tracking_code || t('unknown')}
             </Text>
             <Text style={styles.cardContent}>
               {!attachment.taskOrdinal &&
-                `Fichier appartenant à un problème${
-                  attachment?.attachment?.isAudio ? ' [Audio Recording].' : ' [Image].'
+                `${t('file_belonging_to_issue')}${
+                  attachment?.attachment?.isAudio ? ' [Audio]' : ' [Image]'
                 }`}
               {attachment.taskOrdinal &&
-                `Attachment on task ${attachment?.taskOrdinal} of \n phase ${attachment?.phaseOrdinal}`}
+                `${t('attachment_on_task')} ${attachment?.taskOrdinal} ${t('of')} ${t('phase')} ${
+                  attachment?.phaseOrdinal
+                }`}
             </Text>
           </View>
         </Card>
       </View>
     );
   }
+
   useEffect(() => {
-    setTimeout(() => {
-      attachments?.length > 0 &&
+    timerRef.current = setTimeout(() => {
+      if (attachments?.length > 0) {
         _setAttachments(
-          attachments.map(
-            (obj) => obj?.attachment?.uploaded === false && <AttachmentComponent attachment={obj} />
-          )
+          attachments
+            .filter((obj) => obj?.attachment?.uploaded === false)
+            .map((obj) => (
+              <AttachmentComponent
+                attachment={obj}
+                key={obj.attachment.id || Math.random().toString()}
+              />
+            ))
         );
+      } else {
+        _setAttachments([]);
+      }
       setLoading(false);
     }, 500);
-    return clearTimeout();
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
   }, [attachments]);
+
   if (loading)
     return (
       <View style={{ flex: 1 }}>
         <ActivityIndicator style={{ marginTop: 100 }} color={colors.primary} />
       </View>
     );
+
   return (
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', padding: 10 }}
     >
-      {_attachments}
+      {_attachments.length > 0 ? (
+        _attachments
+      ) : (
+        <Text style={{ marginTop: 20, textAlign: 'center', color: '#707070' }}>
+          {t('no_attachments_to_sync')}
+        </Text>
+      )}
     </ScrollView>
   );
 }
@@ -90,7 +114,6 @@ const styles = StyleSheet.create({
     width: 65,
     height: 65,
     borderRadius: 10,
-    // margin: 10,
   },
   cardContainer: {
     backgroundColor: '#ffffff',

@@ -2,8 +2,8 @@ import * as FileSystem from 'expo-file-system';
 import { getInfoAsync, uploadAsync } from 'expo-file-system';
 import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Platform, Text, View } from 'react-native';
-import { ActivityIndicator, Snackbar } from 'react-native-paper';
+import { Modal, Platform, Text, View, FlatList } from 'react-native';
+import { ActivityIndicator, Snackbar, Card, Badge } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { useView } from 'use-pouchdb';
 import CheckCircle from '../../../../assets/check-circle.svg';
@@ -24,11 +24,16 @@ function SyncAttachments({ navigation }) {
   const FILE_READ_ERROR_TRY_AGAIN = t('file_read_error_try_again');
 
   const [loading, setLoading] = useState(false);
-  // const [attachments, setAttachments] = useState([]);
+  const [pendingIssues, setPendingIssues] = useState([]);
   const [successModal, setSuccessModal] = useState(false);
   const [fetchedContent, setFetchedContent] = useState(false);
   const [errorVisible, setErrorVisible] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState(FILE_READ_ERROR);
+  const [syncResults, setSyncResults] = useState({
+    created: [],
+    updated: [],
+    errors: [],
+  });
 
   const onDismissSnackBar = () => setErrorVisible(false);
 
@@ -64,17 +69,60 @@ function SyncAttachments({ navigation }) {
         return [
           ...attachments
             .filter((attachment) => attachment.user_id === eadl[0].representative.id)
-            .map((attachment) => ({ attachment, docId: issue._id })),
+            .map((attachment) => ({
+              attachment,
+              docId: issue._id,
+              tracking_code: issue.tracking_code,
+            })),
           ...reasons
             .filter((reason) => reason.user_id === eadl[0].representative.id)
-            .map((reason) => ({ attachment: reason, docId: issue._id })),
+            .map((reason) => ({
+              attachment: reason,
+              docId: issue._id,
+              tracking_code: issue.tracking_code,
+            })),
         ];
       });
     }
     return [];
   }, [issues, eadl, eadlLoading, issuesLoading]);
 
-  console.log({ issues, eadl, eadlLoading, attachments, loading });
+  // Load pending issues on mount
+  useEffect(() => {
+    if (!eadlLoading && !issuesLoading) {
+      loadPendingIssues();
+    }
+  }, [issues, eadlLoading, issuesLoading]);
+
+  // Load pending issues from frappeSyncManager
+  const loadPendingIssues = () => {
+    // Extract pending issues from frappeSyncManager
+    const pendingChanges = frappeSyncManager.pendingChanges || [];
+    const pendingIssueChanges = pendingChanges.filter((change) => change.type === 'issue');
+
+    // Map to a more user-friendly format
+    const pendingIssuesList = pendingIssueChanges.map((change) => {
+      // Find the corresponding issue in our loaded issues
+      const matchingIssue = issues.find(
+        (issue) =>
+          issue._id === change.data._id ||
+          issue._id === change.data.docId ||
+          (change.local_id && issue._id.includes(change.local_id))
+      );
+
+      return {
+        id: change.local_id || change.data._id || change.data.docId,
+        tracking_code: matchingIssue?.tracking_code || 'Unknown',
+        status: 'pending',
+        action: change.action,
+        project: matchingIssue?.project || null,
+        error: null,
+      };
+    });
+
+    setPendingIssues(pendingIssuesList);
+    console.log('[SyncAttachments] Loaded pending issues:', pendingIssuesList.length);
+  };
 
   // Log actual pending changes on mount
   useEffect(() => {
@@ -165,10 +213,59 @@ function SyncAttachments({ navigation }) {
       }
 
       // Then perform a full sync to ensure all changes are pushed to Frappe
-      await frappeSyncManager.performSync();
-      console.log('[SyncAttachments] All pending changes synced successfully.');
+      // and ensure issues have project assignments from user's assigned projects
+      const syncResponse = await frappeSyncManager.pushPendingChanges();
+      console.log('[SyncAttachments] Sync response:', syncResponse);
 
-      if (!isError) setSuccessModal(true);
+      // Process the sync response
+      if (syncResponse && syncResponse.data) {
+        const { created = [], updated = [], errors = [] } = syncResponse.data;
+
+        // Update our local state with the results
+        setSyncResults({
+          created,
+          updated,
+          errors,
+        });
+
+        // Update pending issues based on sync results
+        updatePendingIssuesFromSyncResults(created, updated, errors);
+
+        // Only show success if there were no errors
+        if (errors.length === 0) {
+          setSuccessModal(true);
+        } else {
+          // Show error message for the first error
+          if (errors.length > 0) {
+            const firstError = errors[0];
+            let errorMsg = firstError.error;
+
+            // Handle specific error cases
+            if (errorMsg.includes('Status None does not belong to project None')) {
+              errorMsg = t('error_status_project_none');
+              if (!errorMsg || errorMsg === 'error_status_project_none') {
+                errorMsg = 'Status does not belong to project. Please try again.';
+              }
+            }
+
+            setErrorMessage(errorMsg);
+            setErrorVisible(true);
+            isError = true;
+          }
+        }
+      } else if (syncResponse && syncResponse.status === 'success') {
+        // If we got a success response but no data, still consider it successful
+        console.log('[SyncAttachments] All pending changes synced successfully.');
+        if (!isError) setSuccessModal(true);
+      } else {
+        // If we didn't get a proper response, show a generic error
+        setErrorMessage('Sync failed with unknown error');
+        setErrorVisible(true);
+        isError = true;
+      }
+
+      // Reload pending issues after sync to reflect current state
+      loadPendingIssues();
     } catch (err) {
       console.log('[SyncAttachments] Error during sync process:', err.message);
       setErrorMessage(err.message || 'Sync failed');
@@ -181,6 +278,92 @@ function SyncAttachments({ navigation }) {
       );
     }
   };
+
+  // Update pending issues based on sync results
+  const updatePendingIssuesFromSyncResults = (created, updated, errors) => {
+    // Create a map of local_id to error for quick lookup
+    const errorMap = {};
+    errors.forEach((error) => {
+      if (error.local_id && error.type === 'issue') {
+        errorMap[error.local_id] = error.error;
+      }
+    });
+
+    // Create sets of successfully synced local_ids
+    const successfulLocalIds = new Set([
+      ...created.filter((item) => item.type === 'issue').map((item) => item.local_id),
+      ...updated.filter((item) => item.type === 'issue').map((item) => item.id),
+    ]);
+
+    // Update pending issues
+    setPendingIssues((prevIssues) => {
+      return prevIssues
+        .map((issue) => {
+          // If the issue has an error
+          if (errorMap[issue.id]) {
+            return {
+              ...issue,
+              status: 'error',
+              error: errorMap[issue.id],
+            };
+          }
+          // If the issue was successfully synced
+          else if (successfulLocalIds.has(issue.id)) {
+            return {
+              ...issue,
+              status: 'synced',
+            };
+          }
+          // Otherwise keep as is
+          return issue;
+        })
+        .filter((issue) => issue.status !== 'synced'); // Remove synced issues
+    });
+  };
+
+  // Render a pending issue item
+  const renderPendingIssueItem = ({ item }) => (
+    <Card
+      style={{
+        marginVertical: 5,
+        marginHorizontal: 10,
+        backgroundColor: item.status === 'error' ? '#fff0f0' : '#ffffff',
+      }}
+    >
+      <Card.Content>
+        <View
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <Text style={{ fontWeight: 'bold' }}>
+            {t('reference')}: {item.tracking_code}
+          </Text>
+          <Badge
+            style={{
+              backgroundColor:
+                item.status === 'error'
+                  ? '#ff6b6b'
+                  : item.status === 'synced'
+                  ? '#4caf50'
+                  : '#ffc107',
+            }}
+          >
+            {item.status === 'error'
+              ? t('error')
+              : item.status === 'synced'
+              ? t('synced')
+              : t('pending')}
+          </Badge>
+        </View>
+        <Text style={{ marginTop: 5 }}>
+          {item.action === 'create' ? t('new_issue') : t('update_issue')}
+        </Text>
+        {item.status === 'error' && (
+          <Text style={{ color: '#d32f2f', marginTop: 5 }}>{item.error}</Text>
+        )}
+      </Card.Content>
+    </Card>
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <Modal animationType="slide" style={{ flex: 1 }} visible={successModal}>
@@ -231,7 +414,25 @@ function SyncAttachments({ navigation }) {
           </CustomGreenButton>
         </View>
       </Modal>
+
+      {/* Pending Issues Section */}
+      {pendingIssues.length > 0 && (
+        <View style={{ marginVertical: 10 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 16, marginLeft: 10, marginBottom: 5 }}>
+            {t('pending_issues')} ({pendingIssues.length})
+          </Text>
+          <FlatList
+            data={pendingIssues}
+            renderItem={renderPendingIssueItem}
+            keyExtractor={(item) => item.id}
+            style={{ maxHeight: 200 }}
+          />
+        </View>
+      )}
+
+      {/* Attachments Section */}
       <ImagesList attachments={attachments} />
+
       {loading || eadlLoading || issuesLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />
       ) : (

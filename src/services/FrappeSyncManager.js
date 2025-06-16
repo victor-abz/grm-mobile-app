@@ -323,6 +323,9 @@ class FrappeSyncManager {
           console.warn('Push errors:', results.errors);
           // Optionally, you could retry failed changes or notify the user
         }
+
+        // Return the results for the caller to handle
+        return response;
       } else {
         console.error('[FrappeSyncManager] Sync failed with message:', response.message);
         throw new Error(response.message || 'Failed to push changes');
@@ -444,10 +447,14 @@ class FrappeSyncManager {
       const localIssue = {
         _id: this.generateLocalId(),
         ...issueData,
-        _local: true,
+        is_local: true, // Use is_local instead of _local
         created_date: new Date().toISOString(),
         modified_date: new Date().toISOString(),
       };
+
+      // Remove any special fields that might have come from issueData
+      delete localIssue._local;
+      delete localIssue._rev;
 
       await LocalGRMDatabase.put(localIssue);
 
@@ -488,9 +495,13 @@ class FrappeSyncManager {
               ...localIssue,
               _id: serverIssue.name,
               name: serverIssue.name,
-              _local: false,
+              is_local: false,
               ...this.convertIssueFromServer(serverIssue),
             };
+
+            // Remove any special fields
+            delete updatedIssue._local;
+            delete updatedIssue._rev;
 
             // Remove the temporary local document
             await LocalGRMDatabase.remove(localIssue);
@@ -799,7 +810,6 @@ class FrappeSyncManager {
       internal_code: serverIssue.internal_code,
       tracking_code: serverIssue.tracking_code,
       auto_increment_id: serverIssue.auto_increment_id,
-      title: serverIssue.title,
       description: serverIssue.description,
       attachments: serverIssue.attachments || [],
       status: {
@@ -937,9 +947,11 @@ class FrappeSyncManager {
         const serverDoc = {
           ...localDoc,
           _id: item.server_id,
-          _local: false,
         };
+        // Remove special fields that could cause validation errors
         delete serverDoc._rev;
+        delete serverDoc._local;
+        delete serverDoc.is_local;
 
         await database.put(serverDoc);
 
