@@ -143,43 +143,70 @@ function DataProvider({ children }) {
       // Get user's accessible regions from UserRegionService
       const userRegions = userRegionService.getAccessibleRegions();
 
-      // Load other lookup data
-      const [categories, types, statuses, ageGroups, citizenGroups, departments, projects] =
-        await Promise.all([
-          lookupDataManager.getCategories(),
-          lookupDataManager.getTypes(),
-          lookupDataManager.getStatuses(),
-          lookupDataManager.getAgeGroups(),
-          lookupDataManager.getCitizenGroups(),
-          lookupDataManager.getDepartments(),
-          lookupDataManager.getProjects(),
-        ]);
+      // Load other lookup data with error handling for each type
+      const results = await Promise.allSettled([
+        lookupDataManager.getCategories(),
+        lookupDataManager.getTypes(),
+        lookupDataManager.getStatuses(),
+        lookupDataManager.getAgeGroups(),
+        lookupDataManager.getCitizenGroups(),
+        lookupDataManager.getDepartments(),
+        lookupDataManager.getProjects(),
+      ]);
 
-      console.log('🔍 [STEP2] Lookup data loaded:', {
-        categories: categories.length,
-        types: types.length,
-        statuses: statuses.length,
-        regions: userRegions.length,
-        ageGroups: ageGroups.length,
-        citizenGroups: citizenGroups.length,
-        departments: departments.length,
-        projects: projects.length,
+      // Process results, using empty arrays for rejected promises
+      const [
+        categories = [],
+        types = [],
+        statuses = [],
+        ageGroups = [],
+        citizenGroups = [],
+        departments = [],
+        projects = [],
+      ] = results.map((result) => (result.status === 'fulfilled' ? result.value : []));
+
+      // Log detailed results for debugging
+      results.forEach((result, index) => {
+        const dataTypes = [
+          'categories',
+          'types',
+          'statuses',
+          'ageGroups',
+          'citizenGroups',
+          'departments',
+          'projects',
+        ];
+        if (result.status === 'rejected') {
+          console.warn(`⚠️ [${dataTypes[index].toUpperCase()}] Failed to load:`, result.reason);
+        } else {
+          console.log(`✅ [${dataTypes[index].toUpperCase()}] Loaded ${result.value.length} items`);
+        }
       });
 
-      setLookupData({
+      // Update state with all available data
+      const newLookupData = {
         categories,
         types,
         statuses,
-        regions: userRegions, // Use user-specific regions
+        regions: userRegions,
         ageGroups,
         citizenGroups,
         departments,
         projects,
-      });
+      };
 
-      console.log('✅ Lookup data loaded successfully');
+      // Ensure data is properly cached
+      await Promise.all([
+        lookupDataManager.cacheData('age_groups', ageGroups),
+        lookupDataManager.cacheData('citizen_groups', citizenGroups),
+      ]);
+
+      setLookupData(newLookupData);
+      setIsDataInitialized(true);
+      console.log('✅ Lookup data loaded and cached successfully');
     } catch (error) {
       console.error('❌ Error loading lookup data:', error);
+      setIsDataInitialized(true);
     }
   };
 
@@ -280,6 +307,31 @@ function DataProvider({ children }) {
     }
   };
 
+  // Add method to refresh specific contact-related data
+  const refreshContactData = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🔄 Refreshing contact-related data...');
+
+      const [ageGroups, citizenGroups] = await Promise.all([
+        lookupDataManager.getAgeGroups(true), // Force refresh
+        lookupDataManager.getCitizenGroups(true), // Force refresh
+      ]);
+
+      setLookupData((prev) => ({
+        ...prev,
+        ageGroups,
+        citizenGroups,
+      }));
+
+      console.log('✅ Contact data refreshed successfully');
+    } catch (error) {
+      console.error('❌ Error refreshing contact data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const contextValue = {
     // Data services
     dataManager,
@@ -300,6 +352,7 @@ function DataProvider({ children }) {
     refreshRegionData,
     performEmergencyCleanup,
     getSystemStatus,
+    refreshContactData,
 
     // Convenience getters
     getUserRegions: () => userRegionService.getAccessibleRegions(),

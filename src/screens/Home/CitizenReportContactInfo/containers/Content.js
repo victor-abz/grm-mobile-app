@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { ActivityIndicator, Button, RadioButton, TextInput } from 'react-native-paper';
@@ -21,7 +21,7 @@ const theme = {
 function Content({ stepOneParams }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { lookupData, isDataInitialized } = useData();
+  const { lookupData, isDataInitialized, isLoading, refreshContactData } = useData();
   const [name, setName] = useState('');
   const [confidentialValue, setConfidentialValue] = useState(null);
   const [isPreviousPickerClosed, setIsPreviousPickerClosed] = useState(true);
@@ -42,7 +42,12 @@ function Content({ stepOneParams }) {
   // Use lookup data from DataProvider instead of PouchDB views
   const ages = useMemo(() => {
     if (!isDataInitialized) {
-      console.log('🔍 [CONTACT] Age groups - not initialized, returning empty array');
+      console.log('🔍 [CONTACT] Age groups - not initialized yet');
+      return [];
+    }
+
+    if (!lookupData.ageGroups || lookupData.ageGroups.length === 0) {
+      console.log('🔍 [CONTACT] Age groups - no data available');
       return [];
     }
 
@@ -53,28 +58,26 @@ function Content({ stepOneParams }) {
       value: ageGroup._id || ageGroup.id,
     }));
 
-    console.log('🔍 [CONTACT] Age groups processed:', result);
+    console.log(`✅ [CONTACT] Age groups processed: ${result.length} items`);
     return result;
   }, [lookupData.ageGroups, isDataInitialized]);
 
   // Handle citizen groups - they might be an array or nested object
   const citizenGroupsI = useMemo(() => {
     if (!isDataInitialized) {
-      console.log('🔍 [CONTACT] Citizen groups I - not initialized, returning empty array');
+      console.log('🔍 [CONTACT] Citizen groups I - not initialized yet');
       return [];
     }
 
-    // Check if citizenGroups is an array (flattened) or object (nested)
-    let groups = [];
-    if (Array.isArray(lookupData.citizenGroups)) {
-      // Filter for group_type 1 or use all if no group_type field
-      groups = lookupData.citizenGroups.filter(
-        (group) => !group.group_type || group.group_type === '1' || group.group_type === 1
-      );
-    } else if (lookupData.citizenGroups.citizen_group_1) {
-      // Handle nested structure
-      groups = lookupData.citizenGroups.citizen_group_1;
+    if (!lookupData.citizenGroups || lookupData.citizenGroups.length === 0) {
+      console.log('🔍 [CONTACT] Citizen groups I - no data available');
+      return [];
     }
+
+    // Filter for group_type 1
+    const groups = lookupData.citizenGroups.filter(
+      (group) => group.group_type === '1' || group.group_type === 1
+    );
 
     const result = groups.map((group) => ({
       ...group,
@@ -83,27 +86,25 @@ function Content({ stepOneParams }) {
       value: group._id || group.id,
     }));
 
-    console.log('🔍 [CONTACT] Citizen groups I processed:', result);
+    console.log(`✅ [CONTACT] Citizen groups I processed: ${result.length} items`);
     return result;
   }, [lookupData.citizenGroups, isDataInitialized]);
 
   const citizenGroupsII = useMemo(() => {
     if (!isDataInitialized) {
-      console.log('🔍 [CONTACT] Citizen groups II - not initialized, returning empty array');
+      console.log('🔍 [CONTACT] Citizen groups II - not initialized yet');
       return [];
     }
 
-    // Check if citizenGroups is an array (flattened) or object (nested)
-    let groups = [];
-    if (Array.isArray(lookupData.citizenGroups)) {
-      // Filter for group_type 2 or use subset if no group_type field
-      groups = lookupData.citizenGroups.filter(
-        (group) => group.group_type === '2' || group.group_type === 2
-      );
-    } else if (lookupData.citizenGroups.citizen_group_2) {
-      // Handle nested structure
-      groups = lookupData.citizenGroups.citizen_group_2;
+    if (!lookupData.citizenGroups || lookupData.citizenGroups.length === 0) {
+      console.log('🔍 [CONTACT] Citizen groups II - no data available');
+      return [];
     }
+
+    // Filter for group_type 2
+    const groups = lookupData.citizenGroups.filter(
+      (group) => group.group_type === '2' || group.group_type === 2
+    );
 
     const result = groups.map((group) => ({
       ...group,
@@ -112,21 +113,39 @@ function Content({ stepOneParams }) {
       value: group._id || group.id,
     }));
 
-    console.log('🔍 [CONTACT] Citizen groups II processed:', result);
+    console.log(`✅ [CONTACT] Citizen groups II processed: ${result.length} items`);
     return result;
   }, [lookupData.citizenGroups, isDataInitialized]);
 
-  console.log('🔍 [CONTACT] Debug Info:', {
-    isDataInitialized,
-    ageGroupsCount: lookupData.ageGroups?.length || 0,
-    citizenGroupsType: Array.isArray(lookupData.citizenGroups) ? 'array' : 'object',
-    citizenGroupsCount: Array.isArray(lookupData.citizenGroups)
-      ? lookupData.citizenGroups.length
-      : Object.keys(lookupData.citizenGroups || {}).length,
-    ages: ages.length,
-    citizenGroupsI: citizenGroupsI.length,
-    citizenGroupsII: citizenGroupsII.length,
-  });
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 [CONTACT] Debug Info:', {
+      isDataInitialized,
+      ageGroupsCount: lookupData.ageGroups?.length || 0,
+      citizenGroupsCount: lookupData.citizenGroups?.length || 0,
+      processedAges: ages.length,
+      processedGroupsI: citizenGroupsI.length,
+      processedGroupsII: citizenGroupsII.length,
+    });
+  }, [isDataInitialized, lookupData, ages, citizenGroupsI, citizenGroupsII]);
+
+  // Add refresh handler
+  const handleRefreshData = useCallback(async () => {
+    await refreshContactData();
+  }, [refreshContactData]);
+
+  // Add error state tracking
+  const [dataError, setDataError] = useState(false);
+
+  // Check for data availability
+  useEffect(() => {
+    if (isDataInitialized && (!lookupData.ageGroups?.length || !lookupData.citizenGroups?.length)) {
+      console.warn('⚠️ [CONTACT] Required data missing after initialization');
+      setDataError(true);
+    } else {
+      setDataError(false);
+    }
+  }, [isDataInitialized, lookupData]);
 
   const handleConfidentialValueChange = useCallback((newValue) => {
     setConfidentialValue((prevValue) => (newValue === prevValue ? null : newValue));
@@ -175,7 +194,7 @@ function Content({ stepOneParams }) {
   );
 
   // Show loading state while data is being initialized
-  if (!isDataInitialized) {
+  if (!isDataInitialized || isLoading) {
     return (
       <ScrollView>
         <View style={{ padding: 23, alignItems: 'center' }}>
@@ -185,6 +204,29 @@ function Content({ stepOneParams }) {
             Please wait while we load the age groups and citizen groups data.
           </Text>
           <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // Show error state with retry option
+  if (dataError) {
+    return (
+      <ScrollView>
+        <View style={{ padding: 23, alignItems: 'center' }}>
+          <Text style={styles.stepText}>{t('step_2')}</Text>
+          <Text style={[styles.stepSubtitle, { color: colors.error }]}>
+            {t('error_loading_data')}
+          </Text>
+          <Text style={styles.stepDescription}>{t('error_loading_data_description')}</Text>
+          <Button
+            mode="contained"
+            style={{ marginTop: 20 }}
+            onPress={handleRefreshData}
+            loading={isLoading}
+          >
+            {t('retry_button')}
+          </Button>
         </View>
       </ScrollView>
     );

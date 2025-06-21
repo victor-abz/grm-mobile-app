@@ -97,11 +97,6 @@ export const getIssue = async (issueId) => {
   return await dataManager.getIssue(issueId);
 };
 
-export const createIssue = async (issueData) => {
-  const dataManager = await getDataManager();
-  return await dataManager.createIssue(issueData);
-};
-
 export const updateIssue = async (issueId, updateData) => {
   const dataManager = await getDataManager();
   return await dataManager.updateIssue(issueId, updateData);

@@ -4,10 +4,10 @@ import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, ScrollView, Text, View } from 'react-native';
+import { Platform, ScrollView, Text, View, Alert } from 'react-native';
 import { Button, Dialog, Paragraph, Portal } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import { createIssue as createIssueAPI } from '../../../../utils/databaseManager';
+import frappeSyncManager from '../../../../services/FrappeSyncManager';
 import { styles } from './Content.styles';
 
 const SAMPLE_WORDS = ['car', 'house', 'tree', 'ball'];
@@ -41,57 +41,84 @@ function Content({ issue, eadl }) {
       issue.category?.assigned_department === eadl?.department &&
       issue.category?.administrative_level === eadl?.administrative_level;
 
-    // Format issue data according to Frappe API requirements
+    // Format issue data according to centralized structure
     const _issue = {
-      // Basic fields - remove title since app doesn't collect it
+      // Basic fields
       description: issue.additionalDetails,
 
       // Citizen information
-      citizen: issue.name ?? '',
+      citizen: issue.name || '',
       citizen_type: issue.citizen_type,
       gender: issue.gender,
-      contact_medium: issue.typeOfPerson,
+      contact_medium: issue.typeOfPerson || 'facilitator',
 
       // Contact information
-      contact_information: {
-        type: issue.methodOfContact,
-        contact: issue.contactInfo,
-      },
+      contact_type: issue.methodOfContact || 'email',
+      contact_value: issue.contactInfo || '',
 
       // Dates
       intake_date: new Date().toISOString(),
       issue_date: issue.date ? new Date(issue.date).toISOString() : new Date().toISOString(),
 
-      // Related entities - send IDs, not objects
+      // Required entities
       category: issue.category?.id || issue.category?.name,
       issue_type: issue.issueType?.id || issue.issueType?.name,
       administrative_region: issue.issueLocation?.administrative_id || issue.issueLocation?.id,
+
+      // Optional entities
       citizen_age_group: issue.ageGroup?.id || issue.ageGroup?.name,
       citizen_group_1: issue.citizen_group_1?.id || issue.citizen_group_1?.name,
       citizen_group_2: issue.citizen_group_2?.id || issue.citizen_group_2?.name,
 
-      // Project - if available
+      // Project
       project: eadl?.project || null,
 
       // Flags
       ongoing_issue: issue.ongoingEvent || false,
       confirmed: true,
 
-      // Additional fields that might be needed
+      // Additional fields
       tracking_code: `${randomWord(SAMPLE_WORDS)}${Math.floor(Math.random() * 1000)}`,
     };
 
     // Add geolocation coordinates if available
     if (issue.coordinates) {
-      _issue.coordinates = `${issue.coordinates.latitude},${issue.coordinates.longitude}`;
+      _issue.coordinates = JSON.stringify({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'Point',
+              coordinates: [issue.coordinates.longitude, issue.coordinates.latitude],
+            },
+          },
+        ],
+      });
     }
 
-    // Add assignee if applicable (this will be handled by Frappe based on category)
+    // Add assignee if applicable
     if (isAssignee && eadl?._id) {
       _issue.assignee = eadl._id;
     }
 
-    // Remove any undefined or null values to avoid API issues
+    // Validate required fields
+    const requiredFields = ['description', 'category', 'issue_type', 'administrative_region'];
+    const missingFields = requiredFields.filter((field) => !_issue[field]);
+
+    console.log('***** ISSUE *****', _issue);
+    if (missingFields.length > 0) {
+      Alert.alert(
+        t('error'),
+        t('missing_required_fields', { fields: missingFields.join(', ') }),
+        [{ text: t('ok'), style: 'default' }],
+        { cancelable: true }
+      );
+      return;
+    }
+
+    // Remove any undefined or null values
     Object.keys(_issue).forEach((key) => {
       if (_issue[key] === undefined || _issue[key] === null || _issue[key] === '') {
         delete _issue[key];
@@ -100,14 +127,24 @@ function Content({ issue, eadl }) {
 
     console.log('Submitting issue with data:', _issue);
 
-    createIssueAPI(_issue)
+    // Create issue using FrappeSyncManager
+    frappeSyncManager
+      .createIssue(_issue)
       .then((response) => {
-        console.log('Issue created successfully:', response);
-        navigation.navigate('CitizenReportStep4', { issue: response });
+        if (response.status === 'success' || response.status === 'pending') {
+          navigation.navigate('CitizenReportStep4', {
+            issue: response.data,
+            pendingSync: response.status === 'pending',
+          });
+        } else {
+          throw new Error(response.message || 'Failed to create issue');
+        }
       })
       .catch((err) => {
         console.error('Error creating issue:', err);
-        // Show error message to user
+        Alert.alert(t('error'), t('issue_creation_error'), [{ text: t('ok'), style: 'default' }], {
+          cancelable: true,
+        });
       });
   };
 

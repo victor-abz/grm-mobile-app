@@ -115,21 +115,23 @@ const DATA_TRANSFORMERS = {
     name: item.age_group || item.age_group_name,
     label: item.age_group || item.age_group_name,
     value: item.name,
-    min_age: item.min_age,
-    max_age: item.max_age,
     active: item.active !== undefined ? item.active : 1,
+    description: item.description || '',
+    order: parseInt(item.order) || 0,
   }),
 
   citizen_groups: (item) => ({
     _id: item.name,
     type: 'citizen_group',
     id: item.name,
-    name: item.group_name,
-    label: item.group_name,
+    name: item.group_name || item.name,
+    label: item.group_name || item.name,
     value: item.name,
-    description: item.description || item.group_name,
-    group_type: item.group_type,
+    description: item.description || '',
+    group_type: item.group_type ? item.group_type.toString() : '1',
     active: item.active !== undefined ? item.active : 1,
+    order: parseInt(item.order) || 0,
+    parent_group: item.parent_group || null,
   }),
 
   departments: (item) => ({
@@ -297,7 +299,28 @@ class LookupDataManager {
     }
 
     // Fallback to cached data or empty array
-    const fallbackData = this.cache.get(cacheKey) || [];
+    let fallbackData = this.cache.get(cacheKey);
+    if (!fallbackData || fallbackData.length === 0) {
+      // Try to load from persistent storage
+      const storageKey = this.getStorageKey(cacheKey);
+      if (storageKey) {
+        try {
+          const storedData = await AsyncStorage.getItem(storageKey);
+          if (storedData) {
+            fallbackData = JSON.parse(storedData);
+            this.cache.set(cacheKey, fallbackData);
+            console.log(
+              `📱 [${dataType.toUpperCase()}] Fallback from persistent storage: ${
+                fallbackData.length
+              } items`
+            );
+          }
+        } catch (err) {
+          console.error(`❌ Error loading fallback data for ${dataType} from storage:`, err);
+        }
+      }
+    }
+    fallbackData = fallbackData || [];
     console.log(`📱 [${dataType.toUpperCase()}] Fallback: ${fallbackData.length} items`);
     return fallbackData;
   }
@@ -346,9 +369,42 @@ class LookupDataManager {
     }
 
     // Handle special case for citizen groups (nested structure)
-    if (dataType === 'citizen_groups' && rawData.citizen_group_1) {
-      const allGroups = [...(rawData.citizen_group_1 || []), ...(rawData.citizen_group_2 || [])];
-      return allGroups.map(transformer);
+    if (dataType === 'citizen_groups') {
+      let allGroups = [];
+
+      // Handle nested structure from API
+      if (rawData.citizen_group_1 || rawData.citizen_group_2) {
+        allGroups = [
+          ...(rawData.citizen_group_1 || []).map((g) => ({ ...g, group_type: '1' })),
+          ...(rawData.citizen_group_2 || []).map((g) => ({ ...g, group_type: '2' })),
+        ];
+      }
+      // Handle flat array structure from cache
+      else if (Array.isArray(rawData)) {
+        allGroups = rawData.map((g) => ({
+          ...g,
+          group_type: g.group_type ? g.group_type.toString() : '1',
+        }));
+      }
+      // Handle single item
+      else {
+        allGroups = [
+          {
+            ...rawData,
+            group_type: rawData.group_type ? rawData.group_type.toString() : '1',
+          },
+        ];
+      }
+
+      // Sort by order if available
+      const transformed = allGroups.map(transformer);
+      return transformed.sort((a, b) => a.order - b.order);
+    }
+
+    // Handle age groups special case
+    if (dataType === 'age_groups') {
+      let items = Array.isArray(rawData) ? rawData : [rawData];
+      return items.map(transformer);
     }
 
     // Handle array data

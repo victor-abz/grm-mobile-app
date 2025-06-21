@@ -443,106 +443,107 @@ class FrappeSyncManager {
    */
   async createIssue(issueData) {
     try {
-      // Store locally first (offline-first approach)
+      // Format issue data consistently
+      const formattedIssueData = {
+        description: issueData.description,
+        citizen: issueData.citizen_name || issueData.citizen,
+        citizen_type: this.formatCitizenType(issueData.citizen_type),
+        gender: issueData.gender,
+        contact_medium: issueData.contact_medium || 'facilitator',
+        contact_type:
+          issueData.contact_information?.type ||
+          issueData.contact_info_type ||
+          issueData.contact_type,
+        contact_value:
+          issueData.contact_information?.contact ||
+          issueData.contact_info ||
+          issueData.contact_value,
+        intake_date: issueData.intake_date || new Date().toISOString(),
+        issue_date: issueData.issue_date || new Date().toISOString(),
+        category: issueData.category?.id || issueData.category,
+        issue_type:
+          issueData.issue_type ||
+          issueData.type ||
+          issueData.issueType?.id ||
+          issueData.issueType?.name,
+        administrative_region:
+          issueData.administrative_region?.id || issueData.administrative_region,
+        citizen_age_group: issueData.citizen_age_group?.id || issueData.citizen_age_group,
+        citizen_group_1: issueData.citizen_group_1?.id || issueData.citizen_group_1,
+        citizen_group_2: issueData.citizen_group_2?.id || issueData.citizen_group_2,
+        project: issueData.project,
+        ongoing_issue: issueData.ongoing_issue || false,
+        confirmed: issueData.confirmed || true,
+      };
+
+      // Handle coordinates
+      if (issueData.coordinates) {
+        if (typeof issueData.coordinates === 'string') {
+          formattedIssueData.coordinates = issueData.coordinates;
+        } else if (issueData.coordinates.latitude && issueData.coordinates.longitude) {
+          formattedIssueData.coordinates = JSON.stringify({
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'Point',
+                  coordinates: [issueData.coordinates.longitude, issueData.coordinates.latitude],
+                },
+              },
+            ],
+          });
+        }
+      }
+
+      // If online, try direct API creation
+      if (this.isOnline && this.credentials) {
+        const call = this.getCall();
+        const rawResponse = await call.post('egrm.api.issue.create', {
+          issue_data: formattedIssueData,
+        });
+        const response = extractApiResponse(rawResponse);
+
+        if (response.status === 'success' && response.data?.name) {
+          // Store in local database with server ID
+          const localIssue = {
+            _id: response.data.name, // Set _id first
+            name: response.data.name,
+            ...formattedIssueData, // Add formatted data
+            ...response.data, // Add any additional server data
+            is_local: false,
+            created_date: response.data.creation || new Date().toISOString(),
+            modified_date: response.data.modified || new Date().toISOString(),
+          };
+
+          await LocalGRMDatabase.put(localIssue);
+          return { status: 'success', data: localIssue };
+        }
+      }
+
+      // Offline or API creation failed - store locally and queue for sync
+      const localId = this.generateLocalId();
       const localIssue = {
-        _id: this.generateLocalId(),
-        ...issueData,
-        is_local: true, // Use is_local instead of _local
+        ...formattedIssueData,
+        _id: localId,
+        is_local: true,
         created_date: new Date().toISOString(),
         modified_date: new Date().toISOString(),
       };
 
-      // Remove any special fields that might have come from issueData
-      delete localIssue._local;
-      delete localIssue._rev;
-
       await LocalGRMDatabase.put(localIssue);
+      await this.addPendingChange({
+        action: 'create',
+        type: 'issue',
+        data: formattedIssueData,
+        local_id: localId,
+      });
 
-      // If online, try to sync to server
-      if (this.isOnline && this.credentials) {
-        try {
-          const call = this.getCall();
-
-          // Convert to server format
-          const serverData = {
-            category: issueData.category,
-            type: issueData.type,
-            description: issueData.description,
-            location: issueData.location,
-            administrative_region: issueData.administrative_region,
-            citizen_name: issueData.citizen_name,
-            citizen_email: issueData.citizen_email,
-            citizen_phone: issueData.citizen_phone,
-            citizen_age_group: issueData.citizen_age_group,
-            citizen_group: issueData.citizen_group,
-            citizen_gender: issueData.citizen_gender,
-            project: issueData.project,
-            priority: issueData.priority || 'Medium',
-            is_anonymous: issueData.is_anonymous || false,
-            coordinates: issueData.coordinates
-              ? `${issueData.coordinates.latitude},${issueData.coordinates.longitude}`
-              : null,
-          };
-
-          const rawResponse = await call.post('egrm.api.issue.create', serverData);
-          const response = extractApiResponse(rawResponse);
-
-          if (response.status === 'success') {
-            const serverIssue = response.data;
-
-            // Update local document with server ID and data
-            const updatedIssue = {
-              ...localIssue,
-              _id: serverIssue.name,
-              name: serverIssue.name,
-              is_local: false,
-              ...this.convertIssueFromServer(serverIssue),
-            };
-
-            // Remove any special fields
-            delete updatedIssue._local;
-            delete updatedIssue._rev;
-
-            // Remove the temporary local document
-            await LocalGRMDatabase.remove(localIssue);
-
-            // Add the updated document
-            await LocalGRMDatabase.put(updatedIssue);
-
-            console.log('Issue created and synced to server:', serverIssue.name);
-            return updatedIssue;
-          }
-          // Server creation failed, add to pending changes
-          console.log('Server creation failed, adding to pending changes');
-          await this.addPendingChange({
-            action: 'create',
-            type: 'issue',
-            data: serverData,
-            local_id: localIssue._id,
-          });
-        } catch (error) {
-          console.log('Server creation failed, adding to pending changes:', error.message);
-          await this.addPendingChange({
-            action: 'create',
-            type: 'issue',
-            data: issueData,
-            local_id: localIssue._id,
-          });
-        }
-      } else {
-        // Offline - add to pending changes
-        await this.addPendingChange({
-          action: 'create',
-          type: 'issue',
-          data: issueData,
-          local_id: localIssue._id,
-        });
-      }
-
-      return localIssue;
+      return { status: 'pending', data: localIssue };
     } catch (error) {
       console.error('Error creating issue:', error);
-      throw error;
+      return { status: 'error', message: error.message };
     }
   }
 
@@ -1042,6 +1043,44 @@ class FrappeSyncManager {
 
     // Perform sync
     await this.performSync(projectId);
+  }
+
+  /**
+   * Format citizen type to match server requirements
+   */
+  formatCitizenType(citizenType) {
+    // Map of possible input values to correct server values
+    const citizenTypeMap = {
+      1: 'Visible',
+      2: 'Confidential',
+      3: 'On behalf of Individual',
+      4: 'On behalf of Organization',
+      visible: 'Visible',
+      confidential: 'Confidential',
+      on_behalf_individual: 'On behalf of Individual',
+      on_behalf_organization: 'On behalf of Organization',
+    };
+
+    // If the input is already a valid type, return it
+    const validTypes = [
+      'Visible',
+      'Confidential',
+      'On behalf of Individual',
+      'On behalf of Organization',
+    ];
+    if (validTypes.includes(citizenType)) {
+      return citizenType;
+    }
+
+    // Try to map the input to a valid type
+    const mappedType = citizenTypeMap[citizenType?.toLowerCase?.() || citizenType];
+    if (mappedType) {
+      return mappedType;
+    }
+
+    // Default to 'Visible' if no valid mapping found
+    console.warn(`Invalid citizen type "${citizenType}" defaulting to "Visible"`);
+    return 'Visible';
   }
 }
 
