@@ -137,6 +137,7 @@ function Content({ stepOneParams }) {
       id: category._id || category.id,
       label: category.name,
       value: category._id || category.id,
+      assigned_department: category.assigned_department,
     }));
 
     console.log('🔍 [STEP2] Items2 (categories) processed:', result);
@@ -470,8 +471,8 @@ function Content({ stepOneParams }) {
       id: result[0].id,
       name: result[0].name,
       confidentiality_level: result[0].confidentiality_level,
-      assigned_department: result[0].assigned_department?.id,
-      administrative_level: result[0].assigned_department?.administrative_level,
+      assigned_department: result[0].assigned_department,
+      administrative_level: result[0].administrative_level,
     };
     return _category;
   };

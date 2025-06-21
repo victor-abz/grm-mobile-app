@@ -2,12 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FrappeApp } from 'frappe-js-sdk';
 import { LocalDatabase, LocalGRMDatabase } from '../utils/databaseManager';
 import { FRAPPE_BASE_URL } from '../utils/constants';
+import { ChangeManager, STORAGE_KEYS, CHANGE_STATUS } from './ChangeManager';
 
 const SYNC_KEYS = {
   LAST_SYNC_TIMESTAMP: 'last_sync_timestamp',
   PENDING_CHANGES: 'pending_changes',
   SYNC_STATUS: 'sync_status',
   USER_DATA_SYNCED: 'user_data_synced',
+  ...STORAGE_KEYS,
 };
 
 const SYNC_STATUS = {
@@ -67,11 +69,10 @@ class FrappeSyncManager {
     this.lastSyncTimestamp = null;
     this.frappeApp = null;
     this.credentials = null;
+    this.changeManager = new ChangeManager();
+    this.userContext = null;
   }
 
-  /**
-   * Initialize the sync manager with credentials
-   */
   async initialize(credentials = null) {
     try {
       if (credentials) {
@@ -80,13 +81,19 @@ class FrappeSyncManager {
         await this.frappeApp.auth().loginWithUsernamePassword(credentials);
       }
 
+      // Initialize change manager
+      await this.changeManager.initialize();
+
+      // Migrate existing pending changes if any
+      const pendingChanges = await AsyncStorage.getItem(SYNC_KEYS.PENDING_CHANGES);
+      if (pendingChanges) {
+        const changes = JSON.parse(pendingChanges);
+        await this.migratePendingChanges(changes);
+      }
+
       // Load last sync timestamp
       const lastSync = await AsyncStorage.getItem(SYNC_KEYS.LAST_SYNC_TIMESTAMP);
       this.lastSyncTimestamp = lastSync ? new Date(lastSync) : null;
-
-      // Load pending changes
-      const pendingChanges = await AsyncStorage.getItem(SYNC_KEYS.PENDING_CHANGES);
-      this.pendingChanges = pendingChanges ? JSON.parse(pendingChanges) : [];
 
       console.log('FrappeSyncManager initialized', {
         lastSync: this.lastSyncTimestamp,
@@ -94,6 +101,285 @@ class FrappeSyncManager {
       });
     } catch (error) {
       console.error('Error initializing FrappeSyncManager:', error);
+    }
+  }
+
+  async migratePendingChanges(oldChanges) {
+    try {
+      for (const change of oldChanges) {
+        await this.changeManager.addChange(change.type, change.action, {
+          docId: change.local_id || change.id,
+          isLocal: !!change.local_id,
+          changes: change.data,
+        });
+      }
+      // Clear old pending changes
+      await AsyncStorage.removeItem(SYNC_KEYS.PENDING_CHANGES);
+      this.pendingChanges = [];
+    } catch (error) {
+      console.error('Error migrating pending changes:', error);
+    }
+  }
+
+  async createIssue(issueData) {
+    try {
+      console.log('Creating issue with data:', issueData);
+
+      // Get user assignment for the region
+      const regionAssignment = this.userContext?.assignments?.find(
+        (a) => a.region.id === issueData.administrative_region
+      );
+
+      // If we have a matching assignment and category, set the assignee
+      if (regionAssignment && issueData.category) {
+        const categoryDoc = await LocalDatabase.get(issueData.category);
+        if (categoryDoc.assigned_department === regionAssignment.department.id) {
+          issueData.assignee = this.userContext.user.id;
+        }
+      }
+
+      // If online, try direct API creation first
+      if (this.isOnline && this.credentials) {
+        try {
+          const call = this.getCall();
+          const rawResponse = await call.post('egrm.api.issue.create', {
+            issue_data: issueData,
+          });
+          const response = extractApiResponse(rawResponse);
+
+          if (response.status === 'success' && response.data?.name) {
+            // Store in local database with server ID
+            const localIssue = {
+              _id: response.data.name,
+              name: response.data.name,
+              ...issueData,
+              ...response.data,
+              isLocal: false,
+              serverSynced: true,
+              lastSyncedAt: new Date().toISOString(),
+              created_date: response.data.creation || new Date().toISOString(),
+              modified_date: response.data.modified || new Date().toISOString(),
+            };
+
+            await LocalGRMDatabase.put(localIssue);
+            return { status: 'success', data: localIssue };
+          }
+        } catch (error) {
+          console.log('Online creation failed, falling back to offline:', error.message);
+        }
+      }
+
+      // Offline or online creation failed - store locally and queue for sync
+      const localId = this.generateLocalId();
+      const localIssue = {
+        _id: localId,
+        ...issueData,
+        isLocal: true,
+        serverSynced: false,
+        created_date: new Date().toISOString(),
+        modified_date: new Date().toISOString(),
+      };
+
+      await LocalGRMDatabase.put(localIssue);
+
+      // Add to change queue
+      await this.changeManager.addChange('issue', 'create', {
+        docId: localId,
+        isLocal: true,
+        changes: issueData,
+      });
+
+      return { status: 'pending', data: localIssue };
+    } catch (error) {
+      console.error('Error creating issue:', error);
+      return { status: 'error', message: error.message };
+    }
+  }
+
+  async updateIssue(issueId, updateData) {
+    try {
+      // Get current issue
+      const currentIssue = await LocalGRMDatabase.get(issueId);
+
+      // Update locally first
+      const updatedIssue = {
+        ...currentIssue,
+        ...updateData,
+        modified_date: new Date().toISOString(),
+      };
+
+      await LocalGRMDatabase.put(updatedIssue);
+
+      // Add to change queue if not a local-only issue
+      if (!currentIssue.isLocal) {
+        await this.changeManager.addChange('issue', 'update', {
+          docId: issueId,
+          isLocal: false,
+          changes: updateData,
+        });
+      }
+
+      // If online and not a local issue, try to sync immediately
+      if (this.isOnline && this.credentials && !currentIssue.isLocal) {
+        try {
+          const call = this.getCall();
+          await call.post('egrm.api.issue.update', {
+            issue_id: issueId,
+            ...updateData,
+          });
+        } catch (error) {
+          console.log('Server update failed, change queued for sync:', error.message);
+        }
+      }
+
+      return updatedIssue;
+    } catch (error) {
+      console.error('Error updating issue:', error);
+      throw error;
+    }
+  }
+
+  async pushPendingChanges() {
+    if (!this.isOnline || !this.credentials) {
+      console.log('Cannot push changes while offline');
+      return;
+    }
+
+    console.log('Pushing pending changes...');
+
+    try {
+      const pendingChanges = await this.changeManager.getPendingChanges();
+
+      if (pendingChanges.length === 0) {
+        console.log('No pending changes to push');
+        return;
+      }
+
+      // Group changes by type
+      const groupedChanges = {
+        issues: [],
+        attachments: [],
+      };
+
+      pendingChanges.forEach((change) => {
+        if (groupedChanges[change.type]) {
+          const changeData = {
+            action: change.action,
+            data: change.data.changes,
+            local_id: change.data.isLocal ? change.data.docId : undefined,
+            id: !change.data.isLocal ? change.data.docId : undefined,
+          };
+          groupedChanges[change.type].push(changeData);
+        }
+      });
+
+      // Push to server
+      const call = this.getCall();
+      const rawResponse = await call.post('egrm.api.sync.push_changes', {
+        changes_data: JSON.stringify(groupedChanges),
+      });
+
+      const response = extractApiResponse(rawResponse);
+
+      if (response.status === 'success') {
+        const results = response.data;
+
+        // Update local IDs with server IDs
+        if (results.created?.length > 0) {
+          for (const item of results.created) {
+            await this.updateLocalWithServerId(item.local_id, item.server_id);
+            const changeId = await this.findChangeIdByLocalId(item.local_id);
+            if (changeId) {
+              await this.changeManager.markChangeComplete(changeId);
+            }
+          }
+        }
+
+        // Mark updated items as synced
+        if (results.updated?.length > 0) {
+          for (const item of results.updated) {
+            await this.markDocumentSynced(item.id);
+            const changeId = await this.findChangeIdByDocId(item.id);
+            if (changeId) {
+              await this.changeManager.markChangeComplete(changeId);
+            }
+          }
+        }
+
+        // Handle errors
+        if (results.errors?.length > 0) {
+          for (const error of results.errors) {
+            const changeId =
+              (await this.findChangeIdByLocalId(error.local_id)) ||
+              (await this.findChangeIdByDocId(error.id));
+            if (changeId) {
+              await this.changeManager.markChangeError(changeId, new Error(error.error));
+            }
+          }
+        }
+
+        console.log('Push completed successfully');
+      } else {
+        throw new Error(response.message || 'Failed to push changes');
+      }
+
+      // Clean up old completed changes
+      await this.changeManager.cleanupCompletedChanges();
+
+      return response;
+    } catch (error) {
+      console.error('Error pushing changes:', error);
+      throw error;
+    }
+  }
+
+  async findChangeIdByLocalId(localId) {
+    const changes = await this.changeManager.getChangesByDocId(localId);
+    return changes.length > 0 ? changes[0].id : null;
+  }
+
+  async findChangeIdByDocId(docId) {
+    const changes = await this.changeManager.getChangesByDocId(docId);
+    return changes.length > 0 ? changes[0].id : null;
+  }
+
+  async updateLocalWithServerId(localId, serverId) {
+    try {
+      // Get local document
+      const localDoc = await LocalGRMDatabase.get(localId);
+
+      // Create new document with server ID
+      const serverDoc = {
+        ...localDoc,
+        _id: serverId,
+        isLocal: false,
+        serverSynced: true,
+        lastSyncedAt: new Date().toISOString(),
+      };
+      delete serverDoc._rev;
+
+      // Remove local document and add server document
+      await LocalGRMDatabase.remove(localDoc);
+      await LocalGRMDatabase.put(serverDoc);
+
+      console.log(`Updated local ID ${localId} to server ID ${serverId}`);
+    } catch (error) {
+      console.error(`Error updating local ID ${localId}:`, error);
+      throw error;
+    }
+  }
+
+  async markDocumentSynced(docId) {
+    try {
+      const doc = await LocalGRMDatabase.get(docId);
+      const updatedDoc = {
+        ...doc,
+        serverSynced: true,
+        lastSyncedAt: new Date().toISOString(),
+      };
+      await LocalGRMDatabase.put(updatedDoc);
+    } catch (error) {
+      console.error(`Error marking document ${docId} as synced:`, error);
     }
   }
 
@@ -178,13 +464,16 @@ class FrappeSyncManager {
     try {
       console.log('Starting sync process...');
 
-      // Step 1: Push pending changes to server
+      // Step 1: Get latest user context
+      await this.getUserContext();
+
+      // Step 2: Push pending changes to server
       await this.pushPendingChanges();
 
-      // Step 2: Pull changes from server
+      // Step 3: Pull changes from server
       await this.pullChangesFromServer(projectId);
 
-      // Step 3: Update last sync timestamp
+      // Step 4: Update last sync timestamp
       this.lastSyncTimestamp = new Date();
       await AsyncStorage.setItem(
         SYNC_KEYS.LAST_SYNC_TIMESTAMP,
@@ -198,144 +487,6 @@ class FrappeSyncManager {
       this.notifySyncListeners(SYNC_STATUS.ERROR, { error: error.message });
     } finally {
       this.syncInProgress = false;
-    }
-  }
-
-  /**
-   * Push pending changes to server
-   */
-  async pushPendingChanges() {
-    if (this.pendingChanges.length === 0) {
-      console.log('No pending changes to push');
-      return;
-    }
-
-    // Log the actual pending changes
-    console.log(
-      '[FrappeSyncManager] Pending changes before sync:',
-      JSON.stringify(this.pendingChanges, null, 2)
-    );
-
-    // Validate and clean up malformed entries
-    let validChanges = [];
-    let removedCount = 0;
-    for (const change of this.pendingChanges) {
-      if (!change.type || !change.action || !change.data) {
-        console.warn('[FrappeSyncManager] Removing malformed pending change:', change);
-        removedCount++;
-        continue;
-      }
-      validChanges.push(change);
-    }
-    if (removedCount > 0) {
-      this.pendingChanges = validChanges;
-      await AsyncStorage.setItem(SYNC_KEYS.PENDING_CHANGES, JSON.stringify(this.pendingChanges));
-      console.log(`[FrappeSyncManager] Removed ${removedCount} malformed pending changes.`);
-    }
-
-    if (this.pendingChanges.length === 0) {
-      console.log('No valid pending changes to push after cleanup');
-      return;
-    }
-
-    console.log(`[FrappeSyncManager] Valid pending changes to sync: ${this.pendingChanges.length}`);
-
-    // Log each pending change
-    this.pendingChanges.forEach((change, idx) => {
-      console.log(`[FrappeSyncManager] Change #${idx + 1}:`, JSON.stringify(change, null, 2));
-    });
-
-    try {
-      const call = this.getCall();
-
-      // Group changes by type for better organization
-      const groupedChanges = {
-        issues: this.pendingChanges.filter((change) => change.type === 'issue'),
-        attachments: this.pendingChanges.filter((change) => change.type === 'attachment'),
-      };
-
-      console.log(
-        '[FrappeSyncManager] Grouped changes for sync:',
-        JSON.stringify(groupedChanges, null, 2)
-      );
-      console.log('[FrappeSyncManager] Sync API endpoint: egrm.api.sync.push_changes');
-      console.log(
-        '[FrappeSyncManager] Sync API payload:',
-        JSON.stringify({ changes_data: groupedChanges }, null, 2)
-      );
-
-      const rawResponse = await call.post('egrm.api.sync.push_changes', {
-        changes_data: JSON.stringify(groupedChanges),
-      });
-
-      console.log(
-        '[FrappeSyncManager] Raw backend response:',
-        JSON.stringify(rawResponse, null, 2)
-      );
-
-      const response = extractApiResponse(rawResponse);
-      console.log(
-        '[FrappeSyncManager] Parsed backend response:',
-        JSON.stringify(response, null, 2)
-      );
-
-      if (response.status === 'success') {
-        const results = response.data;
-
-        // Update local IDs with server IDs for created items
-        if (results.created?.length > 0) {
-          await this.updateLocalIdsWithServerIds(results.created);
-        }
-
-        // Remove successfully synced changes
-        const processedLocalIds = new Set();
-        const processedIds = new Set();
-
-        // Track created items
-        results.created?.forEach((item) => {
-          processedLocalIds.add(item.local_id);
-        });
-
-        // Track updated items
-        results.updated?.forEach((item) => {
-          processedIds.add(item.id);
-        });
-
-        // Filter out processed changes
-        this.pendingChanges = this.pendingChanges.filter((change) => {
-          const wasCreated = change.local_id && processedLocalIds.has(change.local_id);
-          const wasUpdated = change.id && processedIds.has(change.id);
-          // Also remove any invalid entries
-          const isValid = change.type && change.action && change.data;
-          return !(wasCreated || wasUpdated) && isValid;
-        });
-
-        // Save updated pending changes
-        await AsyncStorage.setItem(SYNC_KEYS.PENDING_CHANGES, JSON.stringify(this.pendingChanges));
-
-        console.log(
-          `Push completed: ${results.created?.length || 0} created, ${
-            results.updated?.length || 0
-          } updated, ${results.errors?.length || 0} errors`
-        );
-
-        if (results.errors?.length > 0) {
-          console.warn('Push errors:', results.errors);
-          // Optionally, you could retry failed changes or notify the user
-        }
-
-        // Return the results for the caller to handle
-        return response;
-      } else {
-        console.error('[FrappeSyncManager] Sync failed with message:', response.message);
-        throw new Error(response.message || 'Failed to push changes');
-      }
-    } catch (error) {
-      console.error('[FrappeSyncManager] Error pushing changes:', error);
-      if (error && error.stack) {
-        console.error('[FrappeSyncManager] Error stack:', error.stack);
-      }
-      throw error;
     }
   }
 
@@ -435,197 +586,6 @@ class FrappeSyncManager {
     // If online, try to sync immediately
     if (this.isOnline && !this.syncInProgress) {
       setTimeout(() => this.performSync(), 1000); // Debounce
-    }
-  }
-
-  /**
-   * Create a new issue
-   */
-  async createIssue(issueData) {
-    try {
-      // Format issue data consistently
-      const formattedIssueData = {
-        description: issueData.description,
-        citizen: issueData.citizen_name || issueData.citizen,
-        citizen_type: this.formatCitizenType(issueData.citizen_type),
-        gender: issueData.gender,
-        contact_medium: issueData.contact_medium || 'facilitator',
-        contact_type:
-          issueData.contact_information?.type ||
-          issueData.contact_info_type ||
-          issueData.contact_type,
-        contact_value:
-          issueData.contact_information?.contact ||
-          issueData.contact_info ||
-          issueData.contact_value,
-        intake_date: issueData.intake_date || new Date().toISOString(),
-        issue_date: issueData.issue_date || new Date().toISOString(),
-        category: issueData.category?.id || issueData.category,
-        issue_type:
-          issueData.issue_type ||
-          issueData.type ||
-          issueData.issueType?.id ||
-          issueData.issueType?.name,
-        administrative_region:
-          issueData.administrative_region?.id || issueData.administrative_region,
-        citizen_age_group: issueData.citizen_age_group?.id || issueData.citizen_age_group,
-        citizen_group_1: issueData.citizen_group_1?.id || issueData.citizen_group_1,
-        citizen_group_2: issueData.citizen_group_2?.id || issueData.citizen_group_2,
-        project: issueData.project,
-        ongoing_issue: issueData.ongoing_issue || false,
-        confirmed: issueData.confirmed || true,
-      };
-
-      // Handle coordinates
-      if (issueData.coordinates) {
-        if (typeof issueData.coordinates === 'string') {
-          formattedIssueData.coordinates = issueData.coordinates;
-        } else if (issueData.coordinates.latitude && issueData.coordinates.longitude) {
-          formattedIssueData.coordinates = JSON.stringify({
-            type: 'FeatureCollection',
-            features: [
-              {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                  type: 'Point',
-                  coordinates: [issueData.coordinates.longitude, issueData.coordinates.latitude],
-                },
-              },
-            ],
-          });
-        }
-      }
-
-      // If online, try direct API creation
-      if (this.isOnline && this.credentials) {
-        const call = this.getCall();
-        const rawResponse = await call.post('egrm.api.issue.create', {
-          issue_data: formattedIssueData,
-        });
-        const response = extractApiResponse(rawResponse);
-
-        if (response.status === 'success' && response.data?.name) {
-          // Store in local database with server ID
-          const localIssue = {
-            _id: response.data.name, // Set _id first
-            name: response.data.name,
-            ...formattedIssueData, // Add formatted data
-            ...response.data, // Add any additional server data
-            is_local: false,
-            created_date: response.data.creation || new Date().toISOString(),
-            modified_date: response.data.modified || new Date().toISOString(),
-          };
-
-          await LocalGRMDatabase.put(localIssue);
-          return { status: 'success', data: localIssue };
-        }
-      }
-
-      // Offline or API creation failed - store locally and queue for sync
-      const localId = this.generateLocalId();
-      const localIssue = {
-        ...formattedIssueData,
-        _id: localId,
-        is_local: true,
-        created_date: new Date().toISOString(),
-        modified_date: new Date().toISOString(),
-      };
-
-      await LocalGRMDatabase.put(localIssue);
-      await this.addPendingChange({
-        action: 'create',
-        type: 'issue',
-        data: formattedIssueData,
-        local_id: localId,
-      });
-
-      return { status: 'pending', data: localIssue };
-    } catch (error) {
-      console.error('Error creating issue:', error);
-      return { status: 'error', message: error.message };
-    }
-  }
-
-  /**
-   * Update an existing issue
-   */
-  async updateIssue(issueId, updateData) {
-    try {
-      // Get current issue
-      const currentIssue = await LocalGRMDatabase.get(issueId);
-
-      // Update locally first
-      const updatedIssue = {
-        ...currentIssue,
-        ...updateData,
-        modified_date: new Date().toISOString(),
-      };
-
-      await LocalGRMDatabase.put(updatedIssue);
-
-      // If online and not a local-only issue, try to sync to server
-      if (this.isOnline && this.credentials && !currentIssue._local) {
-        try {
-          const call = this.getCall();
-
-          // Convert to server format (only send changed fields)
-          const serverData = {};
-          if (updateData.description !== undefined) serverData.description = updateData.description;
-          if (updateData.category !== undefined) serverData.category = updateData.category;
-          if (updateData.type !== undefined) serverData.type = updateData.type;
-          if (updateData.priority !== undefined) serverData.priority = updateData.priority;
-          if (updateData.location !== undefined) serverData.location = updateData.location;
-          if (updateData.administrative_region !== undefined)
-            serverData.administrative_region = updateData.administrative_region;
-          if (updateData.coordinates !== undefined) {
-            serverData.coordinates = updateData.coordinates
-              ? `${updateData.coordinates.latitude},${updateData.coordinates.longitude}`
-              : null;
-          }
-
-          const rawResponse = await call.post('egrm.api.issue.update', {
-            issue_id: issueId,
-            ...serverData,
-          });
-
-          const response = extractApiResponse(rawResponse);
-
-          if (response.status === 'success') {
-            console.log('Issue updated on server:', issueId);
-          } else {
-            // Server update failed, add to pending changes
-            console.log('Server update failed, adding to pending changes');
-            await this.addPendingChange({
-              action: 'update',
-              type: 'issue',
-              id: issueId,
-              data: updateData,
-            });
-          }
-        } catch (error) {
-          console.log('Server update failed, adding to pending changes:', error.message);
-          await this.addPendingChange({
-            action: 'update',
-            type: 'issue',
-            id: issueId,
-            data: updateData,
-          });
-        }
-      } else if (!currentIssue._local) {
-        // Offline - add to pending changes
-        await this.addPendingChange({
-          action: 'update',
-          type: 'issue',
-          id: issueId,
-          data: updateData,
-        });
-      }
-
-      return updatedIssue;
-    } catch (error) {
-      console.error('Error updating issue:', error);
-      throw error;
     }
   }
 
@@ -932,38 +892,6 @@ class FrappeSyncManager {
   }
 
   /**
-   * Update local IDs with server IDs
-   */
-  async updateLocalIdsWithServerIds(createdItems) {
-    for (const item of createdItems) {
-      try {
-        // Get local document
-        const database = item.type === 'issue' ? LocalGRMDatabase : LocalDatabase;
-        const localDoc = await database.get(item.local_id);
-
-        // Remove local document
-        await database.remove(localDoc);
-
-        // Create new document with server ID
-        const serverDoc = {
-          ...localDoc,
-          _id: item.server_id,
-        };
-        // Remove special fields that could cause validation errors
-        delete serverDoc._rev;
-        delete serverDoc._local;
-        delete serverDoc.is_local;
-
-        await database.put(serverDoc);
-
-        console.log(`Updated local ID ${item.local_id} to server ID ${item.server_id}`);
-      } catch (error) {
-        console.error(`Error updating local ID ${item.local_id}:`, error);
-      }
-    }
-  }
-
-  /**
    * Apply lookup changes to local database
    */
   async applyLookupChanges(changes) {
@@ -1081,6 +1009,26 @@ class FrappeSyncManager {
     // Default to 'Visible' if no valid mapping found
     console.warn(`Invalid citizen type "${citizenType}" defaulting to "Visible"`);
     return 'Visible';
+  }
+
+  /**
+   * Get user context from server
+   */
+  async getUserContext() {
+    try {
+      const call = this.getCall();
+      const rawResponse = await call.get('egrm.api.lookup.get_user_context');
+      const response = extractApiResponse(rawResponse);
+
+      if (response.status === 'success') {
+        this.userContext = response.data;
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to get user context');
+    } catch (error) {
+      console.error('Error getting user context:', error);
+      throw error;
+    }
   }
 }
 

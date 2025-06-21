@@ -90,6 +90,7 @@ const LookupAPI = {
         description: category.description,
         department: category.department,
         department_name: category.department_name,
+        assigned_department: category.assigned_department,
         auto_assign: category.auto_assign,
         active: category.active,
         project: projectId,
@@ -270,6 +271,17 @@ const LookupAPI = {
     }
     return [];
   },
+
+  /**
+   * Fetch user context
+   */
+  async getUserContext() {
+    const response = await this.callAPI('egrm.api.lookup.get_user_context');
+    if (response.status === 'success') {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to get user context');
+  },
 };
 
 /**
@@ -383,6 +395,7 @@ class DataManager {
     this.isInitialized = false;
     this.isOnline = true;
     this.credentials = null;
+    this.userContext = null;
     this.setupNetworkListener();
   }
 
@@ -399,6 +412,7 @@ class DataManager {
 
       if (this.credentials) {
         await frappeSyncManager.initialize(this.credentials);
+        await this.initializeUserContext();
       }
 
       await this.performInitialSyncIfNeeded();
@@ -1041,6 +1055,122 @@ class DataManager {
       console.error('❌ Error importing data:', error);
       throw error;
     }
+  }
+
+  /**
+   * Initialize user context
+   */
+  async initializeUserContext() {
+    try {
+      if (!this.credentials) {
+        console.log('⚠️ No credentials available for user context initialization');
+        return;
+      }
+
+      console.log('🔄 Initializing user context...');
+
+      if (this.isOnline) {
+        // Try to get context from server
+        try {
+          const context = await LookupAPI.getUserContext();
+          await this.setUserContext(context);
+          console.log('✅ User context initialized from server');
+          return;
+        } catch (error) {
+          console.warn('⚠️ Failed to get user context from server:', error.message);
+        }
+      }
+
+      // Try to load from local storage
+      const localContext = await this.loadLocalUserContext();
+      if (localContext) {
+        this.userContext = localContext;
+        console.log('📱 User context loaded from local storage');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing user context:', error);
+    }
+  }
+
+  /**
+   * Set and store user context
+   */
+  async setUserContext(context) {
+    try {
+      this.userContext = context;
+
+      // Store in local database for offline access
+      await DatabaseUtils.upsertDocument(LocalDatabase, {
+        _id: 'user_context',
+        type: 'user_context',
+        ...context,
+        last_updated: new Date().toISOString(),
+      });
+
+      console.log('✅ User context stored successfully');
+    } catch (error) {
+      console.error('❌ Error storing user context:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Load user context from local storage
+   */
+  async loadLocalUserContext() {
+    try {
+      const doc = await LocalDatabase.get('user_context');
+      return doc;
+    } catch (error) {
+      if (error.status !== 404) {
+        console.error('❌ Error loading local user context:', error);
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Get current user context
+   */
+  getUserContext() {
+    return this.userContext;
+  }
+
+  /**
+   * Get user's current assignment for a region
+   */
+  getUserAssignmentForRegion(regionId) {
+    if (!this.userContext?.assignments) return null;
+
+    return this.userContext.assignments.find((assignment) => assignment.region.id === regionId);
+  }
+
+  /**
+   * Check if user has access to a region
+   */
+  hasRegionAccess(regionId) {
+    if (!this.userContext?.accessible_regions) return false;
+
+    return this.userContext.accessible_regions.some((region) => region.name === regionId);
+  }
+
+  /**
+   * Get user's department for a project
+   */
+  getUserDepartmentForProject(projectId) {
+    if (!this.userContext?.assignments) return null;
+
+    const assignment = this.userContext.assignments.find((a) => a.project.id === projectId);
+    return assignment?.department;
+  }
+
+  /**
+   * Check if user has permission
+   */
+  hasPermission(permission) {
+    if (!this.userContext?.permissions) return false;
+
+    return Object.values(this.userContext.permissions).some((rolePerms) => rolePerms[permission]);
   }
 }
 

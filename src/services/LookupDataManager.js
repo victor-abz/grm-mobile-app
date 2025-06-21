@@ -77,6 +77,7 @@ const DATA_TRANSFORMERS = {
     description: item.description,
     department: item.department,
     department_name: item.department_name,
+    assigned_department: item.assigned_department,
     auto_assign: item.auto_assign,
     active: item.active,
   }),

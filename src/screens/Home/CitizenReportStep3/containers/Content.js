@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, ScrollView, Text, View, Alert } from 'react-native';
 import { Button, Dialog, Paragraph, Portal } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import frappeSyncManager from '../../../../services/FrappeSyncManager';
+import dataManager from '../../../../services/DataManager';
 import { styles } from './Content.styles';
 
 const SAMPLE_WORDS = ['car', 'house', 'tree', 'ball'];
@@ -21,28 +21,74 @@ const theme = {
   },
 };
 
-function Content({ issue, eadl }) {
+function Content({ issue }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
-  // const incrementId = () => {
-  //   const last = eadl.bp_projects[eadl.bp_projects.length - 1];
-  //   if (!eadl.bp_projects[0]) return 1;
-  //   return parseInt(last.id.split('-')[1]) + 1;
-  // };
+
   const randomWord = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const [sound, setSound] = useState();
   const [playing, setPlaying] = useState(false);
-  const submitIssue = () => {
-    const isAssignee =
-      issue.category?.assigned_department === eadl?.department &&
-      issue.category?.administrative_level === eadl?.administrative_level;
+
+  const formatIssueData = () => {
+    // Get user context
+    const userContext = dataManager.getUserContext();
+
+    // Get user assignment for the region
+    const selectedRegionId = issue.issueLocation?.administrative_id || issue.issueLocation?.id;
+    const regionAssignment = userContext?.assignments?.find(
+      (a) => a.region.id === selectedRegionId
+    );
+
+    // Check if user has access to the selected region
+    const hasRegionAccess = userContext?.accessible_regions?.some(
+      (r) => r.name === selectedRegionId || r.id === selectedRegionId
+    );
+
+    // Check if category matches user's department in the region
+    const isAssignable =
+      regionAssignment &&
+      issue.category?.id &&
+      regionAssignment.department?.id === issue.category?.assigned_department;
+
+    // Log assignment check data
+    console.log('Assignment Check Debug:', {
+      selectedRegion: {
+        id: selectedRegionId,
+        name: issue.issueLocation?.name,
+      },
+      userAssignments: userContext?.assignments?.map((a) => ({
+        region: a.region.id,
+        department: a.department.id,
+      })),
+      hasRegionAccess,
+      regionAssignment: regionAssignment
+        ? {
+            region: regionAssignment.region.id,
+            department: regionAssignment.department.id,
+            role: regionAssignment.role,
+          }
+        : null,
+      category: {
+        id: issue.category?.id,
+        assignedDepartment: issue.category?.assigned_department,
+      },
+      isAssignable,
+      willAssign: isAssignable
+        ? 'Yes - Will assign to current user'
+        : 'No - Will create unassigned',
+    });
+
+    if (!hasRegionAccess) {
+      console.warn('⚠️ User does not have access to selected region:', selectedRegionId);
+    }
 
     // Format issue data according to centralized structure
-    const _issue = {
+    const formattedData = {
       // Basic fields
       description: issue.additionalDetails,
 
@@ -63,15 +109,15 @@ function Content({ issue, eadl }) {
       // Required entities
       category: issue.category?.id || issue.category?.name,
       issue_type: issue.issueType?.id || issue.issueType?.name,
-      administrative_region: issue.issueLocation?.administrative_id || issue.issueLocation?.id,
+      administrative_region: selectedRegionId,
 
       // Optional entities
       citizen_age_group: issue.ageGroup?.id || issue.ageGroup?.name,
       citizen_group_1: issue.citizen_group_1?.id || issue.citizen_group_1?.name,
       citizen_group_2: issue.citizen_group_2?.id || issue.citizen_group_2?.name,
 
-      // Project
-      project: eadl?.project || null,
+      // Project - get from user context if available
+      project: regionAssignment?.project?.id || null,
 
       // Flags
       ongoing_issue: issue.ongoingEvent || false,
@@ -79,35 +125,55 @@ function Content({ issue, eadl }) {
 
       // Additional fields
       tracking_code: `${randomWord(SAMPLE_WORDS)}${Math.floor(Math.random() * 1000)}`,
+
+      // Coordinates if available
+      ...(issue.coordinates && {
+        coordinates: JSON.stringify({
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'Point',
+                coordinates: [issue.coordinates.longitude, issue.coordinates.latitude],
+              },
+            },
+          ],
+        }),
+      }),
+
+      // Set assignee if user has matching department
+      ...(isAssignable && { assignee: userContext.user.id }),
     };
 
-    // Add geolocation coordinates if available
-    if (issue.coordinates) {
-      _issue.coordinates = JSON.stringify({
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'Point',
-              coordinates: [issue.coordinates.longitude, issue.coordinates.latitude],
-            },
-          },
-        ],
-      });
-    }
+    // Log final formatted data
+    console.log('Formatted Issue Data:', {
+      category: formattedData.category,
+      issue_type: formattedData.issue_type,
+      administrative_region: formattedData.administrative_region,
+      project: formattedData.project,
+      assignee: formattedData.assignee || 'Not assigned',
+      assignment_reason: isAssignable
+        ? 'Assigned to current user - matching department and region'
+        : 'Left unassigned - no matching department or region assignment',
+    });
 
-    // Add assignee if applicable
-    if (isAssignee && eadl?._id) {
-      _issue.assignee = eadl._id;
-    }
+    return formattedData;
+  };
 
-    // Validate required fields
-    const requiredFields = ['description', 'category', 'issue_type', 'administrative_region'];
-    const missingFields = requiredFields.filter((field) => !_issue[field]);
+  const validateIssueData = (issueData) => {
+    const requiredFields = {
+      description: 'Description',
+      category: 'Category',
+      issue_type: 'Issue Type',
+      administrative_region: 'Administrative Region',
+    };
 
-    console.log('***** ISSUE *****', _issue);
+    const missingFields = Object.entries(requiredFields)
+      .filter(([field]) => !issueData[field])
+      .map(([, label]) => label);
+
     if (missingFields.length > 0) {
       Alert.alert(
         t('error'),
@@ -115,67 +181,84 @@ function Content({ issue, eadl }) {
         [{ text: t('ok'), style: 'default' }],
         { cancelable: true }
       );
-      return;
+      return false;
     }
 
-    // Remove any undefined or null values
-    Object.keys(_issue).forEach((key) => {
-      if (_issue[key] === undefined || _issue[key] === null || _issue[key] === '') {
-        delete _issue[key];
+    // Validate region access
+    const userContext = dataManager.getUserContext();
+    const hasRegionAccess = userContext?.accessible_regions?.some(
+      (r) => r.name === issueData.administrative_region || r.id === issueData.administrative_region
+    );
+
+    if (!hasRegionAccess) {
+      Alert.alert(t('error'), t('no_region_access'), [{ text: t('ok'), style: 'default' }], {
+        cancelable: true,
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const submitIssue = async () => {
+    try {
+      setIsSubmitting(true);
+
+      // Format and validate issue data
+      const issueData = formatIssueData();
+      if (!validateIssueData(issueData)) {
+        setIsSubmitting(false);
+        return;
       }
-    });
 
-    console.log('Submitting issue with data:', _issue);
+      console.log('Submitting issue with data:', issueData);
 
-    // Create issue using FrappeSyncManager
-    frappeSyncManager
-      .createIssue(_issue)
-      .then((response) => {
-        if (response.status === 'success' || response.status === 'pending') {
-          navigation.navigate('CitizenReportStep4', {
-            issue: response.data,
-            pendingSync: response.status === 'pending',
+      // Create issue using DataManager
+      const response = await dataManager.createIssue(issueData);
+
+      if (response.status === 'success' || response.status === 'pending') {
+        // Handle attachments if any
+        if (issue.attachment) {
+          await dataManager.uploadAttachment(response.data._id, {
+            file: issue.attachment.file,
+            filename: issue.attachment.filename,
+            description: issue.attachment.description,
           });
-        } else {
-          throw new Error(response.message || 'Failed to create issue');
         }
-      })
-      .catch((err) => {
-        console.error('Error creating issue:', err);
-        Alert.alert(t('error'), t('issue_creation_error'), [{ text: t('ok'), style: 'default' }], {
-          cancelable: true,
+
+        if (issue.recording) {
+          await dataManager.uploadAttachment(response.data._id, {
+            file: issue.recording.file,
+            filename: issue.recording.filename,
+            description: 'Voice recording',
+          });
+        }
+
+        // Navigate to success screen
+        navigation.navigate('CitizenReportStep4', {
+          issue: response.data,
+          pendingSync: response.status === 'pending',
         });
+      } else {
+        throw new Error(response.message || 'Failed to create issue');
+      }
+    } catch (error) {
+      console.error('Error submitting issue:', error);
+      Alert.alert(t('error'), t('issue_creation_error'), [{ text: t('ok'), style: 'default' }], {
+        cancelable: true,
       });
-  };
-
-  const playSound = async (recordingUri) => {
-    if (playing === false) {
-      setPlaying(true);
-      // console.log("Loading Sound");
-      const { sound } = await Audio.Sound.createAsync({ uri: recordingUri });
-      setSound(sound);
-      // console.log("Playing Sound");
-      await sound.playAsync();
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
-          setPlaying(false);
-        }
-      });
+    } finally {
+      setIsSubmitting(false);
     }
-    // setPlaying(false)
   };
 
-  React.useEffect(
-    () =>
-      sound
-        ? () => {
-            // console.log("Unloading Sound");
-            sound.unloadAsync();
-          }
-        : undefined,
-    [sound]
-  );
+  const handleSubmit = () => {
+    if (issue.category && issue.category.confidentiality_level === 'Confidential') {
+      _showDialog();
+    } else {
+      submitIssue();
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -187,6 +270,32 @@ function Content({ issue, eadl }) {
       }
     })();
   }, []);
+
+  useEffect(
+    () =>
+      sound
+        ? () => {
+            sound.unloadAsync();
+          }
+        : undefined,
+    [sound]
+  );
+
+  const playSound = async (recordingUri) => {
+    if (!playing) {
+      setPlaying(true);
+      const { sound } = await Audio.Sound.createAsync({ uri: recordingUri });
+      setSound(sound);
+      await sound.playAsync();
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          setPlaying(false);
+        }
+      });
+    }
+  };
+
   return (
     <ScrollView>
       <View style={{ padding: 23 }}>
@@ -197,12 +306,6 @@ function Content({ issue, eadl }) {
 
       {/* STEP 3 SUMMARY */}
       <View style={styles.cardConfirm}>
-        {/*
-        <View style={{ flexDirection: 'row' }}>
-          <Text style={styles.stepLittleText}>{t('step_3')}</Text>
-          <IconButton icon={'pencil'} size={26} color={colors.primary}/>
-        </View>
-        */}
         <View>
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_1')}</Text>
           <Text style={styles.stepDescription}>
@@ -254,19 +357,16 @@ function Content({ issue, eadl }) {
           </Text>
         )}
       </View>
+
       <View style={{ paddingHorizontal: 50 }}>
         <Button
           theme={theme}
           style={{ alignSelf: 'center', margin: 24 }}
           labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
           mode="contained"
-          onPress={() => {
-            if (issue.category && issue.category.confidentiality_level === 'Confidential') {
-              _showDialog();
-              return;
-            }
-            submitIssue();
-          }}
+          onPress={handleSubmit}
+          loading={isSubmitting}
+          disabled={isSubmitting}
         >
           {t('submit_button_text')}
         </Button>
