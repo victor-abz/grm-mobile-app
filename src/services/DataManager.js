@@ -715,23 +715,9 @@ class DataManager {
    */
   async getAdministrativeRegions(filters = {}) {
     try {
-      // Try local first
-      let regions = await watermelonManager.getAdministrativeRegions(filters);
-
-      if (regions.length > 0 && !filters.forceRefresh) {
-        return regions;
-      }
-
-      // Fetch from API if online
-      if (this.isOnline && this.call) {
-        const apiRegions = await LookupAPI.getRegions(this.call, filters);
-        if (apiRegions.length > 0) {
-          await LookupAPI.storeLookupData('regions', apiRegions);
-          return apiRegions;
-        }
-      }
-
-      return regions;
+      // Import LookupDataManager dynamically to avoid circular dependency
+      const { default: LookupDataManager } = await import('./LookupDataManager');
+      return await LookupDataManager.getRegions(filters);
     } catch (error) {
       console.error('❌ Error getting administrative regions:', error);
       return [];
@@ -743,23 +729,9 @@ class DataManager {
    */
   async getIssueCategories(projectId = null) {
     try {
-      // Try local first
-      let categories = await watermelonManager.getIssueCategories(projectId);
-
-      if (categories.length > 0) {
-        return categories;
-      }
-
-      // Fetch from API if online
-      if (this.isOnline && this.call) {
-        const apiCategories = await LookupAPI.getCategories(this.call, projectId);
-        if (apiCategories.length > 0) {
-          await LookupAPI.storeLookupData('categories', apiCategories);
-          return apiCategories;
-        }
-      }
-
-      return categories;
+      // Import LookupDataManager dynamically to avoid circular dependency
+      const { default: LookupDataManager } = await import('./LookupDataManager');
+      return await LookupDataManager.getCategories(projectId);
     } catch (error) {
       console.error('❌ Error getting issue categories:', error);
       return [];
@@ -771,23 +743,9 @@ class DataManager {
    */
   async getIssueTypes(projectId = null) {
     try {
-      // Try local first
-      let types = await watermelonManager.getIssueTypes(projectId);
-
-      if (types.length > 0) {
-        return types;
-      }
-
-      // Fetch from API if online
-      if (this.isOnline && this.call) {
-        const apiTypes = await LookupAPI.getTypes(this.call, projectId);
-        if (apiTypes.length > 0) {
-          await LookupAPI.storeLookupData('types', apiTypes);
-          return apiTypes;
-        }
-      }
-
-      return types;
+      // Import LookupDataManager dynamically to avoid circular dependency
+      const { default: LookupDataManager } = await import('./LookupDataManager');
+      return await LookupDataManager.getTypes(projectId);
     } catch (error) {
       console.error('❌ Error getting issue types:', error);
       return [];
@@ -799,23 +757,9 @@ class DataManager {
    */
   async getIssueStatuses() {
     try {
-      // Try local first
-      let statuses = await watermelonManager.getIssueStatuses();
-
-      if (statuses.length > 0) {
-        return statuses;
-      }
-
-      // Fetch from API if online
-      if (this.isOnline && this.call) {
-        const apiStatuses = await LookupAPI.getStatuses(this.call);
-        if (apiStatuses.length > 0) {
-          await LookupAPI.storeLookupData('statuses', apiStatuses);
-          return apiStatuses;
-        }
-      }
-
-      return statuses;
+      // Import LookupDataManager dynamically to avoid circular dependency
+      const { default: LookupDataManager } = await import('./LookupDataManager');
+      return await LookupDataManager.getStatuses();
     } catch (error) {
       console.error('❌ Error getting issue statuses:', error);
       return [];
@@ -827,23 +771,9 @@ class DataManager {
    */
   async getAgeGroups() {
     try {
-      // Try local first
-      let ageGroups = await watermelonManager.getAgeGroups();
-
-      if (ageGroups.length > 0) {
-        return ageGroups;
-      }
-
-      // Fetch from API if online
-      if (this.isOnline && this.call) {
-        const apiAgeGroups = await LookupAPI.getAgeGroups(this.call);
-        if (apiAgeGroups.length > 0) {
-          await LookupAPI.storeLookupData('age_groups', apiAgeGroups);
-          return apiAgeGroups;
-        }
-      }
-
-      return ageGroups;
+      // Import LookupDataManager dynamically to avoid circular dependency
+      const { default: LookupDataManager } = await import('./LookupDataManager');
+      return await LookupDataManager.getAgeGroups();
     } catch (error) {
       console.error('❌ Error getting age groups:', error);
       return [];
@@ -855,23 +785,9 @@ class DataManager {
    */
   async getCitizenGroups() {
     try {
-      // Try local first
-      let citizenGroups = await watermelonManager.getCitizenGroups();
-
-      if (citizenGroups.length > 0) {
-        return citizenGroups;
-      }
-
-      // Fetch from API if online
-      if (this.isOnline && this.call) {
-        const apiCitizenGroups = await LookupAPI.getCitizenGroups(this.call);
-        if (apiCitizenGroups.length > 0) {
-          await LookupAPI.storeLookupData('citizen_groups', apiCitizenGroups);
-          return apiCitizenGroups;
-        }
-      }
-
-      return citizenGroups;
+      // Import LookupDataManager dynamically to avoid circular dependency
+      const { default: LookupDataManager } = await import('./LookupDataManager');
+      return await LookupDataManager.getCitizenGroups();
     } catch (error) {
       console.error('❌ Error getting citizen groups:', error);
       return [];
@@ -883,23 +799,9 @@ class DataManager {
    */
   async getDepartments() {
     try {
-      // Try local first
-      let departments = await watermelonManager.getDepartments();
-
-      if (departments.length > 0) {
-        return departments;
-      }
-
-      // Fetch from API if online
-      if (this.isOnline && this.call) {
-        const apiDepartments = await LookupAPI.getDepartments(this.call);
-        if (apiDepartments.length > 0) {
-          await LookupAPI.storeLookupData('departments', apiDepartments);
-          return apiDepartments;
-        }
-      }
-
-      return departments;
+      // Import LookupDataManager dynamically to avoid circular dependency
+      const { default: LookupDataManager } = await import('./LookupDataManager');
+      return await LookupDataManager.getDepartments();
     } catch (error) {
       console.error('❌ Error getting departments:', error);
       return [];
@@ -911,23 +813,9 @@ class DataManager {
    */
   async getProjects() {
     try {
-      // Try local first
-      let projects = await watermelonManager.getProjects();
-
-      if (projects.length > 0) {
-        return projects;
-      }
-
-      // Fetch from API if online
-      if (this.isOnline && this.call) {
-        const apiProjects = await LookupAPI.getProjects(this.call);
-        if (apiProjects.length > 0) {
-          await LookupAPI.storeLookupData('projects', apiProjects);
-          return apiProjects;
-        }
-      }
-
-      return projects;
+      // Import LookupDataManager dynamically to avoid circular dependency
+      const { default: LookupDataManager } = await import('./LookupDataManager');
+      return await LookupDataManager.getProjects();
     } catch (error) {
       console.error('❌ Error getting projects:', error);
       return [];

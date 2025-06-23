@@ -291,33 +291,36 @@ class LookupDataManager {
         return cachedData;
       }
 
-      // Try to get from DataManager (which handles API and WatermelonDB)
+      // Get data directly from WatermelonDB first
       let data = [];
+
+      // Import WatermelonManager dynamically to avoid issues
+      const { default: watermelonManager } = await import('../database/watermelonManager');
 
       switch (dataType) {
         case 'categories':
-          data = await dataManager.getIssueCategories(projectId);
+          data = await watermelonManager.getIssueCategories(projectId);
           break;
         case 'types':
-          data = await dataManager.getIssueTypes(projectId);
+          data = await watermelonManager.getIssueTypes(projectId);
           break;
         case 'statuses':
-          data = await dataManager.getIssueStatuses();
+          data = await watermelonManager.getIssueStatuses();
           break;
         case 'age_groups':
-          data = await dataManager.getAgeGroups();
+          data = await watermelonManager.getAgeGroups();
           break;
         case 'citizen_groups':
-          data = await dataManager.getCitizenGroups();
+          data = await watermelonManager.getCitizenGroups();
           break;
         case 'departments':
-          data = await dataManager.getDepartments();
+          data = await watermelonManager.getDepartments();
           break;
         case 'projects':
-          data = await dataManager.getProjects();
+          data = await watermelonManager.getProjects();
           break;
         case 'regions':
-          data = await dataManager.getAdministrativeRegions({ project: projectId });
+          data = await watermelonManager.getAdministrativeRegions({ project_id: projectId });
           break;
         default:
           console.warn(`Unknown data type: ${dataType}`);
@@ -335,7 +338,7 @@ class LookupDataManager {
 
       return data;
     } catch (error) {
-      console.warn(`⚠️ [${dataType.toUpperCase()}] API error:`, error.message);
+      console.warn(`⚠️ [${dataType.toUpperCase()}] Database error:`, error.message);
 
       // Fallback to cached data
       const cacheKey = projectId ? `${dataType}_${projectId}` : `${dataType}_all`;
