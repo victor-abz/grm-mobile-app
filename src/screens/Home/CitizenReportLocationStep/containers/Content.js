@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, IconButton, TextInput } from 'react-native-paper';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { DataContext } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
@@ -30,6 +30,192 @@ const theme = {
 };
 
 const { width, height } = Dimensions.get('window');
+
+// Leaflet Map HTML Template
+const getMapHtml = (
+  initialLat = -1.9441,
+  initialLng = 30.0619,
+  selectedLat = null,
+  selectedLng = null,
+  currentLat = null,
+  currentLng = null
+) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { height: 100vh; width: 100%; }
+        .leaflet-control-locate {
+            background-color: white;
+            border: 2px solid rgba(0,0,0,0.2);
+            border-radius: 4px;
+            padding: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([${initialLat}, ${initialLng}], 13);
+        
+        // Add OpenStreetMap tiles (no API key required)
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        var selectedMarker = null;
+        var currentLocationMarker = null;
+        
+        // Add selected location marker if provided
+        ${
+          selectedLat && selectedLng
+            ? `
+        selectedMarker = L.marker([${selectedLat}, ${selectedLng}], {
+            draggable: true,
+            title: 'Selected Location'
+        }).addTo(map);
+        selectedMarker.bindPopup('Selected Location<br>Tap and drag to adjust').openPopup();
+        
+        selectedMarker.on('dragend', function(e) {
+            var pos = e.target.getLatLng();
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'locationSelected',
+                latitude: pos.lat,
+                longitude: pos.lng
+            }));
+        });
+        `
+            : ''
+        }
+        
+        // Add current GPS location marker if provided
+        ${
+          currentLat && currentLng && (currentLat !== selectedLat || currentLng !== selectedLng)
+            ? `
+        currentLocationMarker = L.marker([${currentLat}, ${currentLng}], {
+            title: 'Your GPS Location'
+        }).addTo(map);
+        currentLocationMarker.bindPopup('Your GPS Location').setIcon(L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        }));
+        `
+            : ''
+        }
+        
+        // Handle map clicks
+        map.on('click', function(e) {
+            if (selectedMarker) {
+                map.removeLayer(selectedMarker);
+            }
+            
+            selectedMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+                draggable: true,
+                title: 'Selected Location'
+            }).addTo(map);
+            selectedMarker.bindPopup('Selected Location<br>Tap and drag to adjust').openPopup();
+            
+            selectedMarker.on('dragend', function(e) {
+                var pos = e.target.getLatLng();
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'locationSelected',
+                    latitude: pos.lat,
+                    longitude: pos.lng
+                }));
+            });
+            
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'locationSelected',
+                latitude: e.latlng.lat,
+                longitude: e.latlng.lng
+            }));
+        });
+        
+        // Add locate control for GPS location
+        var locateControl = L.Control.extend({
+            options: {
+                position: 'topright'
+            },
+            
+            onAdd: function (map) {
+                var container = L.DomUtil.create('div', 'leaflet-control-locate');
+                container.innerHTML = '📍';
+                container.title = 'Find my location';
+                
+                L.DomEvent.on(container, 'click', function(e) {
+                    L.DomEvent.stopPropagation(e);
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'requestLocation'
+                    }));
+                });
+                
+                return container;
+            }
+        });
+        
+        map.addControl(new locateControl());
+        
+        // Function to update current location marker
+        window.updateCurrentLocation = function(lat, lng) {
+            if (currentLocationMarker) {
+                map.removeLayer(currentLocationMarker);
+            }
+            
+            currentLocationMarker = L.marker([lat, lng], {
+                title: 'Your GPS Location'
+            }).addTo(map);
+            currentLocationMarker.bindPopup('Your GPS Location').setIcon(L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            }));
+            
+            map.setView([lat, lng], 15);
+        };
+        
+        // Function to update selected location marker
+        window.updateSelectedLocation = function(lat, lng) {
+            if (selectedMarker) {
+                map.removeLayer(selectedMarker);
+            }
+            
+            selectedMarker = L.marker([lat, lng], {
+                draggable: true,
+                title: 'Selected Location'
+            }).addTo(map);
+            selectedMarker.bindPopup('Selected Location<br>Tap and drag to adjust').openPopup();
+            
+            selectedMarker.on('dragend', function(e) {
+                var pos = e.target.getLatLng();
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'locationSelected',
+                    latitude: pos.lat,
+                    longitude: pos.lng
+                }));
+            });
+        };
+    </script>
+</body>
+</html>`;
 
 export function Content({ stepOneParams, stepTwoParams }) {
   const { t } = useTranslation();
@@ -60,11 +246,33 @@ export function Content({ stepOneParams, stepTwoParams }) {
   const [locationError, setLocationError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [mapHtml, setMapHtml] = useState('');
 
   // Initialize component
   useEffect(() => {
     initializeLocationStep();
   }, []);
+
+  // Update map when locations change
+  useEffect(() => {
+    updateMapDisplay();
+  }, [currentLocation, selectedMapLocation, showMap]);
+
+  const updateMapDisplay = () => {
+    const initialLat = selectedMapLocation?.latitude || currentLocation?.latitude || -1.9441;
+    const initialLng = selectedMapLocation?.longitude || currentLocation?.longitude || 30.0619;
+
+    const html = getMapHtml(
+      initialLat,
+      initialLng,
+      selectedMapLocation?.latitude,
+      selectedMapLocation?.longitude,
+      currentLocation?.latitude,
+      currentLocation?.longitude
+    );
+
+    setMapHtml(html);
+  };
 
   const initializeLocationStep = async () => {
     try {
@@ -96,12 +304,20 @@ export function Content({ stepOneParams, stepTwoParams }) {
       setAvailableRegions(availableForSelection);
       setIsInitialized(true);
 
-      // Try to get cached location
-      const cachedLocationResult = await userRegionService.getCachedLocation();
-      if (cachedLocationResult.success) {
-        setCurrentLocation(cachedLocationResult.location);
-        setSelectedMapLocation(cachedLocationResult.location);
-        findAndSetNearestRegion(cachedLocationResult.location);
+      // Try to get cached location - FIX: Handle null response properly
+      try {
+        const cachedLocation = await userRegionService.getCachedLocation();
+        if (cachedLocation) {
+          console.log('📱 Found cached location:', cachedLocation);
+          setCurrentLocation(cachedLocation);
+          setSelectedMapLocation(cachedLocation);
+          findAndSetNearestRegion(cachedLocation);
+        } else {
+          console.log('📱 No cached location found');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error getting cached location:', error);
+        // Continue without cached location
       }
     } catch (error) {
       console.error('❌ Error initializing location step:', error);
@@ -186,6 +402,30 @@ export function Content({ stepOneParams, stepTwoParams }) {
     findAndSetNearestRegion(location);
 
     console.log('🗺️ Location selected on map:', location);
+  };
+
+  const handleMapMessage = (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+
+      switch (data.type) {
+        case 'locationSelected':
+          handleMapLocationSelect({
+            latitude: data.latitude,
+            longitude: data.longitude,
+          });
+          break;
+
+        case 'requestLocation':
+          requestLocationPermission();
+          break;
+
+        default:
+          console.log('Unknown map message:', data);
+      }
+    } catch (error) {
+      console.error('Error parsing map message:', error);
+    }
   };
 
   const handleRegionSelection = useCallback(
@@ -338,7 +578,9 @@ export function Content({ stepOneParams, stepTwoParams }) {
 
         {/* GPS Location Detection */}
         <View style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
             <Text style={{ fontSize: 14, fontWeight: '500', color: '#333' }}>GPS Location:</Text>
             <Button
               mode="outlined"
@@ -353,9 +595,12 @@ export function Content({ stepOneParams, stepTwoParams }) {
           </View>
 
           {currentLocation && (
-            <View style={{ marginTop: 8, padding: 12, backgroundColor: '#e8f5e8', borderRadius: 8 }}>
+            <View
+              style={{ marginTop: 8, padding: 12, backgroundColor: '#e8f5e8', borderRadius: 8 }}
+            >
               <Text style={{ fontSize: 12, color: '#2e7d32' }}>
-                📍 GPS: {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+                📍 GPS: {currentLocation.latitude.toFixed(6)},{' '}
+                {currentLocation.longitude.toFixed(6)}
               </Text>
               <Text style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
                 Accuracy: ±{currentLocation.accuracy?.toFixed(0) || '?'}m
@@ -366,7 +611,9 @@ export function Content({ stepOneParams, stepTwoParams }) {
 
         {/* Map Location Selection */}
         <View style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
             <Text style={{ fontSize: 14, fontWeight: '500', color: '#333' }}>Map Selection:</Text>
             <Button
               mode="outlined"
@@ -379,66 +626,60 @@ export function Content({ stepOneParams, stepTwoParams }) {
           </View>
 
           {selectedMapLocation && (
-            <View style={{ marginTop: 8, padding: 12, backgroundColor: '#e3f2fd', borderRadius: 8 }}>
+            <View
+              style={{ marginTop: 8, padding: 12, backgroundColor: '#e3f2fd', borderRadius: 8 }}
+            >
               <Text style={{ fontSize: 12, color: '#1976d2' }}>
-                🗺️ Map: {selectedMapLocation.latitude.toFixed(6)}, {selectedMapLocation.longitude.toFixed(6)}
+                🗺️ Map: {selectedMapLocation.latitude.toFixed(6)},{' '}
+                {selectedMapLocation.longitude.toFixed(6)}
               </Text>
               <Text style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
-                Source: {selectedMapLocation === currentLocation ? 'GPS auto-set' : 'Manual selection'}
+                Source:{' '}
+                {selectedMapLocation === currentLocation ? 'GPS auto-set' : 'Manual selection'}
               </Text>
             </View>
           )}
         </View>
 
-        {/* Interactive Map */}
+        {/* Interactive Leaflet Map */}
         {showMap && (
           <View style={{ marginBottom: 16 }}>
             <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
-              Tap on the map to select a precise location:
+              Tap on the map to select a precise location (using OpenStreetMap):
             </Text>
             <View style={{ height: 250, borderRadius: 12, overflow: 'hidden' }}>
-              <MapView
-                provider={PROVIDER_GOOGLE}
+              <WebView
+                source={{ html: mapHtml }}
                 style={{ flex: 1 }}
-                initialRegion={{
-                  latitude: selectedMapLocation?.latitude || currentLocation?.latitude || -1.9441,
-                  longitude: selectedMapLocation?.longitude || currentLocation?.longitude || 30.0619,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }}
-                onPress={(event) => handleMapLocationSelect(event.nativeEvent.coordinate)}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                toolbarEnabled={false}
-              >
-                {selectedMapLocation && (
-                  <Marker
-                    coordinate={{
-                      latitude: selectedMapLocation.latitude,
-                      longitude: selectedMapLocation.longitude,
-                    }}
-                    title="Selected Location"
-                    description="Tap and drag to adjust"
-                    draggable={true}
-                    onDragEnd={(event) => handleMapLocationSelect(event.nativeEvent.coordinate)}
-                  />
+                onMessage={handleMapMessage}
+                injectedJavaScript={`
+                  ${
+                    currentLocation && !selectedMapLocation
+                      ? `
+                    setTimeout(() => {
+                      if (typeof window.updateCurrentLocation === 'function') {
+                        window.updateCurrentLocation(${currentLocation.latitude}, ${currentLocation.longitude});
+                      }
+                    }, 1000);
+                  `
+                      : ''
+                  }
+                  true;
+                `}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color="#24c38b" />
+                    <Text style={{ marginTop: 8, color: '#666' }}>Loading map...</Text>
+                  </View>
                 )}
-                
-                {/* Show user's current GPS location if different from selected */}
-                {currentLocation && 
-                 selectedMapLocation !== currentLocation && (
-                  <Marker
-                    coordinate={{
-                      latitude: currentLocation.latitude,
-                      longitude: currentLocation.longitude,
-                    }}
-                    title="Your GPS Location"
-                    description="Current device location"
-                    pinColor="blue"
-                  />
-                )}
-              </MapView>
+              />
             </View>
+            <Text style={{ fontSize: 10, color: '#888', marginTop: 4, textAlign: 'center' }}>
+              Powered by OpenStreetMap & Leaflet (no API key required)
+            </Text>
           </View>
         )}
 
@@ -498,7 +739,8 @@ export function Content({ stepOneParams, stepTwoParams }) {
               ℹ️ Region Selection
             </Text>
             <Text style={{ fontSize: 14, color: '#666', marginBottom: 12 }}>
-              Your assigned regions don't have top-level categories. Use the nearest region detection above or contact your administrator.
+              Your assigned regions don't have top-level categories. Use the nearest region
+              detection above or contact your administrator.
             </Text>
             <Button
               mode="outlined"
