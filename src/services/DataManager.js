@@ -625,7 +625,7 @@ class DataManager {
    */
   async createIssueViaAPI(issueData) {
     try {
-      const response = await this.call.post('egrm.api.issue.create_issue', {
+      const response = await this.call.post('egrm.api.issue.create', {
         issue_data: issueData,
       });
       const apiResponse = extractApiResponse(response);
