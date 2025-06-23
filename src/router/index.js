@@ -20,7 +20,7 @@ import PublicRoutes from './publicRoutes';
 function Router({ theme }) {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, isLoading: authLoading } = useContext(AuthContext);
 
   const { userPassword } = useSelector((state) => state.get('authentication').toObject());
 
@@ -51,11 +51,33 @@ function Router({ theme }) {
     Poppins_200ExtraLight,
   });
 
-  if (loading || !fontsLoaded) return <View />;
+  // Show loading while authentication state is being determined
+  if (loading || !fontsLoaded || authLoading) {
+    console.log(
+      '🔄 Router: Loading state - loading:',
+      loading,
+      'fontsLoaded:',
+      fontsLoaded,
+      'authLoading:',
+      authLoading
+    );
+    return <View />;
+  }
+
+  // Log authentication state for debugging
+  const hasAuth = userPassword || isAuthenticated;
+  console.log(
+    '🔄 Router: Authentication check - userPassword:',
+    !!userPassword,
+    'isAuthenticated:',
+    isAuthenticated,
+    'hasAuth:',
+    hasAuth
+  );
 
   return (
     <NavigationContainer theme={theme || DefaultTheme}>
-      {userPassword || isAuthenticated ? <PrivateRoutes /> : <PublicRoutes />}
+      {hasAuth ? <PrivateRoutes /> : <PublicRoutes />}
     </NavigationContainer>
   );
 }

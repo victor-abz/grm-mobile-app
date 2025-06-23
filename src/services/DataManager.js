@@ -279,12 +279,34 @@ const LookupAPI = {
    * Get user context from backend
    */
   async getUserContext(call) {
-    const response = await this.callAPI(call, 'egrm.api.auth.get_user_context');
+    try {
+      // Try the user context endpoint first
+      const response = await this.callAPI(call, 'egrm.api.auth.get_user_context');
 
-    if (response.status === 'success') {
-      return response.data || {};
+      if (response.status === 'success') {
+        return response.data || {};
+      }
+
+      // If that fails, try to get basic user info
+      console.log('🔄 Trying alternative user info endpoint...');
+      const userInfoResponse = await this.callAPI(call, 'frappe.auth.get_logged_user');
+
+      if (userInfoResponse.status === 'success') {
+        return {
+          user: userInfoResponse.data,
+          accessible_projects: [],
+          accessible_regions: [],
+          assignments: [],
+          permissions: {},
+        };
+      }
+
+      console.warn('⚠️ Could not fetch user context, using empty context');
+      return {};
+    } catch (error) {
+      console.warn('⚠️ Failed to get user context:', error.message);
+      return {};
     }
-    return {};
   },
 
   /**
@@ -310,9 +332,9 @@ const LookupAPI = {
       categories: 'grm_issue_categories',
       types: 'grm_issue_types',
       statuses: 'grm_issue_statuses',
-      age_groups: 'grm_age_groups',
-      citizen_groups: 'grm_citizen_groups',
-      departments: 'grm_departments',
+      age_groups: 'grm_issue_age_groups',
+      citizen_groups: 'grm_issue_citizen_groups',
+      departments: 'grm_issue_departments',
       projects: 'grm_projects',
       regions: 'grm_administrative_regions',
     };
@@ -346,10 +368,15 @@ class DataManager {
    */
   async initialize(credentials = null) {
     try {
-      console.log("<<<<<<<", this.credentials )
+      console.log(
+        '🔄 DataManager.initialize called with credentials:',
+        credentials ? 'present' : 'null'
+      );
       if (credentials) {
         this.credentials = credentials;
         await this.initializeFrappeConnection(credentials);
+      } else {
+        console.log('⚠️ No credentials provided to DataManager.initialize');
       }
 
       // Initialize user context first
@@ -390,10 +417,11 @@ class DataManager {
 
       console.log('🔄 Authenticating with Frappe...');
 
-      // Authenticate with better error handling
-      const authResult = await frappe
-        .auth()
-        .loginWithUsernamePassword(credentials.username, credentials.password);
+      // Authenticate with better error handling - FIXED: Pass credentials as object
+      const authResult = await frappe.auth().loginWithUsernamePassword({
+        username: credentials.username,
+        password: credentials.password,
+      });
 
       // Check if authentication was successful
       if (!authResult || authResult.error) {

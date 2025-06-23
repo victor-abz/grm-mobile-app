@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import lookupDataManager from '../services/LookupDataManager';
 import nuclearDataManager from '../services/NuclearDataManager';
 import userRegionService from '../services/UserRegionService';
@@ -20,7 +21,7 @@ export const useData = () => {
 };
 
 function DataProvider({ children }) {
-  const { isAuthenticated, credentials, userInfo } = useContext(AuthContext);
+  const { isAuthenticated, credentials, userInfo, logout } = useContext(AuthContext);
   const [isDataInitialized, setIsDataInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
@@ -41,10 +42,15 @@ function DataProvider({ children }) {
   // Initialize data services when user is authenticated
   useEffect(() => {
     if (isAuthenticated && credentials && !isDataInitialized) {
+      console.log('🔄 DataProvider: User authenticated, starting data services initialization');
+      console.log('🔄 DataProvider: Credentials available:', credentials ? 'yes' : 'no');
       initializeDataServices();
     } else if (!isAuthenticated && isDataInitialized) {
       // User logged out, reset data
+      console.log('🔄 DataProvider: User logged out, resetting data services');
       resetDataServices();
+    } else if (!isAuthenticated && !credentials) {
+      console.log('🔄 DataProvider: No user authentication, data services not initialized');
     }
   }, [isAuthenticated, credentials]);
 
@@ -58,11 +64,53 @@ function DataProvider({ children }) {
     try {
       console.log('🔄 Initializing data services...');
 
+      // Check if we have valid credentials
+      if (!credentials || !credentials.username || !credentials.password) {
+        throw new Error('No valid credentials available. Please log in again.');
+      }
+
       // Create enhanced credentials with URL for DataManager
       const enhancedCredentials = {
         ...credentials,
         url: FRAPPE_BASE_URL,
       };
+
+      console.log('🔄 DataProvider: Initializing DataManager with credentials...');
+
+      // Import DataManager dynamically and initialize with enhanced credentials
+      const { default: DataManagerModule } = await import('../services/DataManager');
+      try {
+        await DataManagerModule.initialize(enhancedCredentials);
+        setDataManager(DataManagerModule);
+        console.log('✅ DataManager initialized successfully');
+      } catch (authError) {
+        console.error('❌ DataManager authentication failed:', authError);
+
+        // If authentication fails, it means credentials are invalid
+        if (
+          authError.message.includes('Authentication') ||
+          authError.message.includes('credentials') ||
+          authError.message.includes('Incomplete login')
+        ) {
+          console.log(
+            '🔄 Authentication error detected, will trigger logout after initialization...'
+          );
+          // Set a flag to trigger logout after this function completes
+          setTimeout(() => {
+            handleAuthenticationError(authError);
+          }, 1000);
+        } else {
+          // For non-authentication errors, just set the error state
+          setInitializationError({
+            message: 'Failed to initialize backend connection.',
+            details: 'The app will continue in offline mode.',
+            requiresLogin: false,
+          });
+        }
+
+        // Don't throw here, continue with offline initialization
+        console.log('🔄 Continuing with offline initialization...');
+      }
 
       // Initialize LookupDataManager
       await lookupDataManager.initialize(enhancedCredentials);
@@ -99,11 +147,6 @@ function DataProvider({ children }) {
       // Load lookup data
       await loadLookupData();
 
-      // Import DataManager dynamically and initialize with enhanced credentials
-      const { default: DataManagerModule } = await import('../services/DataManager');
-      await DataManagerModule.initialize(enhancedCredentials);
-      setDataManager(DataManagerModule);
-
       setIsDataInitialized(true);
       console.log('✅ All data services initialized successfully');
     } catch (error) {
@@ -111,6 +154,8 @@ function DataProvider({ children }) {
       setInitializationError({
         message: error.message,
         details: 'Failed to initialize data services. Please try logging in again.',
+        requiresLogin:
+          error.message.includes('credentials') || error.message.includes('Authentication'),
       });
     } finally {
       setIsLoading(false);
@@ -339,6 +384,44 @@ function DataProvider({ children }) {
     }
   };
 
+  // Handle authentication errors by logging out the user
+  const handleAuthenticationError = async (error) => {
+    console.error('🚨 Authentication error detected:', error);
+    setInitializationError({
+      message: 'Session expired or authentication failed',
+      details: 'You will be redirected to the login screen.',
+      requiresLogin: true,
+    });
+
+    // Show alert to user
+    Alert.alert(
+      'Authentication Error',
+      'Your session has expired or credentials are invalid. You will be redirected to the login screen.',
+      [
+        {
+          text: 'OK',
+          onPress: async () => {
+            // Clear data and logout
+            await resetDataServices();
+            await logout();
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+  // AuthErrorHandler component to monitor for authentication errors
+  const AuthErrorHandler = () => {
+    useEffect(() => {
+      if (initializationError && initializationError.requiresLogin) {
+        console.log('🔄 AuthErrorHandler: Authentication error detected in initialization');
+      }
+    }, [initializationError]);
+
+    return null; // This component doesn't render anything
+  };
+
   const contextValue = {
     // Data services
     dataManager,
@@ -360,6 +443,7 @@ function DataProvider({ children }) {
     performEmergencyCleanup,
     getSystemStatus,
     refreshContactData,
+    handleAuthenticationError,
 
     // Convenience getters
     getUserRegions: () => userRegionService.getAccessibleRegions(),
@@ -367,9 +451,17 @@ function DataProvider({ children }) {
     getTopLevelRegions: () => userRegionService.getTopLevelRegions(),
     getRegionChildren: (parentId) => userRegionService.getRegionChildren(parentId),
     hasAccessToRegion: (regionId) => userRegionService.hasAccessToRegion(regionId),
+
+    // New logout functionality
+    logout,
   };
 
-  return <DataContext.Provider value={contextValue}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={contextValue}>
+      <AuthErrorHandler />
+      {children}
+    </DataContext.Provider>
+  );
 }
 
 export { DataContext, DataProvider };

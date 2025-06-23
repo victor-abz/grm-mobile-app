@@ -110,7 +110,10 @@ class WatermelonManager {
       query = query.sortBy('issue_date', Q.desc);
 
       const issues = await query.fetch();
-      return issues.map((issue) => this.transformIssueToApiFormat(issue._raw));
+      return issues
+        .filter((issue) => issue && issue._raw) // Filter out null issues
+        .map((issue) => this.transformIssueToApiFormat(issue._raw))
+        .filter((issue) => issue !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching issues from WatermelonDB:', error);
       return [];
@@ -186,7 +189,10 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const statuses = await db.get('grm_issue_statuses').query().fetch();
-      return statuses.map((status) => this.transformStatusToApiFormat(status._raw));
+      return statuses
+        .filter((status) => status && status._raw) // Filter out null records
+        .map((status) => this.transformStatusToApiFormat(status._raw))
+        .filter((status) => status !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching statuses from WatermelonDB:', error);
       return [];
@@ -202,7 +208,10 @@ class WatermelonManager {
       // This would need to be implemented through relationships if needed
 
       const categories = await query.fetch();
-      return categories.map((category) => this.transformCategoryToApiFormat(category._raw));
+      return categories
+        .filter((category) => category && category._raw) // Filter out null records
+        .map((category) => this.transformCategoryToApiFormat(category._raw))
+        .filter((category) => category !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching categories from WatermelonDB:', error);
       return [];
@@ -213,7 +222,10 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const types = await db.get('grm_issue_types').query().fetch();
-      return types.map((type) => this.transformTypeToApiFormat(type._raw));
+      return types
+        .filter((type) => type && type._raw) // Filter out null records
+        .map((type) => this.transformTypeToApiFormat(type._raw))
+        .filter((type) => type !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching types from WatermelonDB:', error);
       return [];
@@ -224,7 +236,10 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const ageGroups = await db.get('grm_issue_age_groups').query().fetch();
-      return ageGroups.map((ageGroup) => this.transformAgeGroupToApiFormat(ageGroup._raw));
+      return ageGroups
+        .filter((ageGroup) => ageGroup && ageGroup._raw) // Filter out null records
+        .map((ageGroup) => this.transformAgeGroupToApiFormat(ageGroup._raw))
+        .filter((ageGroup) => ageGroup !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching age groups from WatermelonDB:', error);
       return [];
@@ -235,7 +250,10 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const citizenGroups = await db.get('grm_issue_citizen_groups').query().fetch();
-      return citizenGroups.map((group) => this.transformCitizenGroupToApiFormat(group._raw));
+      return citizenGroups
+        .filter((group) => group && group._raw) // Filter out null records
+        .map((group) => this.transformCitizenGroupToApiFormat(group._raw))
+        .filter((group) => group !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching citizen groups from WatermelonDB:', error);
       return [];
@@ -246,7 +264,10 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const departments = await db.get('grm_issue_departments').query().fetch();
-      return departments.map((dept) => this.transformDepartmentToApiFormat(dept._raw));
+      return departments
+        .filter((dept) => dept && dept._raw) // Filter out null records
+        .map((dept) => this.transformDepartmentToApiFormat(dept._raw))
+        .filter((dept) => dept !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching departments from WatermelonDB:', error);
       return [];
@@ -257,7 +278,10 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const projects = await db.get('grm_projects').query().fetch();
-      return projects.map((project) => this.transformProjectToApiFormat(project._raw));
+      return projects
+        .filter((project) => project && project._raw) // Filter out null projects
+        .map((project) => this.transformProjectToApiFormat(project._raw))
+        .filter((project) => project !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching projects from WatermelonDB:', error);
       return [];
@@ -288,7 +312,10 @@ class WatermelonManager {
       }
 
       const regions = await query.fetch();
-      return regions.map((region) => this.transformRegionToApiFormat(region._raw));
+      return regions
+        .filter((region) => region && region._raw) // Filter out null records
+        .map((region) => this.transformRegionToApiFormat(region._raw))
+        .filter((region) => region !== null); // Filter out null transform results
     } catch (error) {
       console.error('Error fetching regions from WatermelonDB:', error);
       return [];
@@ -331,13 +358,48 @@ class WatermelonManager {
   async bulkUpsertLookupData(tableName, data) {
     try {
       const db = this.getDatabase();
+
+      // Validate inputs
+      if (!tableName || !data || !Array.isArray(data)) {
+        console.warn(
+          `Invalid input for bulkUpsertLookupData: tableName=${tableName}, data length=${data?.length}`
+        );
+        return;
+      }
+
+      if (data.length === 0) {
+        console.log(`No data to upsert for table: ${tableName}`);
+        return;
+      }
+
       await db.write(async () => {
         const collection = db.get(tableName);
 
+        // Validate collection exists
+        if (!collection) {
+          console.error(`Collection '${tableName}' not found in database`);
+          return;
+        }
+
         for (const item of data) {
+          // Validate item has required fields - for Frappe data, the ID is usually in .name
+          if (!item || (!item.name && !item.id)) {
+            console.warn(`Skipping item without ID/name in ${tableName}:`, item);
+            continue;
+          }
+
+          // For Frappe data, use .name as the primary identifier, fallback to .id
+          const itemId = item.name || item.id;
+
+          // Additional validation for critical fields
+          if (!itemId || itemId === 'unknown') {
+            console.warn(`Skipping item with invalid ID in ${tableName}:`, item);
+            continue;
+          }
+
           try {
             // Try to find existing record
-            const existingRecord = await collection.find(item.name);
+            const existingRecord = await collection.find(itemId);
 
             // Update existing record
             await existingRecord.update((record) => {
@@ -345,13 +407,19 @@ class WatermelonManager {
             });
           } catch (error) {
             // Record doesn't exist, create new one
-            await collection.create((record) => {
-              record._raw.id = item.name; // Set the server ID
-              this.updateLookupFromServerData(record, item, tableName);
-            });
+            try {
+              await collection.create((record) => {
+                record._raw.id = itemId; // Set the server ID
+                this.updateLookupFromServerData(record, item, tableName);
+              });
+            } catch (createError) {
+              console.error(`Error creating record in ${tableName}:`, createError, 'Item:', item);
+            }
           }
         }
       });
+
+      console.log(`✅ Stored ${data.length} ${tableName} records in WatermelonDB`);
     } catch (error) {
       console.error(`Error bulk upserting ${tableName}:`, error);
       throw error;
@@ -465,8 +533,13 @@ class WatermelonManager {
    * Convert WatermelonDB raw data to API format (keeping backend structure)
    */
   transformIssueToApiFormat(rawIssue) {
+    if (!rawIssue) {
+      console.warn('transformIssueToApiFormat: rawIssue is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawIssue.id,
+      name: rawIssue.id || rawIssue.name || 'unknown',
       project_id: rawIssue.project_id,
       issue_date: rawIssue.issue_date ? new Date(rawIssue.issue_date).toISOString() : null,
       intake_date: rawIssue.intake_date ? new Date(rawIssue.intake_date).toISOString() : null,
@@ -505,8 +578,13 @@ class WatermelonManager {
   }
 
   transformStatusToApiFormat(rawStatus) {
+    if (!rawStatus) {
+      console.warn('transformStatusToApiFormat: rawStatus is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawStatus.id,
+      name: rawStatus.id || rawStatus.name || 'unknown',
       status_name: rawStatus.status_name,
       final_status: rawStatus.final_status,
       initial_status: rawStatus.initial_status,
@@ -518,8 +596,13 @@ class WatermelonManager {
   }
 
   transformCategoryToApiFormat(rawCategory) {
+    if (!rawCategory) {
+      console.warn('transformCategoryToApiFormat: rawCategory is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawCategory.id,
+      name: rawCategory.id || rawCategory.name || 'unknown',
       category_name: rawCategory.category_name,
       label: rawCategory.label,
       abbreviation: rawCategory.abbreviation,
@@ -535,8 +618,13 @@ class WatermelonManager {
   }
 
   transformTypeToApiFormat(rawType) {
+    if (!rawType) {
+      console.warn('transformTypeToApiFormat: rawType is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawType.id,
+      name: rawType.id || rawType.name || 'unknown',
       type_name: rawType.type_name,
       creation: rawType.created_at ? new Date(rawType.created_at).toISOString() : null,
       modified: rawType.updated_at ? new Date(rawType.updated_at).toISOString() : null,
@@ -544,8 +632,13 @@ class WatermelonManager {
   }
 
   transformAgeGroupToApiFormat(rawAgeGroup) {
+    if (!rawAgeGroup) {
+      console.warn('transformAgeGroupToApiFormat: rawAgeGroup is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawAgeGroup.id,
+      name: rawAgeGroup.id || rawAgeGroup.name || 'unknown',
       age_group: rawAgeGroup.age_group,
       creation: rawAgeGroup.created_at ? new Date(rawAgeGroup.created_at).toISOString() : null,
       modified: rawAgeGroup.updated_at ? new Date(rawAgeGroup.updated_at).toISOString() : null,
@@ -553,8 +646,13 @@ class WatermelonManager {
   }
 
   transformCitizenGroupToApiFormat(rawGroup) {
+    if (!rawGroup) {
+      console.warn('transformCitizenGroupToApiFormat: rawGroup is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawGroup.id,
+      name: rawGroup.id || rawGroup.name || 'unknown',
       group_name: rawGroup.group_name,
       group_type: rawGroup.group_type,
       creation: rawGroup.created_at ? new Date(rawGroup.created_at).toISOString() : null,
@@ -563,8 +661,13 @@ class WatermelonManager {
   }
 
   transformDepartmentToApiFormat(rawDept) {
+    if (!rawDept) {
+      console.warn('transformDepartmentToApiFormat: rawDept is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawDept.id,
+      name: rawDept.id || rawDept.name || 'unknown',
       department_name: rawDept.department_name,
       head_id: rawDept.head_id,
       creation: rawDept.created_at ? new Date(rawDept.created_at).toISOString() : null,
@@ -573,8 +676,13 @@ class WatermelonManager {
   }
 
   transformProjectToApiFormat(rawProject) {
+    if (!rawProject) {
+      console.warn('transformProjectToApiFormat: rawProject is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawProject.id,
+      name: rawProject.id || rawProject.name || 'unknown',
       title: rawProject.title,
       project_code: rawProject.project_code,
       description: rawProject.description,
@@ -591,8 +699,13 @@ class WatermelonManager {
   }
 
   transformRegionToApiFormat(rawRegion) {
+    if (!rawRegion) {
+      console.warn('transformRegionToApiFormat: rawRegion is null or undefined');
+      return null;
+    }
+
     return {
-      name: rawRegion.id,
+      name: rawRegion.id || rawRegion.name || 'unknown',
       region_name: rawRegion.region_name,
       administrative_level_id: rawRegion.administrative_level_id,
       parent_region_id: rawRegion.parent_region_id,
