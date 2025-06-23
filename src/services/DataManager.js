@@ -281,7 +281,7 @@ const LookupAPI = {
   async getUserContext(call) {
     try {
       // Try the user context endpoint first
-      const response = await this.callAPI(call, 'egrm.api.auth.get_user_context');
+      const response = await this.callAPI(call, 'egrm.api.lookup.get_user_context');
 
       if (response.status === 'success') {
         return response.data || {};
@@ -1340,11 +1340,30 @@ class DataManager {
   }
 
   /**
+   * Clear user context
+   */
+  async clearUserContext() {
+    try {
+      const userId = this.credentials?.username || 'current_user';
+      await watermelonManager.clearUserContext(userId);
+      this.userContext = null;
+      console.log('✅ User context cleared successfully');
+    } catch (error) {
+      console.error('❌ Error clearing user context:', error);
+    }
+  }
+
+  /**
    * Clear all data
    */
   async clearAllData() {
     try {
       console.log('🗑️ Clearing all local data...');
+
+      // Clear user context first
+      await this.clearUserContext();
+
+      // Clear all WatermelonDB data
       await watermelonManager.clearAllData();
       console.log('✅ All local data cleared successfully');
     } catch (error) {
@@ -1423,9 +1442,14 @@ class DataManager {
   async setUserContext(context) {
     try {
       this.userContext = context;
-      // TODO: Store user context in WatermelonDB
-      console.warn('setUserContext - TODO: Store user context in WatermelonDB');
-      console.log('✅ User context stored successfully (placeholder)');
+
+      // Get current user ID from credentials or context
+      const userId =
+        context.user?.name || context.user?.email || this.credentials?.username || 'current_user';
+
+      // Store user context in WatermelonDB
+      await watermelonManager.storeUserContext(userId, context);
+      console.log('✅ User context stored successfully in WatermelonDB');
     } catch (error) {
       console.error('❌ Error storing user context:', error);
       throw error;
@@ -1437,9 +1461,13 @@ class DataManager {
    */
   async loadLocalUserContext() {
     try {
-      // TODO: Load user context from WatermelonDB
-      console.warn('loadLocalUserContext - TODO: Load user context from WatermelonDB');
-      return null;
+      // Get current user ID from credentials
+      const userId = this.credentials?.username || 'current_user';
+
+      // Load user context from WatermelonDB
+      const context = await watermelonManager.getUserContext(userId);
+      console.log('📱 User context loaded from WatermelonDB');
+      return context;
     } catch (error) {
       console.error('❌ Error loading local user context:', error);
       return null;

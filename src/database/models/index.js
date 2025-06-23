@@ -14,6 +14,7 @@ import GrmIssueLog from "./grm_issue_log";
 import GrmProjectLink from "./grm_project_link";
 import GrmAdministrativeLevelType from "./grm_administrative_level_type";
 import User from "./user";
+import UserContext from "./user_context";
 
 export const modelClasses = [
 	GrmIssue,
@@ -32,4 +33,5 @@ export const modelClasses = [
 	GrmProjectLink,
 	GrmAdministrativeLevelType,
 	User,
+	UserContext,
 ];

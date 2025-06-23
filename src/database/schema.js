@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'grm_issues',
@@ -211,6 +211,20 @@ export default appSchema({
       columns: [
         { name: 'full_name', type: 'string', isOptional: true },
         { name: 'email', type: 'string' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'user_context',
+      columns: [
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'context_data', type: 'string' }, // JSON string of user context
+        { name: 'accessible_projects', type: 'string', isOptional: true }, // JSON array
+        { name: 'accessible_regions', type: 'string', isOptional: true }, // JSON array
+        { name: 'assignments', type: 'string', isOptional: true }, // JSON array
+        { name: 'permissions', type: 'string', isOptional: true }, // JSON object
+        { name: 'last_updated', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

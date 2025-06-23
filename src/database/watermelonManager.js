@@ -810,6 +810,94 @@ class WatermelonManager {
       throw error;
     }
   }
+
+  /**
+   * User Context Management
+   */
+  async storeUserContext(userId, contextData) {
+    try {
+      const db = this.getDatabase();
+      const now = new Date();
+
+      await db.write(async () => {
+        const userContextCollection = db.get('user_context');
+
+        try {
+          // Try to find existing user context
+          const existingContext = await userContextCollection.find(userId);
+
+          // Update existing context
+          await existingContext.update((context) => {
+            context.contextData = JSON.stringify(contextData);
+            context.accessibleProjects = JSON.stringify(contextData.accessible_projects || []);
+            context.accessibleRegions = JSON.stringify(contextData.accessible_regions || []);
+            context.assignments = JSON.stringify(contextData.assignments || []);
+            context.permissions = JSON.stringify(contextData.permissions || {});
+            context.lastUpdated = now;
+            context.updatedAt = now;
+          });
+
+          console.log('✅ User context updated successfully');
+        } catch (error) {
+          // Context doesn't exist, create new one
+          await userContextCollection.create((context) => {
+            context._raw.id = userId; // Use userId as the record ID
+            context.userId = userId;
+            context.contextData = JSON.stringify(contextData);
+            context.accessibleProjects = JSON.stringify(contextData.accessible_projects || []);
+            context.accessibleRegions = JSON.stringify(contextData.accessible_regions || []);
+            context.assignments = JSON.stringify(contextData.assignments || []);
+            context.permissions = JSON.stringify(contextData.permissions || {});
+            context.lastUpdated = now;
+            context.createdAt = now;
+            context.updatedAt = now;
+          });
+
+          console.log('✅ User context created successfully');
+        }
+      });
+
+      return true;
+    } catch (error) {
+      console.error('❌ Error storing user context:', error);
+      throw error;
+    }
+  }
+
+  async getUserContext(userId) {
+    try {
+      const db = this.getDatabase();
+      const userContext = await db.get('user_context').find(userId);
+
+      return {
+        ...userContext.getContextData(),
+        accessible_projects: userContext.getAccessibleProjects(),
+        accessible_regions: userContext.getAccessibleRegions(),
+        assignments: userContext.getAssignments(),
+        permissions: userContext.getPermissions(),
+        last_updated: userContext.lastUpdated,
+      };
+    } catch (error) {
+      console.warn('⚠️ User context not found or error loading:', error.message);
+      return null;
+    }
+  }
+
+  async clearUserContext(userId) {
+    try {
+      const db = this.getDatabase();
+      await db.write(async () => {
+        const userContext = await db.get('user_context').find(userId);
+        await userContext.markAsDeleted();
+      });
+
+      console.log('✅ User context cleared successfully');
+      return true;
+    } catch (error) {
+      console.warn('⚠️ Error clearing user context (may not exist):', error.message);
+      return false;
+    }
+  }
 }
 
 // Create and export singleton instance
