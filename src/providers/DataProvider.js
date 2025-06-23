@@ -83,6 +83,9 @@ function DataProvider({ children }) {
         await DataManagerModule.initialize(enhancedCredentials);
         setDataManager(DataManagerModule);
         console.log('✅ DataManager initialized successfully');
+
+        // Small delay to ensure all write operations are committed
+        await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (authError) {
         console.error('❌ DataManager authentication failed:', authError);
 
@@ -112,8 +115,10 @@ function DataProvider({ children }) {
         console.log('🔄 Continuing with offline initialization...');
       }
 
-      // Initialize LookupDataManager
-      await lookupDataManager.initialize(enhancedCredentials);
+      // Initialize LookupDataManager AFTER DataManager has completed its sync
+      // This ensures that WatermelonDB has been populated before LookupDataManager tries to read
+      console.log('🔄 DataProvider: Initializing LookupDataManager...');
+      await lookupDataManager.initialize(null); // Don't pass credentials to avoid duplicate sync
 
       // Initialize UserRegionService - simplified, no project needed
       // Backend automatically determines user's projects from their assignments

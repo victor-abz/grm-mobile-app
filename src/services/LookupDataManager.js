@@ -198,6 +198,10 @@ class LookupDataManager {
         } catch (error) {
           console.warn('⚠️ Initial sync failed during initialization:', error.message);
         }
+      } else {
+        console.log(
+          '🔄 LookupDataManager: No credentials provided, loading from local database only...'
+        );
       }
 
       // Validate cache version
