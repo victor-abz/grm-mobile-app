@@ -83,9 +83,6 @@ function DataProvider({ children }) {
         await DataManagerModule.initialize(enhancedCredentials);
         setDataManager(DataManagerModule);
         console.log('✅ DataManager initialized successfully');
-
-        // Small delay to ensure all write operations are committed
-        await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (authError) {
         console.error('❌ DataManager authentication failed:', authError);
 
@@ -115,10 +112,8 @@ function DataProvider({ children }) {
         console.log('🔄 Continuing with offline initialization...');
       }
 
-      // Initialize LookupDataManager AFTER DataManager has completed its sync
-      // This ensures that WatermelonDB has been populated before LookupDataManager tries to read
-      console.log('🔄 DataProvider: Initializing LookupDataManager...');
-      await lookupDataManager.initialize(null); // Don't pass credentials to avoid duplicate sync
+      // Initialize LookupDataManager
+      await lookupDataManager.initialize(enhancedCredentials);
 
       // Initialize UserRegionService - simplified, no project needed
       // Backend automatically determines user's projects from their assignments
@@ -252,12 +247,6 @@ function DataProvider({ children }) {
         projects,
       };
 
-      // Ensure data is properly cached
-      await Promise.all([
-        lookupDataManager.cacheData('age_groups', ageGroups),
-        lookupDataManager.cacheData('citizen_groups', citizenGroups),
-      ]);
-
       setLookupData(newLookupData);
       setIsDataInitialized(true);
       console.log('✅ Lookup data loaded and cached successfully');
@@ -371,8 +360,8 @@ function DataProvider({ children }) {
       console.log('🔄 Refreshing contact-related data...');
 
       const [ageGroups, citizenGroups] = await Promise.all([
-        lookupDataManager.getAgeGroups(true), // Force refresh
-        lookupDataManager.getCitizenGroups(true), // Force refresh
+        lookupDataManager.getAgeGroups(),
+        lookupDataManager.getCitizenGroups(),
       ]);
 
       setLookupData((prev) => ({

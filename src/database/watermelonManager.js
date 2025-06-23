@@ -13,7 +13,9 @@ import { modelClasses } from './models';
 class WatermelonManager {
   constructor() {
     this.database = null;
+    this.syncInProgress = false; // Add flag to track sync operations
     this.isInitialized = false;
+    this._initializeDatabase();
   }
 
   /**
@@ -277,11 +279,60 @@ class WatermelonManager {
   async getProjects() {
     try {
       const db = this.getDatabase();
+
+      // Add a small delay to prevent race conditions during sync
+      if (this.syncInProgress) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
       const projects = await db.get('grm_projects').query().fetch();
-      return projects
-        .filter((project) => project && project._raw) // Filter out null projects
-        .map((project) => this.transformProjectToApiFormat(project._raw))
-        .filter((project) => project !== null); // Filter out null transform results
+
+      console.log(`🔍 [PROJECTS] Found ${projects.length} project records in database`);
+
+      // Enhanced filtering with detailed logging
+      const validProjects = projects.filter((project, index) => {
+        if (!project) {
+          console.warn(`🔍 [PROJECTS] Record ${index} is null`);
+          return false;
+        }
+
+        if (!project._raw) {
+          console.warn(`🔍 [PROJECTS] Record ${index} has no _raw data:`, project);
+          return false;
+        }
+
+        // Additional validation for critical fields
+        const rawData = project._raw;
+        if (!rawData.id && !rawData.name && !rawData.project_code) {
+          console.warn(`🔍 [PROJECTS] Record ${index} has no valid identifier:`, rawData);
+          return false;
+        }
+
+        return true;
+      });
+
+      console.log(`🔍 [PROJECTS] ${validProjects.length} valid project records after filtering`);
+
+      // Transform with enhanced error handling
+      const transformedProjects = validProjects
+        .map((project, index) => {
+          try {
+            const transformed = this.transformProjectToApiFormat(project._raw);
+            if (!transformed) {
+              console.warn(`🔍 [PROJECTS] Transform failed for record ${index}`);
+              return null;
+            }
+            return transformed;
+          } catch (error) {
+            console.error(`🔍 [PROJECTS] Transform error for record ${index}:`, error);
+            return null;
+          }
+        })
+        .filter((project) => project !== null);
+
+      console.log(`🔍 [PROJECTS] ${transformedProjects.length} projects successfully transformed`);
+
+      return transformedProjects;
     } catch (error) {
       console.error('Error fetching projects from WatermelonDB:', error);
       return [];
@@ -357,6 +408,9 @@ class WatermelonManager {
 
   async bulkUpsertLookupData(tableName, data) {
     try {
+      // Set sync flag to prevent race conditions
+      this.syncInProgress = true;
+
       const db = this.getDatabase();
 
       // Validate inputs
@@ -423,6 +477,9 @@ class WatermelonManager {
     } catch (error) {
       console.error(`Error bulk upserting ${tableName}:`, error);
       throw error;
+    } finally {
+      // Always clear sync flag
+      this.syncInProgress = false;
     }
   }
 
@@ -681,21 +738,68 @@ class WatermelonManager {
       return null;
     }
 
-    return {
-      name: rawProject.id || rawProject.name || 'unknown',
-      title: rawProject.title,
-      project_code: rawProject.project_code,
-      description: rawProject.description,
-      start_date: rawProject.start_date ? new Date(rawProject.start_date).toISOString() : null,
-      end_date: rawProject.end_date ? new Date(rawProject.end_date).toISOString() : null,
-      is_active: rawProject.is_active,
-      logo: rawProject.logo,
-      default_language: rawProject.default_language,
-      auto_escalation_days: rawProject.auto_escalation_days,
-      enable_citizen_feedback: rawProject.enable_citizen_feedback,
-      creation: rawProject.created_at ? new Date(rawProject.created_at).toISOString() : null,
-      modified: rawProject.updated_at ? new Date(rawProject.updated_at).toISOString() : null,
+    // Add additional safety checks for the rawProject object structure
+    if (typeof rawProject !== 'object') {
+      console.warn('transformProjectToApiFormat: rawProject is not an object:', typeof rawProject);
+      return null;
+    }
+
+    // Safely extract the ID with comprehensive fallback
+    let projectId;
+    try {
+      projectId = rawProject.id || rawProject.name || 'unknown';
+      // Additional safety check - ensure projectId is a string
+      if (typeof projectId !== 'string') {
+        projectId = String(projectId || 'unknown');
+      }
+    } catch (error) {
+      console.warn('transformProjectToApiFormat: Error accessing ID fields:', error);
+      projectId = 'unknown';
+    }
+
+    // Safely extract other fields with defaults
+    const safeGet = (obj, field, defaultValue = null) => {
+      try {
+        return obj && obj.hasOwnProperty(field) ? obj[field] : defaultValue;
+      } catch (error) {
+        console.warn(`transformProjectToApiFormat: Error accessing field ${field}:`, error);
+        return defaultValue;
+      }
     };
+
+    try {
+      return {
+        name: projectId,
+        title: safeGet(rawProject, 'title', ''),
+        project_code: safeGet(rawProject, 'project_code', ''),
+        description: safeGet(rawProject, 'description', ''),
+        start_date: safeGet(rawProject, 'start_date')
+          ? new Date(rawProject.start_date).toISOString()
+          : null,
+        end_date: safeGet(rawProject, 'end_date')
+          ? new Date(rawProject.end_date).toISOString()
+          : null,
+        is_active: safeGet(rawProject, 'is_active', false),
+        logo: safeGet(rawProject, 'logo', ''),
+        default_language: safeGet(rawProject, 'default_language', ''),
+        auto_escalation_days: safeGet(rawProject, 'auto_escalation_days', 0),
+        enable_citizen_feedback: safeGet(rawProject, 'enable_citizen_feedback', false),
+        creation: safeGet(rawProject, 'created_at')
+          ? new Date(rawProject.created_at).toISOString()
+          : null,
+        modified: safeGet(rawProject, 'updated_at')
+          ? new Date(rawProject.updated_at).toISOString()
+          : null,
+      };
+    } catch (error) {
+      console.error(
+        'transformProjectToApiFormat: Error transforming project data:',
+        error,
+        'rawProject:',
+        rawProject
+      );
+      return null;
+    }
   }
 
   transformRegionToApiFormat(rawRegion) {

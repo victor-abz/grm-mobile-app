@@ -1430,4 +1430,6 @@ class DataManager {
 // Create singleton instance
 const dataManager = new DataManager();
 
+// Export both the default instance and the LookupAPI for use by LookupDataManager
+export { LookupAPI };
 export default dataManager;
