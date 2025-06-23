@@ -19,6 +19,15 @@ const SYNC_STATUS = {
   SUCCESS: 'success',
 };
 
+// Helper function to convert params to query string
+function objectToQueryString(params) {
+  if (!params) return '';
+  return Object.entries(params)
+    .filter(([_, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&');
+}
+
 /**
  * Helper function to extract data from Frappe API response format
  * Handles the nested structure: { response: { message: { status, data } } }
@@ -401,7 +410,17 @@ class FrappeSyncManager {
     if (!this.frappeApp) {
       throw new Error('FrappeSyncManager not initialized with credentials');
     }
-    return this.frappeApp.call();
+    const call = this.frappeApp.call();
+
+    // Override the get method to handle URL parameters correctly
+    const originalGet = call.get.bind(call);
+    call.get = async (endpoint, params = {}) => {
+      const queryString = objectToQueryString(params);
+      const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+      return originalGet(url);
+    };
+
+    return call;
   }
 
   /**
@@ -662,29 +681,29 @@ class FrappeSyncManager {
   async applyChangesToLocal(changes) {
     console.log('Applying changes to local database...');
 
-    // Apply issues
+      // Apply issues
     if (changes.issues && changes.issues.length > 0) {
-      for (const issue of changes.issues) {
-        await this.upsertLocalDocument(LocalGRMDatabase, this.convertIssueFromServer(issue));
+        for (const issue of changes.issues) {
+          await this.upsertLocalDocument(LocalGRMDatabase, this.convertIssueFromServer(issue));
+        }
       }
-    }
 
-    // Apply regions
+      // Apply regions
     if (changes.regions && changes.regions.length > 0) {
-      for (const region of changes.regions) {
-        await this.upsertLocalDocument(LocalDatabase, this.convertRegionFromServer(region));
+        for (const region of changes.regions) {
+          await this.upsertLocalDocument(LocalDatabase, this.convertRegionFromServer(region));
+        }
       }
-    }
 
-    // Apply categories
+      // Apply categories
     if (changes.categories && changes.categories.length > 0) {
-      for (const category of changes.categories) {
-        await this.upsertLocalDocument(LocalDatabase, this.convertCategoryFromServer(category));
+        for (const category of changes.categories) {
+          await this.upsertLocalDocument(LocalDatabase, this.convertCategoryFromServer(category));
+        }
       }
-    }
 
-    // Apply other lookup data
-    await this.applyLookupChanges(changes);
+      // Apply other lookup data
+        await this.applyLookupChanges(changes);
   }
 
   /**
@@ -765,77 +784,77 @@ class FrappeSyncManager {
    * Convert issue from server format to local format
    */
   convertIssueFromServer(serverIssue) {
-    return {
-      _id: serverIssue.name,
-      type: 'issue',
-      internal_code: serverIssue.internal_code,
-      tracking_code: serverIssue.tracking_code,
-      auto_increment_id: serverIssue.auto_increment_id,
-      description: serverIssue.description,
-      attachments: serverIssue.attachments || [],
-      status: {
-        id: serverIssue.status,
-        name: serverIssue.status_details?.name || '',
-      },
-      logs: serverIssue.logs || [],
-      ongoing_issue: serverIssue.ongoing_issue,
-      assignee: serverIssue.assignee
-        ? {
-            id: serverIssue.assignee,
-            name: serverIssue.assignee_name || '',
-          }
-        : null,
-      reporter: serverIssue.reporter
-        ? {
-            id: serverIssue.reporter,
-            name: serverIssue.reporter_name || '',
-          }
-        : null,
-      citizen: serverIssue.citizen_name,
-      citizen_type: serverIssue.citizen_type,
-      citizen_age_group: serverIssue.citizen_age_group
-        ? {
-            id: serverIssue.citizen_age_group,
-            name: serverIssue.citizen_age_group_name || '',
-          }
-        : null,
-      gender: serverIssue.gender,
-      citizen_group_1: serverIssue.citizen_group_1,
-      citizen_group_2: serverIssue.citizen_group_2,
-      contact_medium: serverIssue.contact_medium,
-      category: {
-        id: serverIssue.category,
-        name: serverIssue.category_details?.name || '',
-        confidentiality_level: serverIssue.category_details?.confidentiality_level || '',
-      },
-      issue_type: {
-        id: serverIssue.issue_type,
-        name: serverIssue.type_details?.name || '',
-      },
-      created_date: serverIssue.creation || serverIssue.created_date,
-      resolution_days: serverIssue.resolution_days,
-      resolution_date: serverIssue.resolution_date,
-      intake_date: serverIssue.intake_date,
-      issue_date: serverIssue.issue_date,
-      comments: serverIssue.comments || [],
-      contact_information: {
-        type: serverIssue.contact_type,
-        contact: serverIssue.contact_value,
-      },
-      administrative_region: {
-        administrative_id: serverIssue.administrative_region,
-        name: serverIssue.region_details?.name || '',
-        latitude: serverIssue.region_details?.latitude,
-        longitude: serverIssue.region_details?.longitude,
-      },
-      confirmed: serverIssue.confirmed,
-      research_result: serverIssue.research_result,
-      resolution_accepted: serverIssue.resolution_accepted,
-      rating: serverIssue.rating,
-      escalate_flag: serverIssue.escalate_flag,
-      escalation_reasons: serverIssue.escalation_reasons || [],
-      reject_reason: serverIssue.reject_reason,
-    };
+      return {
+        _id: serverIssue.name,
+        type: 'issue',
+        internal_code: serverIssue.internal_code,
+        tracking_code: serverIssue.tracking_code,
+        auto_increment_id: serverIssue.auto_increment_id,
+        description: serverIssue.description,
+        attachments: serverIssue.attachments || [],
+        status: {
+          id: serverIssue.status,
+          name: serverIssue.status_details?.name || '',
+        },
+        logs: serverIssue.logs || [],
+        ongoing_issue: serverIssue.ongoing_issue,
+        assignee: serverIssue.assignee
+          ? {
+              id: serverIssue.assignee,
+              name: serverIssue.assignee_name || '',
+            }
+          : null,
+        reporter: serverIssue.reporter
+          ? {
+              id: serverIssue.reporter,
+              name: serverIssue.reporter_name || '',
+            }
+          : null,
+        citizen: serverIssue.citizen_name,
+        citizen_type: serverIssue.citizen_type,
+        citizen_age_group: serverIssue.citizen_age_group
+          ? {
+              id: serverIssue.citizen_age_group,
+              name: serverIssue.citizen_age_group_name || '',
+            }
+          : null,
+        gender: serverIssue.gender,
+        citizen_group_1: serverIssue.citizen_group_1,
+        citizen_group_2: serverIssue.citizen_group_2,
+        contact_medium: serverIssue.contact_medium,
+        category: {
+          id: serverIssue.category,
+          name: serverIssue.category_details?.name || '',
+          confidentiality_level: serverIssue.category_details?.confidentiality_level || '',
+        },
+        issue_type: {
+          id: serverIssue.issue_type,
+          name: serverIssue.type_details?.name || '',
+        },
+        created_date: serverIssue.creation || serverIssue.created_date,
+        resolution_days: serverIssue.resolution_days,
+        resolution_date: serverIssue.resolution_date,
+        intake_date: serverIssue.intake_date,
+        issue_date: serverIssue.issue_date,
+        comments: serverIssue.comments || [],
+        contact_information: {
+          type: serverIssue.contact_type,
+          contact: serverIssue.contact_value,
+        },
+        administrative_region: {
+          administrative_id: serverIssue.administrative_region,
+          name: serverIssue.region_details?.name || '',
+          latitude: serverIssue.region_details?.latitude,
+          longitude: serverIssue.region_details?.longitude,
+        },
+        confirmed: serverIssue.confirmed,
+        research_result: serverIssue.research_result,
+        resolution_accepted: serverIssue.resolution_accepted,
+        rating: serverIssue.rating,
+        escalate_flag: serverIssue.escalate_flag,
+        escalation_reasons: serverIssue.escalation_reasons || [],
+        reject_reason: serverIssue.reject_reason,
+      };
   }
 
   /**

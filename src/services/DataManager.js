@@ -5,7 +5,7 @@ import frappeSyncManager from './FrappeSyncManager';
 /**
  * Helper function to extract data from Frappe API response format
  */
-function extractApiResponse(response) {
+export function extractApiResponse(response) {
   // Handle the nested Frappe response format: { response: { message: { status, data } } }
   if (response?.response?.message) {
     const { message } = response.response;
@@ -466,24 +466,71 @@ class DataManager {
    */
   async getIssues(filters = {}) {
     try {
+      // Try to sync first if online
+      const userContext = this.getUserContext();
+      if (this.isOnline && this.credentials) {
+        await frappeSyncManager.performSync();
+        const rawResponse = await call.get('egrm.api.issue.get_latest_issues', filterParams);
+        const response = extractApiResponse(rawResponse);
+
+        for (const issue of response) {
+            try {
+              let existingDoc = null;
+              try {
+                existingDoc = await LocalGRMDatabase.get(issue.name);
+              } catch (error) {
+                // Document doesn't exist, that's fine
+              }
+
+              const docToStore = {
+                ...issue,
+                _rev: existingDoc?._rev,
+                type: 'issue',
+                serverSynced: true,
+                lastSyncedAt: new Date().toISOString(),
+              };
+
+              await LocalGRMDatabase.put(docToStore);
+            } catch (error) {
+              if (error.status !== 409) {
+                console.error('❌ Error storing issue:', error);
+              }
+            }
+          }
+      }
+
       const selector = { type: 'issue' };
 
       // Apply filters
       Object.entries(filters).forEach(([key, value]) => {
         if (value) {
-          const selectorKey =
-            key === 'status'
-              ? 'status.id'
-              : key === 'assignee'
-              ? 'assignee.id'
-              : key === 'reporter'
-              ? 'reporter.id'
-              : key === 'category'
-              ? 'category.id'
-              : key;
-          selector[selectorKey] = value;
+          switch (key) {
+            case 'status':
+              selector['status.id'] = value;
+              break;
+            case 'assignee':
+              selector['assignee.id'] = value;
+              break;
+            case 'reporter':
+              selector['reporter.id'] = value;
+              break;
+            case 'category':
+              selector['category.id'] = value;
+              break;
+            case 'project':
+              selector['project'] = value;
+              break;
+            default:
+              selector[key] = value;
+          }
         }
       });
+
+      // If user context exists, filter by accessible projects
+      
+      if (userContext?.accessible_projects && !filters.project) {
+        selector.project = { $in: userContext.accessible_projects.map((p) => p.id) };
+      }
 
       const result = await LocalGRMDatabase.find({ selector });
 
@@ -1171,6 +1218,51 @@ class DataManager {
     if (!this.userContext?.permissions) return false;
 
     return Object.values(this.userContext.permissions).some((rolePerms) => rolePerms[permission]);
+  }
+
+  /**
+   * Get issues from local storage
+   */
+  async getLocalIssues(userId) {
+    try {
+      const selector = {
+        type: 'issue',
+        $or: [
+          // Handle both formats: assignee.id and direct assignee
+          { 'assignee.id': userId },
+          { assignee: userId },
+          { 'reporter.id': userId },
+          { reporter: userId },
+        ],
+      };
+
+      // If user context exists, filter by accessible projects
+      const userContext = this.getUserContext();
+      if (userContext?.accessible_projects) {
+        selector.project = { $in: userContext.accessible_projects.map((p) => p.id) };
+      }
+
+      const result = await LocalGRMDatabase.find({ selector });
+
+      // Normalize assignee format in results
+      const normalizedDocs = result.docs.map((doc) => {
+        if (doc.assignee && typeof doc.assignee === 'string') {
+          return {
+            ...doc,
+            assignee: {
+              id: doc.assignee,
+              name: doc.assignee_name || '',
+            },
+          };
+        }
+        return doc;
+      });
+
+      return normalizedDocs;
+    } catch (error) {
+      console.error('❌ Error getting local issues:', error);
+      return [];
+    }
   }
 }
 
