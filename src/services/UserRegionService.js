@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import frappeSyncManager from './FrappeSyncManager';
+import dataManager from './DataManager';
 
 // Storage keys for user region data
 const STORAGE_KEYS = {
@@ -129,7 +129,7 @@ class UserRegionService {
   }
 
   /**
-   * Fetch user-assigned regions from backend
+   * Fetch user-assigned regions from backend through DataManager
    */
   async fetchUserAssignedRegions() {
     try {
@@ -137,60 +137,56 @@ class UserRegionService {
         throw new Error('No credentials available for API calls');
       }
 
-      const call = frappeSyncManager.getCall();
-
-      // Simplified API call - no parameters needed, backend uses user session
       console.log('🔄 Fetching user-assigned regions...');
-      const rawResponse = await call.get('egrm.api.lookup.regions');
-      const response = extractApiResponse(rawResponse);
 
-      if (response.status === 'success') {
-        if (!response.data || response.data.length === 0) {
-          throw new Error(
-            'User has no regions assigned. Please contact administrator to assign administrative regions.'
-          );
-        }
+      // Use DataManager to get regions which will handle API calls and caching
+      const regions = await dataManager.getAdministrativeRegions({ forceRefresh: true });
 
-        // Transform the regions - backend now returns enhanced data automatically
-        const transformedRegions = response.data.map((region) => ({
-          _id: region.name,
-          type: 'administrative_level',
-          administrative_id: region.name,
-          name: region.region_name,
-          administrative_level: region.administrative_level,
-          parent_id: region.parent_region,
-          latitude: region.latitude,
-          longitude: region.longitude,
-          project: region.project,
-          path: region.path,
-          // Enhanced fields from backend
-          user_role: region.user_role,
-          user_department: region.user_department,
-          is_directly_assigned: region.is_directly_assigned,
-          is_user_assigned: region.is_directly_assigned, // For backward compatibility
-        }));
-
-        // Backend returns complete hierarchy, separate directly assigned vs accessible
-        this.userRegions = transformedRegions.filter((region) => region.is_directly_assigned);
-        this.regionHierarchy = transformedRegions;
-
-        // Cache the data
-        await this.cacheRegionData();
-
-        console.log(`✅ Fetched ${this.userRegions.length} directly assigned regions`);
-        console.log(`📊 Total accessible regions: ${this.regionHierarchy.length}`);
-
-        // Log projects for debugging
-        const projects = [...new Set(transformedRegions.map((r) => r.project))];
-        console.log(`📁 User has access to projects: ${projects.join(', ')}`);
-
-        return {
-          assignedRegions: this.userRegions,
-          hierarchicalRegions: this.regionHierarchy,
-        };
-      } else {
-        throw new Error(response.message || 'Failed to fetch user regions');
+      if (!regions || regions.length === 0) {
+        throw new Error(
+          'User has no regions assigned. Please contact administrator to assign administrative regions.'
+        );
       }
+
+      // Transform the regions - backend now returns enhanced data automatically
+      const transformedRegions = regions.map((region) => ({
+        _id: region.name || region._id,
+        type: 'administrative_level',
+        administrative_id: region.name || region.administrative_id,
+        name: region.region_name || region.name,
+        administrative_level: region.administrative_level,
+        parent_id: region.parent_region || region.parent_id,
+        latitude: region.latitude,
+        longitude: region.longitude,
+        project: region.project,
+        path: region.path,
+        // Enhanced fields from backend
+        user_role: region.user_role,
+        user_department: region.user_department,
+        is_directly_assigned:
+          region.is_directly_assigned !== undefined ? region.is_directly_assigned : true,
+        is_user_assigned:
+          region.is_directly_assigned !== undefined ? region.is_directly_assigned : true, // For backward compatibility
+      }));
+
+      // Backend returns complete hierarchy, separate directly assigned vs accessible
+      this.userRegions = transformedRegions.filter((region) => region.is_directly_assigned);
+      this.regionHierarchy = transformedRegions;
+
+      // Cache the data
+      await this.cacheRegionData();
+
+      console.log(`✅ Fetched ${this.userRegions.length} directly assigned regions`);
+      console.log(`📊 Total accessible regions: ${this.regionHierarchy.length}`);
+
+      // Log projects for debugging
+      const projects = [...new Set(transformedRegions.map((r) => r.project))];
+      console.log(`📁 User has access to projects: ${projects.join(', ')}`);
+
+      return {
+        assignedRegions: this.userRegions,
+        hierarchicalRegions: this.regionHierarchy,
+      };
     } catch (error) {
       console.error('❌ Error fetching user-assigned regions:', error);
       throw error;
@@ -198,59 +194,35 @@ class UserRegionService {
   }
 
   /**
-   * Fetch children of a specific region
+   * Fetch children of a specific region (for hierarchical navigation)
    */
   async fetchRegionChildren(parentId) {
     try {
-      if (!this.credentials) {
-        console.warn('⚠️ No credentials available for fetching region children');
-        return this.getRegionChildren(parentId); // Use cached data
-      }
-
-      const call = frappeSyncManager.getCall();
-
-      // Simplified API call - only parent_id needed, backend handles project context
       console.log(`🔄 Fetching children for region: ${parentId}`);
-      const rawResponse = await call.get('egrm.api.lookup.regions', { parent_id: parentId });
-      const response = extractApiResponse(rawResponse);
 
-      if (response.status === 'success' && response.data) {
-        return response.data.map((childRegion) => ({
-          _id: childRegion.name,
-          type: 'administrative_level',
-          administrative_id: childRegion.name,
-          name: childRegion.region_name,
-          administrative_level: childRegion.administrative_level,
-          parent_id: childRegion.parent_region,
-          latitude: childRegion.latitude,
-          longitude: childRegion.longitude,
-          project: childRegion.project,
-          path: childRegion.path,
-          user_role: childRegion.user_role,
-          user_department: childRegion.user_department,
-          is_directly_assigned: childRegion.is_directly_assigned,
-          is_user_assigned: false, // Children are accessible but not directly assigned
-        }));
-      }
-      return [];
+      // Get all regions and filter by parent
+      const allRegions = await dataManager.getAdministrativeRegions();
+      const children = allRegions.filter((region) => region.parent_id === parentId);
+
+      console.log(`✅ Found ${children.length} children for region ${parentId}`);
+      return children;
     } catch (error) {
-      console.warn(`⚠️ Error fetching children for region ${parentId}:`, error.message);
-      // Fallback to cached data
-      return this.getRegionChildren(parentId);
+      console.error(`❌ Error fetching children for region ${parentId}:`, error);
+      return [];
     }
   }
 
   /**
-   * Build complete region hierarchy including children
-   * @deprecated - Backend now returns the complete hierarchy
+   * Build hierarchical structure from flat region data
    */
   async buildRegionHierarchy(assignedRegions) {
-    console.warn('⚠️ buildRegionHierarchy is deprecated - backend now returns complete hierarchy');
+    // For now, just return the assigned regions
+    // TODO: Implement proper hierarchy building if needed
     return assignedRegions;
   }
 
   /**
-   * Cache region data
+   * Cache region data to persistent storage
    */
   async cacheRegionData() {
     try {
@@ -262,20 +234,22 @@ class UserRegionService {
         ),
         AsyncStorage.setItem(STORAGE_KEYS.LAST_REGION_SYNC, new Date().toISOString()),
       ]);
+
+      console.log('✅ Region data cached successfully');
     } catch (error) {
       console.error('❌ Error caching region data:', error);
     }
   }
 
   /**
-   * Get all accessible regions (hierarchical)
+   * Get all accessible regions (including hierarchy)
    */
   getAccessibleRegions() {
     return this.regionHierarchy;
   }
 
   /**
-   * Get only directly assigned regions
+   * Get directly assigned regions only
    */
   getAssignedRegions() {
     return this.userRegions;
@@ -289,7 +263,7 @@ class UserRegionService {
   }
 
   /**
-   * Get children of a specific region
+   * Get children regions for a parent
    */
   getRegionChildren(parentId) {
     return this.regionHierarchy.filter((region) => region.parent_id === parentId);
@@ -299,30 +273,38 @@ class UserRegionService {
    * Get top-level regions (no parent)
    */
   getTopLevelRegions() {
-    return this.regionHierarchy.filter((region) => !region.parent_id || region.parent_id === null);
+    return this.regionHierarchy.filter((region) => !region.parent_id);
   }
 
   /**
    * Check if user has access to a specific region
    */
   hasAccessToRegion(regionId) {
-    return this.regionHierarchy.some((region) => region.administrative_id === regionId);
+    return this.regionHierarchy.some(
+      (region) => region.administrative_id === regionId || region._id === regionId
+    );
   }
 
   /**
-   * Request device location permission and get current location
+   * Request location permission
    */
   async requestLocationPermission() {
     try {
-      console.log('🔍 Requesting location permission...');
+      console.log('🔄 Requesting location permission...');
 
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      let { status } = await Location.getForegroundPermissionsAsync();
 
       if (status !== 'granted') {
+        const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+        status = newStatus;
+      }
+
+      if (status !== 'granted') {
+        console.warn('⚠️ Location permission denied');
         return {
           success: false,
           error: 'PERMISSION_DENIED',
-          message: 'Location permission denied. You can still select location manually.',
+          message: 'Location permission is required to find nearby regions',
         };
       }
 
@@ -339,37 +321,53 @@ class UserRegionService {
   }
 
   /**
-   * Get current device location
+   * Get current location
    */
   async getCurrentLocation() {
     try {
-      console.log('📍 Getting current location...');
+      console.log('🔄 Getting current location...');
+
+      const permissionResult = await this.requestLocationPermission();
+      if (!permissionResult.success) {
+        return permissionResult;
+      }
 
       const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-        timeout: 10000,
+        accuracy: Location.Accuracy.High,
+        timeout: 15000,
+        maximumAge: 300000, // 5 minutes
       });
 
       this.currentLocation = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         accuracy: location.coords.accuracy,
-        timestamp: new Date().toISOString(),
+        timestamp: location.timestamp,
       };
 
       // Cache the location
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.USER_GEOLOCATION,
-        JSON.stringify(this.currentLocation)
-      );
+      await this.cacheLocation(this.currentLocation);
 
-      console.log('✅ Current location obtained:', this.currentLocation);
+      console.log('✅ Location obtained successfully');
       return {
         success: true,
         location: this.currentLocation,
       };
     } catch (error) {
       console.error('❌ Error getting current location:', error);
+
+      // Try to return cached location as fallback
+      const cachedLocation = await this.getCachedLocation();
+      if (cachedLocation) {
+        console.log('📱 Using cached location as fallback');
+        this.currentLocation = cachedLocation;
+        return {
+          success: true,
+          location: cachedLocation,
+          isCached: true,
+        };
+      }
+
       return {
         success: false,
         error: 'LOCATION_ERROR',
@@ -379,65 +377,86 @@ class UserRegionService {
   }
 
   /**
+   * Cache location data
+   */
+  async cacheLocation(location) {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_GEOLOCATION, JSON.stringify(location));
+    } catch (error) {
+      console.error('❌ Error caching location:', error);
+    }
+  }
+
+  /**
    * Get cached location
    */
   async getCachedLocation() {
     try {
-      const cached = await AsyncStorage.getItem(STORAGE_KEYS.USER_GEOLOCATION);
-      if (cached) {
-        this.currentLocation = JSON.parse(cached);
-        return {
-          success: true,
-          location: this.currentLocation,
-          cached: true,
-        };
+      const cachedLocation = await AsyncStorage.getItem(STORAGE_KEYS.USER_GEOLOCATION);
+      if (cachedLocation) {
+        const location = JSON.parse(cachedLocation);
+
+        // Check if cached location is not too old (1 hour)
+        const now = Date.now();
+        const locationAge = now - location.timestamp;
+        const oneHour = 60 * 60 * 1000;
+
+        if (locationAge < oneHour) {
+          return location;
+        }
       }
-      return { success: false, message: 'No cached location found' };
+      return null;
     } catch (error) {
       console.error('❌ Error getting cached location:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Find nearest region to current location
-   */
-  findNearestRegion(userLocation = null) {
-    const location = userLocation || this.currentLocation;
-
-    if (!location) {
       return null;
     }
-
-    let nearestRegion = null;
-    let minDistance = Infinity;
-
-    this.regionHierarchy.forEach((region) => {
-      if (region.latitude && region.longitude) {
-        const distance = this.calculateDistance(
-          location.latitude,
-          location.longitude,
-          parseFloat(region.latitude),
-          parseFloat(region.longitude)
-        );
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestRegion = region;
-        }
-      }
-    });
-
-    return nearestRegion
-      ? {
-          region: nearestRegion,
-          distance: minDistance,
-        }
-      : null;
   }
 
   /**
-   * Calculate distance between two coordinates (Haversine formula)
+   * Find nearest region based on user location
+   */
+  findNearestRegion(userLocation = null) {
+    try {
+      const location = userLocation || this.currentLocation;
+      if (!location) {
+        console.warn('⚠️ No location available for region matching');
+        return null;
+      }
+
+      let nearestRegion = null;
+      let shortestDistance = Infinity;
+
+      for (const region of this.regionHierarchy) {
+        if (region.latitude && region.longitude) {
+          const distance = this.calculateDistance(
+            location.latitude,
+            location.longitude,
+            region.latitude,
+            region.longitude
+          );
+
+          if (distance < shortestDistance) {
+            shortestDistance = distance;
+            nearestRegion = { ...region, distance };
+          }
+        }
+      }
+
+      if (nearestRegion) {
+        console.log(`✅ Nearest region: ${nearestRegion.name} (${shortestDistance.toFixed(2)} km)`);
+      } else {
+        console.warn('⚠️ No regions with coordinates found');
+      }
+
+      return nearestRegion;
+    } catch (error) {
+      console.error('❌ Error finding nearest region:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Calculate distance between two coordinates using Haversine formula
    */
   calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Earth's radius in kilometers
@@ -450,25 +469,38 @@ class UserRegionService {
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in kilometers
+    return R * c;
   }
 
   /**
-   * Refresh region data
+   * Refresh regions from server
    */
   async refreshRegions() {
     try {
-      console.log('🔄 Refreshing user region data...');
+      if (!this.credentials) {
+        throw new Error('No credentials available');
+      }
+
+      console.log('🔄 Refreshing regions from server...');
       await this.fetchUserAssignedRegions();
-      return { success: true };
+      console.log('✅ Regions refreshed successfully');
+
+      return {
+        success: true,
+        regionsCount: this.userRegions.length,
+        hierarchyCount: this.regionHierarchy.length,
+      };
     } catch (error) {
       console.error('❌ Error refreshing regions:', error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.message,
+      };
     }
   }
 
   /**
-   * Clear all cached region data
+   * Clear cached data
    */
   async clearCache() {
     try {
@@ -483,9 +515,9 @@ class UserRegionService {
       this.regionHierarchy = [];
       this.currentLocation = null;
 
-      console.log('🗑️ User region cache cleared');
+      console.log('✅ UserRegionService cache cleared');
     } catch (error) {
-      console.error('❌ Error clearing region cache:', error);
+      console.error('❌ Error clearing cache:', error);
     }
   }
 
@@ -496,11 +528,10 @@ class UserRegionService {
     return {
       isInitialized: this.isInitialized,
       hasCredentials: !!this.credentials,
-      userProject: this.userProject,
-      assignedRegionsCount: this.userRegions.length,
-      totalAccessibleRegions: this.regionHierarchy.length,
+      userRegionsCount: this.userRegions.length,
+      hierarchyRegionsCount: this.regionHierarchy.length,
+      hasCurrentLocation: !!this.currentLocation,
       currentLocation: this.currentLocation,
-      lastSync: null, // Could implement this
     };
   }
 }

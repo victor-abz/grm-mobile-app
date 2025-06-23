@@ -1,6 +1,5 @@
 import { Map } from 'immutable';
 import { createActions, handleActions } from 'redux-actions';
-import { setDataManagerCredentials } from '../../utils/databaseManager';
 import {
   clearEncryptedValues,
   getEncryptedData,
@@ -13,10 +12,7 @@ const defaultState = Map({
   username: null,
 });
 
-function getRemoteDbConfig() {
-  const credentials = getEncryptedData('dbCredentials');
-  return credentials;
-}
+
 
 export const { init, login, signUp, logout } = createActions({
   INIT: async (dbCredentials, credentials) => {
@@ -26,7 +22,7 @@ export const { init, login, signUp, logout } = createActions({
         username: credentials.email,
         password: credentials.password,
       };
-      await setDataManagerCredentials(authCredentials);
+      // await setDataManagerCredentials(authCredentials);
 
       return { password: credentials.password, username: credentials.email };
     } catch (error) {
@@ -48,7 +44,7 @@ export const { init, login, signUp, logout } = createActions({
         username: credentials.email,
         password: credentials.password,
       };
-      await setDataManagerCredentials(authCredentials);
+      // await setDataManagerCredentials(authCredentials);
 
       return { password: credentials.password, username: credentials.email };
     } catch (error) {

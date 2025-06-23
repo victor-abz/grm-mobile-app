@@ -2,33 +2,31 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
+import withObservables from '@nozbe/with-observables';
 import { useData } from '../../../providers/DataProvider';
-import { getIssues, getIssueStatuses } from '../../../utils/databaseManager';
+import watermelonManager from '../../../database/watermelonManager';
 import { colors } from '../../../utils/colors';
 import { styles } from './IssueSearch.style';
 import Content from './containers';
 
-function IssueSearch() {
+function IssueSearch({ issues, observableStatuses }) {
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
   const { isDataInitialized } = useData();
 
-  const [issues, setIssues] = useState([]);
-  const [statuses, setStatuses] = useState([]);
   const [eadl, setEadl] = useState(null);
+  const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadInitialData = async () => {
       if (!isDataInitialized) return;
 
       try {
         setLoading(true);
 
-        // Load issues and statuses using the new DataManager
-        const [issuesData, statusesData] = await Promise.all([getIssues(), getIssueStatuses()]);
-
-        setIssues(issuesData);
+        // ENsure we use watermelon here
+        const statusesData = await getIssueStatuses();
         setStatuses(statusesData);
 
         // For now, create a mock eadl object based on username
@@ -39,13 +37,13 @@ function IssueSearch() {
           name: username,
         });
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading initial data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
+    loadInitialData();
   }, [isDataInitialized, username]);
 
   if (!isDataInitialized || loading) {
@@ -54,9 +52,24 @@ function IssueSearch() {
 
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content issues={issues} eadl={eadl} statuses={statuses} />
+      <Content issues={issues || []} eadl={eadl} statuses={statuses} />
     </SafeAreaView>
   );
 }
 
-export default IssueSearch;
+// Enhanced component with reactive WatermelonDB queries
+const enhance = withObservables([], () => {
+  try {
+    return {
+      issues: watermelonManager.observeIssues({}), // Get all issues reactively
+    };
+  } catch (error) {
+    console.error('Error setting up WatermelonDB observables:', error);
+    // Return empty observables as fallback
+    return {
+      issues: { subscribe: () => ({ unsubscribe: () => {} }) },
+    };
+  }
+});
+
+export default enhance(IssueSearch);

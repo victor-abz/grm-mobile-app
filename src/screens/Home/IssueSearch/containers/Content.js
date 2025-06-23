@@ -17,90 +17,117 @@ function Content({ issues, eadl, statuses }) {
   const [currentDate, setCurrentDate] = useState(moment());
 
   const sortByCreationDateDesc = (data) =>
-    data.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+    data.sort(
+      (a, b) => new Date(b.creation || b.created_date) - new Date(a.creation || a.created_date)
+    );
 
   useEffect(() => {
-    setIssues(issues);
-  }, []);
+    setIssues(issues || []);
+  }, [issues]);
 
   useEffect(() => {
+    if (!issues || !Array.isArray(issues)) {
+      setIssues([]);
+      return;
+    }
+
     let filteredIssues = [];
     let foundStatus;
 
     switch (status) {
       case 'assigned':
         foundStatus = statuses.find((el) => el.final_status === true);
-        filteredIssues = issues.filter(
-          (issue) =>
-            issue.assignee && issue.assignee.id === eadl?._id && issue.status.id !== foundStatus?.id
-        );
+        filteredIssues = issues.filter((issue) => {
+          // Handle both backend format (assignee_id) and old format (assignee.id)
+          const assigneeId = issue.assignee_id || issue.assignee?.id;
+          const statusId = issue.status_id || issue.status?.id;
+          return assigneeId && assigneeId === eadl?._id && statusId !== foundStatus?.name;
+        });
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'open':
         foundStatus = statuses.find((el) => el.final_status === true);
-        filteredIssues = issues.filter(
-          (issue) =>
-            ((issue.assignee && issue.assignee.id === eadl?._id) ||
-              (issue.reporter && issue.reporter.id === eadl?._id)) &&
-            issue.status.id !== foundStatus?.id
-        );
+        filteredIssues = issues.filter((issue) => {
+          const assigneeId = issue.assignee_id || issue.assignee?.id;
+          const reporterId = issue.reporter_id || issue.reporter?.id;
+          const statusId = issue.status_id || issue.status?.id;
+          return (
+            ((assigneeId && assigneeId === eadl?._id) ||
+              (reporterId && reporterId === eadl?._id)) &&
+            statusId !== foundStatus?.name
+          );
+        });
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'resolved':
         foundStatus = statuses.find((el) => el.final_status === true);
-        filteredIssues = issues.filter(
-          (issue) =>
-            ((issue.assignee && issue.assignee.id === eadl?._id) ||
-              (issue.reporter && issue.reporter.id === eadl?._id)) &&
-            issue.status.id === foundStatus.id
-        );
+        filteredIssues = issues.filter((issue) => {
+          const assigneeId = issue.assignee_id || issue.assignee?.id;
+          const reporterId = issue.reporter_id || issue.reporter?.id;
+          const statusId = issue.status_id || issue.status?.id;
+          return (
+            ((assigneeId && assigneeId === eadl?._id) ||
+              (reporterId && reporterId === eadl?._id)) &&
+            statusId === foundStatus?.name
+          );
+        });
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       default:
-        filteredIssues = _issues.map((issue) => issue);
+        filteredIssues = issues.slice();
     }
     setIssues(filteredIssues);
-  }, [status]);
+  }, [status, issues, statuses, eadl]);
 
   function Item({ item, onPress, backgroundColor, textColor }) {
+    // Handle both backend format and old format
+    const issueTypeId = item.issue_type_id || item.issue_type?.id;
+    const trackingCode = item.tracking_code || item.name;
+    const citizen = item.citizen || item.citizen_name;
+    const intakeDate = item.intake_date || item.creation;
+    const statusId = item.status_id || item.status?.id;
+
+    // Find status name from statuses array
+    const currentStatus = statuses.find((s) => s.name === statusId || s.id === statusId);
+    const statusName = currentStatus?.status_name || item.status?.name || 'Unknown';
+
     return (
       <TouchableOpacity onPress={onPress} style={[styles.item]}>
         <View style={styles.itemContainer}>
           <View>
             <Text style={[styles.title]}>
-              {item.issue_type?.name} - {t('label_reference')} {item.tracking_code}
+              {issueTypeId} - {t('label_reference')} {trackingCode}
             </Text>
             <Text style={[styles.subTitle]} numberOfLines={1}>
-              {item.title ? item.title : item.description}
+              {item.title || item.description || 'No description'}
             </Text>
             <Text style={[styles.subTitle]}>
-              {item.citizen}, {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')},{' '}
-              {item.intake_date && currentDate.diff(item.intake_date, 'days')} {t('days_ago')}
+              {citizen || 'Anonymous'}, {intakeDate && moment(intakeDate).format('DD-MMM-YYYY')},{' '}
+              {intakeDate && currentDate.diff(intakeDate, 'days')} {t('days_ago')}
             </Text>
             <Text style={styles.subTitle}>
               {t('status_label')}:{' '}
               <Text
                 style={{
                   color:
-                    item.status?.id === 1 || item.status?.id === 2
+                    statusId === 1 || statusId === 2 || statusId === '1' || statusId === '2'
                       ? colors.inProgress
                       : colors.primary,
                 }}
               >
-                {item.status?.name}
+                {statusName}
               </Text>
             </Text>
           </View>
           <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />
         </View>
-        {/* <Text style={[styles.title]}>{item.description}</Text> */}
       </TouchableOpacity>
     );
   }
 
   const renderItem = ({ item }) => {
-    const backgroundColor = item.id === selectedId ? '#6e3b6e' : '#f9c2ff';
-    const color = item.id === selectedId ? 'white' : 'black';
+    const backgroundColor = item.name === selectedId ? '#6e3b6e' : '#f9c2ff';
+    const color = item.name === selectedId ? 'white' : 'black';
 
     return (
       <Item
@@ -118,6 +145,7 @@ function Content({ issues, eadl, statuses }) {
   };
 
   const renderHeader = () => <ListHeader status={status} />;
+
   return (
     <>
       <ToggleButton.Row

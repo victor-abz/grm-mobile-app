@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import frappeSyncManager from './FrappeSyncManager';
+import dataManager from './DataManager';
 
 // Storage keys for persistent lookup data
 const STORAGE_KEYS = {
@@ -172,20 +172,6 @@ const DATA_TRANSFORMERS = {
   }),
 };
 
-/**
- * API endpoint configuration
- */
-const API_ENDPOINTS = {
-  categories: 'egrm.api.lookup.categories',
-  types: 'egrm.api.lookup.types',
-  statuses: 'egrm.api.lookup.statuses',
-  age_groups: 'egrm.api.lookup.age_groups',
-  citizen_groups: 'egrm.api.lookup.citizen_groups',
-  departments: 'egrm.api.lookup.departments',
-  projects: 'egrm.api.lookup.projects',
-  regions: 'egrm.api.lookup.regions',
-};
-
 class LookupDataManager {
   constructor() {
     this.cache = new Map();
@@ -198,240 +184,221 @@ class LookupDataManager {
   /**
    * Initialize the lookup data manager
    */
-  async initialize(credentials = null) {
-    if (this.isInitialized) return;
-
+  async initialize(credentials = null, projectId = null) {
     try {
-      await this.validateCacheVersion();
-      await this.loadAllFromCache();
+      console.log('🔄 LookupDataManager: Initializing...');
 
-      // Store credentials if provided
       if (credentials) {
+        console.log('🔄 LookupDataManager: Credentials provided, attempting immediate sync...');
         this.credentials = credentials;
 
-        // Try to sync data immediately if we have credentials and are online
-        if (this.isOnline) {
-          console.log('🔄 LookupDataManager: Credentials provided, attempting immediate sync...');
-          try {
-            // Set credentials in FrappeSyncManager for API calls
-            await frappeSyncManager.setCredentials(credentials);
-
-            // Perform sync to get fresh data
-            await this.syncAllData();
-          } catch (syncError) {
-            console.warn('⚠️ Initial sync failed during initialization:', syncError.message);
-            // Continue with cached data
-          }
+        try {
+          await this.syncAllData(projectId);
+          console.log('✅ LookupDataManager: Initial sync completed successfully');
+        } catch (error) {
+          console.warn('⚠️ Initial sync failed during initialization:', error.message);
         }
       }
+
+      // Validate cache version
+      await this.validateCacheVersion();
+
+      // Load cached data
+      await this.loadAllFromCache();
 
       this.isInitialized = true;
       console.log('✅ LookupDataManager initialized');
+
+      return {
+        success: true,
+        message: 'LookupDataManager initialized successfully',
+      };
     } catch (error) {
       console.error('❌ Error initializing LookupDataManager:', error);
-      // Mark as initialized anyway to allow app to continue
-      this.isInitialized = true;
+      return {
+        success: false,
+        error: error.message,
+      };
     }
   }
 
   /**
-   * Validate cache version and clear if outdated
+   * Validate cache version
    */
   async validateCacheVersion() {
-    const cachedVersion = await AsyncStorage.getItem(STORAGE_KEYS.CACHE_VERSION);
-
-    if (cachedVersion !== CACHE_VERSION) {
-      console.log('🔄 Cache version mismatch, clearing old data...');
-      await this.clearAllCache();
-      await AsyncStorage.setItem(STORAGE_KEYS.CACHE_VERSION, CACHE_VERSION);
+    try {
+      const cachedVersion = await AsyncStorage.getItem(STORAGE_KEYS.CACHE_VERSION);
+      if (cachedVersion !== CACHE_VERSION) {
+        console.log('🔄 Cache version mismatch, clearing cache...');
+        await this.clearAllCache();
+        await AsyncStorage.setItem(STORAGE_KEYS.CACHE_VERSION, CACHE_VERSION);
+      }
+    } catch (error) {
+      console.error('❌ Error validating cache version:', error);
     }
   }
 
   /**
-   * Load all lookup data from cache into memory
+   * Load all data from cache
    */
   async loadAllFromCache() {
-    const loadPromises = Object.keys(STORAGE_KEYS)
-      .filter((key) => !['SYNC_TIMESTAMP', 'CACHE_VERSION'].includes(key))
-      .map(async (key) => {
-        const storageKey = STORAGE_KEYS[key];
-        const dataType = key.toLowerCase();
+    try {
+      const dataTypes = [
+        'categories',
+        'types',
+        'statuses',
+        'age_groups',
+        'citizen_groups',
+        'departments',
+        'projects',
+        'regions',
+      ];
 
-        try {
-          const cachedData = await AsyncStorage.getItem(storageKey);
-          if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            this.cache.set(dataType, parsedData);
-            console.log(`📱 Loaded ${parsedData.length} ${dataType} from cache`);
+      for (const dataType of dataTypes) {
+        const cacheKey = `${dataType}_all`;
+        const storageKey = this.getStorageKey(cacheKey);
+
+        if (storageKey) {
+          try {
+            const cachedData = await AsyncStorage.getItem(storageKey);
+            if (cachedData) {
+              const data = JSON.parse(cachedData);
+              this.cache.set(cacheKey, data);
+            }
+          } catch (error) {
+            console.error(`❌ Error loading ${dataType} from cache:`, error);
           }
-        } catch (error) {
-          console.error(`❌ Error loading ${dataType} from cache:`, error);
         }
-      });
-
-    await Promise.all(loadPromises);
+      }
+    } catch (error) {
+      console.error('❌ Error loading data from cache:', error);
+    }
   }
 
   /**
-   * Generic method to fetch data from API or cache
+   * Generic data getter with caching
    */
   async getData(dataType, projectId = null, forceRefresh = false) {
-    const cacheKey = projectId ? `${dataType}_${projectId}` : dataType;
+    try {
+      const cacheKey = projectId ? `${dataType}_${projectId}` : `${dataType}_all`;
 
-    // Return cached data if available and not forcing refresh
-    if (!forceRefresh && this.cache.has(cacheKey)) {
-      const cachedData = this.cache.get(cacheKey);
-      console.log(`📱 [${dataType.toUpperCase()}] Returning ${cachedData.length} items from cache`);
-      return cachedData;
-    }
-
-    // Try to fetch from API if online
-    if (this.isOnline) {
-      try {
-        const apiData = await this.fetchFromAPI(dataType, projectId);
-        if (apiData && apiData.length > 0) {
-          await this.cacheData(cacheKey, apiData);
-          console.log(`✅ [${dataType.toUpperCase()}] Fetched ${apiData.length} items from API`);
-          return apiData;
-        }
-      } catch (error) {
-        console.warn(`⚠️ [${dataType.toUpperCase()}] API error:`, error.message);
+      // Return cached data if available and not forcing refresh
+      if (!forceRefresh && this.cache.has(cacheKey)) {
+        const cachedData = this.cache.get(cacheKey);
+        console.log(
+          `📱 [${dataType.toUpperCase()}] Returning ${cachedData.length} items from cache`
+        );
+        return cachedData;
       }
-    }
 
-    // Fallback to cached data or empty array
-    let fallbackData = this.cache.get(cacheKey);
-    if (!fallbackData || fallbackData.length === 0) {
-      // Try to load from persistent storage
+      // Try to get from DataManager (which handles API and WatermelonDB)
+      let data = [];
+
+      switch (dataType) {
+        case 'categories':
+          data = await dataManager.getIssueCategories(projectId);
+          break;
+        case 'types':
+          data = await dataManager.getIssueTypes(projectId);
+          break;
+        case 'statuses':
+          data = await dataManager.getIssueStatuses();
+          break;
+        case 'age_groups':
+          data = await dataManager.getAgeGroups();
+          break;
+        case 'citizen_groups':
+          data = await dataManager.getCitizenGroups();
+          break;
+        case 'departments':
+          data = await dataManager.getDepartments();
+          break;
+        case 'projects':
+          data = await dataManager.getProjects();
+          break;
+        case 'regions':
+          data = await dataManager.getAdministrativeRegions({ project: projectId });
+          break;
+        default:
+          console.warn(`Unknown data type: ${dataType}`);
+          return [];
+      }
+
+      // Cache the data
+      if (data.length > 0) {
+        this.cache.set(cacheKey, data);
+        await this.cacheData(cacheKey, data);
+        console.log(`✅ [${dataType.toUpperCase()}] Loaded ${data.length} items`);
+      } else {
+        console.log(`📱 [${dataType.toUpperCase()}] Fallback: ${data.length} items`);
+      }
+
+      return data;
+    } catch (error) {
+      console.warn(`⚠️ [${dataType.toUpperCase()}] API error:`, error.message);
+
+      // Fallback to cached data
+      const cacheKey = projectId ? `${dataType}_${projectId}` : `${dataType}_all`;
+      if (this.cache.has(cacheKey)) {
+        const cachedData = this.cache.get(cacheKey);
+        console.log(`📱 [${dataType.toUpperCase()}] Fallback: ${cachedData.length} items`);
+        return cachedData;
+      }
+
+      console.log(`📱 [${dataType.toUpperCase()}] Fallback: 0 items`);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch data from API through DataManager
+   */
+  async fetchFromAPI(dataType, projectId = null) {
+    try {
+      return await this.getData(dataType, projectId, true);
+    } catch (error) {
+      console.error(`❌ Error fetching ${dataType} from API:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Transform API data using transformers
+   */
+  transformAPIData(dataType, rawData) {
+    try {
+      const transformer = DATA_TRANSFORMERS[dataType];
+      if (!transformer) {
+        console.warn(`No transformer found for ${dataType}`);
+        return rawData;
+      }
+
+      return rawData.map(transformer);
+    } catch (error) {
+      console.error(`❌ Error transforming ${dataType} data:`, error);
+      return rawData;
+    }
+  }
+
+  /**
+   * Cache data to persistent storage
+   */
+  async cacheData(cacheKey, data) {
+    try {
+      // Store in memory cache
+      this.cache.set(cacheKey, data);
+
+      // Store in persistent storage
       const storageKey = this.getStorageKey(cacheKey);
       if (storageKey) {
         try {
-          const storedData = await AsyncStorage.getItem(storageKey);
-          if (storedData) {
-            fallbackData = JSON.parse(storedData);
-            this.cache.set(cacheKey, fallbackData);
-            console.log(
-              `📱 [${dataType.toUpperCase()}] Fallback from persistent storage: ${
-                fallbackData.length
-              } items`
-            );
-          }
-        } catch (err) {
-          console.error(`❌ Error loading fallback data for ${dataType} from storage:`, err);
+          await AsyncStorage.setItem(storageKey, JSON.stringify(data));
+        } catch (error) {
+          console.error(`❌ Error caching ${cacheKey}:`, error);
         }
       }
-    }
-    fallbackData = fallbackData || [];
-    console.log(`📱 [${dataType.toUpperCase()}] Fallback: ${fallbackData.length} items`);
-    return fallbackData;
-  }
-
-  /**
-   * Fetch data from API with transformation
-   */
-  async fetchFromAPI(dataType, projectId = null) {
-    const endpoint = API_ENDPOINTS[dataType];
-    if (!endpoint) {
-      throw new Error(`Unknown data type: ${dataType}`);
-    }
-
-    // Check if we have credentials or if FrappeSyncManager is ready
-    if (!this.credentials) {
-      throw new Error('No credentials available for API calls');
-    }
-
-    const params = {};
-    if (projectId) params.project_id = projectId;
-
-    try {
-      const call = frappeSyncManager.getCall();
-      const rawResponse = await call.get(endpoint, params);
-      const response = extractApiResponse(rawResponse);
-
-      if (response.status !== 'success') {
-        throw new Error(response.message || 'API call failed');
-      }
-
-      return this.transformAPIData(dataType, response.data);
     } catch (error) {
-      console.error(`❌ API call failed for ${dataType}:`, error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Transform API data using configured transformers
-   */
-  transformAPIData(dataType, rawData) {
-    const transformer = DATA_TRANSFORMERS[dataType];
-    if (!transformer) {
-      console.warn(`⚠️ No transformer found for ${dataType}, using raw data`);
-      return rawData;
-    }
-
-    // Handle special case for citizen groups (nested structure)
-    if (dataType === 'citizen_groups') {
-      let allGroups = [];
-
-      // Handle nested structure from API
-      if (rawData.citizen_group_1 || rawData.citizen_group_2) {
-        allGroups = [
-          ...(rawData.citizen_group_1 || []).map((g) => ({ ...g, group_type: '1' })),
-          ...(rawData.citizen_group_2 || []).map((g) => ({ ...g, group_type: '2' })),
-        ];
-      }
-      // Handle flat array structure from cache
-      else if (Array.isArray(rawData)) {
-        allGroups = rawData.map((g) => ({
-          ...g,
-          group_type: g.group_type ? g.group_type.toString() : '1',
-        }));
-      }
-      // Handle single item
-      else {
-        allGroups = [
-          {
-            ...rawData,
-            group_type: rawData.group_type ? rawData.group_type.toString() : '1',
-          },
-        ];
-      }
-
-      // Sort by order if available
-      const transformed = allGroups.map(transformer);
-      return transformed.sort((a, b) => a.order - b.order);
-    }
-
-    // Handle age groups special case
-    if (dataType === 'age_groups') {
-      let items = Array.isArray(rawData) ? rawData : [rawData];
-      return items.map(transformer);
-    }
-
-    // Handle array data
-    if (Array.isArray(rawData)) {
-      return rawData.map(transformer);
-    }
-
-    // Handle single item
-    return [transformer(rawData)];
-  }
-
-  /**
-   * Cache data in both memory and persistent storage
-   */
-  async cacheData(cacheKey, data) {
-    // Store in memory cache
-    this.cache.set(cacheKey, data);
-
-    // Store in persistent storage
-    const storageKey = this.getStorageKey(cacheKey);
-    if (storageKey) {
-      try {
-        await AsyncStorage.setItem(storageKey, JSON.stringify(data));
-      } catch (error) {
-        console.error(`❌ Error caching ${cacheKey}:`, error);
-      }
+      console.error(`❌ Error caching data for ${cacheKey}:`, error);
     }
   }
 
@@ -439,13 +406,20 @@ class LookupDataManager {
    * Get storage key from cache key
    */
   getStorageKey(cacheKey) {
-    const baseKey = cacheKey.split('_')[0].toUpperCase();
-    return STORAGE_KEYS[baseKey];
+    const keyMap = {
+      categories_all: STORAGE_KEYS.CATEGORIES,
+      types_all: STORAGE_KEYS.TYPES,
+      statuses_all: STORAGE_KEYS.STATUSES,
+      age_groups_all: STORAGE_KEYS.AGE_GROUPS,
+      citizen_groups_all: STORAGE_KEYS.CITIZEN_GROUPS,
+      departments_all: STORAGE_KEYS.DEPARTMENTS,
+      projects_all: STORAGE_KEYS.PROJECTS,
+      regions_all: STORAGE_KEYS.REGIONS,
+    };
+    return keyMap[cacheKey];
   }
 
-  /**
-   * Specific data getter methods
-   */
+  // Specific data getter methods
   async getCategories(projectId = null, forceRefresh = false) {
     return await this.getData('categories', projectId, forceRefresh);
   }
@@ -480,36 +454,46 @@ class LookupDataManager {
   }
 
   /**
-   * Sync methods
+   * Sync all data
    */
   async syncAllData(projectId = null) {
     if (this.syncInProgress) {
-      console.log('⚠️ Sync already in progress');
+      console.log('⚠️ Sync already in progress, skipping...');
       return;
     }
 
-    this.syncInProgress = true;
-
     try {
+      this.syncInProgress = true;
       console.log('🔄 Starting lookup data sync...');
 
-      const syncPromises = [
-        this.syncDataType('categories', projectId),
-        this.syncDataType('types', projectId),
-        this.syncDataType('statuses'),
-        this.syncDataType('age_groups'),
-        this.syncDataType('citizen_groups'),
-        this.syncDataType('departments'),
-        this.syncDataType('projects'),
-        this.syncDataType('regions', projectId),
-      ];
+      const dataTypes = ['statuses', 'age_groups', 'citizen_groups', 'departments', 'projects'];
+      const projectSpecificTypes = ['categories', 'types', 'regions'];
 
-      await Promise.allSettled(syncPromises);
+      // Sync general data
+      for (const dataType of dataTypes) {
+        try {
+          await this.syncDataType(dataType);
+        } catch (error) {
+          console.warn(`⚠️ Failed to sync ${dataType}:`, error.message);
+        }
+      }
+
+      // Sync project-specific data if projectId is provided
+      if (projectId) {
+        for (const dataType of projectSpecificTypes) {
+          try {
+            await this.syncDataType(dataType, projectId);
+          } catch (error) {
+            console.warn(`⚠️ Failed to sync ${dataType} for project ${projectId}:`, error.message);
+          }
+        }
+      }
+
       await this.updateSyncTimestamp();
-
       console.log('✅ Lookup data sync completed');
     } catch (error) {
       console.error('❌ Error during lookup data sync:', error);
+      throw error;
     } finally {
       this.syncInProgress = false;
     }
@@ -520,57 +504,74 @@ class LookupDataManager {
    */
   async syncDataType(dataType, projectId = null) {
     try {
-      const data = await this.fetchFromAPI(dataType, projectId);
-      const cacheKey = projectId ? `${dataType}_${projectId}` : dataType;
-      await this.cacheData(cacheKey, data);
-      console.log(`✅ Synced ${dataType}: ${data.length} items`);
+      console.log(`🔄 Syncing ${dataType}${projectId ? ` for project ${projectId}` : ''}...`);
+      await this.getData(dataType, projectId, true); // Force refresh
+      console.log(`✅ ${dataType} sync completed`);
     } catch (error) {
-      console.warn(`⚠️ Failed to sync ${dataType}:`, error.message);
+      console.error(`❌ Error syncing ${dataType}:`, error);
+      throw error;
     }
   }
 
   /**
-   * Background sync without blocking UI
+   * Perform background sync
    */
   async performBackgroundSync(projectId = null) {
-    // Use setTimeout to avoid blocking the UI thread
-    setTimeout(async () => {
-      try {
-        await this.syncAllData(projectId);
-      } catch (error) {
-        console.error('❌ Background sync failed:', error);
+    try {
+      if (!this.isOnline) {
+        console.log('⚠️ Offline, skipping background sync');
+        return;
       }
-    }, 100);
+
+      console.log('🔄 Performing background lookup data sync...');
+      await this.syncAllData(projectId);
+      console.log('✅ Background sync completed');
+    } catch (error) {
+      console.warn('⚠️ Background sync failed:', error.message);
+    }
   }
 
   /**
    * Update sync timestamp
    */
   async updateSyncTimestamp() {
-    const timestamp = new Date().toISOString();
-    await AsyncStorage.setItem(STORAGE_KEYS.SYNC_TIMESTAMP, timestamp);
+    try {
+      const timestamp = new Date().toISOString();
+      await AsyncStorage.setItem(STORAGE_KEYS.SYNC_TIMESTAMP, timestamp);
+    } catch (error) {
+      console.error('❌ Error updating sync timestamp:', error);
+    }
   }
 
   /**
    * Get last sync timestamp
    */
   async getLastSyncTimestamp() {
-    return await AsyncStorage.getItem(STORAGE_KEYS.SYNC_TIMESTAMP);
+    try {
+      return await AsyncStorage.getItem(STORAGE_KEYS.SYNC_TIMESTAMP);
+    } catch (error) {
+      console.error('❌ Error getting sync timestamp:', error);
+      return null;
+    }
   }
 
   /**
    * Check if data needs refresh
    */
   async needsRefresh(maxAgeHours = 24) {
-    const lastSync = await this.getLastSyncTimestamp();
+    try {
+      const lastSync = await this.getLastSyncTimestamp();
+      if (!lastSync) return true;
 
-    if (!lastSync) return true;
+      const lastSyncDate = new Date(lastSync);
+      const now = new Date();
+      const hoursDiff = (now - lastSyncDate) / (1000 * 60 * 60);
 
-    const lastSyncDate = new Date(lastSync);
-    const now = new Date();
-    const hoursDiff = (now - lastSyncDate) / (1000 * 60 * 60);
-
-    return hoursDiff > maxAgeHours;
+      return hoursDiff > maxAgeHours;
+    } catch (error) {
+      console.error('❌ Error checking refresh need:', error);
+      return true;
+    }
   }
 
   /**
@@ -581,46 +582,61 @@ class LookupDataManager {
   }
 
   /**
-   * Clear specific data type from cache
+   * Clear specific data type
    */
   async clearDataType(dataType) {
-    const cacheKeys = Array.from(this.cache.keys()).filter((key) => key.startsWith(dataType));
+    try {
+      const cacheKey = `${dataType}_all`;
 
-    for (const key of cacheKeys) {
-      this.cache.delete(key);
+      // Clear from memory cache
+      this.cache.delete(cacheKey);
 
-      const storageKey = this.getStorageKey(key);
+      // Clear from persistent storage
+      const storageKey = this.getStorageKey(cacheKey);
       if (storageKey) {
         await AsyncStorage.removeItem(storageKey);
       }
-    }
 
-    console.log(`🗑️ Cleared ${dataType} from cache`);
+      console.log(`✅ Cleared ${dataType} cache`);
+    } catch (error) {
+      console.error(`❌ Error clearing ${dataType} cache:`, error);
+    }
   }
 
   /**
-   * Clear all cached data
+   * Clear all cache
    */
   async clearAllCache() {
-    this.cache.clear();
+    try {
+      console.log('🗑️ Clearing all lookup data cache...');
 
-    const clearPromises = Object.values(STORAGE_KEYS).map((key) => AsyncStorage.removeItem(key));
+      // Clear memory cache
+      this.cache.clear();
 
-    await Promise.allSettled(clearPromises);
-    console.log('🗑️ All lookup data cache cleared');
+      // Clear persistent storage
+      const storageKeys = Object.values(STORAGE_KEYS);
+      await Promise.all(storageKeys.map((key) => AsyncStorage.removeItem(key)));
+
+      console.log('✅ All lookup data cache cleared');
+    } catch (error) {
+      console.error('❌ Error clearing cache:', error);
+    }
   }
 
   /**
    * Get cache statistics
    */
   getCacheStats() {
-    const stats = {};
+    const stats = {
+      memoryCache: this.cache.size,
+      dataTypes: Array.from(this.cache.keys()),
+      isInitialized: this.isInitialized,
+      syncInProgress: this.syncInProgress,
+    };
 
+    // Add count for each data type
     for (const [key, data] of this.cache.entries()) {
-      stats[key] = {
-        count: Array.isArray(data) ? data.length : 1,
-        size: JSON.stringify(data).length,
-      };
+      stats[key] = Array.isArray(data) ? data.length : 0;
     }
 
     return stats;
@@ -630,82 +646,88 @@ class LookupDataManager {
    * Force refresh all data
    */
   async forceRefreshAll(projectId = null) {
-    console.log('🔄 Force refreshing all lookup data...');
-
-    await this.clearAllCache();
-    await this.syncAllData(projectId);
-
-    console.log('✅ Force refresh completed');
+    try {
+      console.log('🔄 Force refreshing all lookup data...');
+      await this.clearAllCache();
+      await this.syncAllData(projectId);
+      console.log('✅ Force refresh completed');
+    } catch (error) {
+      console.error('❌ Error during force refresh:', error);
+      throw error;
+    }
   }
 
   /**
-   * Get cached data count for a specific type
+   * Get cached count for data type
    */
   getCachedCount(dataType, projectId = null) {
-    const cacheKey = projectId ? `${dataType}_${projectId}` : dataType;
+    const cacheKey = projectId ? `${dataType}_${projectId}` : `${dataType}_all`;
     const data = this.cache.get(cacheKey);
-    return data ? data.length : 0;
+    return Array.isArray(data) ? data.length : 0;
   }
 
   /**
-   * Check if data is available (cached or can be fetched)
+   * Check if data is available
    */
   async isDataAvailable(dataType, projectId = null) {
-    const cacheKey = projectId ? `${dataType}_${projectId}` : dataType;
-
-    // Check memory cache first
-    if (this.cache.has(cacheKey)) {
-      return true;
+    try {
+      const data = await this.getData(dataType, projectId);
+      return data && data.length > 0;
+    } catch (error) {
+      console.error(`❌ Error checking ${dataType} availability:`, error);
+      return false;
     }
-
-    // Check persistent storage
-    const storageKey = this.getStorageKey(cacheKey);
-    if (storageKey) {
-      const stored = await AsyncStorage.getItem(storageKey);
-      return !!stored;
-    }
-
-    return false;
   }
 
   /**
    * Batch update multiple data types
    */
   async batchUpdate(dataTypes = [], projectId = null) {
-    console.log(`🔄 Batch updating: ${dataTypes.join(', ')}`);
+    try {
+      console.log(`🔄 Batch updating: ${dataTypes.join(', ')}`);
 
-    const updatePromises = dataTypes.map((dataType) => this.syncDataType(dataType, projectId));
+      const promises = dataTypes.map((dataType) => this.syncDataType(dataType, projectId));
+      await Promise.all(promises);
 
-    await Promise.allSettled(updatePromises);
-    console.log('✅ Batch update completed');
+      console.log('✅ Batch update completed');
+    } catch (error) {
+      console.error('❌ Error during batch update:', error);
+      throw error;
+    }
   }
 
   /**
-   * Get current lookup data from memory cache
+   * Get all lookup data
    */
   getLookupData() {
-    return {
-      categories: this.cache.get('categories') || [],
-      types: this.cache.get('types') || [],
-      statuses: this.cache.get('statuses') || [],
-      regions: this.cache.get('regions') || [],
-      ageGroups: this.cache.get('age_groups') || [],
-      citizenGroups: this.cache.get('citizen_groups') || [],
-      departments: this.cache.get('departments') || [],
-      projects: this.cache.get('projects') || [],
-    };
+    const data = {};
+
+    for (const [key, value] of this.cache.entries()) {
+      if (key.endsWith('_all')) {
+        const dataType = key.replace('_all', '');
+        data[dataType] = value;
+      }
+    }
+
+    return data;
   }
 
   /**
-   * Force refresh all data (alias for forceRefreshAll)
+   * Force refresh
    */
   async forceRefresh(projectId = null) {
-    await this.forceRefreshAll(projectId);
-    return this.getLookupData();
+    try {
+      console.log('🔄 Force refreshing lookup data...');
+      await this.syncAllData(projectId);
+      console.log('✅ Force refresh completed');
+    } catch (error) {
+      console.error('❌ Error during force refresh:', error);
+      throw error;
+    }
   }
 
   /**
-   * Clear all data (alias for clearAllCache)
+   * Clear all data
    */
   async clearAllData() {
     await this.clearAllCache();

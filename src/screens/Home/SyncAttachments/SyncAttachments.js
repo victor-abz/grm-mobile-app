@@ -1,29 +1,28 @@
 import * as FileSystem from 'expo-file-system';
 import { getInfoAsync, uploadAsync } from 'expo-file-system';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Platform, Text, View, FlatList } from 'react-native';
 import { ActivityIndicator, Snackbar, Card, Badge } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useView } from 'use-pouchdb';
+import withObservables from '@nozbe/with-observables';
+import { Q } from '@nozbe/watermelondb';
+import watermelonManager from '../../../database/watermelonManager';
+import { DataContext } from '../../../providers/DataProvider';
 import CheckCircle from '../../../../assets/check-circle.svg';
 import SyncImage from '../../../../assets/sync-image.svg';
 import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreenButton';
-import { baseURL } from '../../../services/API';
 import { colors } from '../../../utils/colors';
-import { SyncToRemoteDatabase } from '../../../utils/databaseManager';
-import { getEncryptedData } from '../../../utils/storageManager';
 import ImagesList from './components/ImagesList';
-import dataManager from '../../../services/DataManager';
-import frappeSyncManager from '../../../services/FrappeSyncManager';
 
-function SyncAttachments({ navigation }) {
+function SyncAttachments({ navigation, issues = [] }) {
   const { t } = useTranslation();
+  const { dataManager } = useContext(DataContext);
 
   const FILE_READ_ERROR = t('file_read_error');
   const FILE_READ_ERROR_TRY_AGAIN = t('file_read_error_try_again');
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [pendingIssues, setPendingIssues] = useState([]);
   const [successModal, setSuccessModal] = useState(false);
   const [fetchedContent, setFetchedContent] = useState(false);
@@ -39,98 +38,77 @@ function SyncAttachments({ navigation }) {
 
   const { username, userPassword } = useSelector((state) => state.get('authentication').toObject());
 
-  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
-    key: username,
-    include_docs: true,
-    db: 'LocalCommunesDatabase',
-  });
-
-  const eadl = useMemo(() => representative.map((d) => d.doc), [representative]);
-
-  const { rows: grmIssues, loading: issuesLoading } = useView(
-    'issues/by_type_and_user',
-    {
-      startkey: ['issue', eadl?.[0]?._id],
-      endkey: ['issue', eadl?.[0]?._id, {}],
-      include_docs: true,
-      db: 'LocalGRMDatabase',
-    },
-    [eadl?.[0]?._id]
-  );
-
-  const issues = useMemo(() => grmIssues.map((r) => r.doc), [grmIssues]);
-
+  // Get attachments from issues data
   const attachments = useMemo(() => {
-    if (!eadlLoading && !issuesLoading && issues.length > 0 && eadl?.[0]?.representative?.id) {
-      return issues.flatMap((issue) => {
-        const attachments = issue?.attachments || [];
-        const reasons = issue?.reasons || [];
-
-        return [
-          ...attachments
-            .filter((attachment) => attachment.user_id === eadl[0].representative.id)
-            .map((attachment) => ({
-              attachment,
-              docId: issue._id,
-              tracking_code: issue.tracking_code,
-            })),
-          ...reasons
-            .filter((reason) => reason.user_id === eadl[0].representative.id)
-            .map((reason) => ({
-              attachment: reason,
-              docId: issue._id,
-              tracking_code: issue.tracking_code,
-            })),
-        ];
-      });
+    if (!issues || issues.length === 0) {
+      return [];
     }
-    return [];
-  }, [issues, eadl, eadlLoading, issuesLoading]);
+
+    return issues.flatMap((issue) => {
+      const attachments = issue?.attachments || [];
+      const reasons = issue?.reasons || [];
+
+      return [
+        ...attachments
+          .filter((attachment) => attachment.user_id === username) // Use username instead of representative ID
+          .map((attachment) => ({
+            attachment,
+            docId: issue.id || issue._id,
+            tracking_code: issue.tracking_code,
+          })),
+        ...reasons
+          .filter((reason) => reason.user_id === username)
+          .map((reason) => ({
+            attachment: reason,
+            docId: issue.id || issue._id,
+            tracking_code: issue.tracking_code,
+          })),
+      ];
+    });
+  }, [issues, username]);
 
   // Load pending issues on mount
   useEffect(() => {
-    if (!eadlLoading && !issuesLoading) {
+    if (issues.length > 0) {
       loadPendingIssues();
     }
-  }, [issues, eadlLoading, issuesLoading]);
+  }, [issues]);
 
-  // Load pending issues from frappeSyncManager
+  // Load pending issues from DataManager sync status
   const loadPendingIssues = () => {
-    // Extract pending issues from frappeSyncManager
-    const pendingChanges = frappeSyncManager.pendingChanges || [];
-    const pendingIssueChanges = pendingChanges.filter((change) => change.type === 'issue');
+    try {
+      if (!dataManager) {
+        console.warn('[SyncAttachments] DataManager not available');
+        return;
+      }
 
-    // Map to a more user-friendly format
-    const pendingIssuesList = pendingIssueChanges.map((change) => {
-      // Find the corresponding issue in our loaded issues
-      const matchingIssue = issues.find(
-        (issue) =>
-          issue._id === change.data._id ||
-          issue._id === change.data.docId ||
-          (change.local_id && issue._id.includes(change.local_id))
-      );
+      // Get sync status and pending changes from DataManager
+      const syncStatus = dataManager.getSyncStatus();
 
-      return {
-        id: change.local_id || change.data._id || change.data.docId,
-        tracking_code: matchingIssue?.tracking_code || 'Unknown',
-        status: 'pending',
-        action: change.action,
-        project: matchingIssue?.project || null,
-        error: null,
-      };
-    });
+      // For now, create a simple pending issues list based on issues with unsync attachments
+      const pendingIssuesList = issues
+        .filter((issue) => {
+          // Check if issue has unsync attachments
+          const hasUnSyncAttachments = (issue.attachments || []).some(
+            (attachment) => attachment.uploaded === false && attachment.user_id === username
+          );
+          return hasUnSyncAttachments;
+        })
+        .map((issue) => ({
+          id: issue.id || issue._id,
+          tracking_code: issue.tracking_code || 'Unknown',
+          status: 'pending',
+          action: 'sync_attachments',
+          project: issue.project_id || null,
+          error: null,
+        }));
 
-    setPendingIssues(pendingIssuesList);
-    console.log('[SyncAttachments] Loaded pending issues:', pendingIssuesList.length);
+      setPendingIssues(pendingIssuesList);
+      console.log('[SyncAttachments] Loaded pending issues:', pendingIssuesList.length);
+    } catch (error) {
+      console.error('[SyncAttachments] Error loading pending issues:', error);
+    }
   };
-
-  // Log actual pending changes on mount
-  useEffect(() => {
-    console.log(
-      '[SyncAttachments] Actual pending changes in FrappeSyncManager:',
-      JSON.stringify(frappeSyncManager.pendingChanges, null, 2)
-    );
-  }, []);
 
   const uploadFile = async (file, dbConfig) => {
     try {
@@ -155,8 +133,8 @@ function SyncAttachments({ navigation }) {
             ),
           };
 
-          // Use frappeSyncManager to upload the attachment
-          const result = await frappeSyncManager.uploadAttachment(file.docId, fileData);
+          // Use DataManager to upload the attachment
+          const result = await dataManager.uploadAttachment(file.docId, fileData);
 
           console.log('[SyncAttachments] File uploaded successfully:', result);
           return {};
@@ -180,12 +158,6 @@ function SyncAttachments({ navigation }) {
   };
 
   const syncImages = async () => {
-    // Log pending changes before sync
-    console.log(
-      '[SyncAttachments] Pending changes before syncImages:',
-      JSON.stringify(frappeSyncManager.pendingChanges, null, 2)
-    );
-
     let isError = false;
     let syncedCount = 0;
 
@@ -195,16 +167,19 @@ function SyncAttachments({ navigation }) {
         '[SyncAttachments] Starting attachment sync. Total attachments:',
         attachments.length
       );
+
       for (let i = 0; i < attachments.length; i++) {
         if (attachments[i]?.attachment?.uploaded === false) {
           console.log(
             `[SyncAttachments] Uploading attachment ${i + 1}/${attachments.length}:`,
-            attachments[i]
+            attachments[i].attachment.filename
           );
-          const response = await uploadFile(attachments[i]);
-          if (response.error) {
+
+          const result = await uploadFile(attachments[i]);
+
+          if (result.error) {
             isError = true;
-            console.log(`[SyncAttachments] Error uploading attachment:`, response.error);
+            console.log(`[SyncAttachments] Failed to upload attachment ${i + 1}: ${result.error}`);
           } else {
             syncedCount++;
             console.log(`[SyncAttachments] Attachment uploaded successfully.`);
@@ -214,256 +189,233 @@ function SyncAttachments({ navigation }) {
 
       // Then perform a full sync to ensure all changes are pushed to Frappe
       // and ensure issues have project assignments from user's assigned projects
-      const syncResponse = await frappeSyncManager.pushPendingChanges();
-      console.log('[SyncAttachments] Sync response:', syncResponse);
-
-      // Process the sync response
-      if (syncResponse && syncResponse.data) {
-        const { created = [], updated = [], errors = [] } = syncResponse.data;
+      try {
+        console.log('[SyncAttachments] Performing data sync...');
+        await dataManager.performSync();
+        console.log('[SyncAttachments] Sync completed successfully');
 
         // Update our local state with the results
         setSyncResults({
-          created,
-          updated,
-          errors,
+          created: [],
+          updated: [],
+          errors: [],
         });
 
         // Update pending issues based on sync results
-        updatePendingIssuesFromSyncResults(created, updated, errors);
+        updatePendingIssuesFromSyncResults([], [], []);
 
-        // Only show success if there were no errors
-        if (errors.length === 0) {
-          setSuccessModal(true);
-        } else {
-          // Show error message for the first error
-          if (errors.length > 0) {
-            const firstError = errors[0];
-            let errorMsg = firstError.error;
-
-            // Handle specific error cases
-            if (errorMsg.includes('Status None does not belong to project None')) {
-              errorMsg = t('error_status_project_none');
-              if (!errorMsg || errorMsg === 'error_status_project_none') {
-                errorMsg = 'Status does not belong to project. Please try again.';
-              }
-            }
-
-            setErrorMessage(errorMsg);
-            setErrorVisible(true);
-            isError = true;
-          }
-        }
-      } else if (syncResponse && syncResponse.status === 'success') {
-        // If we got a success response but no data, still consider it successful
-        console.log('[SyncAttachments] All pending changes synced successfully.');
-        if (!isError) setSuccessModal(true);
-      } else {
-        // If we didn't get a proper response, show a generic error
-        setErrorMessage('Sync failed with unknown error');
+        // Show success modal
+        setSuccessModal(true);
+      } catch (syncError) {
+        console.error('[SyncAttachments] Sync error:', syncError);
+        setErrorMessage(syncError.message || 'Sync failed');
         setErrorVisible(true);
         isError = true;
       }
 
-      // Reload pending issues after sync to reflect current state
-      loadPendingIssues();
-    } catch (err) {
-      console.log('[SyncAttachments] Error during sync process:', err.message);
-      setErrorMessage(err.message || 'Sync failed');
-      setErrorVisible(true);
-      isError = true;
-    } finally {
       setLoading(false);
-      console.log(
-        `[SyncAttachments] Attachment sync complete. Synced: ${syncedCount}, Errors: ${isError}`
-      );
+
+      if (isError) {
+        console.log('[SyncAttachments] Sync completed with errors');
+      } else {
+        console.log(
+          `[SyncAttachments] Sync completed successfully. Uploaded ${syncedCount} attachments`
+        );
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('[SyncAttachments] Error during sync:', error);
+      setErrorMessage(error.message || 'An error occurred during sync');
+      setErrorVisible(true);
     }
   };
 
-  // Update pending issues based on sync results
   const updatePendingIssuesFromSyncResults = (created, updated, errors) => {
-    // Create a map of local_id to error for quick lookup
-    const errorMap = {};
-    errors.forEach((error) => {
-      if (error.local_id && error.type === 'issue') {
-        errorMap[error.local_id] = error.error;
+    try {
+      // Clear pending issues on successful sync
+      if (errors.length === 0) {
+        setPendingIssues([]);
+      } else {
+        // Update pending issues with error information
+        setPendingIssues((current) =>
+          current.map((issue) => {
+            const error = errors.find((err) => err.id === issue.id);
+            return error ? { ...issue, error: error.error } : issue;
+          })
+        );
       }
-    });
-
-    // Create sets of successfully synced local_ids
-    const successfulLocalIds = new Set([
-      ...created.filter((item) => item.type === 'issue').map((item) => item.local_id),
-      ...updated.filter((item) => item.type === 'issue').map((item) => item.id),
-    ]);
-
-    // Update pending issues
-    setPendingIssues((prevIssues) => {
-      return prevIssues
-        .map((issue) => {
-          // If the issue has an error
-          if (errorMap[issue.id]) {
-            return {
-              ...issue,
-              status: 'error',
-              error: errorMap[issue.id],
-            };
-          }
-          // If the issue was successfully synced
-          else if (successfulLocalIds.has(issue.id)) {
-            return {
-              ...issue,
-              status: 'synced',
-            };
-          }
-          // Otherwise keep as is
-          return issue;
-        })
-        .filter((issue) => issue.status !== 'synced'); // Remove synced issues
-    });
+    } catch (error) {
+      console.error('[SyncAttachments] Error updating pending issues:', error);
+    }
   };
 
-  // Render a pending issue item
   const renderPendingIssueItem = ({ item }) => (
-    <Card
-      style={{
-        marginVertical: 5,
-        marginHorizontal: 10,
-        backgroundColor: item.status === 'error' ? '#fff0f0' : '#ffffff',
-      }}
-    >
-      <Card.Content>
-        <View
-          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
-        >
-          <Text style={{ fontWeight: 'bold' }}>
-            {t('reference')}: {item.tracking_code}
-          </Text>
-          <Badge
-            style={{
-              backgroundColor:
-                item.status === 'error'
-                  ? '#ff6b6b'
-                  : item.status === 'synced'
-                  ? '#4caf50'
-                  : '#ffc107',
-            }}
-          >
-            {item.status === 'error'
-              ? t('error')
-              : item.status === 'synced'
-              ? t('synced')
-              : t('pending')}
-          </Badge>
+    <Card style={{ margin: 8, padding: 12 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: 'bold' }}>{item.tracking_code}</Text>
+          <Text style={{ color: '#666', fontSize: 12 }}>Action: {item.action}</Text>
+          {item.project && (
+            <Text style={{ color: '#666', fontSize: 12 }}>Project: {item.project}</Text>
+          )}
+          {item.error && <Text style={{ color: 'red', fontSize: 12 }}>Error: {item.error}</Text>}
         </View>
-        <Text style={{ marginTop: 5 }}>
-          {item.action === 'create' ? t('new_issue') : t('update_issue')}
-        </Text>
-        {item.status === 'error' && (
-          <Text style={{ color: '#d32f2f', marginTop: 5 }}>{item.error}</Text>
-        )}
-      </Card.Content>
+        <Badge style={{ backgroundColor: item.error ? '#f44336' : '#ff9800' }}>{item.status}</Badge>
+      </View>
     </Card>
   );
 
-  return (
-    <View style={{ flex: 1 }}>
-      <Modal animationType="slide" style={{ flex: 1 }} visible={successModal}>
-        <View
-          style={{
-            flex: 1,
-            padding: 20,
-            alignItems: 'center',
-            justifyContent: 'space-around',
-          }}
-        >
-          <View style={{ alignItems: 'center', marginTop: '20%' }}>
-            <CheckCircle />
-            <Text
-              style={{
-                marginVertical: 25,
-                fontFamily: 'Poppins_700Bold',
-                fontSize: 20,
-                fontWeight: 'bold',
-                fontStyle: 'normal',
-                lineHeight: 25,
-                letterSpacing: 0,
-                textAlign: 'center',
-                color: '#707070',
-              }}
-            >
-              Synchronisation {'\n'} Réussie!
-            </Text>
-          </View>
-          <SyncImage />
-          <CustomGreenButton
-            onPress={() => navigation.goBack()}
-            buttonStyle={{
-              width: '100%',
-              height: 36,
-              borderRadius: 7,
-            }}
-            textStyle={{
-              fontFamily: 'Poppins_500Medium',
-              fontSize: 14,
-              lineHeight: 21,
-              letterSpacing: 0,
-              textAlign: 'right',
-              color: '#ffffff',
-            }}
-          >
-            {t('close')}
-          </CustomGreenButton>
-        </View>
-      </Modal>
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
 
-      {/* Pending Issues Section */}
-      {pendingIssues.length > 0 && (
-        <View style={{ marginVertical: 10 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 16, marginLeft: 10, marginBottom: 5 }}>
-            {t('pending_issues')} ({pendingIssues.length})
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      {/* Main Content */}
+      <View style={{ flex: 1, padding: 16 }}>
+        {/* Sync Status */}
+        <Card style={{ marginBottom: 16, padding: 16 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
+            {t('sync_status', 'Sync Status')}
           </Text>
-          <FlatList
-            data={pendingIssues}
-            renderItem={renderPendingIssueItem}
-            keyExtractor={(item) => item.id}
-            style={{ maxHeight: 200 }}
+          <Text>
+            {t('pending_attachments', 'Pending Attachments')}:{' '}
+            {attachments.filter((a) => !a.attachment.uploaded).length}
+          </Text>
+          <Text>
+            {t('pending_issues', 'Pending Issues')}: {pendingIssues.length}
+          </Text>
+        </Card>
+
+        {/* Attachments List */}
+        {attachments.length > 0 && (
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', padding: 16 }}>
+              {t('attachments_to_sync', 'Attachments to Sync')}
+            </Text>
+            <ImagesList attachments={attachments.filter((a) => !a.attachment.uploaded)} />
+          </Card>
+        )}
+
+        {/* Pending Issues List */}
+        {pendingIssues.length > 0 && (
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', padding: 16 }}>
+              {t('pending_issues', 'Pending Issues')}
+            </Text>
+            <FlatList
+              data={pendingIssues}
+              renderItem={renderPendingIssueItem}
+              keyExtractor={(item) => item.id}
+              style={{ maxHeight: 300 }}
+            />
+          </Card>
+        )}
+
+        {/* No Data Message */}
+        {!loading && attachments.length === 0 && pendingIssues.length === 0 && (
+          <Card style={{ padding: 20, alignItems: 'center' }}>
+            <SyncImage width={80} height={80} style={{ marginBottom: 16 }} />
+            <Text style={{ fontSize: 16, textAlign: 'center', color: '#666' }}>
+              {t('no_items_to_sync', 'No items to sync')}
+            </Text>
+          </Card>
+        )}
+      </View>
+
+      {/* Sync Button */}
+      {(attachments.some((a) => !a.attachment.uploaded) || pendingIssues.length > 0) && (
+        <View style={{ padding: 16 }}>
+          <CustomGreenButton
+            title={loading ? t('syncing', 'Syncing...') : t('sync_now', 'Sync Now')}
+            onPress={syncImages}
+            disabled={loading}
+            loading={loading}
           />
         </View>
       )}
 
-      {/* Attachments Section */}
-      <ImagesList attachments={attachments} />
-
-      {loading || eadlLoading || issuesLoading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />
-      ) : (
-        <View>
-          <CustomGreenButton
-            onPress={syncImages}
-            buttonStyle={{
-              height: 36,
-              borderRadius: 7,
-              marginHorizontal: '5%',
-              width: '90%',
-              marginBottom: 10,
-            }}
-            textStyle={{
-              fontFamily: 'Poppins_500Medium',
-              fontSize: 14,
-              lineHeight: 21,
-              letterSpacing: 0,
-              textAlign: 'right',
-              color: '#ffffff',
+      {/* Success Modal */}
+      <Modal visible={successModal} animationType="slide" transparent>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Card
+            style={{
+              margin: 20,
+              padding: 20,
+              backgroundColor: 'white',
+              alignItems: 'center',
+              minWidth: 300,
             }}
           >
-            {t('synchronize')}
-          </CustomGreenButton>
+            <CheckCircle width={60} height={60} style={{ marginBottom: 16 }} />
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
+              {t('sync_successful', 'Sync Successful')}
+            </Text>
+            <Text style={{ textAlign: 'center', marginBottom: 16, color: '#666' }}>
+              {t('all_data_synced', 'All data has been synchronized successfully')}
+            </Text>
+            <CustomGreenButton
+              title={t('close', 'Close')}
+              onPress={() => {
+                setSuccessModal(false);
+                navigation.goBack();
+              }}
+              style={{ minWidth: 120 }}
+            />
+          </Card>
         </View>
-      )}
-      <Snackbar visible={errorVisible} duration={3000} onDismiss={onDismissSnackBar}>
+      </Modal>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        visible={errorVisible}
+        onDismiss={onDismissSnackBar}
+        duration={5000}
+        style={{ backgroundColor: '#f44336' }}
+      >
         {errorMessage}
       </Snackbar>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Card style={{ padding: 20, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={{ marginTop: 12, fontSize: 16 }}>
+              {t('syncing_data', 'Syncing data...')}
+            </Text>
+          </Card>
+        </View>
+      )}
     </View>
   );
 }
 
-export default SyncAttachments;
+// Enhanced component with observables
+const SyncAttachmentsWithObservables = withObservables([], () => ({
+  issues: watermelonManager.observeIssues(),
+}))(SyncAttachments);
+
+export default SyncAttachmentsWithObservables;

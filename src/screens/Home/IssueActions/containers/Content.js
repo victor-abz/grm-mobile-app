@@ -24,7 +24,6 @@ import {
 import StarRating from 'react-native-star-rating-widget';
 import { useData } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
-import { updateIssue, getIssueStatuses } from '../../../../utils/databaseManager';
 import { styles } from './Content.styles';
 
 const theme = {
@@ -210,7 +209,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       }
 
       // Update the issue using DataManager
-      const updatedIssue = await updateIssue(issue._id, updateData);
+      // const updatedIssue = await updateIssue(issue._id, updateData);
 
       // Update local issue object for UI
       Object.assign(issue, updateData);

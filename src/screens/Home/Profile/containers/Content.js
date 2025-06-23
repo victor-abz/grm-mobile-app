@@ -8,7 +8,6 @@ import { useDispatch } from 'react-redux';
 import { logout } from '../../../../store/ducks/authentication.duck';
 import LanguageSelector from '../../../../translations/TranslationComponent';
 import { colors } from '../../../../utils/colors';
-import { ResourceUrl } from '../../../../utils/databaseManager';
 import ProfileItem from '../components/ProfileItem';
 import SmallCard from '../components/SmallCard';
 import styles from './Content.style';
@@ -25,11 +24,7 @@ function Content({ issues, eadl, department, statuses }) {
 
   useEffect(() => {
     if (eadl) {
-      if (eadl.representative.photo && eadl.representative.photo.includes('https://')) {
-        setPhoto(eadl.representative.photo);
-      } else {
-        setPhoto(`${ResourceUrl}${eadl.representative?.photo}`);
-      }
+      // Set issue for user
     }
   }, [eadl]);
 

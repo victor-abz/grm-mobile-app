@@ -65,7 +65,7 @@ const customHeaderRightIcon = ({ navigation }) => ({
           type="ionicon"
           color={colors.primary}
           size={35}
-          name={Platform.OS === 'ios' ? 'ios-search' : 'md-search'}
+          name={Platform.OS === 'ios' ? 'search' : 'search'}
         />
       </Pressable>
     </View>
@@ -239,9 +239,12 @@ function IssueDetailTabsStack(props) {
 function HomeRouter() {
   return (
     <Tab.Navigator
-      tabBarOptions={{
-        activeTintColor: colors.primary,
-        inactiveTintColor: 'gray',
+      screenOptions={{
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: 'gray',
+        tabBarStyle: {
+          display: 'flex',
+        },
       }}
     >
       <Tab.Screen

@@ -1,9 +1,9 @@
-import { StyleSheet, Platform, Dimensions } from "react-native";
-import { getStatusBarHeight } from "react-native-iphone-x-helper";
+import { StyleSheet, Platform, Dimensions } from 'react-native';
+import { getStatusBarHeight } from 'react-native-iphone-screen-helper';
 
-export const screenHeight = Dimensions.get("window").height;
+export const screenHeight = Dimensions.get('window').height;
 export const shadow = {
-  shadowColor: "#000",
+  shadowColor: '#000',
   shadowOffset: {
     width: 0,
     height: 2,
@@ -15,7 +15,7 @@ export const shadow = {
 };
 
 const shadowless = {
-  shadowColor: "transparent",
+  shadowColor: 'transparent',
   shadowOffset: {
     width: 0,
     height: 0,
@@ -25,12 +25,12 @@ const shadowless = {
   elevation: 0,
 };
 const headerTitle = {
-  color: "rgba(255,255,255,0.87)",
+  color: 'rgba(255,255,255,0.87)',
   fontSize: 12,
   letterSpacing: 2,
   lineHeight: 16,
-  textAlign: "center",
-  textTransform: "uppercase",
+  textAlign: 'center',
+  textTransform: 'uppercase',
 };
 
 export default StyleSheet.create({
@@ -41,22 +41,22 @@ export default StyleSheet.create({
   headerTitle,
   blueHeader: {
     ...shadowless,
-    backgroundColor: "#142695",
+    backgroundColor: '#142695',
   },
   tabHeader: {
     ...shadowless,
-    backgroundColor: "#36429f",
-    borderBottomColor: "rgba(255,255,255,.1)",
+    backgroundColor: '#36429f',
+    borderBottomColor: 'rgba(255,255,255,.1)',
     borderBottomWidth: 1,
     height: 60 + getStatusBarHeight(true),
   },
   menuSectionHeaderStyle: {
-    backgroundColor: "#142695",
-    shadowColor: "#142695",
+    backgroundColor: '#142695',
+    shadowColor: '#142695',
     elevation: 0,
   },
   headerTitleWithRight: {
     ...headerTitle,
-    marginRight: Platform.OS === "android" ? 50 : undefined,
+    marginRight: Platform.OS === 'android' ? 50 : undefined,
   },
 });

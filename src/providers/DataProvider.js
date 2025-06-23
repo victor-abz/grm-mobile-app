@@ -3,6 +3,7 @@ import lookupDataManager from '../services/LookupDataManager';
 import nuclearDataManager from '../services/NuclearDataManager';
 import userRegionService from '../services/UserRegionService';
 import { AuthContext } from './AuthProvider';
+import { FRAPPE_BASE_URL } from '../utils/constants';
 
 const DataContext = createContext({});
 
@@ -57,12 +58,18 @@ function DataProvider({ children }) {
     try {
       console.log('🔄 Initializing data services...');
 
+      // Create enhanced credentials with URL for DataManager
+      const enhancedCredentials = {
+        ...credentials,
+        url: FRAPPE_BASE_URL,
+      };
+
       // Initialize LookupDataManager
-      await lookupDataManager.initialize(credentials);
+      await lookupDataManager.initialize(enhancedCredentials);
 
       // Initialize UserRegionService - simplified, no project needed
       // Backend automatically determines user's projects from their assignments
-      const regionResult = await userRegionService.initialize(credentials);
+      const regionResult = await userRegionService.initialize(enhancedCredentials);
 
       if (!regionResult.success) {
         if (regionResult.error === 'NO_REGIONS_ASSIGNED') {
@@ -92,9 +99,9 @@ function DataProvider({ children }) {
       // Load lookup data
       await loadLookupData();
 
-      // Import DataManager dynamically
+      // Import DataManager dynamically and initialize with enhanced credentials
       const { default: DataManagerModule } = await import('../services/DataManager');
-      await DataManagerModule.initialize(credentials);
+      await DataManagerModule.initialize(enhancedCredentials);
       setDataManager(DataManagerModule);
 
       setIsDataInitialized(true);

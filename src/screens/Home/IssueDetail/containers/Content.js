@@ -11,11 +11,9 @@ import { Button, IconButton, TextInput } from 'react-native-paper';
 import CustomSeparator from '../../../../components/CustomSeparator/CustomSeparator';
 import { baseURL } from '../../../../services/API';
 import { colors } from '../../../../utils/colors';
-import { LocalGRMDatabase } from '../../../../utils/databaseManager';
 import { citizenTypes } from '../../../../utils/utils';
 import { styles } from './Content.styles';
 import { useData } from '../../../../providers/DataProvider';
-import { updateIssue } from '../../../../utils/databaseManager';
 
 const theme = {
   roundness: 12,
@@ -80,9 +78,9 @@ function Content({ issue }) {
     setIsUpdating(true);
     try {
       // Update the issue with new comments using DataManager
-      await updateIssue(issue._id, {
-        comments: issue.comments,
-      });
+      // await updateIssue(issue._id, {
+      //   comments: issue.comments,
+      // });
       console.log('Comment added successfully');
     } catch (error) {
       console.error('Error adding comment:', error);

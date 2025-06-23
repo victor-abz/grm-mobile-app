@@ -1,79 +1,60 @@
-import React, { useMemo, useCallback } from 'react';
-import { SafeAreaView, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useView } from 'use-pouchdb';
-import { colors } from '../../../utils/colors';
-import { styles } from './Statistics.style';
-import Content from './containers';
-
-const ITEMS_PER_PAGE = 20; // Adjust as needed
+import dataManager from '../../../services/DataManager';
 
 function Statistics() {
-  const customStyles = styles();
+  const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState(null);
+
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  const { rows: allIssueTypes, loading: allIssueTypesLoading } = useView('issues/all_issue_types', {
-    db: 'LocalGRMDatabase',
-    include_docs: true,
-  });
+  useEffect(() => {
+    const loadStatistics = async () => {
+      try {
+        setLoading(true);
 
-  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
-    key: username,
-    include_docs: true,
-    db: 'LocalCommunesDatabase',
-  });
+        // Get user context to find user ID
+        const userContext = dataManager.getUserContext();
+        const userId = userContext?.user_id || username;
 
-  const eadl = useMemo(() => representative.map((d) => d.doc), [representative]);
-
-  const { rows, loading: issuesLoading } = useView('issues/by_type_and_user', {
-    startkey: ['issue', eadl?.[0]?._id],
-    endkey: ['issue', eadl?.[0]?._id, {}],
-    include_docs: true,
-    // limit: ITEMS_PER_PAGE,
-    db: 'LocalGRMDatabase',
-  });
-
-  const issues = useMemo(() => rows.map((r) => r.doc), [rows]);
-
-  const groupedIssueTypes = useMemo(() => {
-    const grouped = {};
-    allIssueTypes.forEach((row) => {
-      const [type] = row.key;
-      if (!grouped[type]) {
-        grouped[type] = [];
+        // Load statistics from DataManager
+        const stats = await dataManager.getStatistics(userId);
+        setStatistics(stats);
+      } catch (error) {
+        console.error('Error loading Statistics data:', error);
+        // Set empty stats to prevent crashes
+        setStatistics({
+          total_issues: 0,
+          open_issues: 0,
+          resolved_issues: 0,
+          pending_issues: 0,
+          assigned_issues: 0,
+          reported_issues: 0,
+        });
+      } finally {
+        setLoading(false);
       }
-      grouped[type].push(row.doc);
-    });
-    return grouped;
-  }, [allIssueTypes]);
+    };
 
-  const isLoading = useCallback(() => {
-    return !issues || !eadl || issuesLoading || eadlLoading || allIssueTypesLoading;
-  }, [issues, eadl, issuesLoading, eadlLoading, allIssueTypesLoading]);
+    loadStatistics();
+  }, [username]);
 
-  if (isLoading()) {
-    return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#24c38b" />
+      </View>
+    );
   }
 
   return (
-    <SafeAreaView style={customStyles.container}>
-      <ScrollView>
-        <Content
-          issues={issues}
-          eadl={eadl?.[0]}
-          statuses={groupedIssueTypes.issue_status || []}
-          ageGroup={groupedIssueTypes.issue_age_group || []}
-          citizenGroup1={groupedIssueTypes.issue_citizen_group_1 || []}
-          citizenGroup2={groupedIssueTypes.issue_citizen_group_2 || []}
-          issueType={groupedIssueTypes.issue_type || []}
-          issueCategory={groupedIssueTypes.issue_category || []}
-          issueComponent={groupedIssueTypes.issue_component || []}
-          issueSubComponent={groupedIssueTypes.issue_sub_component || []}
-        />
-      </ScrollView>
-    </SafeAreaView>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      {/* TODO: Implement Statistics UI */}
+      <ActivityIndicator size="small" />
+    </View>
   );
 }
 
-export default React.memo(Statistics);
+export default Statistics;

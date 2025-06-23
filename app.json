@@ -13,9 +13,7 @@
       "enabled": false,
       "url": "https://u.expo.dev/13cc8fd9-97c4-46f0-9f52-d0b0043066cd"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -45,7 +43,35 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-location", "expo-image-picker", "expo-av", "expo-updates", "./app.plugin.js"],
+    "plugins": [
+      "expo-location",
+      "expo-image-picker",
+      "expo-av",
+      "expo-updates",
+      "./app.plugin.js",
+      [
+        "@morrowdigital/watermelondb-expo-plugin",
+        {
+          "disableJsi": true
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.10",
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "packagingOptions": {
+              "pickFirst": ["**/libc++_shared.so"]
+            }
+          }
+        }
+      ],
+      "expo-font",
+      "expo-localization",
+      "expo-secure-store"
+    ],
     "extra": {
       "eas": {
         "projectId": "13cc8fd9-97c4-46f0-9f52-d0b0043066cd"
@@ -53,6 +79,7 @@
     },
     "runtimeVersion": {
       "policy": "sdkVersion"
-    }
+    },
+    "sdkVersion": "51.0.0"
   }
 }

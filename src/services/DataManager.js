@@ -1,6 +1,15 @@
 import NetInfo from '@react-native-community/netinfo';
-import { LocalDatabase, LocalGRMDatabase } from '../utils/databaseManager';
-import frappeSyncManager from './FrappeSyncManager';
+import { FrappeApp } from 'frappe-js-sdk';
+import watermelonManager from '../database/watermelonManager';
+
+const DEFAULT_CONFIG = {
+  url: '',
+  tokenParams: {
+    useToken: true,
+    token: () => 'token',
+    type: 'Bearer',
+  },
+};
 
 /**
  * Helper function to extract data from Frappe API response format
@@ -60,9 +69,8 @@ const LookupAPI = {
   /**
    * Generic API call with error handling
    */
-  async callAPI(endpoint, params = {}) {
+  async callAPI(call, endpoint, params = {}) {
     try {
-      const call = frappeSyncManager.getCall();
       const rawResponse = await call.get(endpoint, params);
       return extractApiResponse(rawResponse);
     } catch (error) {
@@ -74,8 +82,8 @@ const LookupAPI = {
   /**
    * Fetch and transform categories
    */
-  async getCategories(projectId = null) {
-    const response = await this.callAPI('egrm.api.lookup.categories', {
+  async getCategories(call, projectId = null) {
+    const response = await this.callAPI(call, 'egrm.api.lookup.categories', {
       project_id: projectId,
     });
 
@@ -102,8 +110,8 @@ const LookupAPI = {
   /**
    * Fetch and transform issue types
    */
-  async getTypes(projectId = null) {
-    const response = await this.callAPI('egrm.api.lookup.types', { project_id: projectId });
+  async getTypes(call, projectId = null) {
+    const response = await this.callAPI(call, 'egrm.api.lookup.types', { project_id: projectId });
 
     if (response.status === 'success') {
       return response.data.map((type) => ({
@@ -124,8 +132,8 @@ const LookupAPI = {
   /**
    * Fetch and transform statuses
    */
-  async getStatuses() {
-    const response = await this.callAPI('egrm.api.lookup.statuses');
+  async getStatuses(call) {
+    const response = await this.callAPI(call, 'egrm.api.lookup.statuses');
 
     if (response.status === 'success') {
       return response.data.map((status) => ({
@@ -150,8 +158,8 @@ const LookupAPI = {
   /**
    * Fetch and transform age groups
    */
-  async getAgeGroups() {
-    const response = await this.callAPI('egrm.api.lookup.age_groups');
+  async getAgeGroups(call) {
+    const response = await this.callAPI(call, 'egrm.api.lookup.age_groups');
 
     if (response.status === 'success') {
       return response.data.map((ageGroup) => ({
@@ -172,8 +180,8 @@ const LookupAPI = {
   /**
    * Fetch and transform citizen groups
    */
-  async getCitizenGroups() {
-    const response = await this.callAPI('egrm.api.lookup.citizen_groups');
+  async getCitizenGroups(call) {
+    const response = await this.callAPI(call, 'egrm.api.lookup.citizen_groups');
 
     if (response.status === 'success') {
       let allCitizenGroups = [];
@@ -204,8 +212,8 @@ const LookupAPI = {
   /**
    * Fetch and transform departments
    */
-  async getDepartments() {
-    const response = await this.callAPI('egrm.api.lookup.departments');
+  async getDepartments(call) {
+    const response = await this.callAPI(call, 'egrm.api.lookup.departments');
 
     if (response.status === 'success') {
       return response.data.map((department) => ({
@@ -215,8 +223,8 @@ const LookupAPI = {
         name: department.department_name,
         label: department.department_name,
         value: department.name,
-        description: department.description || department.department_name,
-        active: department.active !== undefined ? department.active : 1,
+        description: department.description,
+        active: department.active,
       }));
     }
     return [];
@@ -225,21 +233,21 @@ const LookupAPI = {
   /**
    * Fetch and transform projects
    */
-  async getProjects() {
-    const response = await this.callAPI('egrm.api.lookup.projects');
+  async getProjects(call) {
+    const response = await this.callAPI(call, 'egrm.api.lookup.projects');
 
     if (response.status === 'success') {
       return response.data.map((project) => ({
         _id: project.name,
         type: 'project',
         id: project.name,
-        name: project.project_name,
-        label: project.project_name,
+        name: project.title,
+        label: project.title,
         value: project.name,
-        description: project.description || project.project_name,
+        description: project.description,
         start_date: project.start_date,
         end_date: project.end_date,
-        active: project.active !== undefined ? project.active : project.is_active || 1,
+        active: project.is_active,
       }));
     }
     return [];
@@ -248,13 +256,8 @@ const LookupAPI = {
   /**
    * Fetch and transform regions
    */
-  async getRegions(filters = {}) {
-    const params = {};
-    if (filters.project) params.project_id = filters.project;
-    if (filters.parent_id) params.parent_id = filters.parent_id;
-    if (filters.administrative_level) params.administrative_level = filters.administrative_level;
-
-    const response = await this.callAPI('egrm.api.lookup.regions', params);
+  async getRegions(call, filters = {}) {
+    const response = await this.callAPI(call, 'egrm.api.lookup.regions', filters);
 
     if (response.status === 'success') {
       return response.data.map((region) => ({
@@ -273,154 +276,148 @@ const LookupAPI = {
   },
 
   /**
-   * Fetch user context
+   * Get user context from backend
    */
-  async getUserContext() {
-    const response = await this.callAPI('egrm.api.lookup.get_user_context');
+  async getUserContext(call) {
+    const response = await this.callAPI(call, 'egrm.api.auth.get_user_context');
+
     if (response.status === 'success') {
-      return response.data;
+      return response.data || {};
     }
-    throw new Error(response.message || 'Failed to get user context');
+    return {};
   },
-};
 
-/**
- * Database utility functions
- */
-const DatabaseUtils = {
   /**
-   * Upsert document to local database with error handling
+   * Store lookup data in WatermelonDB
    */
-  async upsertDocument(database, doc) {
+  async storeLookupData(dataType, data) {
     try {
-      const existing = await database.get(doc._id);
-      doc._rev = existing._rev;
-    } catch (error) {
-      // Document doesn't exist, that's fine
-    }
-
-    try {
-      await database.put(doc);
-      return true;
-    } catch (error) {
-      if (this.isStorageError(error)) {
-        console.warn('⚠️ Database storage full, attempting cleanup...');
-        await this.cleanupDatabase(database);
-        try {
-          await database.put(doc);
-          return true;
-        } catch (retryError) {
-          console.error('❌ Failed to store document even after cleanup:', retryError);
-          return false;
-        }
+      const tableName = this.getTableNameForDataType(dataType);
+      if (tableName) {
+        await watermelonManager.bulkUpsertLookupData(tableName, data);
+        console.log(`✅ Stored ${data.length} ${dataType} records in WatermelonDB`);
       }
-      throw error;
+    } catch (error) {
+      console.error(`❌ Error storing ${dataType} data:`, error);
     }
   },
 
   /**
-   * Check if error is storage-related
+   * Get table name for data type
    */
-  isStorageError(error) {
-    return (
-      error.status === 413 || error.message?.includes('SQLITE_FULL') || error.name === 'unknown'
-    );
-  },
-
-  /**
-   * Clean up database to free storage space
-   */
-  async cleanupDatabase(database) {
-    try {
-      console.log('🧹 Starting database cleanup...');
-      const allDocs = await database.allDocs({ include_docs: true });
-
-      if (allDocs.rows.length === 0) {
-        console.log('📱 No documents to clean up');
-        return;
-      }
-
-      const sortedDocs = allDocs.rows
-        .map((row) => row.doc)
-        .sort((a, b) => {
-          const dateA = new Date(a.modified_date || a.creation || a._rev || 0);
-          const dateB = new Date(b.modified_date || b.creation || b._rev || 0);
-          return dateB - dateA;
-        });
-
-      // Keep only the most recent 80% of documents
-      const keepCount = Math.floor(sortedDocs.length * 0.8);
-      const docsToDelete = sortedDocs.slice(keepCount);
-
-      console.log(`🗑️ Cleaning up ${docsToDelete.length} out of ${sortedDocs.length} documents`);
-
-      // Delete old documents in batches
-      const batchSize = 50;
-      for (let i = 0; i < docsToDelete.length; i += batchSize) {
-        const batch = docsToDelete.slice(i, i + batchSize);
-        await Promise.allSettled(batch.map((doc) => database.remove(doc)));
-      }
-
-      console.log('✅ Database cleanup completed');
-    } catch (error) {
-      console.error('❌ Error during database cleanup:', error);
-    }
-  },
-
-  /**
-   * Query documents with error handling
-   */
-  async findDocuments(database, selector, sortField = null) {
-    try {
-      const result = await database.find({ selector });
-
-      if (sortField) {
-        return result.docs.sort((a, b) => {
-          const valueA = a[sortField] || '';
-          const valueB = b[sortField] || '';
-          return valueA.localeCompare(valueB);
-        });
-      }
-
-      return result.docs;
-    } catch (error) {
-      console.error(`❌ Error querying database:`, error);
-      return [];
-    }
+  getTableNameForDataType(dataType) {
+    const tableMap = {
+      categories: 'grm_issue_categories',
+      types: 'grm_issue_types',
+      statuses: 'grm_issue_statuses',
+      age_groups: 'grm_age_groups',
+      citizen_groups: 'grm_citizen_groups',
+      departments: 'grm_departments',
+      projects: 'grm_projects',
+      regions: 'grm_administrative_regions',
+    };
+    return tableMap[dataType];
   },
 };
 
 class DataManager {
   constructor() {
-    this.isInitialized = false;
+    this.call = null;
+    this.config = DEFAULT_CONFIG;
     this.isOnline = true;
     this.credentials = null;
     this.userContext = null;
+    this.lastSyncTimestamp = null;
+    this.syncListeners = [];
+    this.syncStatus = {
+      isActive: false,
+      phase: 'idle',
+      progress: 0,
+      totalItems: 0,
+      currentItem: 0,
+      error: null,
+      lastSuccessfulSync: null,
+    };
     this.setupNetworkListener();
   }
 
   /**
-   * Initialize the data manager with user credentials
+   * Initialize the data manager with credentials
    */
   async initialize(credentials = null) {
-    if (this.isInitialized && !credentials) return;
-
     try {
+      console.log("<<<<<<<", this.credentials )
       if (credentials) {
         this.credentials = credentials;
+        await this.initializeFrappeConnection(credentials);
       }
 
-      if (this.credentials) {
-        await frappeSyncManager.initialize(this.credentials);
-        await this.initializeUserContext();
-      }
+      // Initialize user context first
+      await this.initializeUserContext();
 
+      // Perform initial sync if needed
       await this.performInitialSyncIfNeeded();
 
-      this.isInitialized = true;
       console.log('✅ DataManager initialized successfully');
+      return true;
     } catch (error) {
       console.error('❌ Error initializing DataManager:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize Frappe connection
+   */
+  async initializeFrappeConnection(credentials) {
+    try {
+      if (!credentials) {
+        throw new Error('Credentials are required for initialization');
+      }
+
+      if (!credentials.url) {
+        throw new Error('URL is required in credentials');
+      }
+
+      if (!credentials.username || !credentials.password) {
+        throw new Error('Username and password are required');
+      }
+
+      this.config.url = credentials.url;
+
+      // Create Frappe app instance
+      const frappe = new FrappeApp(this.config.url);
+
+      console.log('🔄 Authenticating with Frappe...');
+
+      // Authenticate with better error handling
+      const authResult = await frappe
+        .auth()
+        .loginWithUsernamePassword(credentials.username, credentials.password);
+
+      // Check if authentication was successful
+      if (!authResult || authResult.error) {
+        throw new Error(`Authentication failed: ${authResult?.error || 'Unknown error'}`);
+      }
+
+      // Store the call instance
+      this.call = frappe.call();
+
+      // Test the connection with a simple API call
+      try {
+        console.log('🔄 Testing API connection...');
+        await this.call.get('frappe.auth.get_logged_user');
+        console.log('✅ API connection test successful');
+      } catch (testError) {
+        console.warn('⚠️ API connection test failed, but proceeding:', testError.message);
+        // Don't throw here, as the auth might still work for other calls
+      }
+
+      console.log('✅ Frappe connection initialized successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Error initializing Frappe connection:', error);
+      this.call = null; // Reset call instance on failure
       throw error;
     }
   }
@@ -429,22 +426,29 @@ class DataManager {
    * Perform initial sync if needed
    */
   async performInitialSyncIfNeeded() {
-    const hasUserData = await frappeSyncManager.hasUserDataBeenSynced();
-    if (!hasUserData && this.isOnline && this.credentials) {
-      console.log('🔄 Performing initial data sync...');
-      await frappeSyncManager.getInitialUserData();
+    try {
+      if (!this.call || !this.isOnline) {
+        console.log('⚠️ Skipping initial sync - offline or no connection');
+        return;
+      }
+
+      const hasUserData = await this.hasUserDataBeenSynced();
+      if (!hasUserData) {
+        console.log('🔄 Performing initial data sync...');
+        await this.getInitialUserData();
+      }
+    } catch (error) {
+      console.warn('⚠️ Initial sync failed during initialization:', error.message);
     }
   }
 
   /**
-   * Set credentials for API calls
+   * Set credentials (wrapper for initialize)
    */
   async setCredentials(credentials) {
     this.credentials = credentials;
-    await frappeSyncManager.setCredentials(credentials);
-
-    if (credentials && this.isOnline) {
-      await this.performInitialSyncIfNeeded();
+    if (credentials) {
+      await this.initializeFrappeConnection(credentials);
     }
   }
 
@@ -455,142 +459,209 @@ class DataManager {
     NetInfo.addEventListener((state) => {
       const wasOffline = !this.isOnline;
       this.isOnline = state.isConnected;
-      frappeSyncManager.setOnlineStatus(this.isOnline);
 
-      console.log('🌐 Network status changed:', this.isOnline ? 'online' : 'offline');
+      if (wasOffline && this.isOnline) {
+        console.log('🌐 Network status changed: online');
+        // Perform background sync when coming back online
+        this.performBackgroundSync();
+      } else {
+        console.log(`🌐 Network status changed: ${this.isOnline ? 'online' : 'offline'}`);
+      }
     });
   }
 
   /**
-   * Issue Management Methods
+   * Get issues with enhanced filtering and caching
    */
   async getIssues(filters = {}) {
     try {
-      // Try to sync first if online
-      const userContext = this.getUserContext();
-      if (this.isOnline && this.credentials) {
-        await frappeSyncManager.performSync();
-        const rawResponse = await call.get('egrm.api.issue.get_latest_issues', filterParams);
-        const response = extractApiResponse(rawResponse);
+      // Always try WatermelonDB first for reactive data
+      console.log('🔍 [WatermelonDB] Getting issues from local database...');
+      let localIssues = await watermelonManager.getIssues(filters);
 
-        for (const issue of response) {
-            try {
-              let existingDoc = null;
-              try {
-                existingDoc = await LocalGRMDatabase.get(issue.name);
-              } catch (error) {
-                // Document doesn't exist, that's fine
-              }
-
-              const docToStore = {
-                ...issue,
-                _rev: existingDoc?._rev,
-                type: 'issue',
-                serverSynced: true,
-                lastSyncedAt: new Date().toISOString(),
-              };
-
-              await LocalGRMDatabase.put(docToStore);
-            } catch (error) {
-              if (error.status !== 409) {
-                console.error('❌ Error storing issue:', error);
-              }
-            }
-          }
-      }
-
-      const selector = { type: 'issue' };
-
-      // Apply filters
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
-          switch (key) {
-            case 'status':
-              selector['status.id'] = value;
-              break;
-            case 'assignee':
-              selector['assignee.id'] = value;
-              break;
-            case 'reporter':
-              selector['reporter.id'] = value;
-              break;
-            case 'category':
-              selector['category.id'] = value;
-              break;
-            case 'project':
-              selector['project'] = value;
-              break;
-            default:
-              selector[key] = value;
+      // Apply additional filtering based on user context if needed
+      if (filters.userContextFilter !== false) {
+        const userContext = this.getUserContext();
+        if (userContext && userContext.accessible_projects) {
+          const accessibleProjectIds = userContext.accessible_projects.map((p) => p.id);
+          if (accessibleProjectIds.length > 0 && !filters.project_id) {
+            // If no specific project filter and user has accessible projects, filter to first accessible project
+            localIssues = localIssues.filter((issue) =>
+              accessibleProjectIds.includes(issue.project_id)
+            );
           }
         }
-      });
-
-      // If user context exists, filter by accessible projects
-      
-      if (userContext?.accessible_projects && !filters.project) {
-        selector.project = { $in: userContext.accessible_projects.map((p) => p.id) };
       }
 
-      const result = await LocalGRMDatabase.find({ selector });
+      // If we have local data and not forcing refresh, return it
+      if (localIssues.length > 0 && !filters.forceRefresh) {
+        console.log(`📱 [WatermelonDB] Returning ${localIssues.length} issues from local database`);
+        return localIssues;
+      }
 
-      // Sort by creation date (descending)
-      return result.docs.sort((a, b) => {
-        const dateA = new Date(a.created_date || a.creation || 0);
-        const dateB = new Date(b.created_date || b.creation || 0);
-        return dateB - dateA;
-      });
+      // Try to fetch from backend API if online
+      if (this.isOnline && this.call) {
+        try {
+          console.log('🌐 [WatermelonDB] Fetching issues from backend API...');
+
+          const filterParams = {};
+          if (filters.project_id) filterParams.project_id = filters.project_id;
+          if (filters.status_id) filterParams.status_id = filters.status_id;
+          if (filters.category_id) filterParams.category_id = filters.category_id;
+          if (filters.assignee_id) filterParams.assignee_id = filters.assignee_id;
+          if (filters.reporter_id) filterParams.reporter_id = filters.reporter_id;
+          if (filters.administrative_region_id)
+            filterParams.administrative_region_id = filters.administrative_region_id;
+          if (filters.from_date) filterParams.from_date = filters.from_date;
+          if (filters.to_date) filterParams.to_date = filters.to_date;
+
+          // Apply user context filtering if needed
+          const userContext = this.getUserContext();
+          if (userContext && userContext.accessible_projects && !filters.project_id) {
+            const accessibleProjectIds = userContext.accessible_projects.map((p) => p.id);
+            if (accessibleProjectIds.length > 0) {
+              filterParams.project_id = accessibleProjectIds[0];
+            }
+          }
+
+          const rawResponse = await this.call.get('egrm.api.issue.get_latest_issues', filterParams);
+          const response = extractApiResponse(rawResponse);
+
+          if (response.status === 'success' && response.data && Array.isArray(response.data)) {
+            console.log(`✅ [WatermelonDB] Received ${response.data.length} issues from backend`);
+
+            // Store the issues in WatermelonDB
+            await watermelonManager.bulkUpsertIssues(response.data);
+
+            return response.data;
+          } else {
+            console.warn(
+              '⚠️ [WatermelonDB] Backend returned no issues or error:',
+              response.message
+            );
+          }
+        } catch (error) {
+          console.warn(
+            '⚠️ [WatermelonDB] API call failed, falling back to local data:',
+            error.message
+          );
+        }
+      }
+
+      // Return local data as fallback
+      console.log(
+        `📱 [WatermelonDB] Fallback: returning ${localIssues.length} issues from local database`
+      );
+      return localIssues;
     } catch (error) {
       console.error('❌ Error getting issues:', error);
-      throw error;
+      return [];
     }
   }
 
+  /**
+   * Get single issue
+   */
   async getIssue(issueId) {
     try {
-      return await LocalGRMDatabase.get(issueId);
+      return await watermelonManager.getIssue(issueId);
     } catch (error) {
-      if (error.status === 404) return null;
       console.error('❌ Error getting issue:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create issue
+   */
+  async createIssue(issueData) {
+    try {
+      if (this.isOnline && this.call) {
+        // Create via API first
+        const issue = await this.createIssueViaAPI(issueData);
+        // Store in local database
+        await watermelonManager.createIssue(issue);
+        return issue;
+      } else {
+        // Create locally and sync later
+        return await watermelonManager.createIssue(issueData);
+      }
+    } catch (error) {
+      console.error('❌ Error creating issue:', error);
       throw error;
     }
   }
 
-  async createIssue(issueData) {
-    this.validateIssueData(issueData);
-    console.log('🔄 Creating issue with data:', issueData);
+  /**
+   * Create issue via API
+   */
+  async createIssueViaAPI(issueData) {
+    try {
+      const response = await this.call.post('egrm.api.issue.create_issue', {
+        issue_data: issueData,
+      });
+      const apiResponse = extractApiResponse(response);
 
-    const issue = await frappeSyncManager.createIssue(issueData);
-    console.log('✅ Issue created successfully:', issue._id);
-    return issue;
-  }
-
-  async updateIssue(issueId, updateData) {
-    if (!issueId) throw new Error('Issue ID is required');
-    if (!updateData || Object.keys(updateData).length === 0) {
-      throw new Error('Update data is required');
+      if (apiResponse.status === 'success') {
+        return apiResponse.data;
+      } else {
+        throw new Error(apiResponse.message || 'Failed to create issue');
+      }
+    } catch (error) {
+      console.error('❌ Error creating issue via API:', error);
+      throw error;
     }
-
-    console.log('🔄 Updating issue:', issueId, 'with data:', updateData);
-    const issue = await frappeSyncManager.updateIssue(issueId, updateData);
-    console.log('✅ Issue updated successfully:', issueId);
-    return issue;
   }
 
+  /**
+   * Update issue
+   */
+  async updateIssue(issueId, updateData) {
+    try {
+      if (this.isOnline && this.call) {
+        // Update via API first
+        const issue = await this.updateIssueViaAPI(issueId, updateData);
+        // Update in local database
+        await watermelonManager.updateIssue(issueId, issue);
+        return issue;
+      } else {
+        // Update locally and sync later
+        return await watermelonManager.updateIssue(issueId, updateData);
+      }
+    } catch (error) {
+      console.error('❌ Error updating issue:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update issue via API
+   */
+  async updateIssueViaAPI(issueId, updateData) {
+    try {
+      const response = await this.call.put(`egrm.api.issue.update_issue`, {
+        issue_id: issueId,
+        update_data: updateData,
+      });
+      const apiResponse = extractApiResponse(response);
+
+      if (apiResponse.status === 'success') {
+        return apiResponse.data;
+      } else {
+        throw new Error(apiResponse.message || 'Failed to update issue');
+      }
+    } catch (error) {
+      console.error('❌ Error updating issue via API:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete issue
+   */
   async deleteIssue(issueId) {
     try {
-      const issue = await LocalGRMDatabase.get(issueId);
-      await LocalGRMDatabase.remove(issue);
-
-      if (!issue.is_local) {
-        await frappeSyncManager.addPendingChange({
-          action: 'delete',
-          type: 'issue',
-          id: issueId,
-        });
-      }
-
-      return true;
+      return await watermelonManager.deleteIssue(issueId);
     } catch (error) {
       console.error('❌ Error deleting issue:', error);
       throw error;
@@ -601,302 +672,299 @@ class DataManager {
    * Validate issue data
    */
   validateIssueData(issueData) {
-    const requiredFields = ['description'];
-    for (const field of requiredFields) {
-      if (!issueData[field]) {
-        throw new Error(`Missing required field: ${field}`);
-      }
+    const required = ['title', 'description', 'category_id', 'project_id'];
+    const missing = required.filter((field) => !issueData[field]);
+
+    if (missing.length > 0) {
+      throw new Error(`Missing required fields: ${missing.join(', ')}`);
     }
+
+    return true;
   }
 
   /**
-   * Lookup Data Methods with API-first approach
+   * Get administrative regions
    */
   async getAdministrativeRegions(filters = {}) {
-    console.log('🔍 [LOOKUP] Getting administrative regions...');
+    try {
+      // Try local first
+      let regions = await watermelonManager.getAdministrativeRegions(filters);
 
-    if (this.isOnline && this.credentials) {
-      try {
-        const apiData = await LookupAPI.getRegions(filters);
-        if (apiData.length > 0) {
-          // Store in local database for caching
-          for (const region of apiData) {
-            await DatabaseUtils.upsertDocument(LocalDatabase, region);
-          }
-          console.log('✅ [LOOKUP] Regions API response:', apiData.length);
-          return apiData;
-        }
-      } catch (error) {
-        console.log('⚠️ [LOOKUP] Regions API failed, falling back to local data:', error.message);
+      if (regions.length > 0 && !filters.forceRefresh) {
+        return regions;
       }
-    }
 
-    // Fallback to local database
-    const selector = { type: 'administrative_level' };
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) selector[key] = value;
-    });
-
-    const localData = await DatabaseUtils.findDocuments(LocalDatabase, selector, 'name');
-    console.log('📱 [LOOKUP] Local regions found:', localData.length);
-    return localData;
-  }
-
-  async getIssueCategories(projectId = null) {
-    console.log('🔍 [LOOKUP] Getting issue categories...');
-
-    if (this.isOnline && this.credentials) {
-      try {
-        const apiData = await LookupAPI.getCategories(projectId);
-        if (apiData.length > 0) {
-          // Store in local database for caching
-          for (const category of apiData) {
-            await DatabaseUtils.upsertDocument(LocalDatabase, category);
-          }
-          console.log('✅ [LOOKUP] Categories API response:', apiData.length);
-          return apiData;
+      // Fetch from API if online
+      if (this.isOnline && this.call) {
+        const apiRegions = await LookupAPI.getRegions(this.call, filters);
+        if (apiRegions.length > 0) {
+          await LookupAPI.storeLookupData('regions', apiRegions);
+          return apiRegions;
         }
-      } catch (error) {
-        console.log(
-          '⚠️ [LOOKUP] Categories API failed, falling back to local data:',
-          error.message
-        );
       }
+
+      return regions;
+    } catch (error) {
+      console.error('❌ Error getting administrative regions:', error);
+      return [];
     }
-
-    // Fallback to local database
-    const selector = { type: 'issue_category' };
-    if (projectId) selector.project = projectId;
-
-    const localData = await DatabaseUtils.findDocuments(LocalDatabase, selector, 'name');
-    console.log('📱 [LOOKUP] Local categories found:', localData.length);
-    return localData;
-  }
-
-  async getIssueTypes(projectId = null) {
-    console.log('🔍 [LOOKUP] Getting issue types...');
-
-    if (this.isOnline && this.credentials) {
-      try {
-        const apiData = await LookupAPI.getTypes(projectId);
-        if (apiData.length > 0) {
-          // Store in local database for caching
-          for (const type of apiData) {
-            await DatabaseUtils.upsertDocument(LocalDatabase, type);
-          }
-          console.log('✅ [LOOKUP] Types API response:', apiData.length);
-          return apiData;
-        }
-      } catch (error) {
-        console.log('⚠️ [LOOKUP] Types API failed, falling back to local data:', error.message);
-      }
-    }
-
-    // Fallback to local database
-    const selector = { type: 'issue_type' };
-    if (projectId) selector.project = projectId;
-
-    const localData = await DatabaseUtils.findDocuments(LocalDatabase, selector, 'name');
-    console.log('📱 [LOOKUP] Local types found:', localData.length);
-    return localData;
-  }
-
-  async getIssueStatuses() {
-    console.log('🔍 [LOOKUP] Getting issue statuses...');
-
-    if (this.isOnline && this.credentials) {
-      try {
-        const apiData = await LookupAPI.getStatuses();
-        if (apiData.length > 0) {
-          // Store in local database for caching
-          for (const status of apiData) {
-            await DatabaseUtils.upsertDocument(LocalDatabase, status);
-          }
-          console.log('✅ [LOOKUP] Statuses API response:', apiData.length);
-          return apiData;
-        }
-      } catch (error) {
-        console.log('⚠️ [LOOKUP] Statuses API failed, falling back to local data:', error.message);
-      }
-    }
-
-    // Fallback to local database
-    const localData = await DatabaseUtils.findDocuments(
-      LocalDatabase,
-      { type: 'issue_status' },
-      'name'
-    );
-    console.log('📱 [LOOKUP] Local statuses found:', localData.length);
-    return localData;
-  }
-
-  async getAgeGroups() {
-    console.log('🔍 [LOOKUP] Getting age groups...');
-
-    if (this.isOnline && this.credentials) {
-      try {
-        const apiData = await LookupAPI.getAgeGroups();
-        if (apiData.length > 0) {
-          // Store in local database for caching
-          for (const ageGroup of apiData) {
-            await DatabaseUtils.upsertDocument(LocalDatabase, ageGroup);
-          }
-          console.log('✅ [LOOKUP] Age groups API response:', apiData.length);
-          return apiData;
-        }
-      } catch (error) {
-        console.log(
-          '⚠️ [LOOKUP] Age groups API failed, falling back to local data:',
-          error.message
-        );
-      }
-    }
-
-    // Fallback to local database
-    const localData = await DatabaseUtils.findDocuments(
-      LocalDatabase,
-      { type: 'age_group' },
-      'name'
-    );
-    console.log('📱 [LOOKUP] Local age groups found:', localData.length);
-    return localData;
-  }
-
-  async getCitizenGroups() {
-    console.log('🔍 [LOOKUP] Getting citizen groups...');
-
-    if (this.isOnline && this.credentials) {
-      try {
-        const apiData = await LookupAPI.getCitizenGroups();
-        if (apiData.length > 0) {
-          // Store in local database for caching
-          for (const citizenGroup of apiData) {
-            await DatabaseUtils.upsertDocument(LocalDatabase, citizenGroup);
-          }
-          console.log('✅ [LOOKUP] Citizen groups API response:', apiData.length);
-          return apiData;
-        }
-      } catch (error) {
-        console.log(
-          '⚠️ [LOOKUP] Citizen groups API failed, falling back to local data:',
-          error.message
-        );
-      }
-    }
-
-    // Fallback to local database
-    const localData = await DatabaseUtils.findDocuments(
-      LocalDatabase,
-      { type: 'citizen_group' },
-      'name'
-    );
-    console.log('📱 [LOOKUP] Local citizen groups found:', localData.length);
-    return localData;
-  }
-
-  async getDepartments() {
-    console.log('🔍 [LOOKUP] Getting departments...');
-
-    if (this.isOnline && this.credentials) {
-      try {
-        const apiData = await LookupAPI.getDepartments();
-        if (apiData.length > 0) {
-          // Store in local database for caching
-          for (const department of apiData) {
-            await DatabaseUtils.upsertDocument(LocalDatabase, department);
-          }
-          console.log('✅ [LOOKUP] Departments API response:', apiData.length);
-          return apiData;
-        }
-      } catch (error) {
-        console.log(
-          '⚠️ [LOOKUP] Departments API failed, falling back to local data:',
-          error.message
-        );
-      }
-    }
-
-    // Fallback to local database
-    const localData = await DatabaseUtils.findDocuments(
-      LocalDatabase,
-      { type: 'department' },
-      'name'
-    );
-    console.log('📱 [LOOKUP] Local departments found:', localData.length);
-    return localData;
-  }
-
-  async getProjects() {
-    console.log('🔍 [LOOKUP] Getting projects...');
-
-    if (this.isOnline && this.credentials) {
-      try {
-        const apiData = await LookupAPI.getProjects();
-        if (apiData.length > 0) {
-          // Store in local database for caching
-          for (const project of apiData) {
-            await DatabaseUtils.upsertDocument(LocalDatabase, project);
-          }
-          console.log('✅ [LOOKUP] Projects API response:', apiData.length);
-          return apiData;
-        }
-      } catch (error) {
-        console.log('⚠️ [LOOKUP] Projects API failed, falling back to local data:', error.message);
-      }
-    }
-
-    // Fallback to local database
-    const localData = await DatabaseUtils.findDocuments(LocalDatabase, { type: 'project' }, 'name');
-    console.log('📱 [LOOKUP] Local projects found:', localData.length);
-    return localData;
   }
 
   /**
-   * Attachment Methods
+   * Get issue categories
+   */
+  async getIssueCategories(projectId = null) {
+    try {
+      // Try local first
+      let categories = await watermelonManager.getIssueCategories(projectId);
+
+      if (categories.length > 0) {
+        return categories;
+      }
+
+      // Fetch from API if online
+      if (this.isOnline && this.call) {
+        const apiCategories = await LookupAPI.getCategories(this.call, projectId);
+        if (apiCategories.length > 0) {
+          await LookupAPI.storeLookupData('categories', apiCategories);
+          return apiCategories;
+        }
+      }
+
+      return categories;
+    } catch (error) {
+      console.error('❌ Error getting issue categories:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get issue types
+   */
+  async getIssueTypes(projectId = null) {
+    try {
+      // Try local first
+      let types = await watermelonManager.getIssueTypes(projectId);
+
+      if (types.length > 0) {
+        return types;
+      }
+
+      // Fetch from API if online
+      if (this.isOnline && this.call) {
+        const apiTypes = await LookupAPI.getTypes(this.call, projectId);
+        if (apiTypes.length > 0) {
+          await LookupAPI.storeLookupData('types', apiTypes);
+          return apiTypes;
+        }
+      }
+
+      return types;
+    } catch (error) {
+      console.error('❌ Error getting issue types:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get issue statuses
+   */
+  async getIssueStatuses() {
+    try {
+      // Try local first
+      let statuses = await watermelonManager.getIssueStatuses();
+
+      if (statuses.length > 0) {
+        return statuses;
+      }
+
+      // Fetch from API if online
+      if (this.isOnline && this.call) {
+        const apiStatuses = await LookupAPI.getStatuses(this.call);
+        if (apiStatuses.length > 0) {
+          await LookupAPI.storeLookupData('statuses', apiStatuses);
+          return apiStatuses;
+        }
+      }
+
+      return statuses;
+    } catch (error) {
+      console.error('❌ Error getting issue statuses:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get age groups
+   */
+  async getAgeGroups() {
+    try {
+      // Try local first
+      let ageGroups = await watermelonManager.getAgeGroups();
+
+      if (ageGroups.length > 0) {
+        return ageGroups;
+      }
+
+      // Fetch from API if online
+      if (this.isOnline && this.call) {
+        const apiAgeGroups = await LookupAPI.getAgeGroups(this.call);
+        if (apiAgeGroups.length > 0) {
+          await LookupAPI.storeLookupData('age_groups', apiAgeGroups);
+          return apiAgeGroups;
+        }
+      }
+
+      return ageGroups;
+    } catch (error) {
+      console.error('❌ Error getting age groups:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get citizen groups
+   */
+  async getCitizenGroups() {
+    try {
+      // Try local first
+      let citizenGroups = await watermelonManager.getCitizenGroups();
+
+      if (citizenGroups.length > 0) {
+        return citizenGroups;
+      }
+
+      // Fetch from API if online
+      if (this.isOnline && this.call) {
+        const apiCitizenGroups = await LookupAPI.getCitizenGroups(this.call);
+        if (apiCitizenGroups.length > 0) {
+          await LookupAPI.storeLookupData('citizen_groups', apiCitizenGroups);
+          return apiCitizenGroups;
+        }
+      }
+
+      return citizenGroups;
+    } catch (error) {
+      console.error('❌ Error getting citizen groups:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get departments
+   */
+  async getDepartments() {
+    try {
+      // Try local first
+      let departments = await watermelonManager.getDepartments();
+
+      if (departments.length > 0) {
+        return departments;
+      }
+
+      // Fetch from API if online
+      if (this.isOnline && this.call) {
+        const apiDepartments = await LookupAPI.getDepartments(this.call);
+        if (apiDepartments.length > 0) {
+          await LookupAPI.storeLookupData('departments', apiDepartments);
+          return apiDepartments;
+        }
+      }
+
+      return departments;
+    } catch (error) {
+      console.error('❌ Error getting departments:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get projects
+   */
+  async getProjects() {
+    try {
+      // Try local first
+      let projects = await watermelonManager.getProjects();
+
+      if (projects.length > 0) {
+        return projects;
+      }
+
+      // Fetch from API if online
+      if (this.isOnline && this.call) {
+        const apiProjects = await LookupAPI.getProjects(this.call);
+        if (apiProjects.length > 0) {
+          await LookupAPI.storeLookupData('projects', apiProjects);
+          return apiProjects;
+        }
+      }
+
+      return projects;
+    } catch (error) {
+      console.error('❌ Error getting projects:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Upload attachment
    */
   async uploadAttachment(issueId, attachmentData) {
-    return await frappeSyncManager.uploadAttachment(issueId, attachmentData);
-  }
+    try {
+      if (!this.call) {
+        throw new Error('No API connection available');
+      }
 
-  async getIssueAttachments(issueId) {
-    return await DatabaseUtils.findDocuments(
-      LocalGRMDatabase,
-      { type: 'attachment', issue_id: issueId },
-      'upload_date'
-    );
+      const response = await this.call.post('egrm.api.issue.upload_attachment', {
+        issue_id: issueId,
+        attachment_data: attachmentData,
+      });
+
+      const apiResponse = extractApiResponse(response);
+
+      if (apiResponse.status === 'success') {
+        return apiResponse.data;
+      } else {
+        throw new Error(apiResponse.message || 'Failed to upload attachment');
+      }
+    } catch (error) {
+      console.error('❌ Error uploading attachment:', error);
+      throw error;
+    }
   }
 
   /**
-   * Search Methods
+   * Get issue attachments
+   */
+  async getIssueAttachments(issueId) {
+    try {
+      // TODO: Implement attachments in WatermelonDB
+      console.warn('getIssueAttachments - TODO: Implement attachments in WatermelonDB');
+      return [];
+    } catch (error) {
+      console.error('❌ Error getting issue attachments:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Search issues
    */
   async searchIssues(searchTerm, filters = {}) {
     try {
-      const selector = {
-        type: 'issue',
-        $or: [
-          { title: { $regex: new RegExp(searchTerm, 'i') } },
-          { description: { $regex: new RegExp(searchTerm, 'i') } },
-          { tracking_code: { $regex: new RegExp(searchTerm, 'i') } },
-          { citizen: { $regex: new RegExp(searchTerm, 'i') } },
-        ],
-      };
+      // TODO: Implement search in WatermelonDB
+      console.warn('searchIssues - TODO: Implement search in WatermelonDB');
+      const allIssues = await this.getIssues(filters);
 
-      // Apply additional filters
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
-          const selectorKey = key === 'status' ? 'status.id' : 'category.id';
-          selector[selectorKey] = value;
-        }
-      });
-
-      const result = await LocalGRMDatabase.find({ selector, limit: 50 });
-
-      // Sort by creation date (descending)
-      return result.docs.sort((a, b) => {
-        const dateA = new Date(a.created_date || a.creation || 0);
-        const dateB = new Date(b.created_date || b.creation || 0);
-        return dateB - dateA;
-      });
+      // Basic search implementation
+      return allIssues
+        .filter(
+          (issue) =>
+            issue.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            issue.tracking_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            issue.citizen?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .slice(0, 50);
     } catch (error) {
       console.error('❌ Error searching issues:', error);
       return [];
@@ -904,42 +972,54 @@ class DataManager {
   }
 
   /**
-   * User-specific Methods
+   * Get user assigned issues
    */
   async getUserAssignedIssues(userId) {
-    return await DatabaseUtils.findDocuments(LocalGRMDatabase, {
-      type: 'issue',
-      'assignee.id': userId,
-    });
-  }
-
-  async getUserReportedIssues(userId) {
-    return await DatabaseUtils.findDocuments(LocalGRMDatabase, {
-      type: 'issue',
-      'reporter.id': userId,
-    });
-  }
-
-  async getIssuesByStatus(statusId, userId = null) {
-    const selector = { type: 'issue', 'status.id': statusId };
-
-    if (userId) {
-      selector.$or = [{ 'assignee.id': userId }, { 'reporter.id': userId }];
+    try {
+      return await this.getIssues({ assignee_id: userId });
+    } catch (error) {
+      console.error('❌ Error getting user assigned issues:', error);
+      return [];
     }
-
-    return await DatabaseUtils.findDocuments(LocalGRMDatabase, selector);
   }
 
   /**
-   * Statistics Methods
+   * Get user reported issues
+   */
+  async getUserReportedIssues(userId) {
+    try {
+      return await this.getIssues({ reporter_id: userId });
+    } catch (error) {
+      console.error('❌ Error getting user reported issues:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get issues by status
+   */
+  async getIssuesByStatus(statusId, userId = null) {
+    try {
+      const filters = { status_id: statusId };
+      // TODO: Implement OR logic for user filtering in WatermelonDB
+      if (userId) {
+        console.warn('getIssuesByStatus with userId - TODO: Implement OR logic in WatermelonDB');
+      }
+      return await this.getIssues(filters);
+    } catch (error) {
+      console.error('❌ Error getting issues by status:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get statistics
    */
   async getStatistics(userId = null) {
     try {
       const allIssues = await this.getIssues();
       const userIssues = userId
-        ? allIssues.filter(
-            (issue) => issue.assignee?.id === userId || issue.reporter?.id === userId
-          )
+        ? allIssues.filter((issue) => issue.assignee_id === userId || issue.reporter_id === userId)
         : allIssues;
 
       const statuses = await this.getIssueStatuses();
@@ -952,8 +1032,8 @@ class DataManager {
       };
 
       if (userId) {
-        stats.assigned_issues = userIssues.filter((issue) => issue.assignee?.id === userId).length;
-        stats.reported_issues = userIssues.filter((issue) => issue.reporter?.id === userId).length;
+        stats.assigned_issues = userIssues.filter((issue) => issue.assignee_id === userId).length;
+        stats.reported_issues = userIssues.filter((issue) => issue.reporter_id === userId).length;
       }
 
       return stats;
@@ -968,12 +1048,151 @@ class DataManager {
    */
   countIssuesByStatusType(issues, statuses, statusType) {
     const relevantStatuses = statuses.filter((s) => s[statusType]);
-    return issues.filter((issue) => relevantStatuses.some((s) => s._id === issue.status?.id))
+    return issues.filter((issue) => relevantStatuses.some((s) => s.name === issue.status_id))
       .length;
   }
 
   /**
-   * Sync Methods
+   * Check if user data has been synced
+   */
+  async hasUserDataBeenSynced() {
+    try {
+      // TODO: Implement proper user data sync check with WatermelonDB
+      return false;
+    } catch (error) {
+      console.error('Error checking user data sync status:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get initial user data
+   */
+  async getInitialUserData() {
+    try {
+      console.log('🔄 Getting initial user data...');
+
+      if (!this.isOnline) {
+        throw new Error('Cannot sync while offline');
+      }
+
+      this.updateSyncStatus({ isActive: true, phase: 'initial_sync', progress: 0 });
+
+      // Load lookup data
+      await this.syncLookupData();
+
+      this.updateSyncStatus({
+        isActive: false,
+        phase: 'completed',
+        progress: 100,
+        lastSuccessfulSync: new Date().toISOString(),
+      });
+
+      console.log('✅ Initial user data sync completed');
+    } catch (error) {
+      this.updateSyncStatus({
+        isActive: false,
+        phase: 'error',
+        error: error.message,
+      });
+      console.error('❌ Error getting initial user data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync lookup data
+   */
+  async syncLookupData() {
+    try {
+      console.log('🔄 Syncing lookup data...');
+
+      const lookupTypes = [
+        'categories',
+        'types',
+        'statuses',
+        'age_groups',
+        'citizen_groups',
+        'departments',
+        'projects',
+        'regions',
+      ];
+
+      let completed = 0;
+      const total = lookupTypes.length;
+
+      for (const lookupType of lookupTypes) {
+        try {
+          console.log(`🔄 Syncing ${lookupType}...`);
+          await this.syncLookupType(lookupType);
+          completed++;
+
+          this.updateSyncStatus({
+            progress: Math.round((completed / total) * 100),
+            currentItem: completed,
+            totalItems: total,
+          });
+        } catch (error) {
+          console.warn(`⚠️ Failed to sync ${lookupType}:`, error.message);
+        }
+      }
+
+      console.log('✅ Lookup data sync completed');
+    } catch (error) {
+      console.error('❌ Error syncing lookup data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync lookup type
+   */
+  async syncLookupType(lookupType) {
+    try {
+      let data = [];
+
+      switch (lookupType) {
+        case 'categories':
+          data = await LookupAPI.getCategories(this.call);
+          break;
+        case 'types':
+          data = await LookupAPI.getTypes(this.call);
+          break;
+        case 'statuses':
+          data = await LookupAPI.getStatuses(this.call);
+          break;
+        case 'age_groups':
+          data = await LookupAPI.getAgeGroups(this.call);
+          break;
+        case 'citizen_groups':
+          data = await LookupAPI.getCitizenGroups(this.call);
+          break;
+        case 'departments':
+          data = await LookupAPI.getDepartments(this.call);
+          break;
+        case 'projects':
+          data = await LookupAPI.getProjects(this.call);
+          break;
+        case 'regions':
+          data = await LookupAPI.getRegions(this.call);
+          break;
+        default:
+          console.warn(`Unknown lookup type: ${lookupType}`);
+          return;
+      }
+
+      if (data.length > 0) {
+        await LookupAPI.storeLookupData(lookupType, data);
+        console.log(`✅ Synced ${data.length} ${lookupType} records`);
+      }
+    } catch (error) {
+      console.error(`❌ Error syncing ${lookupType}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Perform sync
    */
   async performSync(projectId = null) {
     if (!this.credentials) {
@@ -985,46 +1204,105 @@ class DataManager {
     }
 
     console.log('🔄 Starting manual sync...');
-    await frappeSyncManager.performSync(projectId);
+    await this.syncLookupData();
     console.log('✅ Manual sync completed successfully');
   }
 
+  /**
+   * Perform background sync
+   */
+  async performBackgroundSync() {
+    try {
+      if (!this.call || !this.isOnline) {
+        return;
+      }
+
+      console.log('🔄 Performing background sync...');
+      await this.syncLookupData();
+      console.log('✅ Background sync completed');
+    } catch (error) {
+      console.warn('⚠️ Background sync failed:', error.message);
+    }
+  }
+
+  /**
+   * Get sync status
+   */
   getSyncStatus() {
-    const baseStatus = frappeSyncManager.getSyncStatus();
     return {
-      ...baseStatus,
-      isInitialized: this.isInitialized,
+      ...this.syncStatus,
       hasCredentials: !!this.credentials,
-      dataManagerStatus: this.isInitialized ? 'ready' : 'not_initialized',
+      dataManagerStatus: this.call ? 'ready' : 'not_initialized',
     };
   }
 
+  /**
+   * Update sync status
+   */
+  updateSyncStatus(updates) {
+    this.syncStatus = { ...this.syncStatus, ...updates };
+    this.notifySyncListeners();
+  }
+
+  /**
+   * Add sync listener
+   */
   addSyncListener(listener) {
-    frappeSyncManager.addSyncListener(listener);
+    this.syncListeners.push(listener);
   }
 
+  /**
+   * Remove sync listener
+   */
   removeSyncListener(listener) {
-    frappeSyncManager.removeSyncListener(listener);
+    const index = this.syncListeners.indexOf(listener);
+    if (index > -1) {
+      this.syncListeners.splice(index, 1);
+    }
   }
 
+  /**
+   * Notify sync listeners
+   */
+  notifySyncListeners() {
+    this.syncListeners.forEach((listener) => {
+      try {
+        listener(this.syncStatus);
+      } catch (error) {
+        console.error('Error notifying sync listener:', error);
+      }
+    });
+  }
+
+  /**
+   * Force full resync
+   */
   async forceFullResync(projectId = null) {
-    await frappeSyncManager.forceFullResync(projectId);
+    try {
+      console.log('🔄 Starting force full resync...');
+      await this.clearAllData();
+      await this.syncLookupData();
+      console.log('✅ Force full resync completed');
+    } catch (error) {
+      console.error('❌ Error during force full resync:', error);
+      throw error;
+    }
   }
 
+  /**
+   * Is network online
+   */
   isNetworkOnline() {
     return this.isOnline;
   }
 
   /**
-   * Data Management Methods
+   * Force cleanup databases
    */
   async forceCleanupDatabases() {
     try {
-      console.log('🧹 Force cleanup of all databases...');
-      await Promise.all([
-        DatabaseUtils.cleanupDatabase(LocalDatabase),
-        DatabaseUtils.cleanupDatabase(LocalGRMDatabase),
-      ]);
+      console.log('🧹 Force cleanup of WatermelonDB...');
+      await watermelonManager.clearAllData();
       console.log('✅ Force cleanup completed successfully');
       return true;
     } catch (error) {
@@ -1033,19 +1311,13 @@ class DataManager {
     }
   }
 
+  /**
+   * Clear all data
+   */
   async clearAllData() {
     try {
       console.log('🗑️ Clearing all local data...');
-
-      const [grmDocs, eadlDocs] = await Promise.all([
-        LocalGRMDatabase.allDocs({ include_docs: true }),
-        LocalDatabase.allDocs({ include_docs: true }),
-      ]);
-
-      // Delete documents in batches
-      await this.deleteBatch(LocalGRMDatabase, grmDocs.rows);
-      await this.deleteBatch(LocalDatabase, eadlDocs.rows);
-
+      await watermelonManager.clearAllData();
       console.log('✅ All local data cleared successfully');
     } catch (error) {
       console.error('❌ Error clearing local data:', error);
@@ -1054,26 +1326,14 @@ class DataManager {
   }
 
   /**
-   * Delete documents in batches
+   * Export data
    */
-  async deleteBatch(database, rows) {
-    const batchSize = 50;
-    for (let i = 0; i < rows.length; i += batchSize) {
-      const batch = rows.slice(i, i + batchSize);
-      await Promise.allSettled(batch.map((row) => database.remove(row.doc)));
-    }
-  }
-
   async exportData() {
     try {
-      const [grmDocs, eadlDocs] = await Promise.all([
-        LocalGRMDatabase.allDocs({ include_docs: true }),
-        LocalDatabase.allDocs({ include_docs: true }),
-      ]);
-
+      // TODO: Implement export functionality for WatermelonDB
+      console.warn('exportData - TODO: Implement WatermelonDB export');
       return {
-        grm_data: grmDocs.rows.map((row) => row.doc),
-        eadl_data: eadlDocs.rows.map((row) => row.doc),
+        watermelon_data: [], // TODO: Export WatermelonDB data
         export_date: new Date().toISOString(),
       };
     } catch (error) {
@@ -1082,22 +1342,14 @@ class DataManager {
     }
   }
 
+  /**
+   * Import data
+   */
   async importData(backupData) {
     try {
-      await this.clearAllData();
-
-      const importPromises = [];
-
-      if (backupData.grm_data) {
-        importPromises.push(...backupData.grm_data.map((doc) => LocalGRMDatabase.put(doc)));
-      }
-
-      if (backupData.eadl_data) {
-        importPromises.push(...backupData.eadl_data.map((doc) => LocalDatabase.put(doc)));
-      }
-
-      await Promise.allSettled(importPromises);
-      console.log('✅ Data imported successfully');
+      // TODO: Implement import functionality for WatermelonDB
+      console.warn('importData - TODO: Implement WatermelonDB import');
+      console.log('✅ Data imported successfully (placeholder)');
     } catch (error) {
       console.error('❌ Error importing data:', error);
       throw error;
@@ -1116,10 +1368,9 @@ class DataManager {
 
       console.log('🔄 Initializing user context...');
 
-      if (this.isOnline) {
-        // Try to get context from server
+      if (this.isOnline && this.call) {
         try {
-          const context = await LookupAPI.getUserContext();
+          const context = await LookupAPI.getUserContext(this.call);
           await this.setUserContext(context);
           console.log('✅ User context initialized from server');
           return;
@@ -1128,7 +1379,6 @@ class DataManager {
         }
       }
 
-      // Try to load from local storage
       const localContext = await this.loadLocalUserContext();
       if (localContext) {
         this.userContext = localContext;
@@ -1140,21 +1390,14 @@ class DataManager {
   }
 
   /**
-   * Set and store user context
+   * Set user context
    */
   async setUserContext(context) {
     try {
       this.userContext = context;
-
-      // Store in local database for offline access
-      await DatabaseUtils.upsertDocument(LocalDatabase, {
-        _id: 'user_context',
-        type: 'user_context',
-        ...context,
-        last_updated: new Date().toISOString(),
-      });
-
-      console.log('✅ User context stored successfully');
+      // TODO: Store user context in WatermelonDB
+      console.warn('setUserContext - TODO: Store user context in WatermelonDB');
+      console.log('✅ User context stored successfully (placeholder)');
     } catch (error) {
       console.error('❌ Error storing user context:', error);
       throw error;
@@ -1162,51 +1405,47 @@ class DataManager {
   }
 
   /**
-   * Load user context from local storage
+   * Load local user context
    */
   async loadLocalUserContext() {
     try {
-      const doc = await LocalDatabase.get('user_context');
-      return doc;
+      // TODO: Load user context from WatermelonDB
+      console.warn('loadLocalUserContext - TODO: Load user context from WatermelonDB');
+      return null;
     } catch (error) {
-      if (error.status !== 404) {
-        console.error('❌ Error loading local user context:', error);
-      }
+      console.error('❌ Error loading local user context:', error);
       return null;
     }
   }
 
   /**
-   * Get current user context
+   * Get user context
    */
   getUserContext() {
     return this.userContext;
   }
 
   /**
-   * Get user's current assignment for a region
+   * Get user assignment for region
    */
   getUserAssignmentForRegion(regionId) {
     if (!this.userContext?.assignments) return null;
-
     return this.userContext.assignments.find((assignment) => assignment.region.id === regionId);
   }
 
   /**
-   * Check if user has access to a region
+   * Check if user has access to region
    */
   hasRegionAccess(regionId) {
     if (!this.userContext?.accessible_regions) return false;
-
     return this.userContext.accessible_regions.some((region) => region.name === regionId);
   }
 
   /**
-   * Get user's department for a project
+   * Get user department for project
    */
   getUserDepartmentForProject(projectId) {
     if (!this.userContext?.assignments) return null;
-
     const assignment = this.userContext.assignments.find((a) => a.project.id === projectId);
     return assignment?.department;
   }
@@ -1216,49 +1455,27 @@ class DataManager {
    */
   hasPermission(permission) {
     if (!this.userContext?.permissions) return false;
-
     return Object.values(this.userContext.permissions).some((rolePerms) => rolePerms[permission]);
   }
 
   /**
-   * Get issues from local storage
+   * Get local issues
    */
   async getLocalIssues(userId) {
     try {
-      const selector = {
-        type: 'issue',
-        $or: [
-          // Handle both formats: assignee.id and direct assignee
-          { 'assignee.id': userId },
-          { assignee: userId },
-          { 'reporter.id': userId },
-          { reporter: userId },
-        ],
-      };
-
-      // If user context exists, filter by accessible projects
+      const filters = {};
       const userContext = this.getUserContext();
+
       if (userContext?.accessible_projects) {
-        selector.project = { $in: userContext.accessible_projects.map((p) => p.id) };
+        filters.project_id = userContext.accessible_projects[0]?.id;
       }
 
-      const result = await LocalGRMDatabase.find({ selector });
+      const allIssues = await this.getIssues(filters);
 
-      // Normalize assignee format in results
-      const normalizedDocs = result.docs.map((doc) => {
-        if (doc.assignee && typeof doc.assignee === 'string') {
-          return {
-            ...doc,
-            assignee: {
-              id: doc.assignee,
-              name: doc.assignee_name || '',
-            },
-          };
-        }
-        return doc;
-      });
-
-      return normalizedDocs;
+      // Filter by user
+      return allIssues.filter(
+        (issue) => issue.assignee_id === userId || issue.reporter_id === userId
+      );
     } catch (error) {
       console.error('❌ Error getting local issues:', error);
       return [];

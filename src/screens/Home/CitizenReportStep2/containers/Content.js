@@ -31,13 +31,13 @@ import {
   Portal,
   TextInput,
 } from 'react-native-paper';
-import { useView } from 'use-pouchdb';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { useData } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
 import { formatDuration } from '../../../../utils/functions';
 import { styles } from './Content.styles';
 import { useSelector } from 'react-redux';
+import dataManager from '../../../../services/DataManager';
 
 const theme = {
   roundness: 12,
@@ -99,13 +99,8 @@ function Content({ stepOneParams }) {
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  // Keep the user data loading from PouchDB for now
-  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
-    key: username,
-    include_docs: true,
-    db: 'LocalCommunesDatabase',
-  });
-  const eadl = representative.map((d) => d.doc);
+  // TODO: Implement representative data loading with DataManager
+  // console.warn('CitizenReportStep2/Content - TODO: Implement representative data loading with DataManager');
 
   // Use lookup data from DataProvider instead of PouchDB views
   const items = useMemo(() => {
@@ -507,8 +502,8 @@ function Content({ stepOneParams }) {
                 uploaded: false,
                 local_url: attachment?.uri,
                 name: attachment?.uri.split('/').pop(),
-                user_id: eadl?.representative?.email,
-                user_name: eadl?.representative?.name,
+                user_id: username,
+                user_name: username,
               }))
             : undefined,
         recordings:
@@ -520,8 +515,8 @@ function Content({ stepOneParams }) {
                 local_url: recording_url.uri,
                 isAudio: true,
                 name: recording_url.uri.split('/').pop(),
-                user_id: eadl?.representative?.id,
-                user_name: eadl?.representative?.name,
+                user_id: username,
+                user_name: username,
               }))
             : [],
         category: getCategory(pickerValue2),

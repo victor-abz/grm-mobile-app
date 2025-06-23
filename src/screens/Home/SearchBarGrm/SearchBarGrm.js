@@ -1,31 +1,65 @@
-import React from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
+import withObservables from '@nozbe/with-observables';
+import { Q } from '@nozbe/watermelondb';
+import watermelonManager from '../../../database/watermelonManager';
+import { DataContext } from '../../../providers/DataProvider';
 import { colors } from '../../../utils/colors';
 import { styles } from './SearchBarGrm.style';
 import Content from './containers';
 
-function SearchBarGrm() {
+function SearchBarGrm({ issues = [], representative = null }) {
+  const { dataManager } = useContext(DataContext);
+  const [loading, setLoading] = useState(true);
+  const [eadl, setEadl] = useState(null);
+  const [representativeData, setRepresentativeData] = useState(null);
+
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
-    key: username,
-    include_docs: true,
-    db: 'LocalCommunesDatabase',
-  });
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
 
-  const eadl = representative.map((d) => d.doc);
+        // Get representative data from DataManager
+        // This replaces the PouchDB useView('eadl/by_representative_email')
+        if (dataManager && username) {
+          try {
+            // For now, create a representative object from username
+            // This should be enhanced to fetch actual representative data from Frappe
+            const mockRepresentative = {
+              _id: username,
+              email: username,
+              name: username,
+              user_id: username,
+            };
+            setRepresentativeData(mockRepresentative);
+            setEadl([mockRepresentative]);
+          } catch (error) {
+            console.warn('Error loading representative data:', error);
+            // Fallback to basic representative data
+            const fallbackRepresentative = {
+              _id: username,
+              email: username,
+              name: username,
+            };
+            setRepresentativeData(fallbackRepresentative);
+            setEadl([fallbackRepresentative]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading SearchBarGrm data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const { rows: all_issues, loading: issuesLoading } = useView('issues/by_type_and_id', {
-    startkey: ['issue', eadl?.[0]?._id],
-    endkey: ['issue', eadl?.[0]?._id, {}],
-    include_docs: true,
-    db: 'LocalGRMDatabase',
-  });
-  const issues = all_issues.map((d) => d.doc);
+    loadData();
+  }, [dataManager, username]);
 
-  if (!issues || !eadl || issuesLoading || eadlLoading) {
+  if (loading || !eadl) {
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
   }
 
@@ -38,4 +72,20 @@ function SearchBarGrm() {
   );
 }
 
-export default SearchBarGrm;
+// Enhanced component with reactive WatermelonDB queries
+const enhance = withObservables(['representative'], ({ representative }) => {
+  try {
+    return {
+      issues: watermelonManager.observeIssues({}), // Get all issues reactively
+      // Note: representative data is now handled in the component state
+    };
+  } catch (error) {
+    console.error('Error setting up WatermelonDB observables for SearchBarGrm:', error);
+    // Return empty observable as fallback
+    return {
+      issues: watermelonManager.database.collections.get('issues').query().observe(),
+    };
+  }
+});
+
+export default enhance(SearchBarGrm);

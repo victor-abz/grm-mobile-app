@@ -1,36 +1,59 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useView } from 'use-pouchdb';
+import { useTranslation } from 'react-i18next';
+import dataManager from '../../../services/DataManager';
 import { styles } from './IssueActions.styles';
 import Content from './containers/Content';
-import { useTranslation } from 'react-i18next';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;
   const customStyles = styles();
   const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [statuses, setStatuses] = useState([]);
+  const [eadl, setEadl] = useState(null);
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  const { rows: issue_status, loading: statusesLoading } = useView('issues/by_type', {
-    db: 'LocalGRMDatabase',
-    key: 'issue_status',
-    include_docs: true,
-  });
-  const statuses = issue_status.map((d) => d.doc);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
 
-  const { rows: representative, loading: eadlLoading } = useView('eadl/by_representative_email', {
-    key: username,
-    include_docs: true,
-    db: 'LocalCommunesDatabase',
-  });
-  const eadl = representative.map((d) => d.doc);
+        // Load statuses from DataManager
+        const statusData = await dataManager.getIssueStatuses();
+        setStatuses(statusData);
+
+        // TODO: Implement representative/eadl data loading with DataManager
+        console.warn(
+          'IssueActions - TODO: Implement representative/eadl data loading with DataManager'
+        );
+
+        // Placeholder eadl data - this needs to be implemented
+        const eadlData = {
+          _id: 'placeholder',
+          representative_email: username,
+          // TODO: Load actual representative data
+        };
+        setEadl(eadlData);
+      } catch (error) {
+        console.error('Error loading IssueActions data:', error);
+        // Set empty data to prevent crashes
+        setStatuses([]);
+        setEadl({ _id: 'error', representative_email: username });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [username]);
 
   return (
     <SafeAreaView style={customStyles.container}>
-      {statusesLoading || eadlLoading || !eadl?.[0]?._id || !statuses ? (
+      {loading || !eadl?._id || !statuses ? (
         <ScrollView
           style={{
             backgroundColor: 'white',
@@ -54,7 +77,7 @@ function IssueActions({ route, navigation }) {
           </View>
         </ScrollView>
       ) : (
-        <Content eadl={eadl?.[0]} issue={params.item} navigation={navigation} statuses={statuses} />
+        <Content eadl={eadl} issue={params.item} navigation={navigation} statuses={statuses} />
       )}
     </SafeAreaView>
   );

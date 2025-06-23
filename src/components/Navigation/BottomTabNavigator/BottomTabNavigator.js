@@ -1,8 +1,8 @@
-import React from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // import { useTheme } from 'react-native-paper';
-import { Transition } from "react-native-pose";
-import { styles } from "./BottomTabNavigator.style";
+import { Transition } from 'react-native-pose';
+import { styles } from './BottomTabNavigator.style';
 const Tab = createBottomTabNavigator();
 
 // const Label = posed.Text({
@@ -13,7 +13,7 @@ const NavigationDrawerNavigator = ({ children }) => {
   //   const theme = useTheme();
   return (
     <Tab.Navigator
-      initialRouteName={"Dashboard"}
+      initialRouteName={'Dashboard'}
       screenOptions={({ route }) => ({
         tabBarLabel: ({ focused }) => {
           // let label =
@@ -31,22 +31,20 @@ const NavigationDrawerNavigator = ({ children }) => {
             </Transition>
           );
         },
-      })}
-      tabBarOptions={{
-        labelPosition: "beside-icon",
-        inactiveTintColor: "black", //theme.primary,
-        activeTintColor: "#009460", //theme.primary,
-        // activeBackgroundColor: "#6639bf", // theme.primary,
-        tabStyle: {
+        tabBarLabelPosition: 'beside-icon',
+        tabBarInactiveTintColor: 'black', //theme.primary,
+        tabBarActiveTintColor: '#009460', //theme.primary,
+        // tabBarActiveBackgroundColor: "#6639bf", // theme.primary,
+        tabBarItemStyle: {
           ...styles.tabItemStyle,
         },
-        style: {
+        tabBarStyle: {
           ...styles.tabComponentStyle,
         },
-        labelStyle: {
+        tabBarLabelStyle: {
           ...styles.labelStyle,
         },
-      }}
+      })}
     >
       {children}
     </Tab.Navigator>

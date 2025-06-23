@@ -1,61 +1,77 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { styles } from './CitizenReportStep3.styles';
 import Content from './containers/Content';
-import { useView } from 'use-pouchdb';
+import dataManager from '../../../services/DataManager';
 
-function CitizenReportStep3({ route }) {
+function CitizenReportStep3({ route, navigation }) {
   const { params } = route;
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
+  const [loading, setLoading] = useState(true);
+  const [communesData, setCommunesData] = useState([]);
 
-  const { rows: representative, loading: eadlLoading } = useView(
-    'eadl/by_representative_email',
-    {
-      key: username,
-      include_docs: true,
-      db: 'LocalCommunesDatabase',
-    }
-  );
-  const eadl = representative.map((d) => d.doc);
+  useEffect(() => {
+    const loadCommunesData = async () => {
+      try {
+        setLoading(true);
+
+        // TODO: Implement communes data loading with DataManager
+        console.warn('CitizenReportStep3 - TODO: Implement communes data loading with DataManager');
+
+        // Load administrative regions as substitute for communes
+        const regions = await dataManager.getAdministrativeRegions();
+        setCommunesData(regions);
+      } catch (error) {
+        console.error('Error loading CitizenReportStep3 data:', error);
+        setCommunesData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCommunesData();
+  }, [username]);
+
+  if (loading) {
+    return (
+      <ScrollView
+        style={{
+          backgroundColor: 'white',
+          flex: 1,
+        }}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        <View
+          style={{
+            zIndex: 20,
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <ActivityIndicator size="large" color="#24c38b" />
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <SafeAreaView style={customStyles.container}>
-      {eadlLoading ? (
-        <ScrollView
-          style={{
-            backgroundColor: 'white',
-            flex: 1,
-          }}
-          contentContainerStyle={{ flexGrow: 1 }}
-        >
-          <View
-            style={{
-              zIndex: 20,
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <ActivityIndicator size="large" color="#24c38b" />
-          </View>
-        </ScrollView>
-      ) : (
-        <Content
-          eadl={eadl?.[0]}
-          issue={{
-            ...params.stepOneParams,
-            ...params.stepTwoParams,
-            ...params.stepLocationParams,
-          }}
-        />
-      )}
+      <Content
+        eadl={communesData[0]}
+        issue={{
+          ...params.stepOneParams,
+          ...params.stepTwoParams,
+          ...params.stepLocationParams,
+        }}
+      />
     </SafeAreaView>
   );
 }
