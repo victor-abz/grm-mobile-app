@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { debounce } from 'lodash';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -14,8 +14,11 @@ import {
 } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, IconButton, TextInput } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
+import { withObservables } from '@nozbe/watermelondb/react';
+import { Q } from '@nozbe/watermelondb';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { DataContext } from '../../../../providers/DataProvider';
+import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 
@@ -217,23 +220,21 @@ const getMapHtml = (
 </body>
 </html>`;
 
-export function Content({ stepOneParams, stepTwoParams }) {
+export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const {
     userRegionService,
     regionError,
     isLoading: dataLoading,
-    getUserRegions,
-    getTopLevelRegions,
-    getRegionChildren,
     refreshRegionData,
   } = useContext(DataContext);
 
-  // State for region selection
+  console.log('🔍 [LOCATION] Component initialized with:', { regionsCount: regions.length });
+
+  // State for region selection with auto-selection logic
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [regionHierarchy, setRegionHierarchy] = useState([]);
-  const [availableRegions, setAvailableRegions] = useState([]);
 
   // State for location details
   const [locationDescription, setLocationDescription] = useState('');
@@ -247,6 +248,68 @@ export function Content({ stepOneParams, stepTwoParams }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [mapHtml, setMapHtml] = useState('');
+
+  // Filter regions based on user access and hierarchy - with auto-selection logic
+  const availableRegions = useMemo(() => {
+    if (!regions || regions.length === 0) {
+      console.log('🔍 [LOCATION] No regions available');
+      return [];
+    }
+
+    // Get top-level regions (regions without parent)
+    const topLevelRegions = regions.filter((region) => !region.parentRegion);
+
+    console.log('🔍 [LOCATION] Available regions:', {
+      total: regions.length,
+      topLevel: topLevelRegions.length,
+    });
+
+    // If no top-level regions, use all regions as available
+    const available = topLevelRegions.length > 0 ? topLevelRegions : regions;
+
+    // **AUTO-SELECTION**: If user has only one accessible region level, automatically select it
+    if (available.length === 1 && !selectedRegion) {
+      console.log('🔍 [LOCATION] Auto-selecting single available region:', available[0]);
+      setTimeout(() => {
+        setSelectedRegion(available[0]);
+        setRegionHierarchy([available[0].id]);
+      }, 100);
+    }
+
+    return available;
+  }, [regions, selectedRegion]);
+
+  // Get children regions for a specific parent
+  const getRegionChildren = useCallback(
+    (parentId) => {
+      return regions.filter((region) => region.parentRegion?.id === parentId);
+    },
+    [regions]
+  );
+
+  // Get regions for a specific hierarchy level
+  const getRegionsForLevel = useCallback(
+    (level) => {
+      if (level === 0) {
+        return availableRegions;
+      }
+
+      const parentId = regionHierarchy[level - 1];
+      return parentId ? getRegionChildren(parentId) : [];
+    },
+    [availableRegions, regionHierarchy, getRegionChildren]
+  );
+
+  // Get current level regions
+  const getCurrentLevelRegions = useCallback(() => {
+    const currentLevel = regionHierarchy.length;
+    return getRegionsForLevel(currentLevel);
+  }, [regionHierarchy, getRegionsForLevel]);
+
+  // Auto-hide region input if only one option available
+  const shouldHideRegionInput = useMemo(() => {
+    return availableRegions.length === 1;
+  }, [availableRegions]);
 
   // Initialize component
   useEffect(() => {
@@ -283,10 +346,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
         return;
       }
 
-      // Get user's accessible regions
-      const regions = getUserRegions();
-
-      if (!regions || regions.length === 0) {
+      if (regions.length === 0) {
         setLocationError({
           type: 'NO_REGIONS',
           message: 'No administrative regions available. Please contact administrator.',
@@ -294,14 +354,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
         return;
       }
 
-      // Get top-level regions (regions without parent)
-      const topLevelRegions = getTopLevelRegions();
-
-      console.log(`📍 Loaded ${regions.length} total regions, ${topLevelRegions.length} top-level`);
-
-      // If no top-level regions, use all regions as available
-      const availableForSelection = topLevelRegions.length > 0 ? topLevelRegions : regions;
-      setAvailableRegions(availableForSelection);
+      console.log(`🔍 [LOCATION] Loaded ${regions.length} total regions`);
       setIsInitialized(true);
 
       // Try to get cached location - FIX: Handle null response properly
@@ -320,7 +373,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
         // Continue without cached location
       }
     } catch (error) {
-      console.error('❌ Error initializing location step:', error);
+      console.error('🔍 [LOCATION] Error initializing location step:', error);
       setLocationError({
         type: 'INITIALIZATION_ERROR',
         message: error.message,
@@ -357,7 +410,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
           '📍 Location Detected',
           `Current location obtained successfully. ${
             nearestRegion
-              ? `Nearest region: ${nearestRegion.region.name}`
+              ? `Nearest region: ${nearestRegion.region.regionName}`
               : 'No nearby regions found.'
           }`,
           [{ text: 'OK' }]
@@ -385,7 +438,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
 
     if (nearest) {
       console.log(
-        `📍 Nearest region: ${nearest.region.name} (${nearest.distance.toFixed(2)}km away)`
+        `📍 Nearest region: ${nearest.region.regionName} (${nearest.distance.toFixed(2)}km away)`
       );
     }
   };
@@ -430,13 +483,13 @@ export function Content({ stepOneParams, stepTwoParams }) {
 
   const handleRegionSelection = useCallback(
     debounce((selectedRegionId, level = 0) => {
-      console.log(`🎯 Region selected at level ${level}:`, selectedRegionId);
+      console.log(`🔍 [LOCATION] Region selected at level ${level}:`, selectedRegionId);
 
-      // Find the selected region
-      const region = getUserRegions().find((r) => r.administrative_id === selectedRegionId);
+      // Find the selected region using direct WatermelonDB data
+      const region = regions.find((r) => r.id === selectedRegionId);
 
       if (!region) {
-        console.error('❌ Selected region not found:', selectedRegionId);
+        console.error('🔍 [LOCATION] Selected region not found:', selectedRegionId);
         return;
       }
 
@@ -452,13 +505,15 @@ export function Content({ stepOneParams, stepTwoParams }) {
       const children = getRegionChildren(selectedRegionId);
 
       if (children.length > 0) {
-        console.log(`📂 Found ${children.length} child regions for ${region.name}`);
+        console.log(
+          `🔍 [LOCATION] Found ${children.length} child regions for ${region.regionName}`
+        );
         // We'll handle showing children in the render method
       } else {
-        console.log(`📍 Final region selected: ${region.name}`);
+        console.log(`🔍 [LOCATION] Final region selected: ${region.regionName}`);
       }
     }, 300),
-    [regionHierarchy, getUserRegions, getRegionChildren]
+    [regionHierarchy, regions, getRegionChildren]
   );
 
   const handleNearestRegionSelect = () => {
@@ -466,41 +521,21 @@ export function Content({ stepOneParams, stepTwoParams }) {
       const region = nearestRegion.region;
       setSelectedRegion(region);
 
-      // Build hierarchy path to this region
+      // Build hierarchy path to this region using WatermelonDB relationships
       const hierarchy = [];
       let currentRegion = region;
 
       // Build path from bottom to top
       const path = [currentRegion];
-      while (currentRegion.parent_id) {
-        const parent = getUserRegions().find(
-          (r) => r.administrative_id === currentRegion.parent_id
-        );
-        if (parent) {
-          path.unshift(parent);
-          currentRegion = parent;
-        } else {
-          break;
-        }
+      while (currentRegion.parentRegion) {
+        const parent = currentRegion.parentRegion;
+        path.unshift(parent);
+        currentRegion = parent;
       }
 
-      // Set hierarchy
-      setRegionHierarchy(path.map((r) => r.administrative_id));
+      // Set hierarchy using region IDs
+      setRegionHierarchy(path.map((r) => r.id));
     }
-  };
-
-  const getRegionsForLevel = (level) => {
-    if (level === 0) {
-      return availableRegions; // Use availableRegions instead of getTopLevelRegions()
-    }
-
-    const parentId = regionHierarchy[level - 1];
-    return parentId ? getRegionChildren(parentId) : [];
-  };
-
-  const getCurrentLevelRegions = () => {
-    const currentLevel = regionHierarchy.length;
-    return getRegionsForLevel(currentLevel);
   };
 
   const handleNext = () => {
@@ -511,9 +546,9 @@ export function Content({ stepOneParams, stepTwoParams }) {
 
     const locationParams = {
       issueLocation: {
-        administrative_id: selectedRegion.administrative_id,
-        name: selectedRegion.name,
-        administrative_level: selectedRegion.administrative_level,
+        id: selectedRegion.id,
+        regionName: selectedRegion.regionName,
+        administrativeLevel: selectedRegion.administrativeLevel,
       },
       locationDescription,
     };
@@ -540,19 +575,24 @@ export function Content({ stepOneParams, stepTwoParams }) {
   };
 
   const renderRegionError = () => {
-    if (!regionError) return null;
+    if (!regionError && !locationError) return null;
+
+    const error = regionError || locationError;
 
     return (
       <Card style={{ margin: 16, backgroundColor: '#ffebee' }}>
         <Card.Content>
           <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#c62828', marginBottom: 8 }}>
-            {regionError.title || 'Region Access Error'}
+            {error.title || 'Region Access Error'}
           </Text>
-          <Text style={{ color: '#d32f2f', marginBottom: 8 }}>{regionError.message}</Text>
-          <Text style={{ color: '#666', fontSize: 14 }}>{regionError.action}</Text>
+          <Text style={{ color: '#d32f2f', marginBottom: 8 }}>{error.message}</Text>
+          <Text style={{ color: '#666', fontSize: 14 }}>{error.action}</Text>
           <Button
             mode="outlined"
-            onPress={refreshRegionData}
+            onPress={() => {
+              setLocationError(null);
+              refreshRegionData();
+            }}
             style={{ marginTop: 16 }}
             disabled={dataLoading}
           >
@@ -691,11 +731,11 @@ export function Content({ stepOneParams, stepTwoParams }) {
             </Text>
             <View style={{ padding: 12, backgroundColor: '#fff3e0', borderRadius: 8 }}>
               <Text style={{ fontSize: 13, color: '#f57c00', fontWeight: '500' }}>
-                {nearestRegion.region.name}
+                {nearestRegion.region.regionName}
               </Text>
               <Text style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
                 Distance: {nearestRegion.distance.toFixed(2)}km | Level:{' '}
-                {nearestRegion.region.administrative_level}
+                {nearestRegion.region.administrativeLevel}
               </Text>
               <View style={{ marginTop: 8 }}>
                 <Button
@@ -720,8 +760,8 @@ export function Content({ stepOneParams, stepTwoParams }) {
   );
 
   const renderRegionSelector = () => {
-    // Updated condition: check if initialized AND has any regions (not just top-level)
-    if (!isInitialized || getUserRegions().length === 0) {
+    // Updated condition: check if initialized AND has any regions
+    if (!isInitialized || regions.length === 0) {
       return (
         <View style={{ padding: 16, alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#24c38b" />
@@ -755,6 +795,23 @@ export function Content({ stepOneParams, stepTwoParams }) {
       );
     }
 
+    // **AUTO-SELECTION**: If only one region, show it as selected but hidden
+    if (shouldHideRegionInput && selectedRegion) {
+      return (
+        <Card style={{ margin: 16, backgroundColor: '#e8f5e8' }}>
+          <Card.Content>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginBottom: 4 }}>
+              ✅ Auto-Selected Region
+            </Text>
+            <Text style={{ fontSize: 14, color: '#388e3c' }}>{selectedRegion.regionName}</Text>
+            <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+              Only one region available - automatically selected
+            </Text>
+          </Card.Content>
+        </Card>
+      );
+    }
+
     return (
       <View style={{ paddingHorizontal: 16 }}>
         {/* Breadcrumb showing selected path */}
@@ -763,7 +820,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
             <Text style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>Selected path:</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {regionHierarchy.map((regionId, index) => {
-                const region = getUserRegions().find((r) => r.administrative_id === regionId);
+                const region = regions.find((r) => r.id === regionId);
                 return (
                   <Chip
                     key={regionId}
@@ -771,7 +828,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
                     style={{ marginRight: 8, marginBottom: 4 }}
                     textStyle={{ fontSize: 12 }}
                   >
-                    {region?.name || regionId}
+                    {region?.regionName || regionId}
                   </Chip>
                 );
               })}
@@ -782,8 +839,9 @@ export function Content({ stepOneParams, stepTwoParams }) {
         {/* Current level selector */}
         <CustomDropDownPicker
           schema={{
-            label: 'name',
-            value: 'administrative_id',
+            // ✅ OPTIMIZED: Use direct WatermelonDB properties
+            label: 'regionName',
+            value: 'id',
           }}
           placeholder={t('step_location_dropdown_placeholder')}
           value={regionHierarchy[regionHierarchy.length - 1] || null}
@@ -795,7 +853,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
             }
           }}
           onSelectItem={(item) => {
-            console.log('📍 Region selected via dropdown:', item);
+            console.log('🔍 [LOCATION] Region selected via dropdown:', item);
           }}
         />
 
@@ -811,8 +869,9 @@ export function Content({ stepOneParams, stepTwoParams }) {
                   </Text>
                   <CustomDropDownPicker
                     schema={{
-                      label: 'name',
-                      value: 'administrative_id',
+                      // ✅ OPTIMIZED: Use direct WatermelonDB properties
+                      label: 'regionName',
+                      value: 'id',
                     }}
                     placeholder="Select sub-region"
                     value={null}
@@ -832,7 +891,7 @@ export function Content({ stepOneParams, stepTwoParams }) {
     );
   };
 
-  // Show error state if region error exists
+  // Show error state if there's a region error
   if (regionError) {
     return (
       <ScrollView style={{ backgroundColor: 'white', flex: 1 }}>
@@ -901,10 +960,9 @@ export function Content({ stepOneParams, stepTwoParams }) {
               <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginBottom: 4 }}>
                 ✅ Selected Location
               </Text>
-              <Text style={{ fontSize: 14, color: '#388e3c' }}>{selectedRegion.name}</Text>
+              <Text style={{ fontSize: 14, color: '#388e3c' }}>{selectedRegion.regionName}</Text>
               <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                Level: {selectedRegion.administrative_level} | ID:{' '}
-                {selectedRegion.administrative_id}
+                ID: {selectedRegion.id}
               </Text>
             </Card.Content>
           </Card>
@@ -928,4 +986,9 @@ export function Content({ stepOneParams, stepTwoParams }) {
   );
 }
 
-export default Content;
+// Enhanced withObservables to provide reactive data from WatermelonDB
+const enhance = withObservables([], () => ({
+  regions: watermelonManager.getDatabase().get('grm_administrative_regions').query().observe(),
+}));
+
+export default enhance(Content);

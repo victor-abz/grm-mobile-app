@@ -656,14 +656,6 @@ class WatermelonManager {
         break;
 
       case 'grm_issue_age_groups':
-        // Debug: Log the raw Frappe data to see what fields are available
-        console.log('🔍 [WATERMELON] Age group Frappe data:', {
-          name: frappeData.name,
-          age_group: frappeData.age_group,
-          age_group_name: frappeData.age_group_name,
-          allFields: Object.keys(frappeData),
-          rawData: frappeData,
-        });
         record.ageGroup = frappeData.age_group_name || '';
         break;
 

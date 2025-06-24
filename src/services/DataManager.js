@@ -127,14 +127,6 @@ const LookupAPI = {
     const response = await this.callAPI(call, 'egrm.api.lookup.age_groups');
 
     if (response.status === 'success') {
-      // Debug: Log the raw response to see field structure
-      console.log('🔍 [DATAMANAGER] Raw age groups response:', {
-        status: response.status,
-        dataLength: response.data?.length || 0,
-        sampleData: response.data?.[0] || null,
-        allData: response.data,
-      });
-
       // Return raw Frappe data directly - no transformation
       return response.data || [];
     }

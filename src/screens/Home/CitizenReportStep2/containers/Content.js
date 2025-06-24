@@ -5,7 +5,7 @@ import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {
+  ActivityIndicator,
   Button,
   Checkbox,
   Dialog,
@@ -31,13 +32,13 @@ import {
   Portal,
   TextInput,
 } from 'react-native-paper';
+import { withObservables } from '@nozbe/watermelondb/react';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
-import { useData } from '../../../../providers/DataProvider';
+import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { formatDuration } from '../../../../utils/functions';
 import { styles } from './Content.styles';
 import { useSelector } from 'react-redux';
-import dataManager from '../../../../services/DataManager';
 
 const theme = {
   roundness: 12,
@@ -64,10 +65,11 @@ const styles_audio = StyleSheet.create({
   },
 });
 
-function Content({ stepOneParams }) {
+function Content({ stepOneParams, categories = [], types = [] }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { lookupData, isDataInitialized } = useData();
+
+  // Form state
   const [pickerValue, setPickerValue] = useState(null);
   const [pickerValue2, setPickerValue2] = useState(null);
   const [pickerValue3, setPickerValue3] = useState(null);
@@ -99,68 +101,25 @@ function Content({ stepOneParams }) {
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  // TODO: Implement representative data loading with DataManager
-  // console.warn('CitizenReportStep2/Content - TODO: Implement representative data loading with DataManager');
-
-  // Use lookup data from DataProvider instead of PouchDB views
-  const items = useMemo(() => {
-    if (!isDataInitialized) {
-      console.log('🔍 [STEP2] Items (types) - not initialized, returning empty array');
-      return [];
-    }
-
-    // Transform Frappe data format to match existing UI expectations
-    const result = lookupData.types.map((type) => ({
-      ...type,
-      id: type._id || type.id,
-      label: type.name,
-      value: type._id || type.id,
-    }));
-
-    console.log('🔍 [STEP2] Items (types) processed:', result);
-    return result;
-  }, [lookupData.types, isDataInitialized]);
-
-  const items2 = useMemo(() => {
-    if (!isDataInitialized) {
-      console.log('🔍 [STEP2] Items2 (categories) - not initialized, returning empty array');
-      return [];
-    }
-
-    const result = lookupData.categories.map((category) => ({
-      ...category,
-      id: category._id || category.id,
-      label: category.name,
-      value: category._id || category.id,
-      assigned_department: category.assigned_department,
-    }));
-
-    console.log('🔍 [STEP2] Items2 (categories) processed:', result);
-    return result;
-  }, [lookupData.categories, isDataInitialized]);
-
+  // Placeholder for sub-types (not implemented in current Frappe structure)
   const itemsSubTypes = useMemo(() => {
-    // For now, return empty array as sub-types might need specific handling
-    // This can be enhanced based on your Frappe data structure
     console.log('🔍 [STEP2] ItemsSubTypes - returning empty array (not implemented)');
     return [];
   }, []);
 
+  // Placeholder for components (not implemented in current Frappe structure)
   const components = useMemo(() => {
-    // For now, return empty array as components might need specific handling
-    // This can be enhanced based on your Frappe data structure
     console.log('🔍 [STEP2] Components - returning empty array (not implemented)');
     return [];
   }, []);
 
+  // Placeholder for sub-components (not implemented in current Frappe structure)
   const subComponents = useMemo(() => {
-    // For now, return empty array as sub-components might need specific handling
-    // This can be enhanced based on your Frappe data structure
     console.log('🔍 [STEP2] SubComponents - returning empty array (not implemented)');
     return [];
   }, []);
 
-  // Update filtering logic to work with new data structure
+  // Filtering logic for sub-types (currently empty)
   const filterSubType = useMemo(() => {
     const result = selectedIssueType
       ? itemsSubTypes.filter((obj) => obj.parent_id === selectedIssueType.id)
@@ -169,12 +128,13 @@ function Content({ stepOneParams }) {
     return result;
   }, [selectedIssueType, itemsSubTypes]);
 
+  // Show all categories (no filtering needed currently)
   const filterCategory = useMemo(() => {
-    // Show all categories for now, or implement filtering based on issue type
-    console.log('🔍 [STEP2] FilterCategory result (showing all categories):', items2);
-    return items2;
-  }, [items2]);
+    console.log('🔍 [STEP2] FilterCategory - using categories directly:', categories.length);
+    return categories;
+  }, [categories]);
 
+  // Filtering logic for sub-components (currently empty)
   const filterSubComponent = useMemo(() => {
     const result = selectedIssueComponent
       ? subComponents.filter((obj) => obj.parent_id === selectedIssueComponent.id)
@@ -460,38 +420,54 @@ function Content({ stepOneParams }) {
     }
   };
 
-  const getCategory = (value) => {
-    const result = items2.filter((obj) => obj.name === value);
-    const _category = {
-      id: result[0].id,
-      name: result[0].name,
-      confidentiality_level: result[0].confidentiality_level,
-      assigned_department: result[0].assigned_department,
-      administrative_level: result[0].administrative_level,
-    };
-    return _category;
-  };
+  const getCategory = useCallback(
+    (value) => {
+      const result = categories.filter((obj) => obj.id === value);
+      if (result.length === 0) {
+        console.warn('🔍 [STEP2] Category not found for value:', value);
+        return null;
+      }
+
+      const category = result[0];
+      const _category = {
+        id: category.id,
+        name: category.id, // Frappe uses id as name
+        confidentiality_level: category.confidentialityLevel,
+        assigned_department_id: category.assignedDepartmentId,
+        administrative_level_id: category.administrativeLevelId,
+        categoryName: category.categoryName,
+      };
+
+      console.log('🔍 [STEP2] Selected category:', _category);
+      return _category;
+    },
+    [categories]
+  );
 
   const showToast = (message) => {
     ToastAndroid.show(message, ToastAndroid.SHORT);
   };
 
-  const onNext = () => {
+  const onNext = useCallback(() => {
     navigation.navigate('CitizenReportLocationStep', {
       stepOneParams,
       stepTwoParams: {
         date: date ? date.toISOString() : undefined,
         issueType: selectedIssueType
-          ? { id: selectedIssueType.id, name: selectedIssueType.name }
+          ? {
+              id: selectedIssueType.id,
+              name: selectedIssueType.id,
+              typeName: selectedIssueType.typeName,
+            }
           : null,
         issueSubType: selectedIssueSubType
-          ? { id: selectedIssueSubType.id, name: selectedIssueSubType.name }
+          ? { id: selectedIssueSubType.id, name: selectedIssueSubType.id }
           : null,
         issueComponent: selectedIssueComponent
-          ? { id: selectedIssueComponent.id, name: selectedIssueComponent.name }
+          ? { id: selectedIssueComponent.id, name: selectedIssueComponent.id }
           : null,
         issueSubComponent: selectedIssueSubComponent
-          ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.name }
+          ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.id }
           : null,
         ongoingEvent: checked,
         attachments:
@@ -523,7 +499,22 @@ function Content({ stepOneParams }) {
         additionalDetails,
       },
     });
-  };
+  }, [
+    navigation,
+    stepOneParams,
+    date,
+    selectedIssueType,
+    selectedIssueSubType,
+    selectedIssueComponent,
+    selectedIssueSubComponent,
+    checked,
+    attachments,
+    recordingURIs,
+    username,
+    getCategory,
+    pickerValue2,
+    additionalDetails,
+  ]);
 
   const removeAttachment = (index) => {
     const array = [...attachments];
@@ -531,53 +522,132 @@ function Content({ stepOneParams }) {
     setAttachments(array);
   };
 
-  // Debug logging for lookup data
+  // Audio playback functions (referenced in the UI but missing)
+  const playASound = useCallback(
+    async (uri) => {
+      try {
+        if (sound) {
+          await sound.unloadAsync();
+        }
+        const { sound: newSound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+        setSound(newSound);
+        setSoundUrl(uri);
+        setSoundOnPause(false);
+      } catch (error) {
+        console.error('Error playing sound:', error);
+      }
+    },
+    [sound]
+  );
+
+  const pauseASound = useCallback(async () => {
+    try {
+      if (sound) {
+        await sound.pauseAsync();
+        setSoundOnPause(true);
+      }
+    } catch (error) {
+      console.error('Error pausing sound:', error);
+    }
+  }, [sound]);
+
+  const playASoundOnCurrentPause = useCallback(async () => {
+    try {
+      if (sound) {
+        await sound.playAsync();
+        setSoundOnPause(false);
+      }
+    } catch (error) {
+      console.error('Error resuming sound:', error);
+    }
+  }, [sound]);
+
+  const reomveARecordingURI = useCallback(
+    (uri) => {
+      setRecordingURIs(recordingURIs.filter((item) => item.uri !== uri));
+      if (soundUrl === uri) {
+        setSoundUrl(null);
+        setSoundOnPause(false);
+      }
+    },
+    [recordingURIs, soundUrl]
+  );
+
+  const getProgress = useCallback(() => {
+    // Simple progress calculation - could be enhanced
+    return '50%';
+  }, []);
+
+  // Mock position for audio playback
+  const [position, setPosition] = useState(0);
+
+  // Debug logging for data structures
   useEffect(() => {
     console.log('🔍 CitizenReportStep2 Debug Info:', {
-      isDataInitialized,
-      categoriesCount: lookupData.categories.length,
-      typesCount: lookupData.types.length,
-      statusesCount: lookupData.statuses.length,
-      regionsCount: lookupData.regions.length,
-      categories: lookupData.categories.slice(0, 3), // First 3 categories for debugging
-      types: lookupData.types.slice(0, 3), // First 3 types for debugging
+      categoriesCount: categories.length,
+      typesCount: types.length,
     });
-  }, [isDataInitialized, lookupData]);
+    if (categories.length > 0) {
+      console.log('🔍 [STEP2] Sample category properties:', {
+        id: categories[0].id,
+        categoryName: categories[0].categoryName,
+        confidentialityLevel: categories[0].confidentialityLevel,
+        assignedDepartmentId: categories[0].assignedDepartmentId,
+      });
+    }
+    if (types.length > 0) {
+      console.log('🔍 [STEP2] Sample type properties:', {
+        id: types[0].id,
+        typeName: types[0].typeName,
+      });
+    }
+  }, [categories, types]);
 
-  // Show loading state while data is being initialized
-  if (!isDataInitialized) {
+  // Show loading state while data is being loaded
+  if (!categories.length && !types.length) {
     return (
       <ScrollView>
         <View style={{ padding: 23, alignItems: 'center' }}>
           <Text style={styles.stepText}>{t('step_2')}</Text>
           <Text style={styles.stepSubtitle}>Loading data...</Text>
           <Text style={styles.stepDescription}>
-            Please wait while we load the categories and other lookup data.
+            Please wait while we load the categories and types data from the database.
           </Text>
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
         </View>
       </ScrollView>
     );
   }
 
-  // Show message if no categories are available
-  if (items2.length === 0) {
+  // Show error state if no categories are available (categories are required)
+  if (categories.length === 0) {
     return (
       <ScrollView>
         <View style={{ padding: 23 }}>
           <Text style={styles.stepText}>{t('step_2')}</Text>
-          <Text style={styles.stepSubtitle}>No categories available</Text>
-          <Text style={styles.stepDescription}>
-            No issue categories are available. Please check your internet connection or contact
-            support.
+          <Text style={[styles.stepSubtitle, { color: colors.error }]}>
+            {t('error_loading_data')}
           </Text>
           <Text style={styles.stepDescription}>
-            Debug Info:{' '}
+            Issue categories data is not available. Please check your internet connection and try
+            again. Debug Info:{' '}
             {JSON.stringify({
-              isDataInitialized,
-              categoriesCount: lookupData.categories.length,
-              typesCount: lookupData.types.length,
+              categoriesCount: categories.length,
+              typesCount: types.length,
             })}
           </Text>
+          <Button
+            mode="contained"
+            style={{ marginTop: 20 }}
+            onPress={() => {
+              // Could implement a retry mechanism here if needed
+              console.log('Retry button pressed - would refresh data');
+              console.log('Raw categories:', categories);
+              console.log('Raw types:', types);
+            }}
+          >
+            {t('retry_button')}
+          </Button>
         </View>
       </ScrollView>
     );
@@ -678,27 +748,27 @@ function Content({ stepOneParams }) {
         <View style={{ zIndex: 2000 }}>
           <CustomDropDownPicker
             schema={{
-              label: 'name',
-              value: 'name',
+              label: 'typeName',
+              value: 'id',
             }}
             zIndex={3000}
             zIndexInverse={2000}
             placeholder={t('step_2_placeholder_1')}
             value={pickerValue}
-            items={items}
+            items={types}
             setPickerValue={setPickerValue}
-            loading={!isDataInitialized}
+            loading={!types.length}
             onSelectItem={(item) => setSelectedIssueType(item)}
           />
         </View>
         <View style={{ zIndex: 1000 }}>
           <CustomDropDownPicker
             schema={{
-              label: 'name',
-              value: 'name',
+              label: 'categoryName',
+              value: 'id',
               id: 'id',
-              confidentiality_level: 'confidentiality_level',
-              assigned_department: 'assigned_department',
+              confidentiality_level: 'confidentialityLevel',
+              assigned_department: 'assignedDepartmentId',
             }}
             zIndex={3000}
             zIndexInverse={2000}
@@ -706,7 +776,7 @@ function Content({ stepOneParams }) {
             value={pickerValue2}
             items={filterCategory}
             setPickerValue={setPickerValue2}
-            loading={!isDataInitialized}
+            loading={!categories.length}
             // setItems={setItems2}
           />
         </View>
@@ -915,6 +985,7 @@ function Content({ stepOneParams }) {
               }
 
               const selectedCategory = getCategory(pickerValue2);
+              console.log(">>>>", selectedCategory)
               if (selectedCategory && selectedCategory.confidentiality_level === 'Confidential') {
                 _showDialog();
                 return;
@@ -967,4 +1038,10 @@ function Content({ stepOneParams }) {
   );
 }
 
-export default Content;
+// Enhanced withObservables to provide reactive data from WatermelonDB
+const enhance = withObservables([], () => ({
+  categories: watermelonManager.getDatabase().get('grm_issue_categories').query().observe(),
+  types: watermelonManager.getDatabase().get('grm_issue_types').query().observe(),
+}));
+
+export default enhance(Content);
