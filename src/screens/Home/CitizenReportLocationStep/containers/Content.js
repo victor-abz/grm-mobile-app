@@ -544,11 +544,17 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       return;
     }
 
+    // ✅ FIXED: Extract primitive values to avoid circular reference
     const locationParams = {
       issueLocation: {
         id: selectedRegion.id,
         regionName: selectedRegion.regionName,
-        administrativeLevel: selectedRegion.administrativeLevel,
+        // Extract primitive value from WatermelonDB relation by accessing raw data
+        administrativeLevel:
+          selectedRegion._raw?.administrative_level_id ||
+          selectedRegion.administrativeLevelId ||
+          selectedRegion.administrativeLevel?.id ||
+          selectedRegion.administrativeLevel,
       },
       locationDescription,
     };

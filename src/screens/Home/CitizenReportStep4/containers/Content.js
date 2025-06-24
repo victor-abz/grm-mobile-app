@@ -1,12 +1,15 @@
 import { useBackHandler } from '@react-native-community/hooks';
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Dimensions, ScrollView, Text, View } from 'react-native';
+import { Dimensions, ScrollView, Text, View, ActivityIndicator } from 'react-native';
 import { Button } from 'react-native-paper';
+import { withObservables } from '@nozbe/watermelondb/react';
+import watermelonManager from '../../../../database/watermelonManager';
 import LockImage from '../../../../../assets/lock.svg';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
+import { Q } from '@nozbe/watermelondb';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -21,9 +24,22 @@ const theme = {
   },
 };
 
-function Content({ issue }) {
+function Content({ route, navigation, issue }) {
   const { t } = useTranslation();
-  const navigation = useNavigation();
+  const { issueId, trackingCode } = route?.params || {};
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Extract the actual issue from the query result array
+  const actualIssue = Array.isArray(issue) && issue.length > 0 ? issue[0] : null;
+
+  console.log('🔍 [STEP4] Component rendered with:', {
+    issueId,
+    trackingCode,
+    hasIssue: !!actualIssue,
+    issueArray: issue,
+    actualIssue,
+  });
 
   useBackHandler(
     () =>
@@ -31,6 +47,110 @@ function Content({ issue }) {
       // handle it
       true
   );
+
+  // Effect to handle loading state and error detection
+  useEffect(() => {
+    let timeoutId;
+
+    if (issueId) {
+      console.log('🔍 [STEP4] Setting up loading timeout for issue:', issueId);
+
+      // Set timeout to detect if issue is not loading
+      timeoutId = setTimeout(() => {
+        if (!actualIssue) {
+          console.error('❌ [STEP4] Issue not loaded after timeout');
+          setError('Issue could not be loaded. It may still be syncing.');
+        }
+        setIsLoading(false);
+      }, 3000); // 3 second timeout
+
+      // If issue is found, clear timeout and stop loading
+      if (actualIssue) {
+        console.log('✅ [STEP4] Issue loaded successfully:', actualIssue);
+        clearTimeout(timeoutId);
+        setIsLoading(false);
+        setError(null);
+      }
+    } else {
+      console.log('🔍 [STEP4] No issueId provided in route params');
+      setIsLoading(false);
+      setError('No issue ID provided');
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [actualIssue, issueId]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 50 }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 16, textAlign: 'center', color: '#666' }}>
+          Loading issue details...
+        </Text>
+        <Text style={{ marginTop: 8, textAlign: 'center', color: '#999', fontSize: 12 }}>
+          Issue ID: {issueId}
+        </Text>
+      </View>
+    );
+  }
+
+  // Show error state with fallback to tracking code
+  if (error || (!actualIssue && issueId)) {
+    return (
+      <ScrollView>
+        <View style={{ padding: 23 }}>
+          <Text style={styles.stepText}>{t('step_6')}</Text>
+          <Text style={styles.stepSubtitle}>{t('step_4_subtitle')}</Text>
+          <Text style={styles.stepDescription}>{t('step_4_description')}</Text>
+        </View>
+
+        <LockImage
+          style={{ alignSelf: 'center' }}
+          height={screenHeight * 0.2}
+          width={screenWidth * 0.5}
+        />
+        <Text style={[styles.stepSubtitle, { textAlign: 'center' }]}>{t('step_4_issue_code')}</Text>
+        <Text
+          style={{
+            fontSize: 49,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            color: colors.primary,
+            marginBottom: 20,
+          }}
+        >
+          {trackingCode || 'PENDING'}
+        </Text>
+
+        <Text
+          style={{ textAlign: 'center', color: '#666', marginBottom: 20, paddingHorizontal: 20 }}
+        >
+          ✅ Your issue has been submitted successfully!
+          {error && (
+            <Text style={{ color: '#ff9800', fontSize: 12 }}>
+              {'\n'}Note: {error}
+            </Text>
+          )}
+        </Text>
+
+        <View style={{ alignSelf: 'center' }}>
+          <Button
+            theme={theme}
+            labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
+            mode="contained"
+            onPress={() => navigation.navigate('GRM')}
+          >
+            {t('step_4_back_text')}
+          </Button>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView>
@@ -59,7 +179,7 @@ function Content({ issue }) {
           marginBottom: 40,
         }}
       >
-        {issue.tracking_code}
+        {actualIssue?.trackingCode || trackingCode || 'PENDING'}
       </Text>
       <View style={{ alignSelf: 'center' }}>
         {/* <View */}
@@ -110,4 +230,59 @@ function Content({ issue }) {
   );
 }
 
-export default Content;
+// ✅ FIXED: withObservables with better error handling and proper route access
+const enhance = withObservables(['route'], ({ route }) => {
+  console.log('🔍 [STEP4] withObservables called with route:', route);
+
+  // Safety check for route and params
+  if (!route || !route.params) {
+    console.log('🔍 [STEP4] No route or params provided, returning empty issue observable');
+    return {
+      issue: watermelonManager
+        .getDatabase()
+        .get('grm_issues')
+        .query(Q.where('id', 'none'))
+        .observe(),
+    };
+  }
+
+  console.log('🔍 [STEP4] Route params:', route.params);
+
+  const issueId = route.params.issueId;
+  console.log('🔍 [STEP4] withObservables called with issueId:', issueId);
+
+  if (!issueId) {
+    console.log('🔍 [STEP4] No issueId provided, returning empty issue observable');
+    return {
+      issue: watermelonManager
+        .getDatabase()
+        .get('grm_issues')
+        .query(Q.where('id', 'none'))
+        .observe(),
+    };
+  }
+
+  try {
+    console.log('🔍 [STEP4] Creating issue observable for ID:', issueId);
+    const database = watermelonManager.getDatabase();
+    const issuesCollection = database.get('grm_issues');
+
+    // Use query with where clause to find the specific issue
+    const issueQuery = issuesCollection.query(Q.where('id', issueId));
+
+    return {
+      issue: issueQuery.observe(),
+    };
+  } catch (error) {
+    console.error('❌ [STEP4] Error in withObservables:', error);
+    return {
+      issue: watermelonManager
+        .getDatabase()
+        .get('grm_issues')
+        .query(Q.where('id', 'none'))
+        .observe(),
+    };
+  }
+});
+
+export default enhance(Content);

@@ -520,43 +520,23 @@ class DataManager {
   }
 
   /**
-   * Create issue
+   * Create issue - Always create in WatermelonDB first, sync will be handled separately
    */
   async createIssue(issueData) {
     try {
-      if (this.isOnline && this.call) {
-        // Create via API first
-        const issue = await this.createIssueViaAPI(issueData);
-        // Store in local database
-        await watermelonManager.createIssue(issue);
-        return issue;
-      } else {
-        // Create locally and sync later
-        return await watermelonManager.createIssue(issueData);
-      }
-    } catch (error) {
-      console.error('❌ Error creating issue:', error);
-      throw error;
-    }
-  }
+      console.log('🔍 [DataManager] Creating issue in WatermelonDB (offline-first approach)...');
 
-  /**
-   * Create issue via API
-   */
-  async createIssueViaAPI(issueData) {
-    try {
-      const response = await this.call.post('egrm.api.issue.create', {
-        issue_data: issueData,
-      });
-      const apiResponse = extractApiResponse(response);
+      // Always create locally in WatermelonDB first
+      // The sync process will handle pushing to API later
+      const localIssue = await watermelonManager.createIssue(issueData);
+      console.log('✅ [DataManager] Issue created locally in WatermelonDB:', localIssue);
 
-      if (apiResponse.status === 'success') {
-        return apiResponse.data;
-      } else {
-        throw new Error(apiResponse.message || 'Failed to create issue');
-      }
+      // TODO: Add to sync queue for later upload to backend API
+      // This will be implemented as part of the WatermelonDB sync process
+
+      return localIssue;
     } catch (error) {
-      console.error('❌ Error creating issue via API:', error);
+      console.error('❌ Error creating issue in WatermelonDB:', error);
       throw error;
     }
   }

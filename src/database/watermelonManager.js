@@ -129,37 +129,78 @@ class WatermelonManager {
 
   async getIssue(issueId) {
     try {
+      console.log('🔍 [WM] getIssue called with ID:', issueId);
+
       const db = this.getDatabase();
+      console.log('🔍 [WM] Database instance obtained for getIssue');
+
       const issue = await db.get('grm_issues').find(issueId);
-      // Return raw data directly - no transformation
-      return {
-        ...issue._raw,
-        name: issue._raw.id || issue._raw.name,
-      };
+      console.log('🔍 [WM] Issue found:', !!issue);
+
+      if (issue) {
+        console.log('🔍 [WM] Issue details:', {
+          id: issue.id,
+          _raw: issue._raw,
+          _status: issue._status,
+        });
+
+        // Return raw data directly - no transformation
+        const result = {
+          ...issue._raw,
+          name: issue._raw.id || issue._raw.name,
+        };
+
+        console.log('✅ [WM] Returning found issue:', result);
+        return result;
+      } else {
+        console.log('❌ [WM] Issue not found for ID:', issueId);
+        return null;
+      }
     } catch (error) {
-      console.error('Error fetching issue from WatermelonDB:', error);
+      console.error('❌ [WM] Error fetching issue from WatermelonDB:', error);
+      console.error('❌ [WM] Error stack:', error.stack);
       return null;
     }
   }
 
   async createIssue(issueData) {
     try {
+      console.log('🔍 [WM] createIssue called with data:', issueData);
+
       const db = this.getDatabase();
+      console.log('🔍 [WM] Database instance obtained');
+
       const issue = await db.write(async () => {
+        console.log('🔍 [WM] Starting database write transaction');
+
         return await db.get('grm_issues').create((issue) => {
+          console.log('🔍 [WM] Creating new issue record');
+
           this._mapIssueDataToModel(issue, issueData);
           issue.createdAt = new Date();
           issue.updatedAt = new Date();
+
+          console.log('🔍 [WM] Issue record created with ID:', issue.id);
+          console.log('🔍 [WM] Issue _raw data:', issue._raw);
         });
       });
 
+      console.log('🔍 [WM] Database write transaction completed');
+      console.log('🔍 [WM] Created issue object:', issue);
+      console.log('🔍 [WM] Issue ID:', issue.id);
+      console.log('🔍 [WM] Issue _raw:', issue._raw);
+
       // Return raw data directly - no transformation
-      return {
+      const result = {
         ...issue._raw,
         name: issue._raw.id || issue._raw.name,
       };
+
+      console.log('✅ [WM] Returning issue result:', result);
+      return result;
     } catch (error) {
-      console.error('Error creating issue in WatermelonDB:', error);
+      console.error('❌ [WM] Error creating issue in WatermelonDB:', error);
+      console.error('❌ [WM] Error stack:', error.stack);
       throw error;
     }
   }

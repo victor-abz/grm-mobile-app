@@ -1,15 +1,15 @@
-import React from "react";
-import { SafeAreaView } from "react-native";
-import Content from "./containers/Content";
-import { styles } from "./CitizenReportStep4.styles";
+import React from 'react';
+import { SafeAreaView } from 'react-native';
+import Content from './containers/Content';
+import { styles } from './CitizenReportStep4.styles';
 
-const CitizenReportStep4 = ({ route }) => {
+const CitizenReportStep4 = ({ route, navigation }) => {
   const { params } = route;
   const customStyles = styles();
 
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content issue={params.issue} />
+      <Content route={route} navigation={navigation} />
     </SafeAreaView>
   );
 };

@@ -985,7 +985,6 @@ function Content({ stepOneParams, categories = [], types = [] }) {
               }
 
               const selectedCategory = getCategory(pickerValue2);
-              console.log(">>>>", selectedCategory)
               if (selectedCategory && selectedCategory.confidentiality_level === 'Confidential') {
                 _showDialog();
                 return;

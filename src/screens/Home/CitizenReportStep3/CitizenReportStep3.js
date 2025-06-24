@@ -65,12 +65,9 @@ function CitizenReportStep3({ route, navigation }) {
   return (
     <SafeAreaView style={customStyles.container}>
       <Content
-        eadl={communesData[0]}
-        issue={{
-          ...params.stepOneParams,
-          ...params.stepTwoParams,
-          ...params.stepLocationParams,
-        }}
+        stepOneParams={params?.stepOneParams || {}}
+        stepTwoParams={params?.stepTwoParams || {}}
+        stepLocationParams={params?.stepLocationParams || {}}
       />
     </SafeAreaView>
   );

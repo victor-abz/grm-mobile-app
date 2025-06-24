@@ -6,8 +6,10 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, ScrollView, Text, View, Alert } from 'react-native';
 import { Button, Dialog, Paragraph, Portal } from 'react-native-paper';
+import { withObservables } from '@nozbe/watermelondb/react';
+import watermelonManager from '../../../../database/watermelonManager';
+import dataManager from '../../../../services/DataManager'; // Import DataManager for proper API sync
 import { colors } from '../../../../utils/colors';
-import dataManager from '../../../../services/DataManager';
 import { styles } from './Content.styles';
 
 const SAMPLE_WORDS = ['car', 'house', 'tree', 'ball'];
@@ -21,7 +23,13 @@ const theme = {
   },
 };
 
-function Content({ issue }) {
+function Content({
+  stepOneParams,
+  stepTwoParams,
+  stepLocationParams,
+  categories = [], // From withObservables if needed for display
+  types = [], // From withObservables if needed for display
+}) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
@@ -34,216 +42,119 @@ function Content({ issue }) {
   const [sound, setSound] = useState();
   const [playing, setPlaying] = useState(false);
 
-  const formatIssueData = () => {
-    // Get user context
-    const userContext = dataManager.getUserContext();
-
-    // Get user assignment for the region
-    const selectedRegionId = issue.issueLocation?.administrative_id || issue.issueLocation?.id;
-    const regionAssignment = userContext?.assignments?.find(
-      (a) => a.region.id === selectedRegionId
-    );
-
-    // Check if user has access to the selected region
-    const hasRegionAccess = userContext?.accessible_regions?.some(
-      (r) => r.name === selectedRegionId || r.id === selectedRegionId
-    );
-
-    // Check if category matches user's department in the region
-    const isAssignable =
-      regionAssignment &&
-      issue.category?.id &&
-      regionAssignment.department?.id === issue.category?.assigned_department;
-
-    // Log assignment check data
-    console.log('Assignment Check Debug:', {
-      selectedRegion: {
-        id: selectedRegionId,
-        name: issue.issueLocation?.name,
-      },
-      userAssignments: userContext?.assignments?.map((a) => ({
-        region: a.region.id,
-        department: a.department.id,
-      })),
-      hasRegionAccess,
-      regionAssignment: regionAssignment
-        ? {
-            region: regionAssignment.region.id,
-            department: regionAssignment.department.id,
-            role: regionAssignment.role,
-          }
-        : null,
-      category: {
-        id: issue.category?.id,
-        assignedDepartment: issue.category?.assigned_department,
-      },
-      isAssignable,
-      willAssign: isAssignable
-        ? 'Yes - Will assign to current user'
-        : 'No - Will create unassigned',
-    });
-
-    if (!hasRegionAccess) {
-      console.warn('⚠️ User does not have access to selected region:', selectedRegionId);
-    }
-
-    // Format issue data according to centralized structure
-    const formattedData = {
-      // Basic fields
-      description: issue.additionalDetails,
-
-      // Citizen information
-      citizen: issue.name || '',
-      citizen_type: issue.citizen_type,
-      gender: issue.gender,
-      contact_medium: issue.typeOfPerson || 'facilitator',
-
-      // Contact information
-      contact_type: issue.methodOfContact || 'email',
-      contact_value: issue.contactInfo || '',
-
-      // Dates
-      intake_date: new Date().toISOString(),
-      issue_date: issue.date ? new Date(issue.date).toISOString() : new Date().toISOString(),
-
-      // Required entities
-      category: issue.category?.id || issue.category?.name,
-      issue_type: issue.issueType?.id || issue.issueType?.name,
-      administrative_region: selectedRegionId,
-
-      // Optional entities
-      citizen_age_group: issue.ageGroup?.id || issue.ageGroup?.name,
-      citizen_group_1: issue.citizen_group_1?.id || issue.citizen_group_1?.name,
-      citizen_group_2: issue.citizen_group_2?.id || issue.citizen_group_2?.name,
-
-      // Project - get from user context if available
-      project: regionAssignment?.project?.id || null,
-
-      // Flags
-      ongoing_issue: issue.ongoingEvent || false,
-      confirmed: true,
-
-      // Additional fields
-      tracking_code: `${randomWord(SAMPLE_WORDS)}${Math.floor(Math.random() * 1000)}`,
-
-      // Coordinates if available
-      ...(issue.coordinates && {
-        coordinates: JSON.stringify({
-          type: 'FeatureCollection',
-          features: [
-            {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'Point',
-                coordinates: [issue.coordinates.longitude, issue.coordinates.latitude],
-              },
-            },
-          ],
-        }),
-      }),
-
-      // Set assignee if user has matching department
-      ...(isAssignable && { assignee: userContext.user.id }),
-    };
-
-    // Log final formatted data
-    console.log('Formatted Issue Data:', {
-      category: formattedData.category,
-      issue_type: formattedData.issue_type,
-      administrative_region: formattedData.administrative_region,
-      project: formattedData.project,
-      assignee: formattedData.assignee || 'Not assigned',
-      assignment_reason: isAssignable
-        ? 'Assigned to current user - matching department and region'
-        : 'Left unassigned - no matching department or region assignment',
-    });
-
-    return formattedData;
-  };
-
-  const validateIssueData = (issueData) => {
-    const requiredFields = {
-      description: 'Description',
-      category: 'Category',
-      issue_type: 'Issue Type',
-      administrative_region: 'Administrative Region',
-    };
-
-    const missingFields = Object.entries(requiredFields)
-      .filter(([field]) => !issueData[field])
-      .map(([, label]) => label);
-
-    if (missingFields.length > 0) {
-      Alert.alert(
-        t('error'),
-        t('missing_required_fields', { fields: missingFields.join(', ') }),
-        [{ text: t('ok'), style: 'default' }],
-        { cancelable: true }
-      );
-      return false;
-    }
-
-    // Validate region access
-    const userContext = dataManager.getUserContext();
-    const hasRegionAccess = userContext?.accessible_regions?.some(
-      (r) => r.name === issueData.administrative_region || r.id === issueData.administrative_region
-    );
-
-    if (!hasRegionAccess) {
-      Alert.alert(t('error'), t('no_region_access'), [{ text: t('ok'), style: 'default' }], {
-        cancelable: true,
-      });
-      return false;
-    }
-
-    return true;
-  };
-
   const submitIssue = async () => {
     try {
       setIsSubmitting(true);
 
-      // Format and validate issue data
-      const issueData = formatIssueData();
-      if (!validateIssueData(issueData)) {
-        setIsSubmitting(false);
-        return;
+      console.log('🔍 [STEP3] Starting issue submission...');
+      console.log('🔍 [STEP3] stepOneParams:', stepOneParams);
+      console.log('🔍 [STEP3] stepTwoParams:', stepTwoParams);
+      console.log('🔍 [STEP3] stepLocationParams:', stepLocationParams);
+
+      // Prepare issue data in format expected by backend API
+      const issueDate = stepTwoParams.date ? new Date(stepTwoParams.date) : new Date();
+      const intakeDate = new Date();
+
+      const issueData = {
+        // Core issue identification - use direct IDs from selections
+        issue_type_id: stepTwoParams.issueType?.id || '',
+        category_id: stepTwoParams.category?.id || '',
+
+        // Location
+        administrative_region_id: stepLocationParams.issueLocation?.id || '',
+        issue_location: stepLocationParams.locationDescription || '',
+
+        // Issue details
+        description: stepTwoParams.additionalDetails || '',
+        // ✅ FIXED: Convert to ISO datetime format that Frappe can parse
+        issue_date: issueDate.toISOString(),
+        intake_date: intakeDate.toISOString(),
+
+        // Citizen information from step 1
+        citizen: stepOneParams.name || '',
+        citizen_type: stepOneParams.typeOfPerson || 'facilitator',
+        gender: stepOneParams.gender || '',
+        contact_medium: stepOneParams.typeOfPerson || 'facilitator',
+        contact_info_type: stepOneParams.methodOfContact || 'email',
+        contact_information: stepOneParams.contactInfo || '',
+
+        // Optional citizen groupings from step 1
+        citizen_age_group_id: stepOneParams.selectedAge?.id || null,
+        citizen_group_1_id: stepOneParams.selectedCitizenGroupI?.id || null,
+        citizen_group_2_id: stepOneParams.selectedCitizenGroupII?.id || null,
+
+        // Generate tracking code
+        tracking_code: `${randomWord(SAMPLE_WORDS)}${Math.floor(Math.random() * 1000)}`,
+
+        // Set confirmed flag
+        confirmed: true,
+
+        // Set default status as pending/submitted
+        status_id: 'pending',
+
+        // Set reporter (would need to get from user context)
+        reporter_id: stepOneParams.reporterId || 'mobile_app_user',
+
+        // Set project if available
+        project_id: stepLocationParams.projectId || '',
+      };
+
+      console.log('🔍 [STEP3] Prepared issue data for DataManager:', issueData);
+      console.log(
+        '🔍 [STEP3] Date formats - issue_date:',
+        issueData.issue_date,
+        'intake_date:',
+        issueData.intake_date
+      );
+
+      // ✅ USE DataManager instead of watermelonManager directly
+      // This ensures proper API sync when online and local storage when offline
+      console.log('🔍 [STEP3] Creating issue via DataManager (handles API sync)...');
+      const newIssue = await dataManager.createIssue(issueData);
+
+      console.log('✅ [STEP3] Issue created via DataManager successfully!');
+      console.log('✅ [STEP3] Created issue details:', {
+        id: newIssue.id,
+        name: newIssue.name,
+        trackingCode: newIssue.tracking_code || newIssue.trackingCode,
+        issueTypeId: newIssue.issue_type_id,
+        categoryId: newIssue.category_id,
+        status: newIssue.status_id,
+      });
+
+      // Verify the issue was actually saved by trying to fetch it from local database
+      console.log('🔍 [STEP3] Verifying issue was saved locally...');
+      try {
+        const savedIssue = await watermelonManager.getIssue(newIssue.id);
+        if (savedIssue) {
+          console.log('✅ [STEP3] Issue verification successful - issue found in local database');
+          console.log('✅ [STEP3] Saved issue details:', savedIssue);
+        } else {
+          console.error('❌ [STEP3] Issue verification failed - issue not found in local database');
+          throw new Error('Issue was not properly saved to local database');
+        }
+      } catch (verifyError) {
+        console.error('❌ [STEP3] Error verifying saved issue:', verifyError);
+        throw new Error('Failed to verify issue was saved: ' + verifyError.message);
       }
 
-      console.log('Submitting issue with data:', issueData);
+      // Navigation happens immediately after verification
+      const issueId = newIssue.id;
+      const trackingCode = newIssue.tracking_code || newIssue.trackingCode;
 
-      // Create issue using DataManager
-      const response = await dataManager.createIssue(issueData);
-
-      if (response.status === 'success' || response.status === 'pending') {
-        // Handle attachments if any
-        if (issue.attachment) {
-          await dataManager.uploadAttachment(response.data._id, {
-            file: issue.attachment.file,
-            filename: issue.attachment.filename,
-            description: issue.attachment.description,
-          });
-        }
-
-        if (issue.recording) {
-          await dataManager.uploadAttachment(response.data._id, {
-            file: issue.recording.file,
-            filename: issue.recording.filename,
-            description: 'Voice recording',
-          });
-        }
-
-        // Navigate to success screen
-        navigation.navigate('CitizenReportStep4', {
-          issue: response.data,
-          pendingSync: response.status === 'pending',
-        });
-      } else {
-        throw new Error(response.message || 'Failed to create issue');
-      }
+      console.log(
+        '🔍 [STEP3] Navigating to Step 4 with issue ID:',
+        issueId,
+        'tracking code:',
+        trackingCode
+      );
+      navigation.navigate('CitizenReportStep4', {
+        issueId: issueId,
+        trackingCode: trackingCode,
+      });
     } catch (error) {
-      console.error('Error submitting issue:', error);
+      console.error('❌ [STEP3] Error creating issue:', error);
+      console.error('❌ [STEP3] Error stack:', error.stack);
       Alert.alert(t('error'), t('issue_creation_error'), [{ text: t('ok'), style: 'default' }], {
         cancelable: true,
       });
@@ -253,7 +164,8 @@ function Content({ issue }) {
   };
 
   const handleSubmit = () => {
-    if (issue.category && issue.category.confidentiality_level === 'Confidential') {
+    // Check if category requires confirmation dialog using the data as it comes from step 2
+    if (stepTwoParams.category && stepTwoParams.category.confidentiality_level === 'Confidential') {
       _showDialog();
     } else {
       submitIssue();
@@ -304,56 +216,58 @@ function Content({ issue }) {
         <Text style={styles.stepDescription}>{t('step_3_subtitle')}</Text>
       </View>
 
-      {/* STEP 3 SUMMARY */}
+      {/* STEP 3 SUMMARY - Using data as it comes from previous steps */}
       <View style={styles.cardConfirm}>
         <View>
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_1')}</Text>
           <Text style={styles.stepDescription}>
-            {issue.date !== 'null' && !!issue.date
-              ? moment(issue.date).format('DD-MMMM-YYYY')
+            {stepTwoParams.date && stepTwoParams.date !== 'null'
+              ? moment(stepTwoParams.date).format('DD-MMMM-YYYY')
               : '--'}
           </Text>
         </View>
 
         <View>
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_2')}</Text>
-          <Text style={styles.stepDescription}>{issue.issueType.name ?? '--'}</Text>
+          <Text style={styles.stepDescription}>{stepTwoParams.issueType?.typeName || '--'}</Text>
         </View>
 
-        <View>
+        {/* <View>
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_2_1')}</Text>
-          <Text style={styles.stepDescription}>{issue.issueSubType?.name ?? '--'}</Text>
-        </View>
+          <Text style={styles.stepDescription}>{stepTwoParams.issueSubType?.name || '--'}</Text>
+        </View> */}
 
         <View>
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_3')}</Text>
-          <Text style={styles.stepDescription}>{issue.category?.name ?? '--'}</Text>
+          <Text style={styles.stepDescription}>{stepTwoParams.category?.categoryName || '--'}</Text>
         </View>
 
-        <View>
+        {/* <View>
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_5')}</Text>
-          <Text style={styles.stepDescription}>{issue.issueComponent?.name ?? '--'}</Text>
-        </View>
+          <Text style={styles.stepDescription}>{stepTwoParams.issueComponent?.name || '--'}</Text>
+        </View> */}
 
-        <View>
+        {/* <View>
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_6')}</Text>
-          <Text style={styles.stepDescription}>{issue.issueSubComponent?.name ?? '--'}</Text>
-        </View>
+          <Text style={styles.stepDescription}>
+            {stepTwoParams.issueSubComponent?.name || '--'}
+          </Text>
+        </View> */}
 
         <View>
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_4')}</Text>
-          <Text style={styles.stepDescription}>{issue.additionalDetails ?? '--'}</Text>
+          <Text style={styles.stepDescription}>{stepTwoParams.additionalDetails || '--'}</Text>
         </View>
 
         <Text style={styles.stepSubtitle}>{t('step_3_attachments')}</Text>
-        {issue.attachment && (
+        {stepTwoParams.attachments && stepTwoParams.attachments.length > 0 && (
           <Text style={styles.stepDescription}>
-            Image: {JSON.stringify(issue?.attachment?.id) ?? '--'}
+            Images: {stepTwoParams.attachments.length} file(s)
           </Text>
         )}
-        {issue.recording && (
+        {stepTwoParams.recordings && stepTwoParams.recordings.length > 0 && (
           <Text style={styles.stepDescription}>
-            Audio: {JSON.stringify(issue?.recording?.id) ?? '--'}
+            Audio: {stepTwoParams.recordings.length} recording(s)
           </Text>
         )}
       </View>
@@ -412,4 +326,12 @@ function Content({ issue }) {
   );
 }
 
-export default Content;
+// ✅ ADD: withObservables HOC at bottom of file
+const enhance = withObservables([], () => ({
+  // For displaying any lookup data if needed (categories, types, etc.)
+  categories: watermelonManager.getDatabase().get('grm_issue_categories').query().observe(),
+  types: watermelonManager.getDatabase().get('grm_issue_types').query().observe(),
+  // Add other lookup tables if referenced in confirmation display
+}));
+
+export default enhance(Content);
