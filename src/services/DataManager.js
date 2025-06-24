@@ -80,7 +80,7 @@ const LookupAPI = {
   },
 
   /**
-   * Fetch and transform categories
+   * Fetch categories - return raw Frappe data
    */
   async getCategories(call, projectId = null) {
     const response = await this.callAPI(call, 'egrm.api.lookup.categories', {
@@ -88,97 +88,61 @@ const LookupAPI = {
     });
 
     if (response.status === 'success') {
-      return response.data.map((category) => ({
-        _id: category.name,
-        type: 'issue_category',
-        id: category.name,
-        name: category.category_name,
-        label: category.category_name,
-        value: category.name,
-        description: category.description,
-        department: category.department,
-        department_name: category.department_name,
-        assigned_department: category.assigned_department,
-        auto_assign: category.auto_assign,
-        active: category.active,
-        project: projectId,
-      }));
+      // Return raw Frappe data directly - no transformation
+      return response.data || [];
     }
     return [];
   },
 
   /**
-   * Fetch and transform issue types
+   * Fetch issue types - return raw Frappe data
    */
   async getTypes(call, projectId = null) {
     const response = await this.callAPI(call, 'egrm.api.lookup.types', { project_id: projectId });
 
     if (response.status === 'success') {
-      return response.data.map((type) => ({
-        _id: type.name,
-        type: 'issue_type',
-        id: type.name,
-        name: type.type_name,
-        label: type.type_name,
-        value: type.name,
-        description: type.description,
-        active: type.active,
-        project: projectId,
-      }));
+      // Return raw Frappe data directly - no transformation
+      return response.data || [];
     }
     return [];
   },
 
   /**
-   * Fetch and transform statuses
+   * Fetch statuses - return raw Frappe data
    */
   async getStatuses(call) {
     const response = await this.callAPI(call, 'egrm.api.lookup.statuses');
 
     if (response.status === 'success') {
-      return response.data.map((status) => ({
-        _id: status.name,
-        type: 'issue_status',
-        id: status.name,
-        name: status.status_name,
-        label: status.status_name,
-        value: status.name,
-        description: status.description,
-        initial_status: status.initial_status,
-        open_status: status.open_status,
-        rejected_status: status.rejected_status,
-        final_status: status.final_status,
-        appealed_status: status.appealed_status,
-        color: status.color,
-      }));
+      // Return raw Frappe data directly - no transformation
+      return response.data || [];
     }
     return [];
   },
 
   /**
-   * Fetch and transform age groups
+   * Fetch age groups - return raw Frappe data
    */
   async getAgeGroups(call) {
     const response = await this.callAPI(call, 'egrm.api.lookup.age_groups');
 
     if (response.status === 'success') {
-      return response.data.map((ageGroup) => ({
-        _id: ageGroup.name,
-        type: 'age_group',
-        id: ageGroup.name,
-        name: ageGroup.age_group_name,
-        label: ageGroup.age_group_name,
-        value: ageGroup.name,
-        min_age: ageGroup.min_age,
-        max_age: ageGroup.max_age,
-        active: ageGroup.active !== undefined ? ageGroup.active : 1,
-      }));
+      // Debug: Log the raw response to see field structure
+      console.log('🔍 [DATAMANAGER] Raw age groups response:', {
+        status: response.status,
+        dataLength: response.data?.length || 0,
+        sampleData: response.data?.[0] || null,
+        allData: response.data,
+      });
+
+      // Return raw Frappe data directly - no transformation
+      return response.data || [];
     }
     return [];
   },
 
   /**
-   * Fetch and transform citizen groups
+   * Fetch citizen groups - return raw Frappe data
    */
   async getCitizenGroups(call) {
     const response = await this.callAPI(call, 'egrm.api.lookup.citizen_groups');
@@ -186,7 +150,7 @@ const LookupAPI = {
     if (response.status === 'success') {
       let allCitizenGroups = [];
 
-      // Handle nested structure
+      // Handle nested structure from Frappe backend
       if (response.data.citizen_group_1) {
         allCitizenGroups = allCitizenGroups.concat(response.data.citizen_group_1);
       }
@@ -194,83 +158,47 @@ const LookupAPI = {
         allCitizenGroups = allCitizenGroups.concat(response.data.citizen_group_2);
       }
 
-      return allCitizenGroups.map((citizenGroup) => ({
-        _id: citizenGroup.name,
-        type: 'citizen_group',
-        id: citizenGroup.name,
-        name: citizenGroup.group_name,
-        label: citizenGroup.group_name,
-        value: citizenGroup.name,
-        description: citizenGroup.description || citizenGroup.group_name,
-        group_type: citizenGroup.group_type,
-        active: citizenGroup.active !== undefined ? citizenGroup.active : 1,
-      }));
+      // Return raw Frappe data directly - no transformation
+      return allCitizenGroups;
     }
     return [];
   },
 
   /**
-   * Fetch and transform departments
+   * Fetch departments - return raw Frappe data
    */
   async getDepartments(call) {
     const response = await this.callAPI(call, 'egrm.api.lookup.departments');
 
     if (response.status === 'success') {
-      return response.data.map((department) => ({
-        _id: department.name,
-        type: 'department',
-        id: department.name,
-        name: department.department_name,
-        label: department.department_name,
-        value: department.name,
-        description: department.description,
-        active: department.active,
-      }));
+      // Return raw Frappe data directly - no transformation
+      return response.data || [];
     }
     return [];
   },
 
   /**
-   * Fetch and transform projects
+   * Fetch projects - return raw Frappe data
    */
   async getProjects(call) {
     const response = await this.callAPI(call, 'egrm.api.lookup.projects');
 
     if (response.status === 'success') {
-      return response.data.map((project) => ({
-        _id: project.name,
-        type: 'project',
-        id: project.name,
-        name: project.title,
-        label: project.title,
-        value: project.name,
-        description: project.description,
-        start_date: project.start_date,
-        end_date: project.end_date,
-        active: project.is_active,
-      }));
+      // Return raw Frappe data directly - no transformation
+      return response.data || [];
     }
     return [];
   },
 
   /**
-   * Fetch and transform regions
+   * Fetch regions - return raw Frappe data
    */
   async getRegions(call, filters = {}) {
     const response = await this.callAPI(call, 'egrm.api.lookup.regions', filters);
 
     if (response.status === 'success') {
-      return response.data.map((region) => ({
-        _id: region.name,
-        type: 'administrative_level',
-        administrative_id: region.name,
-        name: region.region_name,
-        administrative_level: region.administrative_level,
-        parent_id: region.parent_region,
-        latitude: region.latitude,
-        longitude: region.longitude,
-        project: region.project,
-      }));
+      // Return raw Frappe data directly - no transformation
+      return response.data || [];
     }
     return [];
   },

@@ -1,10 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { ActivityIndicator, Button, RadioButton, TextInput } from 'react-native-paper';
+import { withObservables } from '@nozbe/watermelondb/react';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
-import { useData } from '../../../../providers/DataProvider';
+import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 
@@ -18,10 +19,11 @@ const theme = {
   },
 };
 
-function Content({ stepOneParams }) {
+function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { lookupData, isDataInitialized, isLoading, refreshContactData } = useData();
+
+  // Form state
   const [name, setName] = useState('');
   const [confidentialValue, setConfidentialValue] = useState(null);
   const [isPreviousPickerClosed, setIsPreviousPickerClosed] = useState(true);
@@ -31,6 +33,7 @@ function Content({ stepOneParams }) {
   const [selectedCitizenGroupI, setSelectedCitizenGroupI] = useState(null);
   const [selectedCitizenGroupII, setSelectedCitizenGroupII] = useState(null);
 
+  // Static gender options
   const genders = useMemo(
     () => [
       { label: t('male'), value: 'male' },
@@ -39,114 +42,120 @@ function Content({ stepOneParams }) {
     [t]
   );
 
-  // Use lookup data from DataProvider instead of PouchDB views
-  const ages = useMemo(() => {
-    if (!isDataInitialized) {
-      console.log('🔍 [CONTACT] Age groups - not initialized yet');
-      return [];
-    }
-
-    if (!lookupData.ageGroups || lookupData.ageGroups.length === 0) {
+  // Process age groups from WatermelonDB model objects
+  // Data comes from Frappe backend with 'name' as primary identifier
+  // Backend sends 'age_group_name' field which maps to 'ageGroup' property
+  const processedAgeGroups = useMemo(() => {
+    if (!ageGroups || ageGroups.length === 0) {
       console.log('🔍 [CONTACT] Age groups - no data available');
       return [];
     }
 
-    const result = lookupData.ageGroups.map((ageGroup) => ({
-      ...ageGroup,
-      id: ageGroup._id || ageGroup.id,
-      label: ageGroup.name,
-      value: ageGroup._id || ageGroup.id,
-    }));
+    // Handle WatermelonDB model objects - access properties via getters
+    const result = ageGroups
+      .filter((ageGroup) => ageGroup && ageGroup.id) // Ensure valid records
+      .map((ageGroup) => ({
+        // Use Frappe's native structure
+        name: ageGroup.id, // Frappe primary identifier (stored as WatermelonDB id)
+        label: ageGroup.ageGroup || ageGroup.id, // Display name from age_group_name field with fallback
+        value: ageGroup.id, // Use id as value for form
+        // Keep reference to original model
+        _model: ageGroup,
+        // Include additional properties for debugging
+        ageGroup: ageGroup.ageGroup,
+        createdAt: ageGroup.createdAt,
+        updatedAt: ageGroup.updatedAt,
+      }));
 
     console.log(`✅ [CONTACT] Age groups processed: ${result.length} items`);
-    return result;
-  }, [lookupData.ageGroups, isDataInitialized]);
-
-  // Handle citizen groups - they might be an array or nested object
-  const citizenGroupsI = useMemo(() => {
-    if (!isDataInitialized) {
-      console.log('🔍 [CONTACT] Citizen groups I - not initialized yet');
-      return [];
+    if (result.length > 0) {
+      console.log('🔍 [CONTACT] Sample age group:', {
+        name: result[0].name,
+        label: result[0].label,
+        ageGroup: result[0].ageGroup,
+      });
     }
+    return result;
+  }, [ageGroups]);
 
-    if (!lookupData.citizenGroups || lookupData.citizenGroups.length === 0) {
+  // Process citizen groups for type 1 (first dropdown)
+  const citizenGroupsI = useMemo(() => {
+    if (!citizenGroups || citizenGroups.length === 0) {
       console.log('🔍 [CONTACT] Citizen groups I - no data available');
       return [];
     }
 
-    // Filter for group_type 1
-    const groups = lookupData.citizenGroups.filter(
-      (group) => group.group_type === '1' || group.group_type === 1
-    );
+    // Handle WatermelonDB model objects and filter for group_type 1
+    const result = citizenGroups
+      .filter((group) => group && group.id && (group.groupType === '1' || group.groupType === 1))
+      .map((group) => {
+        console.log('🔍 [CONTACT] Processing citizen group I:', {
+          id: group.id,
+          groupName: group.groupName,
+          groupType: group.groupType,
+        });
 
-    const result = groups.map((group) => ({
-      ...group,
-      id: group._id || group.id,
-      label: group.name,
-      value: group._id || group.id,
-    }));
+        return {
+          // Use Frappe's native structure
+          name: group.id, // Frappe primary identifier (stored as WatermelonDB id)
+          label: group.groupName || group.id, // Display name from group_name field - FIXED
+          value: group.id, // Use id as value for form
+          group_type: group.groupType,
+          // Keep reference to original model
+          _model: group,
+          // Include additional properties for debugging
+          groupName: group.groupName,
+          groupType: group.groupType,
+          createdAt: group.createdAt,
+          updatedAt: group.updatedAt,
+        };
+      });
 
     console.log(`✅ [CONTACT] Citizen groups I processed: ${result.length} items`);
-    return result;
-  }, [lookupData.citizenGroups, isDataInitialized]);
-
-  const citizenGroupsII = useMemo(() => {
-    if (!isDataInitialized) {
-      console.log('🔍 [CONTACT] Citizen groups II - not initialized yet');
-      return [];
+    if (result.length > 0) {
+      console.log('🔍 [CONTACT] Sample citizen group I:', {
+        name: result[0].name,
+        label: result[0].label,
+        groupName: result[0].groupName,
+        groupType: result[0].groupType,
+      });
     }
+    return result;
+  }, [citizenGroups]);
 
-    if (!lookupData.citizenGroups || lookupData.citizenGroups.length === 0) {
+  // Process citizen groups for type 2 (second dropdown)
+  const citizenGroupsII = useMemo(() => {
+    if (!citizenGroups || citizenGroups.length === 0) {
       console.log('🔍 [CONTACT] Citizen groups II - no data available');
       return [];
     }
 
-    // Filter for group_type 2
-    const groups = lookupData.citizenGroups.filter(
-      (group) => group.group_type === '2' || group.group_type === 2
-    );
-
-    const result = groups.map((group) => ({
-      ...group,
-      id: group._id || group.id,
-      label: group.name,
-      value: group._id || group.id,
-    }));
+    // Handle WatermelonDB model objects and filter for group_type 2
+    const result = citizenGroups
+      .filter((group) => group && group.id && (group.groupType === '2' || group.groupType === 2))
+      .map((group) => ({
+        // Use Frappe's native structure
+        name: group.id, // Frappe primary identifier (stored as WatermelonDB id)
+        label: group.groupName || group.id, // Display name from group_name field
+        value: group.id, // Use id as value for form
+        group_type: group.groupType,
+        // Keep reference to original model
+        _model: group,
+        // Include additional properties for debugging
+        groupName: group.groupName,
+        groupType: group.groupType,
+        createdAt: group.createdAt,
+        updatedAt: group.updatedAt,
+      }));
 
     console.log(`✅ [CONTACT] Citizen groups II processed: ${result.length} items`);
-    return result;
-  }, [lookupData.citizenGroups, isDataInitialized]);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 [CONTACT] Debug Info:', {
-      isDataInitialized,
-      ageGroupsCount: lookupData.ageGroups?.length || 0,
-      citizenGroupsCount: lookupData.citizenGroups?.length || 0,
-      processedAges: ages.length,
-      processedGroupsI: citizenGroupsI.length,
-      processedGroupsII: citizenGroupsII.length,
-    });
-  }, [isDataInitialized, lookupData, ages, citizenGroupsI, citizenGroupsII]);
-
-  // Add refresh handler
-  const handleRefreshData = useCallback(async () => {
-    await refreshContactData();
-  }, [refreshContactData]);
-
-  // Add error state tracking
-  const [dataError, setDataError] = useState(false);
-
-  // Check for data availability
-  useEffect(() => {
-    if (isDataInitialized && (!lookupData.ageGroups?.length || !lookupData.citizenGroups?.length)) {
-      console.warn('⚠️ [CONTACT] Required data missing after initialization');
-      setDataError(true);
-    } else {
-      setDataError(false);
+    if (result.length > 0) {
+      console.log('🔍 [CONTACT] Sample citizen group II:', result[0]);
     }
-  }, [isDataInitialized, lookupData]);
+    return result;
+  }, [citizenGroups]);
 
+  // Event handlers
   const handleConfidentialValueChange = useCallback((newValue) => {
     setConfidentialValue((prevValue) => (newValue === prevValue ? null : newValue));
   }, []);
@@ -156,14 +165,36 @@ function Content({ stepOneParams }) {
   }, []);
 
   const handleNavigateToStep2 = useCallback(() => {
+    // Navigate with processed data that includes Frappe identifiers
+    // Only pass essential data to avoid circular reference warnings
     navigation.navigate('CitizenReportStep2', {
       stepOneParams: {
         ...stepOneParams,
         name,
-        ageGroup: selectedAge,
+        ageGroup: selectedAge
+          ? {
+              name: selectedAge.name,
+              label: selectedAge.label,
+              ageGroup: selectedAge.ageGroup,
+            }
+          : null,
         citizen_type: confidentialValue,
-        citizen_group_1: selectedCitizenGroupI,
-        citizen_group_2: selectedCitizenGroupII,
+        citizen_group_1: selectedCitizenGroupI
+          ? {
+              name: selectedCitizenGroupI.name,
+              label: selectedCitizenGroupI.label,
+              groupName: selectedCitizenGroupI.groupName,
+              groupType: selectedCitizenGroupI.groupType,
+            }
+          : null,
+        citizen_group_2: selectedCitizenGroupII
+          ? {
+              name: selectedCitizenGroupII.name,
+              label: selectedCitizenGroupII.label,
+              groupName: selectedCitizenGroupII.groupName,
+              groupType: selectedCitizenGroupII.groupType,
+            }
+          : null,
         gender: pickerGenderValue,
       },
     });
@@ -193,15 +224,15 @@ function Content({ stepOneParams }) {
     [handleConfidentialValueChange]
   );
 
-  // Show loading state while data is being initialized
-  if (!isDataInitialized || isLoading) {
+  // Show loading state while data is being loaded
+  if (!ageGroups.length && !citizenGroups.length) {
     return (
       <ScrollView>
         <View style={{ padding: 23, alignItems: 'center' }}>
           <Text style={styles.stepText}>{t('step_2')}</Text>
           <Text style={styles.stepSubtitle}>Loading data...</Text>
           <Text style={styles.stepDescription}>
-            Please wait while we load the age groups and citizen groups data.
+            Please wait while we load the age groups and citizen groups data from the database.
           </Text>
           <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
         </View>
@@ -209,8 +240,8 @@ function Content({ stepOneParams }) {
     );
   }
 
-  // Show error state with retry option
-  if (dataError) {
+  // Show error state if no age groups are available (age groups are required)
+  if (!processedAgeGroups.length) {
     return (
       <ScrollView>
         <View style={{ padding: 23, alignItems: 'center' }}>
@@ -218,12 +249,19 @@ function Content({ stepOneParams }) {
           <Text style={[styles.stepSubtitle, { color: colors.error }]}>
             {t('error_loading_data')}
           </Text>
-          <Text style={styles.stepDescription}>{t('error_loading_data_description')}</Text>
+          <Text style={styles.stepDescription}>
+            Age groups data is not available. Please check your internet connection and try again.
+            Debug: Raw age groups count: {ageGroups.length}
+          </Text>
           <Button
             mode="contained"
             style={{ marginTop: 20 }}
-            onPress={handleRefreshData}
-            loading={isLoading}
+            onPress={() => {
+              // Could implement a retry mechanism here if needed
+              console.log('Retry button pressed - would refresh data');
+              console.log('Raw age groups:', ageGroups);
+              console.log('Raw citizen groups:', citizenGroups);
+            }}
           >
             {t('retry_button')}
           </Button>
@@ -262,10 +300,12 @@ function Content({ stepOneParams }) {
           </RadioButton.Group>
         </View>
         <Text />
+
+        {/* Age Groups Dropdown - Using Frappe data structure */}
         <CustomDropDownPicker
           schema={{
-            label: 'name',
-            value: 'id',
+            label: 'label', // Display field from processed data
+            value: 'value', // Value field from processed data (Frappe name)
           }}
           zIndex={4000}
           zIndexInverse={1000}
@@ -274,11 +314,13 @@ function Content({ stepOneParams }) {
           value={pickerAgeValue}
           onOpen={() => setIsPreviousPickerClosed(false)}
           onClose={() => setIsPreviousPickerClosed(true)}
-          items={ages}
+          items={processedAgeGroups}
           setPickerValue={setPickerAgeValue}
         />
+
         {isPreviousPickerClosed && (
           <>
+            {/* Gender Dropdown */}
             <CustomDropDownPicker
               placeholder={t('contact_step_placeholder_3')}
               value={pickerGenderValue}
@@ -287,10 +329,12 @@ function Content({ stepOneParams }) {
               zIndexInverse={2000}
               setPickerValue={setPickerGenderValue}
             />
+
+            {/* Citizen Group I Dropdown - Using Frappe data structure */}
             <CustomDropDownPicker
               schema={{
-                label: 'name',
-                value: 'id',
+                label: 'label', // Display field from processed data
+                value: 'value', // Value field from processed data (Frappe name)
               }}
               zIndex={2000}
               zIndexInverse={3000}
@@ -299,10 +343,12 @@ function Content({ stepOneParams }) {
               items={citizenGroupsI}
               setPickerValue={setSelectedCitizenGroupI}
             />
+
+            {/* Citizen Group II Dropdown - Using Frappe data structure */}
             <CustomDropDownPicker
               schema={{
-                label: 'name',
-                value: 'id',
+                label: 'label', // Display field from processed data
+                value: 'value', // Value field from processed data (Frappe name)
               }}
               placeholder={t('contact_step_placeholder_6')}
               value={selectedCitizenGroupII}
@@ -311,6 +357,7 @@ function Content({ stepOneParams }) {
               items={citizenGroupsII}
               setPickerValue={setSelectedCitizenGroupII}
             />
+
             <View style={{ paddingHorizontal: 50 }}>
               <Button
                 theme={theme}
@@ -329,4 +376,10 @@ function Content({ stepOneParams }) {
   );
 }
 
-export default React.memo(Content);
+// Enhanced withObservables to provide reactive data from WatermelonDB
+const enhance = withObservables([], () => ({
+  ageGroups: watermelonManager.getDatabase().get('grm_issue_age_groups').query().observe(),
+  citizenGroups: watermelonManager.getDatabase().get('grm_issue_citizen_groups').query().observe(),
+}));
+
+export default enhance(Content);

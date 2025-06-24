@@ -90,6 +90,7 @@ class LookupDataManager {
           break;
         case 'age_groups':
           data = await this.watermelonManager.getAgeGroups();
+          console.log('HERHEHREHREH', data);
           break;
         case 'citizen_groups':
           data = await this.watermelonManager.getCitizenGroups();
@@ -119,7 +120,7 @@ class LookupDataManager {
   }
 
   /**
-   * Get reactive observable for data type
+   * Get reactive observable for data type - Return raw Frappe data directly
    */
   observeData(dataType, projectId = null) {
     try {
@@ -140,8 +141,10 @@ class LookupDataManager {
                 of(
                   records
                     .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => this.watermelonManager.transformCategoryToApiFormat(r._raw))
-                    .filter((r) => r !== null) // Filter out null transform results
+                    .map((r) => ({
+                      ...r._raw,
+                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
+                    }))
                 )
               ),
               catchError((error) => {
@@ -159,8 +162,10 @@ class LookupDataManager {
                 of(
                   records
                     .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => this.watermelonManager.transformTypeToApiFormat(r._raw))
-                    .filter((r) => r !== null) // Filter out null transform results
+                    .map((r) => ({
+                      ...r._raw,
+                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
+                    }))
                 )
               ),
               catchError((error) => {
@@ -178,8 +183,10 @@ class LookupDataManager {
                 of(
                   records
                     .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => this.watermelonManager.transformStatusToApiFormat(r._raw))
-                    .filter((r) => r !== null) // Filter out null transform results
+                    .map((r) => ({
+                      ...r._raw,
+                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
+                    }))
                 )
               ),
               catchError((error) => {
@@ -197,8 +204,10 @@ class LookupDataManager {
                 of(
                   records
                     .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => this.watermelonManager.transformAgeGroupToApiFormat(r._raw))
-                    .filter((r) => r !== null) // Filter out null transform results
+                    .map((r) => ({
+                      ...r._raw,
+                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
+                    }))
                 )
               ),
               catchError((error) => {
@@ -216,8 +225,10 @@ class LookupDataManager {
                 of(
                   records
                     .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => this.watermelonManager.transformCitizenGroupToApiFormat(r._raw))
-                    .filter((r) => r !== null) // Filter out null transform results
+                    .map((r) => ({
+                      ...r._raw,
+                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
+                    }))
                 )
               ),
               catchError((error) => {
@@ -235,8 +246,10 @@ class LookupDataManager {
                 of(
                   records
                     .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => this.watermelonManager.transformDepartmentToApiFormat(r._raw))
-                    .filter((r) => r !== null) // Filter out null transform results
+                    .map((r) => ({
+                      ...r._raw,
+                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
+                    }))
                 )
               ),
               catchError((error) => {
@@ -254,8 +267,10 @@ class LookupDataManager {
                 of(
                   records
                     .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => this.watermelonManager.transformProjectToApiFormat(r._raw))
-                    .filter((r) => r !== null) // Filter out null transform results
+                    .map((r) => ({
+                      ...r._raw,
+                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
+                    }))
                 )
               ),
               catchError((error) => {
@@ -272,8 +287,10 @@ class LookupDataManager {
               of(
                 records
                   .filter((r) => r && r._raw) // Filter out null records
-                  .map((r) => this.watermelonManager.transformRegionToApiFormat(r._raw))
-                  .filter((r) => r !== null) // Filter out null transform results
+                  .map((r) => ({
+                    ...r._raw,
+                    name: r._raw.id || r._raw.name, // Ensure Frappe name field
+                  }))
               )
             ),
             catchError((error) => {

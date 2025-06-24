@@ -5,10 +5,11 @@ import LookupDataManager from '../services/LookupDataManager';
 /**
  * Higher-order component to provide reactive lookup data
  * Uses WatermelonDB's withObservables for reactive updates
+ * Now returns raw Frappe data directly - no complex transformations
  */
 
 /**
- * HOC for categories
+ * HOC for categories - Returns raw Frappe data
  */
 export const withCategories = (Component, projectId = null) => {
   const enhance = withObservables(['projectId'], ({ projectId }) => ({
@@ -19,7 +20,7 @@ export const withCategories = (Component, projectId = null) => {
 };
 
 /**
- * HOC for types
+ * HOC for issue types - Returns raw Frappe data
  */
 export const withTypes = (Component, projectId = null) => {
   const enhance = withObservables(['projectId'], ({ projectId }) => ({
@@ -30,7 +31,7 @@ export const withTypes = (Component, projectId = null) => {
 };
 
 /**
- * HOC for statuses
+ * HOC for statuses - Returns raw Frappe data
  */
 export const withStatuses = (Component) => {
   const enhance = withObservables([], () => ({
@@ -41,7 +42,7 @@ export const withStatuses = (Component) => {
 };
 
 /**
- * HOC for age groups
+ * HOC for age groups - Returns raw Frappe data
  */
 export const withAgeGroups = (Component) => {
   const enhance = withObservables([], () => ({
@@ -52,7 +53,7 @@ export const withAgeGroups = (Component) => {
 };
 
 /**
- * HOC for citizen groups
+ * HOC for citizen groups - Returns raw Frappe data
  */
 export const withCitizenGroups = (Component) => {
   const enhance = withObservables([], () => ({
@@ -63,7 +64,7 @@ export const withCitizenGroups = (Component) => {
 };
 
 /**
- * HOC for departments
+ * HOC for departments - Returns raw Frappe data
  */
 export const withDepartments = (Component) => {
   const enhance = withObservables([], () => ({
@@ -74,7 +75,7 @@ export const withDepartments = (Component) => {
 };
 
 /**
- * HOC for projects
+ * HOC for projects - Returns raw Frappe data
  */
 export const withProjects = (Component) => {
   const enhance = withObservables([], () => ({
@@ -85,7 +86,7 @@ export const withProjects = (Component) => {
 };
 
 /**
- * HOC for regions
+ * HOC for regions - Returns raw Frappe data
  */
 export const withRegions = (Component, filters = {}) => {
   const enhance = withObservables(['filters'], ({ filters }) => ({
@@ -96,7 +97,7 @@ export const withRegions = (Component, filters = {}) => {
 };
 
 /**
- * Combined HOC for all lookup data
+ * HOC for all lookup data combined - Returns raw Frappe data
  */
 export const withAllLookupData = (Component, projectId = null) => {
   const enhance = withObservables(['projectId'], ({ projectId }) => ({
@@ -114,76 +115,55 @@ export const withAllLookupData = (Component, projectId = null) => {
 };
 
 /**
- * Hook-style function for use in functional components
+ * Utility functions for working with raw Frappe data
  */
-export const useLookupData = (dataType, projectId = null, filters = {}) => {
-  const [data, setData] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
+export const LookupUtils = {
+  /**
+   * Find item by name (Frappe primary identifier)
+   */
+  findByName: (items, name) => {
+    return items.find((item) => item.name === name);
+  },
 
-  React.useEffect(() => {
-    let subscription;
+  /**
+   * Get display value for an item (fallback chain for display text)
+   */
+  getDisplayValue: (item) => {
+    if (!item) return '';
+    return (
+      item.title ||
+      item.category_name ||
+      item.type_name ||
+      item.status_name ||
+      item.age_group ||
+      item.group_name ||
+      item.department_name ||
+      item.region_name ||
+      item.name ||
+      ''
+    );
+  },
 
-    const setupObservable = async () => {
-      try {
-        let observable;
+  /**
+   * Filter active items (handle different ways Frappe stores active status)
+   */
+  filterActive: (items) => {
+    return items.filter((item) => {
+      // Different ways Frappe stores active status
+      return item.is_active !== false && item.active !== false && item.disabled !== true;
+    });
+  },
 
-        switch (dataType) {
-          case 'categories':
-            observable = LookupDataManager.observeCategories(projectId);
-            break;
-          case 'types':
-            observable = LookupDataManager.observeTypes(projectId);
-            break;
-          case 'statuses':
-            observable = LookupDataManager.observeStatuses();
-            break;
-          case 'age_groups':
-            observable = LookupDataManager.observeAgeGroups();
-            break;
-          case 'citizen_groups':
-            observable = LookupDataManager.observeCitizenGroups();
-            break;
-          case 'departments':
-            observable = LookupDataManager.observeDepartments();
-            break;
-          case 'projects':
-            observable = LookupDataManager.observeProjects();
-            break;
-          case 'regions':
-            observable = LookupDataManager.observeRegions(filters);
-            break;
-          default:
-            console.warn(`Unknown data type: ${dataType}`);
-            setLoading(false);
-            return;
-        }
-
-        subscription = observable.subscribe({
-          next: (newData) => {
-            setData(newData);
-            setLoading(false);
-          },
-          error: (error) => {
-            console.error(`Error in ${dataType} observable:`, error);
-            setLoading(false);
-          },
-        });
-      } catch (error) {
-        console.error(`Error setting up ${dataType} observable:`, error);
-        setLoading(false);
-      }
-    };
-
-    setupObservable();
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-    };
-  }, [dataType, projectId, JSON.stringify(filters)]);
-
-  return { data, loading };
+  /**
+   * Sort items by display value
+   */
+  sortByDisplay: (items) => {
+    return [...items].sort((a, b) => {
+      const displayA = LookupUtils.getDisplayValue(a).toLowerCase();
+      const displayB = LookupUtils.getDisplayValue(b).toLowerCase();
+      return displayA.localeCompare(displayB);
+    });
+  },
 };
 
 export default {
@@ -196,5 +176,5 @@ export default {
   withProjects,
   withRegions,
   withAllLookupData,
-  useLookupData,
+  LookupUtils,
 };

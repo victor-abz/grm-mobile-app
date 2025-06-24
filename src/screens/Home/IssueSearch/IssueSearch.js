@@ -9,13 +9,12 @@ import { colors } from '../../../utils/colors';
 import { styles } from './IssueSearch.style';
 import Content from './containers';
 
-function IssueSearch({ issues, observableStatuses }) {
+function IssueSearch({ issues = [], statuses = [] }) {
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
   const { isDataInitialized } = useData();
 
   const [eadl, setEadl] = useState(null);
-  const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,16 +24,12 @@ function IssueSearch({ issues, observableStatuses }) {
       try {
         setLoading(true);
 
-        // ENsure we use watermelon here
-        const statusesData = await getIssueStatuses();
-        setStatuses(statusesData);
-
-        // For now, create a mock eadl object based on username
-        // This should be replaced with proper user data from Frappe
+        // Create user object based on username
+        // This should be replaced with proper user data from Frappe when available
         setEadl({
-          _id: username,
-          email: username,
           name: username,
+          email: username,
+          full_name: username,
         });
       } catch (error) {
         console.error('Error loading initial data:', error);
@@ -52,22 +47,25 @@ function IssueSearch({ issues, observableStatuses }) {
 
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content issues={issues || []} eadl={eadl} statuses={statuses} />
+      <Content issues={issues} eadl={eadl} statuses={statuses} />
     </SafeAreaView>
   );
 }
 
 // Enhanced component with reactive WatermelonDB queries
+// Now uses proper observables for both issues and statuses
 const enhance = withObservables([], () => {
   try {
     return {
-      issues: watermelonManager.observeIssues({}), // Get all issues reactively
+      issues: watermelonManager.observeIssues({}), // Get all issues reactively with raw Frappe data
+      statuses: watermelonManager.observeIssueStatuses(), // Get all statuses reactively with raw Frappe data
     };
   } catch (error) {
     console.error('Error setting up WatermelonDB observables:', error);
     // Return empty observables as fallback
     return {
       issues: { subscribe: () => ({ unsubscribe: () => {} }) },
+      statuses: { subscribe: () => ({ unsubscribe: () => {} }) },
     };
   }
 });

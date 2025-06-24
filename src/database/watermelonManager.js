@@ -112,10 +112,15 @@ class WatermelonManager {
       query = query.sortBy('issue_date', Q.desc);
 
       const issues = await query.fetch();
+      // Return raw data directly - no transformation
       return issues
         .filter((issue) => issue && issue._raw) // Filter out null issues
-        .map((issue) => this.transformIssueToApiFormat(issue._raw))
-        .filter((issue) => issue !== null); // Filter out null transform results
+        .map((issue) => ({
+          ...issue._raw,
+          // Ensure name field exists (Frappe primary identifier)
+          name: issue._raw.id || issue._raw.name,
+        }))
+        .filter((issue) => issue !== null);
     } catch (error) {
       console.error('Error fetching issues from WatermelonDB:', error);
       return [];
@@ -126,7 +131,11 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const issue = await db.get('grm_issues').find(issueId);
-      return this.transformIssueToApiFormat(issue._raw);
+      // Return raw data directly - no transformation
+      return {
+        ...issue._raw,
+        name: issue._raw.id || issue._raw.name,
+      };
     } catch (error) {
       console.error('Error fetching issue from WatermelonDB:', error);
       return null;
@@ -144,7 +153,11 @@ class WatermelonManager {
         });
       });
 
-      return this.transformIssueToApiFormat(issue._raw);
+      // Return raw data directly - no transformation
+      return {
+        ...issue._raw,
+        name: issue._raw.id || issue._raw.name,
+      };
     } catch (error) {
       console.error('Error creating issue in WatermelonDB:', error);
       throw error;
@@ -162,7 +175,11 @@ class WatermelonManager {
         });
       });
 
-      return this.transformIssueToApiFormat(updatedIssue._raw);
+      // Return raw data directly - no transformation
+      return {
+        ...updatedIssue._raw,
+        name: updatedIssue._raw.id || updatedIssue._raw.name,
+      };
     } catch (error) {
       console.error('Error updating issue in WatermelonDB:', error);
       throw error;
@@ -185,16 +202,20 @@ class WatermelonManager {
   }
 
   /**
-   * Lookup Data Methods
+   * Lookup Data Methods - Return raw Frappe data directly
    */
   async getIssueStatuses() {
     try {
       const db = this.getDatabase();
       const statuses = await db.get('grm_issue_statuses').query().fetch();
+      // Return raw data directly - no transformation
       return statuses
-        .filter((status) => status && status._raw) // Filter out null records
-        .map((status) => this.transformStatusToApiFormat(status._raw))
-        .filter((status) => status !== null); // Filter out null transform results
+        .filter((status) => status && status._raw)
+        .map((status) => ({
+          ...status._raw,
+          name: status._raw.id || status._raw.name,
+        }))
+        .filter((status) => status !== null);
     } catch (error) {
       console.error('Error fetching statuses from WatermelonDB:', error);
       return [];
@@ -210,10 +231,14 @@ class WatermelonManager {
       // This would need to be implemented through relationships if needed
 
       const categories = await query.fetch();
+      // Return raw data directly - no transformation
       return categories
-        .filter((category) => category && category._raw) // Filter out null records
-        .map((category) => this.transformCategoryToApiFormat(category._raw))
-        .filter((category) => category !== null); // Filter out null transform results
+        .filter((category) => category && category._raw)
+        .map((category) => ({
+          ...category._raw,
+          name: category._raw.id || category._raw.name,
+        }))
+        .filter((category) => category !== null);
     } catch (error) {
       console.error('Error fetching categories from WatermelonDB:', error);
       return [];
@@ -224,10 +249,14 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const types = await db.get('grm_issue_types').query().fetch();
+      // Return raw data directly - no transformation
       return types
-        .filter((type) => type && type._raw) // Filter out null records
-        .map((type) => this.transformTypeToApiFormat(type._raw))
-        .filter((type) => type !== null); // Filter out null transform results
+        .filter((type) => type && type._raw)
+        .map((type) => ({
+          ...type._raw,
+          name: type._raw.id || type._raw.name,
+        }))
+        .filter((type) => type !== null);
     } catch (error) {
       console.error('Error fetching types from WatermelonDB:', error);
       return [];
@@ -238,10 +267,14 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const ageGroups = await db.get('grm_issue_age_groups').query().fetch();
+      // Return raw data directly - no transformation
       return ageGroups
-        .filter((ageGroup) => ageGroup && ageGroup._raw) // Filter out null records
-        .map((ageGroup) => this.transformAgeGroupToApiFormat(ageGroup._raw))
-        .filter((ageGroup) => ageGroup !== null); // Filter out null transform results
+        .filter((ageGroup) => ageGroup && ageGroup._raw)
+        .map((ageGroup) => ({
+          ...ageGroup._raw,
+          name: ageGroup._raw.id || ageGroup._raw.name,
+        }))
+        .filter((ageGroup) => ageGroup !== null);
     } catch (error) {
       console.error('Error fetching age groups from WatermelonDB:', error);
       return [];
@@ -252,10 +285,14 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const citizenGroups = await db.get('grm_issue_citizen_groups').query().fetch();
+      // Return raw data directly - no transformation
       return citizenGroups
-        .filter((group) => group && group._raw) // Filter out null records
-        .map((group) => this.transformCitizenGroupToApiFormat(group._raw))
-        .filter((group) => group !== null); // Filter out null transform results
+        .filter((group) => group && group._raw)
+        .map((group) => ({
+          ...group._raw,
+          name: group._raw.id || group._raw.name,
+        }))
+        .filter((group) => group !== null);
     } catch (error) {
       console.error('Error fetching citizen groups from WatermelonDB:', error);
       return [];
@@ -266,10 +303,14 @@ class WatermelonManager {
     try {
       const db = this.getDatabase();
       const departments = await db.get('grm_issue_departments').query().fetch();
+      // Return raw data directly - no transformation
       return departments
-        .filter((dept) => dept && dept._raw) // Filter out null records
-        .map((dept) => this.transformDepartmentToApiFormat(dept._raw))
-        .filter((dept) => dept !== null); // Filter out null transform results
+        .filter((dept) => dept && dept._raw)
+        .map((dept) => ({
+          ...dept._raw,
+          name: dept._raw.id || dept._raw.name,
+        }))
+        .filter((dept) => dept !== null);
     } catch (error) {
       console.error('Error fetching departments from WatermelonDB:', error);
       return [];
@@ -313,24 +354,22 @@ class WatermelonManager {
 
       console.log(`🔍 [PROJECTS] ${validProjects.length} valid project records after filtering`);
 
-      // Transform with enhanced error handling
+      // Return raw data directly - no transformation
       const transformedProjects = validProjects
         .map((project, index) => {
           try {
-            const transformed = this.transformProjectToApiFormat(project._raw);
-            if (!transformed) {
-              console.warn(`🔍 [PROJECTS] Transform failed for record ${index}`);
-              return null;
-            }
-            return transformed;
+            return {
+              ...project._raw,
+              name: project._raw.id || project._raw.name,
+            };
           } catch (error) {
-            console.error(`🔍 [PROJECTS] Transform error for record ${index}:`, error);
+            console.error(`🔍 [PROJECTS] Error processing record ${index}:`, error);
             return null;
           }
         })
         .filter((project) => project !== null);
 
-      console.log(`🔍 [PROJECTS] ${transformedProjects.length} projects successfully transformed`);
+      console.log(`🔍 [PROJECTS] ${transformedProjects.length} projects successfully processed`);
 
       return transformedProjects;
     } catch (error) {
@@ -363,10 +402,14 @@ class WatermelonManager {
       }
 
       const regions = await query.fetch();
+      // Return raw data directly - no transformation
       return regions
-        .filter((region) => region && region._raw) // Filter out null records
-        .map((region) => this.transformRegionToApiFormat(region._raw))
-        .filter((region) => region !== null); // Filter out null transform results
+        .filter((region) => region && region._raw)
+        .map((region) => ({
+          ...region._raw,
+          name: region._raw.id || region._raw.name,
+        }))
+        .filter((region) => region !== null);
     } catch (error) {
       console.error('Error fetching regions from WatermelonDB:', error);
       return [];
@@ -436,14 +479,8 @@ class WatermelonManager {
         }
 
         for (const item of data) {
-          // Validate item has required fields - for Frappe data, the ID is usually in .name
-          if (!item || (!item.name && !item.id)) {
-            console.warn(`Skipping item without ID/name in ${tableName}:`, item);
-            continue;
-          }
-
-          // For Frappe data, use .name as the primary identifier, fallback to .id
-          const itemId = item.name || item.id;
+          // For Frappe data, use .name as the primary identifier
+          const itemId = item.name;
 
           // Additional validation for critical fields
           if (!itemId || itemId === 'unknown') {
@@ -455,16 +492,16 @@ class WatermelonManager {
             // Try to find existing record
             const existingRecord = await collection.find(itemId);
 
-            // Update existing record
+            // Update existing record with raw Frappe data
             await existingRecord.update((record) => {
-              this.updateLookupFromServerData(record, item, tableName);
+              this.updateRecordFromFrappeData(record, item, tableName);
             });
           } catch (error) {
             // Record doesn't exist, create new one
             try {
               await collection.create((record) => {
-                record._raw.id = itemId; // Set the server ID
-                this.updateLookupFromServerData(record, item, tableName);
+                record._raw.id = itemId; // Set the Frappe name as ID
+                this.updateRecordFromFrappeData(record, item, tableName);
               });
             } catch (createError) {
               console.error(`Error creating record in ${tableName}:`, createError, 'Item:', item);
@@ -586,244 +623,87 @@ class WatermelonManager {
   }
 
   /**
-   * Data Transformation Methods
-   * Convert WatermelonDB raw data to API format (keeping backend structure)
+   * Helper method to update records from raw Frappe data
+   * No data transformation - store Frappe data directly
    */
-  transformIssueToApiFormat(rawIssue) {
-    if (!rawIssue) {
-      console.warn('transformIssueToApiFormat: rawIssue is null or undefined');
-      return null;
+  updateRecordFromFrappeData(record, frappeData, tableName) {
+    const now = new Date();
+
+    // Store all Frappe fields directly based on table type
+    switch (tableName) {
+      case 'grm_issue_statuses':
+        record.statusName = frappeData.status_name || '';
+        record.finalStatus = frappeData.final_status || false;
+        record.initialStatus = frappeData.initial_status || false;
+        record.rejectedStatus = frappeData.rejected_status || false;
+        record.openStatus = frappeData.open_status || false;
+        break;
+
+      case 'grm_issue_categories':
+        record.categoryName = frappeData.category_name || '';
+        record.label = frappeData.label || '';
+        record.abbreviation = frappeData.abbreviation || '';
+        record.assignedDepartmentId = frappeData.assigned_department_id || '';
+        record.assignedAppealDepartmentId = frappeData.assigned_appeal_department_id || '';
+        record.assignedEscalationDepartmentId = frappeData.assigned_escalation_department_id || '';
+        record.confidentialityLevel = frappeData.confidentiality_level || '';
+        record.redirectionProtocol = frappeData.redirection_protocol || '';
+        record.administrativeLevelId = frappeData.administrative_level_id || '';
+        break;
+
+      case 'grm_issue_types':
+        record.typeName = frappeData.type_name || '';
+        break;
+
+      case 'grm_issue_age_groups':
+        // Debug: Log the raw Frappe data to see what fields are available
+        console.log('🔍 [WATERMELON] Age group Frappe data:', {
+          name: frappeData.name,
+          age_group: frappeData.age_group,
+          age_group_name: frappeData.age_group_name,
+          allFields: Object.keys(frappeData),
+          rawData: frappeData,
+        });
+        record.ageGroup = frappeData.age_group_name || '';
+        break;
+
+      case 'grm_issue_citizen_groups':
+        record.groupName = frappeData.group_name || '';
+        record.groupType = frappeData.group_type || '';
+        break;
+
+      case 'grm_issue_departments':
+        record.departmentName = frappeData.department_name || '';
+        record.headId = frappeData.head_id || '';
+        break;
+
+      case 'grm_projects':
+        record.title = frappeData.title || '';
+        record.projectCode = frappeData.project_code || '';
+        record.description = frappeData.description || '';
+        record.startDate = frappeData.start_date ? new Date(frappeData.start_date) : null;
+        record.endDate = frappeData.end_date ? new Date(frappeData.end_date) : null;
+        record.isActive = frappeData.is_active || false;
+        record.logo = frappeData.logo || '';
+        record.defaultLanguage = frappeData.default_language || '';
+        record.autoEscalationDays = frappeData.auto_escalation_days || 0;
+        record.enableCitizenFeedback = frappeData.enable_citizen_feedback || false;
+        break;
+
+      case 'grm_administrative_regions':
+        record.regionName = frappeData.region_name || '';
+        record.administrativeLevelId = frappeData.administrative_level_id || '';
+        record.parentRegionId = frappeData.parent_region_id || '';
+        record.location = frappeData.location || '';
+        record.projectId = frappeData.project_id || '';
+        record.path = frappeData.path || '';
+        break;
     }
 
-    return {
-      name: rawIssue.id || rawIssue.name || 'unknown',
-      project_id: rawIssue.project_id,
-      issue_date: rawIssue.issue_date ? new Date(rawIssue.issue_date).toISOString() : null,
-      intake_date: rawIssue.intake_date ? new Date(rawIssue.intake_date).toISOString() : null,
-      category_id: rawIssue.category_id,
-      issue_type_id: rawIssue.issue_type_id,
-      status_id: rawIssue.status_id,
-      tracking_code: rawIssue.tracking_code,
-      description: rawIssue.description,
-      issue_location: rawIssue.issue_location,
-      citizen_type: rawIssue.citizen_type,
-      citizen: rawIssue.citizen,
-      citizen_confidential: rawIssue.citizen_confidential,
-      gender: rawIssue.gender,
-      contact_medium: rawIssue.contact_medium,
-      contact_info_type: rawIssue.contact_info_type,
-      contact_information: rawIssue.contact_information,
-      contact_info_confidential: rawIssue.contact_info_confidential,
-      citizen_age_group_id: rawIssue.citizen_age_group_id,
-      citizen_group_1_id: rawIssue.citizen_group_1_id,
-      citizen_group_2_id: rawIssue.citizen_group_2_id,
-      reporter_id: rawIssue.reporter_id,
-      assignee_id: rawIssue.assignee_id,
-      administrative_region_id: rawIssue.administrative_region_id,
-      resolution_days: rawIssue.resolution_days,
-      resolution_date: rawIssue.resolution_date
-        ? new Date(rawIssue.resolution_date).toISOString()
-        : null,
-      resolution_accepted: rawIssue.resolution_accepted,
-      rating: rawIssue.rating,
-      escalate_flag: rawIssue.escalate_flag,
-      confirmed: rawIssue.confirmed,
-      amended_from_id: rawIssue.amended_from_id,
-      creation: rawIssue.created_at ? new Date(rawIssue.created_at).toISOString() : null,
-      modified: rawIssue.updated_at ? new Date(rawIssue.updated_at).toISOString() : null,
-    };
+    record.createdAt = frappeData.creation ? new Date(frappeData.creation) : now;
+    record.updatedAt = frappeData.modified ? new Date(frappeData.modified) : now;
   }
 
-  transformStatusToApiFormat(rawStatus) {
-    if (!rawStatus) {
-      console.warn('transformStatusToApiFormat: rawStatus is null or undefined');
-      return null;
-    }
-
-    return {
-      name: rawStatus.id || rawStatus.name || 'unknown',
-      status_name: rawStatus.status_name,
-      final_status: rawStatus.final_status,
-      initial_status: rawStatus.initial_status,
-      rejected_status: rawStatus.rejected_status,
-      open_status: rawStatus.open_status,
-      creation: rawStatus.created_at ? new Date(rawStatus.created_at).toISOString() : null,
-      modified: rawStatus.updated_at ? new Date(rawStatus.updated_at).toISOString() : null,
-    };
-  }
-
-  transformCategoryToApiFormat(rawCategory) {
-    if (!rawCategory) {
-      console.warn('transformCategoryToApiFormat: rawCategory is null or undefined');
-      return null;
-    }
-
-    return {
-      name: rawCategory.id || rawCategory.name || 'unknown',
-      category_name: rawCategory.category_name,
-      label: rawCategory.label,
-      abbreviation: rawCategory.abbreviation,
-      assigned_department_id: rawCategory.assigned_department_id,
-      assigned_appeal_department_id: rawCategory.assigned_appeal_department_id,
-      assigned_escalation_department_id: rawCategory.assigned_escalation_department_id,
-      confidentiality_level: rawCategory.confidentiality_level,
-      redirection_protocol: rawCategory.redirection_protocol,
-      administrative_level_id: rawCategory.administrative_level_id,
-      creation: rawCategory.created_at ? new Date(rawCategory.created_at).toISOString() : null,
-      modified: rawCategory.updated_at ? new Date(rawCategory.updated_at).toISOString() : null,
-    };
-  }
-
-  transformTypeToApiFormat(rawType) {
-    if (!rawType) {
-      console.warn('transformTypeToApiFormat: rawType is null or undefined');
-      return null;
-    }
-
-    return {
-      name: rawType.id || rawType.name || 'unknown',
-      type_name: rawType.type_name,
-      creation: rawType.created_at ? new Date(rawType.created_at).toISOString() : null,
-      modified: rawType.updated_at ? new Date(rawType.updated_at).toISOString() : null,
-    };
-  }
-
-  transformAgeGroupToApiFormat(rawAgeGroup) {
-    if (!rawAgeGroup) {
-      console.warn('transformAgeGroupToApiFormat: rawAgeGroup is null or undefined');
-      return null;
-    }
-
-    return {
-      name: rawAgeGroup.id || rawAgeGroup.name || 'unknown',
-      age_group: rawAgeGroup.age_group,
-      creation: rawAgeGroup.created_at ? new Date(rawAgeGroup.created_at).toISOString() : null,
-      modified: rawAgeGroup.updated_at ? new Date(rawAgeGroup.updated_at).toISOString() : null,
-    };
-  }
-
-  transformCitizenGroupToApiFormat(rawGroup) {
-    if (!rawGroup) {
-      console.warn('transformCitizenGroupToApiFormat: rawGroup is null or undefined');
-      return null;
-    }
-
-    return {
-      name: rawGroup.id || rawGroup.name || 'unknown',
-      group_name: rawGroup.group_name,
-      group_type: rawGroup.group_type,
-      creation: rawGroup.created_at ? new Date(rawGroup.created_at).toISOString() : null,
-      modified: rawGroup.updated_at ? new Date(rawGroup.updated_at).toISOString() : null,
-    };
-  }
-
-  transformDepartmentToApiFormat(rawDept) {
-    if (!rawDept) {
-      console.warn('transformDepartmentToApiFormat: rawDept is null or undefined');
-      return null;
-    }
-
-    return {
-      name: rawDept.id || rawDept.name || 'unknown',
-      department_name: rawDept.department_name,
-      head_id: rawDept.head_id,
-      creation: rawDept.created_at ? new Date(rawDept.created_at).toISOString() : null,
-      modified: rawDept.updated_at ? new Date(rawDept.updated_at).toISOString() : null,
-    };
-  }
-
-  transformProjectToApiFormat(rawProject) {
-    if (!rawProject) {
-      console.warn('transformProjectToApiFormat: rawProject is null or undefined');
-      return null;
-    }
-
-    // Add additional safety checks for the rawProject object structure
-    if (typeof rawProject !== 'object') {
-      console.warn('transformProjectToApiFormat: rawProject is not an object:', typeof rawProject);
-      return null;
-    }
-
-    // Safely extract the ID with comprehensive fallback
-    let projectId;
-    try {
-      projectId = rawProject.id || rawProject.name || 'unknown';
-      // Additional safety check - ensure projectId is a string
-      if (typeof projectId !== 'string') {
-        projectId = String(projectId || 'unknown');
-      }
-    } catch (error) {
-      console.warn('transformProjectToApiFormat: Error accessing ID fields:', error);
-      projectId = 'unknown';
-    }
-
-    // Safely extract other fields with defaults
-    const safeGet = (obj, field, defaultValue = null) => {
-      try {
-        return obj && obj.hasOwnProperty(field) ? obj[field] : defaultValue;
-      } catch (error) {
-        console.warn(`transformProjectToApiFormat: Error accessing field ${field}:`, error);
-        return defaultValue;
-      }
-    };
-
-    try {
-      return {
-        name: projectId,
-        title: safeGet(rawProject, 'title', ''),
-        project_code: safeGet(rawProject, 'project_code', ''),
-        description: safeGet(rawProject, 'description', ''),
-        start_date: safeGet(rawProject, 'start_date')
-          ? new Date(rawProject.start_date).toISOString()
-          : null,
-        end_date: safeGet(rawProject, 'end_date')
-          ? new Date(rawProject.end_date).toISOString()
-          : null,
-        is_active: safeGet(rawProject, 'is_active', false),
-        logo: safeGet(rawProject, 'logo', ''),
-        default_language: safeGet(rawProject, 'default_language', ''),
-        auto_escalation_days: safeGet(rawProject, 'auto_escalation_days', 0),
-        enable_citizen_feedback: safeGet(rawProject, 'enable_citizen_feedback', false),
-        creation: safeGet(rawProject, 'created_at')
-          ? new Date(rawProject.created_at).toISOString()
-          : null,
-        modified: safeGet(rawProject, 'updated_at')
-          ? new Date(rawProject.updated_at).toISOString()
-          : null,
-      };
-    } catch (error) {
-      console.error(
-        'transformProjectToApiFormat: Error transforming project data:',
-        error,
-        'rawProject:',
-        rawProject
-      );
-      return null;
-    }
-  }
-
-  transformRegionToApiFormat(rawRegion) {
-    if (!rawRegion) {
-      console.warn('transformRegionToApiFormat: rawRegion is null or undefined');
-      return null;
-    }
-
-    return {
-      name: rawRegion.id || rawRegion.name || 'unknown',
-      region_name: rawRegion.region_name,
-      administrative_level_id: rawRegion.administrative_level_id,
-      parent_region_id: rawRegion.parent_region_id,
-      location: rawRegion.location,
-      project_id: rawRegion.project_id,
-      path: rawRegion.path,
-      creation: rawRegion.created_at ? new Date(rawRegion.created_at).toISOString() : null,
-      modified: rawRegion.updated_at ? new Date(rawRegion.updated_at).toISOString() : null,
-    };
-  }
-
-  /**
-   * Helper methods for updating records from server data
-   */
   updateIssueFromServerData(issue, serverData) {
     this._mapIssueDataToModel(issue, serverData);
     issue.createdAt = serverData.creation ? new Date(serverData.creation) : new Date();
@@ -831,72 +711,8 @@ class WatermelonManager {
   }
 
   updateLookupFromServerData(record, serverData, tableName) {
-    const now = new Date();
-
-    switch (tableName) {
-      case 'grm_issue_statuses':
-        record.statusName = serverData.status_name;
-        record.finalStatus = serverData.final_status || false;
-        record.initialStatus = serverData.initial_status || false;
-        record.rejectedStatus = serverData.rejected_status || false;
-        record.openStatus = serverData.open_status || false;
-        break;
-
-      case 'grm_issue_categories':
-        record.categoryName = serverData.category_name;
-        record.label = serverData.label;
-        record.abbreviation = serverData.abbreviation;
-        record.assignedDepartmentId = serverData.assigned_department_id;
-        record.assignedAppealDepartmentId = serverData.assigned_appeal_department_id;
-        record.assignedEscalationDepartmentId = serverData.assigned_escalation_department_id;
-        record.confidentialityLevel = serverData.confidentiality_level;
-        record.redirectionProtocol = serverData.redirection_protocol;
-        record.administrativeLevelId = serverData.administrative_level_id;
-        break;
-
-      case 'grm_issue_types':
-        record.typeName = serverData.type_name;
-        break;
-
-      case 'grm_issue_age_groups':
-        record.ageGroup = serverData.age_group;
-        break;
-
-      case 'grm_issue_citizen_groups':
-        record.groupName = serverData.group_name;
-        record.groupType = serverData.group_type;
-        break;
-
-      case 'grm_issue_departments':
-        record.departmentName = serverData.department_name;
-        record.headId = serverData.head_id;
-        break;
-
-      case 'grm_projects':
-        record.title = serverData.title;
-        record.projectCode = serverData.project_code;
-        record.description = serverData.description;
-        record.startDate = serverData.start_date ? new Date(serverData.start_date) : null;
-        record.endDate = serverData.end_date ? new Date(serverData.end_date) : null;
-        record.isActive = serverData.is_active || false;
-        record.logo = serverData.logo;
-        record.defaultLanguage = serverData.default_language;
-        record.autoEscalationDays = serverData.auto_escalation_days;
-        record.enableCitizenFeedback = serverData.enable_citizen_feedback || false;
-        break;
-
-      case 'grm_administrative_regions':
-        record.regionName = serverData.region_name;
-        record.administrativeLevelId = serverData.administrative_level_id;
-        record.parentRegionId = serverData.parent_region_id;
-        record.location = serverData.location;
-        record.projectId = serverData.project_id;
-        record.path = serverData.path;
-        break;
-    }
-
-    record.createdAt = serverData.creation ? new Date(serverData.creation) : now;
-    record.updatedAt = serverData.modified ? new Date(serverData.modified) : now;
+    // Delegate to the new unified method
+    this.updateRecordFromFrappeData(record, serverData, tableName);
   }
 
   /**
