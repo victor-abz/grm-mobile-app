@@ -29,6 +29,7 @@ function Content({
   stepLocationParams,
   categories = [], // From withObservables if needed for display
   types = [], // From withObservables if needed for display
+  statuses = [], // From withObservables - needed for initial status lookup
 }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
@@ -140,9 +141,7 @@ function Content({
       }
 
       const shouldAssign = isDepartmentMatch && isAdminLevelMatch;
-      const assigneeId = shouldAssign
-        ? userContext.user?.id
-        : null;
+      const assigneeId = shouldAssign ? userContext.user?.id : null;
 
       console.log('🔍 [ASSIGNMENT] Assignment determination:', {
         selectedRegion: {
@@ -193,9 +192,9 @@ function Content({
   };
 
   const submitIssue = async () => {
-    try {
-      setIsSubmitting(true);
+    setIsSubmitting(true);
 
+    try {
       console.log('🔍 [STEP3] Starting issue submission...');
       console.log('🔍 [STEP3] stepOneParams:', stepOneParams);
       console.log('🔍 [STEP3] stepTwoParams:', stepTwoParams);
@@ -205,38 +204,51 @@ function Content({
       const userContext = dataManager.getUserContext();
       console.log('🔍 [STEP3] User context for issue creation:', userContext);
 
-      // Determine assignment before preparing issue data
+      // Get the initial status from available statuses
+      const initialStatus = statuses.find((status) => {
+        const statusData = status._raw || status;
+        return statusData.initial_status === true;
+      });
+
+      if (!initialStatus) {
+        console.error('❌ [STEP3] No initial status found in statuses:', statuses);
+        throw new Error('No initial status available. Please contact support.');
+      }
+
+      const initialStatusId = initialStatus._raw?.id || initialStatus.id;
+      console.log('🔍 [STEP3] Using initial status:', {
+        id: initialStatusId,
+        name: initialStatus._raw?.status_name || initialStatus.status_name,
+      });
+
+      // Determine assignment based on user context and region/department rules
       const assignmentResult = determineIssueAssignment();
       console.log('🔍 [STEP3] Assignment result:', assignmentResult);
 
-      // Prepare issue data in format expected by backend API
-      const issueDate = stepTwoParams.date ? new Date(stepTwoParams.date) : new Date();
-      const intakeDate = new Date();
-
+      // Prepare issue data for creation
       const issueData = {
-        // Core issue identification - use direct IDs from selections
-        issue_type_id: stepTwoParams.issueType?.id || '',
-        category_id: stepTwoParams.category?.id || '',
+        // Basic issue information
+        issue_type_id: stepTwoParams.issueType?.id,
+        category_id: stepTwoParams.category?.id,
+        description: stepTwoParams.additionalDetails,
 
-        // Location
-        administrative_region_id: stepLocationParams.issueLocation?.id || '',
-        issue_location: stepLocationParams.locationDescription || '',
+        // Date information - ensure proper format
+        issue_date: stepTwoParams.date ? new Date(stepTwoParams.date).getTime() : Date.now(),
+        intake_date: Date.now(),
 
-        // Issue details
-        description: stepTwoParams.additionalDetails || '',
-        // ✅ FIXED: Convert to ISO datetime format that Frappe can parse
-        issue_date: issueDate.toISOString(),
-        intake_date: intakeDate.toISOString(),
+        // Location information
+        issue_location: stepLocationParams.issueLocation,
+        administrative_region_id: stepLocationParams.regionId,
 
-        // Citizen information from step 1
-        citizen: stepOneParams.name || '',
-        citizen_type: stepOneParams.typeOfPerson || 'facilitator',
-        gender: stepOneParams.gender || '',
-        contact_medium: stepOneParams.typeOfPerson || 'facilitator',
-        contact_info_type: stepOneParams.methodOfContact || 'email',
-        contact_information: stepOneParams.contactInfo || '',
+        // Contact information
+        contact_medium: stepOneParams.medium,
+        contact_info_type: stepOneParams.contactType,
+        contact_information: stepOneParams.contactInfo,
 
-        // Optional citizen groupings from step 1
+        // Citizen information
+        citizen: stepOneParams.name,
+        citizen_type: stepOneParams.citizenType,
+        gender: stepOneParams.gender,
         citizen_age_group_id: stepOneParams.selectedAge?.id || null,
         citizen_group_1_id: stepOneParams.selectedCitizenGroupI?.id || null,
         citizen_group_2_id: stepOneParams.selectedCitizenGroupII?.id || null,
@@ -247,15 +259,13 @@ function Content({
         // Set confirmed flag
         confirmed: true,
 
-        // Set default status as pending/submitted
-        status_id: 'pending',
+        status_id: initialStatusId,
 
         reporter_id: userContext?.user?.id,
 
         // Set project if available
         project_id: stepLocationParams.projectId || '',
 
-        // ✅ RESTORED: Assignment logic - assign user if they match region and department
         ...(assignmentResult.shouldAssign &&
           assignmentResult.assigneeId && {
             assignee_id: assignmentResult.assigneeId,

@@ -2,16 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
+import { withObservables } from '@nozbe/watermelondb/react';
+import watermelonManager from '../../../database/watermelonManager';
 import { styles } from './CitizenReportStep3.styles';
 import Content from './containers/Content';
 import dataManager from '../../../services/DataManager';
 
-function CitizenReportStep3({ route, navigation }) {
+function CitizenReportStep3({ route, navigation, statuses = [] }) {
   const { params } = route;
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
   const [loading, setLoading] = useState(true);
   const [communesData, setCommunesData] = useState([]);
+
+  console.log('🔍 [CitizenReportStep3] Component received statuses:', statuses?.length || 0);
 
   useEffect(() => {
     const loadCommunesData = async () => {
@@ -68,9 +72,24 @@ function CitizenReportStep3({ route, navigation }) {
         stepOneParams={params?.stepOneParams || {}}
         stepTwoParams={params?.stepTwoParams || {}}
         stepLocationParams={params?.stepLocationParams || {}}
+        statuses={statuses}
       />
     </SafeAreaView>
   );
 }
 
-export default CitizenReportStep3;
+// Enhanced withObservables to get statuses data
+const enhance = withObservables([], () => {
+  try {
+    return {
+      statuses: watermelonManager.getDatabase().get('grm_issue_statuses').query().observe(),
+    };
+  } catch (error) {
+    console.error('Error setting up CitizenReportStep3 observables:', error);
+    return {
+      statuses: { subscribe: () => ({ unsubscribe: () => {} }) },
+    };
+  }
+});
+
+export default enhance(CitizenReportStep3);

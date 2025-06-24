@@ -1,6 +1,6 @@
 import { AntDesign, Feather } from '@expo/vector-icons';
 import moment from 'moment';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
@@ -39,9 +39,124 @@ const theme = {
 const WHATSAPP_LINK = 'http://api.whatsapp.com/send?phone=223';
 const PHONE_CALL_LINK = 'tel://+223';
 
-function Content({ issue, navigation, statuses = [], eadl }) {
+function Content({ issue, navigation, statuses = [], userContext }) {
   const { t } = useTranslation();
   const { dataManager } = useData();
+
+  // Debug logging for IssueActions
+  console.log('🔍 [IssueActions] Processing issue data:', {
+    isArray: Array.isArray(issue),
+    issue: issue?._raw ? 'WatermelonDB Object' : 'Raw Object',
+  });
+
+  if (issue && issue._raw) {
+    console.log('🔍 [IssueActions] Raw issue data:', {
+      id: issue._raw.id,
+      status_id: issue._raw.status_id,
+      assignee_id: issue._raw.assignee_id,
+      reporter_id: issue._raw.reporter_id,
+      issue_date: issue._raw.issue_date,
+      intake_date: issue._raw.intake_date,
+    });
+  }
+
+  console.log('🔍 [IssueActions] User context:', {
+    user: userContext?.user,
+    hasPermissions: !!userContext?.permissions,
+    hasAssignments: !!userContext?.assignments,
+  });
+
+  // Get current user ID from context
+  const currentUserId =
+    userContext?.user?.id || userContext?.user?.name || userContext?.user?.email;
+
+  // Create lookup helper function
+  const createLookupMap = (items, labelField) => {
+    const map = new Map();
+    if (!items || !Array.isArray(items)) return map;
+
+    items.forEach((item) => {
+      const rawItem = item._raw || item;
+      if (rawItem && rawItem.id) {
+        const label = rawItem[labelField] || rawItem.name || rawItem.id;
+        map.set(rawItem.id, label);
+      }
+    });
+    return map;
+  };
+
+  // Create lookup maps for statuses
+  const statusMap = useMemo(() => createLookupMap(statuses, 'status_name'), [statuses]);
+
+  // Enrich issue data with lookup labels
+  const enrichedIssue = useMemo(() => {
+    if (!issue) return null;
+
+    const issueData = Array.isArray(issue) ? issue[0] : issue;
+    if (!issueData) return null;
+
+    const rawData = issueData._raw || issueData;
+
+    const enriched = {
+      ...rawData,
+
+      // Add resolved labels
+      statusLabel: statusMap.get(rawData.status_id) || rawData.status_id || 'Unknown',
+
+      // Format dates
+      issueDateFormatted: rawData.issue_date
+        ? moment(rawData.issue_date).format('DD-MMM-YYYY HH:mm')
+        : '',
+      intakeDateFormatted: rawData.intake_date
+        ? moment(rawData.intake_date).format('DD-MMM-YYYY HH:mm')
+        : '',
+
+      // Calculate days ago
+      daysAgo: rawData.intake_date ? moment().diff(moment(rawData.intake_date), 'days') : 0,
+
+      // Backward compatibility fields
+      status: {
+        id: rawData.status_id,
+        name: statusMap.get(rawData.status_id) || rawData.status_id,
+      },
+      assignee: {
+        id: rawData.assignee_id,
+        name: rawData.assignee_id,
+      },
+      reporter: {
+        id: rawData.reporter_id,
+        name: rawData.reporter_id,
+      },
+
+      // Contact information handling
+      contact_information: rawData.contact_information
+        ? {
+            contact: rawData.contact_information,
+            type: rawData.contact_info_type,
+          }
+        : null,
+
+      // Handle citizen data
+      citizen: rawData.citizen || 'Anonymous',
+      citizen_type: rawData.citizen_type,
+
+      // Other fields
+      description: rawData.description || '',
+      rating: rawData.rating || null,
+      escalate_flag: rawData.escalate_flag || false,
+      comments: rawData.comments || [],
+    };
+
+    console.log('✅ [IssueActions] Enriched issue:', {
+      id: enriched.id,
+      statusLabel: enriched.statusLabel,
+      daysAgo: enriched.daysAgo,
+      citizen: enriched.citizen,
+    });
+
+    return enriched;
+  }, [issue, statusMap]);
+
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
   const [recordStepsDialog, setRecordStepsDialog] = useState(false);
@@ -100,32 +215,152 @@ function Content({ issue, navigation, statuses = [], eadl }) {
   };
 
   const updateActionButtons = () => {
+    console.log('🔍 [IssueActions] updateActionButtons called with:', {
+      enrichedIssue: enrichedIssue
+        ? {
+            id: enrichedIssue.id,
+            status_id: enrichedIssue.status_id,
+            escalate_flag: enrichedIssue.escalate_flag,
+          }
+        : null,
+      isIssueAssignedToMe,
+      statusesCount: statuses?.length || 0,
+    });
+
     function _isAcceptEnabled(x) {
-      if (x.initial_status && isIssueAssignedToMe) {
-        return issue.status?.id === x.id;
+      const statusData = x._raw || x;
+      const currentStatusId = enrichedIssue?.status_id || enrichedIssue?.status?.id;
+
+      console.log('🔍 [IssueActions] _isAcceptEnabled check:', {
+        statusId: statusData.id,
+        statusName: statusData.status_name,
+        initialStatus: statusData.initial_status,
+        currentStatusId,
+        isIssueAssignedToMe,
+        matches: currentStatusId === statusData.id,
+      });
+
+      // Accept button should show when issue is in initial status and assigned to me
+      if (statusData.initial_status && isIssueAssignedToMe) {
+        return currentStatusId === statusData.id;
       }
+      return false;
     }
 
     function _isRecordResolutionEnabled(x) {
-      if (x.open_status && isIssueAssignedToMe) {
-        return issue.status?.id === x.id && !issue.escalate_flag;
+      const statusData = x._raw || x;
+      const currentStatusId = enrichedIssue?.status_id || enrichedIssue?.status?.id;
+
+      console.log('🔍 [IssueActions] _isRecordResolutionEnabled check:', {
+        statusId: statusData.id,
+        statusName: statusData.status_name,
+        openStatus: statusData.open_status,
+        currentStatusId,
+        isIssueAssignedToMe,
+        escalateFlag: enrichedIssue?.escalate_flag,
+        matches: currentStatusId === statusData.id,
+      });
+
+      // Record resolution buttons should show when issue is in open status and assigned to me
+      if (statusData.open_status && isIssueAssignedToMe) {
+        return currentStatusId === statusData.id && !enrichedIssue?.escalate_flag;
       }
+      return false;
     }
 
     function _isRateAppealEnabled(x) {
-      if (x.final_status && !isIssueAssignedToMe) {
-        return issue.status?.id === x.id;
+      const statusData = x._raw || x;
+      const currentStatusId = enrichedIssue?.status_id || enrichedIssue?.status?.id;
+
+      console.log('🔍 [IssueActions] _isRateAppealEnabled check:', {
+        statusId: statusData.id,
+        statusName: statusData.status_name,
+        finalStatus: statusData.final_status,
+        currentStatusId,
+        isIssueAssignedToMe,
+        matches: currentStatusId === statusData.id,
+      });
+
+      // Rate/appeal button should show when issue is in final status and NOT assigned to me
+      if (statusData.final_status && !isIssueAssignedToMe) {
+        return currentStatusId === statusData.id;
       }
+      return false;
     }
-    if (statuses) {
-      setIsAcceptEnabled(statuses.some(_isAcceptEnabled));
-      setIsRecordResolutionEnabled(statuses.some(_isRecordResolutionEnabled));
-      setIsRateAppealEnabled(statuses.some(_isRateAppealEnabled));
+
+    if (statuses && statuses.length > 0) {
+      console.log('🔍 [IssueActions] Checking statuses for button enablement...');
+
+      const acceptEnabled = statuses.some(_isAcceptEnabled);
+      const recordResolutionEnabled = statuses.some(_isRecordResolutionEnabled);
+      const rateAppealEnabled = statuses.some(_isRateAppealEnabled);
+
+      console.log('🔍 [IssueActions] Button enablement results:', {
+        acceptEnabled,
+        recordResolutionEnabled,
+        rateAppealEnabled,
+      });
+
+      setIsAcceptEnabled(acceptEnabled);
+      setIsRecordResolutionEnabled(recordResolutionEnabled);
+      setIsRateAppealEnabled(rateAppealEnabled);
+    } else {
+      console.warn('🔍 [IssueActions] No statuses available for button enablement');
     }
   };
 
+  // ✅ FIXED: Add useEffect to call updateActionButtons when dependencies change
+  useEffect(() => {
+    console.log('🔍 [IssueActions] useEffect for updateActionButtons triggered');
+    if (enrichedIssue && statuses && statuses.length > 0) {
+      updateActionButtons();
+    }
+  }, [enrichedIssue, statuses, isIssueAssignedToMe]);
+
+  useEffect(() => {
+    if (!enrichedIssue || !userContext) return;
+
+    function _isIssueAssignedToMe() {
+      console.log('🔍 [IssueActions] _isIssueAssignedToMe check:', {
+        enrichedIssue_assignee: enrichedIssue.assignee,
+        enrichedIssue_assignee_id: enrichedIssue.assignee_id,
+        enrichedIssue_reporter_id: enrichedIssue.reporter_id,
+        currentUserId,
+        hasAssignee: !!enrichedIssue.assignee?.id,
+        assigneeId: enrichedIssue.assignee?.id,
+        reporterEqualsAssignee: enrichedIssue.reporter?.id === enrichedIssue.assignee?.id,
+        assigneeEqualsCurrentUser: enrichedIssue.assignee?.id === currentUserId,
+      });
+
+      if (enrichedIssue.assignee && enrichedIssue.assignee.id) {
+        const result =
+          enrichedIssue.reporter.id === enrichedIssue.assignee.id ||
+          enrichedIssue.assignee.id === currentUserId;
+        console.log('🔍 [IssueActions] _isIssueAssignedToMe result:', result);
+        return result;
+      }
+
+      console.log('🔍 [IssueActions] _isIssueAssignedToMe: No assignee, returning false');
+      return false;
+    }
+
+    const isAssigned = _isIssueAssignedToMe();
+    console.log('🔍 [IssueActions] Setting isIssueAssignedToMe to:', isAssigned);
+    setIsIssueAssignedToMe(isAssigned);
+
+    if (enrichedIssue.citizen_type !== 'Confidential') {
+      setCitizenName(enrichedIssue.citizen);
+    } else {
+      setCitizenName(isAssigned ? enrichedIssue.citizen : 'Anonymous');
+    }
+
+    if (enrichedIssue.rating) {
+      setRating(enrichedIssue.rating);
+    }
+  }, [enrichedIssue, userContext, currentUserId]);
+
   const whatsApp = () => {
-    Linking.openURL(WHATSAPP_LINK + issue.contact_information.contact)
+    Linking.openURL(WHATSAPP_LINK + enrichedIssue?.contact_information?.contact)
       .then((value) => {
         console.log('whatsapp result: ', value);
       })
@@ -135,7 +370,7 @@ function Content({ issue, navigation, statuses = [], eadl }) {
   };
 
   const phoneCall = () => {
-    Linking.openURL(PHONE_CALL_LINK + issue.contact_information.contact)
+    Linking.openURL(PHONE_CALL_LINK + enrichedIssue?.contact_information?.contact)
       .then((value) => {
         console.log('phone_call result: ', value);
       })
@@ -156,12 +391,12 @@ function Content({ issue, navigation, statuses = [], eadl }) {
       }
 
       // Handle comments
-      if (!issue.comments) {
-        issue.comments = [];
+      if (!enrichedIssue?.comments) {
+        enrichedIssue.comments = [];
       }
 
       const newComment = {
-        comment_by: eadl?._id,
+        comment_by: currentUserId,
         comment_text: '',
         comment_date: moment().toISOString(),
       };
@@ -187,16 +422,16 @@ function Content({ issue, navigation, statuses = [], eadl }) {
 
       // Add comment if there's one
       if (newComment.comment_text) {
-        updateData.comments = [...(issue.comments || []), newComment];
+        updateData.comments = [...(enrichedIssue?.comments || []), newComment];
       }
 
       // Handle escalation
       if (type === 'escalate') {
         updateData.escalate_flag = true;
         updateData.escalation_reasons = [
-          ...(issue.escalation_reasons || []),
+          ...(enrichedIssue?.escalation_reasons || []),
           {
-            reason_by: eadl?._id,
+            reason_by: currentUserId,
             reason_text: escalateComment,
             reason_date: moment().toISOString(),
           },
@@ -208,13 +443,14 @@ function Content({ issue, navigation, statuses = [], eadl }) {
         updateData.rating = rating;
       }
 
-      // Update the issue using DataManager
-      // const updatedIssue = await updateIssue(issue._id, updateData);
+      // TODO: Use DataManager to update the issue
+      console.log('Issue update data:', updateData);
+      console.log('Issue update would be sent for:', enrichedIssue?.id);
 
       // Update local issue object for UI
-      Object.assign(issue, updateData);
+      Object.assign(enrichedIssue, updateData);
       if (newStatus) {
-        issue.status = {
+        enrichedIssue.status = {
           id: newStatus.id || newStatus.name,
           name: newStatus.name,
         };
@@ -249,10 +485,10 @@ function Content({ issue, navigation, statuses = [], eadl }) {
           break;
       }
 
-      console.log('Issue updated successfully');
+      showToast(t('issue_updated_successfully'));
     } catch (error) {
       console.error('Error updating issue:', error);
-      // Show error message to user
+      showToast(t('error_updating_issue'));
     } finally {
       setIsUpdating(false);
     }
@@ -297,54 +533,36 @@ function Content({ issue, navigation, statuses = [], eadl }) {
     _hideRecordResolutionDialog();
   };
 
-  useEffect(() => {
-    function _isIssueAssignedToMe() {
-      if (issue.assignee && issue.assignee.id) {
-        return issue.reporter.id === issue.assignee.id || issue.assignee.id === eadl?._id;
-      }
-      return false;
-    }
-
-    setIsIssueAssignedToMe(_isIssueAssignedToMe());
-
-    if (issue.citizen_type !== 1) {
-      setCitizenName(issue.citizen);
-    } else if (issue.citizen_type === 1) {
-      setCitizenName(_isIssueAssignedToMe() ? issue.citizen : 'Anonymous');
-    }
-
-    if (issue.rating) {
-      setRating(issue.rating);
-    }
-    updateActionButtons();
-  });
-
-  useEffect(() => {
-    updateActionButtons();
-  }, [statuses, issue]);
+  if (!enrichedIssue) {
+    return (
+      <View style={{ padding: 23, alignItems: 'center' }}>
+        <Text>{t('loading_issue_data')}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : null}>
         <View style={{ padding: 23 }}>
           <Text style={styles.stepDescription}>
-            {citizenName}, {issue.intake_date && moment(issue.intake_date).format('DD-MMM-YYYY')}{' '}
-            {issue.intake_date && currentDate.diff(issue.intake_date, 'days')} {t('days_ago')}
+            {citizenName}, {enrichedIssue.intakeDateFormatted} {enrichedIssue.daysAgo}{' '}
+            {t('days_ago')}
           </Text>
           <Text style={styles.stepDescription}>
             {t('status_label')}:{' '}
             <Text
               style={{
                 color:
-                  issue.status?.id === 1 || issue.status?.id === 2
+                  enrichedIssue.status?.id === 1 || enrichedIssue.status?.id === 2
                     ? colors.inProgress
                     : colors.primary,
               }}
             >
-              {issue.status?.name}
+              {enrichedIssue.statusLabel}
             </Text>
           </Text>
-          <Text style={styles.stepNote}>{issue.description?.substring(0, 170)}</Text>
+          <Text style={styles.stepNote}>{enrichedIssue.description?.substring(0, 170)}</Text>
           <View style={styles.optionButtonContainer}>
             <Button
               theme={theme}
@@ -356,39 +574,42 @@ function Content({ issue, navigation, statuses = [], eadl }) {
               {t('view_details')}
             </Button>
 
-            {/* THROUGH THOSE BUTTONS OYU CAN MAKE A WHATSAPP CALL, PHONE CALL AND SEND EMAIL TO THE COMPLAINER */}
-            {issue.contact_information && issue.contact_information.contact !== '*' && (
-              <>
-                {issue.contact_information.type === 'phone_number' ? (
-                  <IconButton
-                    icon="phone"
-                    color={colors.primary}
-                    size={35}
-                    onPress={() => phoneCall()}
-                  />
-                ) : issue.contact_information.type === 'whatsapp' ? (
-                  <IconButton
-                    icon="whatsapp"
-                    color={colors.primary}
-                    size={35}
-                    onPress={() => whatsApp()}
-                  />
-                ) : (
-                  <></>
-                )}
-              </>
-            )}
+            {/* THROUGH THOSE BUTTONS YOU CAN MAKE A WHATSAPP CALL, PHONE CALL AND SEND EMAIL TO THE COMPLAINER */}
+            {enrichedIssue.contact_information &&
+              enrichedIssue.contact_information.contact !== '*' && (
+                <>
+                  {enrichedIssue.contact_information.type === 'phone' ? (
+                    <IconButton
+                      icon="phone"
+                      color={colors.primary}
+                      size={35}
+                      onPress={() => phoneCall()}
+                    />
+                  ) : enrichedIssue.contact_information.type === 'whatsapp' ? (
+                    <IconButton
+                      icon="whatsapp"
+                      color={colors.primary}
+                      size={35}
+                      onPress={() => whatsApp()}
+                    />
+                  ) : (
+                    <></>
+                  )}
+                </>
+              )}
           </View>
 
           <View style={styles.ratingInfoSection}>
-            {!issue.rating ? (
+            {!enrichedIssue.rating ? (
               <Text style={styles.radioLabel}>{t('not_rate_yet')}</Text>
             ) : (
-              <Text style={styles.radioLabel}>{t(`satisfaction_level_${issue.rating}`)}</Text>
+              <Text style={styles.radioLabel}>
+                {t(`satisfaction_level_${enrichedIssue.rating}`)}
+              </Text>
             )}
             <StarRating
               starSize={30}
-              rating={() => (issue.rating ? issue.rating : 0)}
+              rating={() => (enrichedIssue.rating ? enrichedIssue.rating : 0)}
               maxStars={5}
               onChange={() => null}
               emptyColor="#dddddd"
@@ -486,7 +707,9 @@ function Content({ issue, navigation, statuses = [], eadl }) {
           </View>
           <TouchableOpacity
             onPress={_showEscalateDialog}
-            disabled={disableEscalation || !isRecordResolutionEnabled || issue.escalate_flag}
+            disabled={
+              disableEscalation || !isRecordResolutionEnabled || enrichedIssue.escalate_flag
+            }
             style={{
               alignItems: 'center',
               flexDirection: 'row',

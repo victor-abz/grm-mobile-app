@@ -1,59 +1,117 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, View } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import dataManager from '../../../services/DataManager';
+import { withObservables } from '@nozbe/watermelondb/react';
+import { Q } from '@nozbe/watermelondb';
+import watermelonManager from '../../../database/watermelonManager';
+import { useData } from '../../../providers/DataProvider';
 import { styles } from './IssueActions.styles';
 import Content from './containers/Content';
 
-function IssueActions({ route, navigation }) {
+function IssueActions({ route, navigation, issue, statuses = [] }) {
   const { params } = route;
   const customStyles = styles();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
-  const [statuses, setStatuses] = useState([]);
-  const [eadl, setEadl] = useState(null);
+  const [userContext, setUserContext] = useState(null);
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { isDataInitialized, dataManager } = useData();
+
+  // Get the issue from route params or from the observable
+  const issueData = Array.isArray(issue) && issue.length > 0 ? issue[0] : issue || params.item;
+
+  console.log('🔍 [IssueActions] Component received:', {
+    issueId: params?.issueId || params?.item?.id,
+    issueData: issueData ? 'Present' : 'Missing',
+    statusesCount: statuses?.length || 0,
+  });
 
   useEffect(() => {
     const loadData = async () => {
+      if (!isDataInitialized) return;
+
       try {
         setLoading(true);
 
-        // Load statuses from DataManager
-        const statusData = await dataManager.getIssueStatuses();
-        setStatuses(statusData);
+        console.log('🔍 [IssueActions] Loading user context from DataManager...');
 
-        // TODO: Implement representative/eadl data loading with DataManager
-        console.warn(
-          'IssueActions - TODO: Implement representative/eadl data loading with DataManager'
-        );
+        // Get user context from DataManager (same pattern as IssueSearch)
+        let context = null;
+        if (dataManager) {
+          context = dataManager.getUserContext();
+          console.log('🔍 [IssueActions] User context from DataManager:', context);
+        }
 
-        // Placeholder eadl data - this needs to be implemented
-        const eadlData = {
-          _id: 'placeholder',
-          representative_email: username,
-          // TODO: Load actual representative data
-        };
-        setEadl(eadlData);
+        // Fallback: Try to get user context directly from WatermelonDB
+        if (!context) {
+          console.warn('⚠️ [IssueActions] No DataManager context, trying WatermelonDB directly');
+          try {
+            const userContextData = await watermelonManager.getUserContext(username);
+            if (userContextData) {
+              context = {
+                user: {
+                  name: username,
+                  email: username,
+                  id: username,
+                },
+                ...userContextData,
+              };
+              console.log('🔍 [IssueActions] User context from WatermelonDB:', context);
+            }
+          } catch (wmError) {
+            console.warn(
+              '⚠️ [IssueActions] Could not load user context from WatermelonDB:',
+              wmError
+            );
+          }
+        }
+
+        // Final fallback: create minimal user context
+        if (!context) {
+          context = {
+            user: {
+              name: username,
+              email: username,
+              id: username,
+            },
+            accessible_projects: [],
+            accessible_regions: [],
+            assignments: [],
+            permissions: {},
+          };
+        }
+
+        console.log('🔍 [IssueActions] Final user context:', context);
+        setUserContext(context);
       } catch (error) {
         console.error('Error loading IssueActions data:', error);
-        // Set empty data to prevent crashes
-        setStatuses([]);
-        setEadl({ _id: 'error', representative_email: username });
+
+        // Fallback to basic user context
+        setUserContext({
+          user: {
+            name: username,
+            email: username,
+            id: username,
+          },
+          accessible_projects: [],
+          accessible_regions: [],
+          assignments: [],
+          permissions: {},
+        });
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, [username]);
+  }, [isDataInitialized, dataManager, username]);
 
-  return (
-    <SafeAreaView style={customStyles.container}>
-      {loading || !eadl?._id || !statuses ? (
+  if (!isDataInitialized || loading || !userContext) {
+    return (
+      <SafeAreaView style={customStyles.container}>
         <ScrollView
           style={{
             backgroundColor: 'white',
@@ -76,11 +134,59 @@ function IssueActions({ route, navigation }) {
             <ActivityIndicator size="large" color="#24c38b" />
           </View>
         </ScrollView>
-      ) : (
-        <Content eadl={eadl} issue={params.item} navigation={navigation} statuses={statuses} />
-      )}
+      </SafeAreaView>
+    );
+  }
+
+  if (!issueData) {
+    return (
+      <SafeAreaView style={customStyles.container}>
+        <View style={{ padding: 20, alignItems: 'center' }}>
+          <Text style={{ fontSize: 16, color: 'gray' }}>{t('issue_not_found')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={customStyles.container}>
+      <Content
+        userContext={userContext}
+        issue={issueData}
+        navigation={navigation}
+        statuses={statuses}
+      />
     </SafeAreaView>
   );
 }
 
-export default IssueActions;
+// Enhanced withObservables to get specific issue and statuses
+const enhance = withObservables(['route'], ({ route }) => {
+  const issueId = route?.params?.issueId || route?.params?.item?.id;
+
+  try {
+    const observables = {
+      // Get statuses for action buttons
+      statuses: watermelonManager.getDatabase().get('grm_issue_statuses').query().observe(),
+    };
+
+    // If we have an issueId, observe the specific issue
+    if (issueId) {
+      observables.issue = watermelonManager
+        .getDatabase()
+        .get('grm_issues')
+        .query(Q.where('id', issueId))
+        .observe();
+    }
+
+    return observables;
+  } catch (error) {
+    console.error('Error setting up IssueActions observables:', error);
+    return {
+      issue: { subscribe: () => ({ unsubscribe: () => {} }) },
+      statuses: { subscribe: () => ({ unsubscribe: () => {} }) },
+    };
+  }
+});
+
+export default enhance(IssueActions);

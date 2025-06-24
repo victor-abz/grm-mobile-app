@@ -8,9 +8,9 @@ import { ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 import ListHeader from '../components/ListHeader';
 
-function Content({ 
-  issues, 
-  eadl, 
+function Content({
+  issues,
+  userContext,
   categories = [],
   types = [],
   statuses = [],
@@ -18,7 +18,7 @@ function Content({
   citizenGroups = [],
   regions = [],
   projects = [],
-  users = []
+  users = [],
 }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
@@ -27,12 +27,21 @@ function Content({
   const [_issues, setIssues] = useState([]);
   const [currentDate, setCurrentDate] = useState(moment());
 
+  // Get current user ID from context
+  const currentUserId =
+    userContext?.user?.id || userContext?.user?.name || userContext?.user?.email;
+
+  console.log('🔍 [IssueSearch] User context:', {
+    user: userContext?.user,
+    currentUserId: currentUserId,
+  });
+
   // Create lookup helper functions for efficient ID-to-label resolution
   const createLookupMap = (items, labelField) => {
     const map = new Map();
     if (!items || !Array.isArray(items)) return map;
-    
-    items.forEach(item => {
+
+    items.forEach((item) => {
       if (item && item.id) {
         const label = item[labelField] || item.id;
         map.set(item.id, label);
@@ -42,22 +51,25 @@ function Content({
   };
 
   // Create lookup maps for all related data (memoized for performance)
-  const lookupMaps = useMemo(() => ({
-    categoryMap: createLookupMap(categories, 'categoryName'),
-    typeMap: createLookupMap(types, 'typeName'),
-    statusMap: createLookupMap(statuses, 'statusName'),
-    ageGroupMap: createLookupMap(ageGroups, 'ageGroup'),
-    citizenGroupMap: createLookupMap(citizenGroups, 'groupName'),
-    regionMap: createLookupMap(regions, 'regionName'),
-    projectMap: createLookupMap(projects, 'title'),
-    userMap: createLookupMap(users, 'fullName'),
-  }), [categories, types, statuses, ageGroups, citizenGroups, regions, projects, users]);
+  const lookupMaps = useMemo(
+    () => ({
+      categoryMap: createLookupMap(categories, 'categoryName'),
+      typeMap: createLookupMap(types, 'typeName'),
+      statusMap: createLookupMap(statuses, 'statusName'),
+      ageGroupMap: createLookupMap(ageGroups, 'ageGroup'),
+      citizenGroupMap: createLookupMap(citizenGroups, 'groupName'),
+      regionMap: createLookupMap(regions, 'regionName'),
+      projectMap: createLookupMap(projects, 'title'),
+      userMap: createLookupMap(users, 'fullName'),
+    }),
+    [categories, types, statuses, ageGroups, citizenGroups, regions, projects, users]
+  );
 
   // Enrich issues with resolved labels for display
   const enrichIssuesWithLabels = useMemo(() => {
     console.log('🔍 [IssueSearch] enrichIssuesWithLabels - Raw issues:', issues?.length || 0);
     console.log('🔍 [IssueSearch] enrichIssuesWithLabels - Issues sample:', issues?.slice(0, 2));
-    
+
     if (!issues || issues.length === 0) {
       console.log('⚠️ [IssueSearch] No issues to enrich');
       return [];
@@ -68,7 +80,7 @@ function Content({
     console.log('  - Types:', lookupMaps.typeMap.size);
     console.log('  - Statuses:', lookupMaps.statusMap.size);
     console.log('  - Users:', lookupMaps.userMap.size);
-    
+
     // Debug: Show lookup map contents
     if (lookupMaps.categoryMap.size > 0) {
       console.log('  - Category map contents:', Array.from(lookupMaps.categoryMap.entries()));
@@ -83,7 +95,7 @@ function Content({
     const enrichedData = issues.map((issue, index) => {
       // Handle both WatermelonDB model objects and raw data
       const issueData = issue._raw || issue;
-      
+
       if (index < 2) {
         console.log(`🔍 [IssueSearch] Processing issue ${index}:`, {
           id: issueData.id,
@@ -91,59 +103,88 @@ function Content({
           status_id: issueData.status_id,
           issue_type_id: issueData.issue_type_id,
           assignee_id: issueData.assignee_id,
-          reporter_id: issueData.reporter_id
+          reporter_id: issueData.reporter_id,
         });
       }
-      
+
       const enriched = {
         // Keep all original issue data
         ...issueData,
-        
+
         // Add resolved labels for display
-        categoryLabel: lookupMaps.categoryMap.get(issueData.category_id) || issueData.category_id || 'Unknown',
-        typeLabel: lookupMaps.typeMap.get(issueData.issue_type_id) || issueData.issue_type_id || 'Unknown',
-        statusLabel: lookupMaps.statusMap.get(issueData.status_id) || issueData.status_id || 'Unknown',
-        ageGroupLabel: lookupMaps.ageGroupMap.get(issueData.citizen_age_group_id) || issueData.citizen_age_group_id || 'Unknown',
-        citizenGroup1Label: lookupMaps.citizenGroupMap.get(issueData.citizen_group_1_id) || issueData.citizen_group_1_id || 'Unknown',
-        citizenGroup2Label: lookupMaps.citizenGroupMap.get(issueData.citizen_group_2_id) || issueData.citizen_group_2_id || 'Unknown',
-        regionLabel: lookupMaps.regionMap.get(issueData.administrative_region_id) || issueData.administrative_region_id || 'Unknown',
-        projectLabel: lookupMaps.projectMap.get(issueData.project_id) || issueData.project_id || 'Unknown',
-        reporterLabel: lookupMaps.userMap.get(issueData.reporter_id) || issueData.reporter_id || 'Unknown',
-        assigneeLabel: lookupMaps.userMap.get(issueData.assignee_id) || issueData.assignee_id || 'Unassigned',
-        
+        categoryLabel:
+          lookupMaps.categoryMap.get(issueData.category_id) || issueData.category_id || 'Unknown',
+        typeLabel:
+          lookupMaps.typeMap.get(issueData.issue_type_id) || issueData.issue_type_id || 'Unknown',
+        statusLabel:
+          lookupMaps.statusMap.get(issueData.status_id) || issueData.status_id || 'Unknown',
+        ageGroupLabel:
+          lookupMaps.ageGroupMap.get(issueData.citizen_age_group_id) ||
+          issueData.citizen_age_group_id ||
+          'Unknown',
+        citizenGroup1Label:
+          lookupMaps.citizenGroupMap.get(issueData.citizen_group_1_id) ||
+          issueData.citizen_group_1_id ||
+          'Unknown',
+        citizenGroup2Label:
+          lookupMaps.citizenGroupMap.get(issueData.citizen_group_2_id) ||
+          issueData.citizen_group_2_id ||
+          'Unknown',
+        regionLabel:
+          lookupMaps.regionMap.get(issueData.administrative_region_id) ||
+          issueData.administrative_region_id ||
+          'Unknown',
+        projectLabel:
+          lookupMaps.projectMap.get(issueData.project_id) || issueData.project_id || 'Unknown',
+        reporterLabel:
+          lookupMaps.userMap.get(issueData.reporter_id) || issueData.reporter_id || 'Unknown',
+        assigneeLabel:
+          lookupMaps.userMap.get(issueData.assignee_id) || issueData.assignee_id || 'Unassigned',
+
         // Format dates for display
-        issueDateFormatted: issueData.issue_date ? moment(issueData.issue_date).format('DD-MMM-YYYY') : '',
-        intakeDateFormatted: issueData.intake_date ? moment(issueData.intake_date).format('DD-MMM-YYYY') : '',
-        creationFormatted: issueData.creation ? moment(issueData.creation).format('DD-MMM-YYYY') : '',
-        
+        issueDateFormatted: issueData.issue_date
+          ? moment(issueData.issue_date).format('DD-MMM-YYYY')
+          : '',
+        intakeDateFormatted: issueData.intake_date
+          ? moment(issueData.intake_date).format('DD-MMM-YYYY')
+          : '',
+        creationFormatted: issueData.creation
+          ? moment(issueData.creation).format('DD-MMM-YYYY')
+          : '',
+
         // Ensure backward compatibility with existing navigation
         name: issueData.id || issueData.name,
         _id: issueData.id || issueData.name,
       };
-      
+
       if (index < 2) {
         console.log(`🔍 [IssueSearch] Enriched issue ${index}:`, {
           id: enriched.id,
           categoryLabel: enriched.categoryLabel,
           statusLabel: enriched.statusLabel,
-          typeLabel: enriched.typeLabel
+          typeLabel: enriched.typeLabel,
         });
       }
-      
+
       return enriched;
     });
-    
+
     console.log(`✅ [IssueSearch] Enriched ${enrichedData.length} issues`);
     return enrichedData;
   }, [issues, lookupMaps]);
 
   const sortByCreationDateDesc = (data) =>
     data.sort(
-      (a, b) => new Date(b.creation || b.created_date || b.issue_date) - new Date(a.creation || a.created_date || a.issue_date)
+      (a, b) =>
+        new Date(b.creation || b.created_date || b.issue_date) -
+        new Date(a.creation || a.created_date || a.issue_date)
     );
 
   useEffect(() => {
-    console.log('🔍 [IssueSearch] useEffect - Setting initial issues:', enrichIssuesWithLabels?.length || 0);
+    console.log(
+      '🔍 [IssueSearch] useEffect - Setting initial issues:',
+      enrichIssuesWithLabels?.length || 0
+    );
     setIssues(enrichIssuesWithLabels || []);
   }, [enrichIssuesWithLabels]);
 
@@ -152,8 +193,8 @@ function Content({
     console.log('  - Status:', status);
     console.log('  - EnrichedIssues count:', enrichIssuesWithLabels?.length || 0);
     console.log('  - Statuses count:', statuses?.length || 0);
-    console.log('  - EADL:', eadl);
-    
+    console.log('  - User ID:', currentUserId);
+
     if (!enrichIssuesWithLabels || !Array.isArray(enrichIssuesWithLabels)) {
       console.log('⚠️ [IssueSearch] No enriched issues to filter');
       setIssues([]);
@@ -168,75 +209,87 @@ function Content({
         console.log('🔍 [IssueSearch] Filtering for assigned issues');
         foundStatus = statuses.find((el) => el.finalStatus === true || el.final_status === true);
         console.log('  - Final status found:', foundStatus);
-        
+
         filteredIssues = enrichIssuesWithLabels.filter((issue) => {
           // ✅ FIXED: Handle both backend format (assignee_id) and model format (assigneeId)
           // Check both _raw and model properties
           const assigneeId = issue.assignee_id || issue.assigneeId || issue.assignee?.id;
           const statusId = issue.status_id || issue.statusId || issue.status?.id;
           const foundStatusId = foundStatus?.id || foundStatus?.name;
-          const isAssignedToUser = assigneeId && assigneeId === eadl?._id;
+          const isAssignedToUser = assigneeId && assigneeId === currentUserId;
           const isNotFinalStatus = statusId !== foundStatusId;
-          
-          console.log(`    Issue ${issue.id}: assignee=${assigneeId}, status=${statusId}, user=${eadl?._id}, assigned=${isAssignedToUser}, notFinal=${isNotFinalStatus}`);
-          
+
+          console.log(
+            `    Issue ${issue.id}: assignee=${assigneeId}, status=${statusId}, user=${currentUserId}, assigned=${isAssignedToUser}, notFinal=${isNotFinalStatus}`
+          );
+
           return isAssignedToUser && isNotFinalStatus;
         });
         break;
-        
+
       case 'open':
         console.log('🔍 [IssueSearch] Filtering for open issues');
         foundStatus = statuses.find((el) => el.finalStatus === true || el.final_status === true);
         console.log('  - Final status found:', foundStatus);
-        
+
         filteredIssues = enrichIssuesWithLabels.filter((issue) => {
           const assigneeId = issue.assignee_id || issue.assigneeId || issue.assignee?.id;
           const reporterId = issue.reporter_id || issue.reporterId || issue.reporter?.id;
           const statusId = issue.status_id || issue.statusId || issue.status?.id;
           const foundStatusId = foundStatus?.id || foundStatus?.name;
-          const isUserInvolved = (assigneeId && assigneeId === eadl?._id) || (reporterId && reporterId === eadl?._id);
+          const isUserInvolved =
+            (assigneeId && assigneeId === currentUserId) ||
+            (reporterId && reporterId === currentUserId);
           const isNotFinalStatus = statusId !== foundStatusId;
-          
-          console.log(`    Issue ${issue.id}: assignee=${assigneeId}, reporter=${reporterId}, status=${statusId}, user=${eadl?._id}, involved=${isUserInvolved}, notFinal=${isNotFinalStatus}`);
-          
+
+          console.log(
+            `    Issue ${issue.id}: assignee=${assigneeId}, reporter=${reporterId}, status=${statusId}, user=${currentUserId}, involved=${isUserInvolved}, notFinal=${isNotFinalStatus}`
+          );
+
           return isUserInvolved && isNotFinalStatus;
         });
         break;
-        
+
       case 'resolved':
         console.log('🔍 [IssueSearch] Filtering for resolved issues');
         foundStatus = statuses.find((el) => el.finalStatus === true || el.final_status === true);
         console.log('  - Final status found:', foundStatus);
-        
+
         filteredIssues = enrichIssuesWithLabels.filter((issue) => {
           const assigneeId = issue.assignee_id || issue.assigneeId || issue.assignee?.id;
           const reporterId = issue.reporter_id || issue.reporterId || issue.reporter?.id;
           const statusId = issue.status_id || issue.statusId || issue.status?.id;
           const foundStatusId = foundStatus?.id || foundStatus?.name;
-          const isUserInvolved = (assigneeId && assigneeId === eadl?._id) || (reporterId && reporterId === eadl?._id);
+          const isUserInvolved =
+            (assigneeId && assigneeId === currentUserId) ||
+            (reporterId && reporterId === currentUserId);
           const isFinalStatus = statusId === foundStatusId;
-          
-          console.log(`    Issue ${issue.id}: assignee=${assigneeId}, reporter=${reporterId}, status=${statusId}, user=${eadl?._id}, involved=${isUserInvolved}, final=${isFinalStatus}`);
-          
+
+          console.log(
+            `    Issue ${issue.id}: assignee=${assigneeId}, reporter=${reporterId}, status=${statusId}, user=${currentUserId}, involved=${isUserInvolved}, final=${isFinalStatus}`
+          );
+
           return isUserInvolved && isFinalStatus;
         });
         break;
-        
+
       case 'all': // Debug option to show all issues
         console.log('🔍 [IssueSearch] DEBUG: Showing all issues without filtering');
         filteredIssues = enrichIssuesWithLabels.slice();
         break;
-        
+
       default:
         console.log('🔍 [IssueSearch] No filtering - showing all issues');
         filteredIssues = enrichIssuesWithLabels.slice();
     }
-    
-    console.log(`✅ [IssueSearch] Filtered to ${filteredIssues.length} issues for status: ${status}`);
-    
+
+    console.log(
+      `✅ [IssueSearch] Filtered to ${filteredIssues.length} issues for status: ${status}`
+    );
+
     filteredIssues = sortByCreationDateDesc(filteredIssues);
     setIssues(filteredIssues);
-  }, [status, enrichIssuesWithLabels, statuses, eadl]);
+  }, [status, enrichIssuesWithLabels, statuses, currentUserId]);
 
   function Item({ item, onPress, backgroundColor, textColor }) {
     // Use the enriched data with resolved labels
@@ -265,7 +318,10 @@ function Content({
               <Text
                 style={{
                   color:
-                    item.status_id === 1 || item.status_id === 2 || item.status_id === '1' || item.status_id === '2'
+                    item.status_id === 1 ||
+                    item.status_id === 2 ||
+                    item.status_id === '1' ||
+                    item.status_id === '2'
                       ? colors.inProgress
                       : colors.primary,
                 }}
@@ -317,7 +373,7 @@ function Content({
       </View>
     );
   }
-  
+
   console.log('🔍 [IssueSearch] About to render with _issues length:', _issues?.length || 0);
   console.log('🔍 [IssueSearch] _issues sample:', _issues?.[0]);
 

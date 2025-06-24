@@ -176,32 +176,132 @@ class WatermelonManager {
         return await db.get('grm_issues').create((issue) => {
           console.log('🔍 [WM] Creating new issue record');
 
-          // ✅ FIXED: Store data directly without transformation to avoid data loss
-          // Set all fields directly from issueData - no transformation
-          Object.keys(issueData).forEach(key => {
-            if (issueData[key] !== undefined && issueData[key] !== null) {
-              // Handle date fields
-              if (key === 'issue_date' || key === 'intake_date' || key === 'resolution_date') {
-                const dateValue = issueData[key];
-                if (dateValue) {
-                  issue._raw[key] = typeof dateValue === 'string' ? new Date(dateValue).getTime() : dateValue;
-                }
-              } else {
-                // Store all other fields directly
-                issue._raw[key] = issueData[key];
+          // ✅ FIXED: Use model decorators instead of direct _raw assignment
+          // Map issueData fields to model decorators
+
+          // Basic fields using model decorators
+          if (issueData.description !== undefined) issue.description = issueData.description || '';
+          if (issueData.tracking_code !== undefined)
+            issue.trackingCode = issueData.tracking_code || '';
+          if (issueData.citizen !== undefined) issue.citizen = issueData.citizen || '';
+          if (issueData.citizen_type !== undefined)
+            issue.citizenType = issueData.citizen_type || '';
+          if (issueData.citizen_confidential !== undefined)
+            issue.citizenConfidential = issueData.citizen_confidential;
+          if (issueData.gender !== undefined) issue.gender = issueData.gender;
+          if (issueData.contact_medium !== undefined)
+            issue.contactMedium = issueData.contact_medium || '';
+          if (issueData.contact_info_type !== undefined)
+            issue.contactInfoType = issueData.contact_info_type;
+          if (issueData.contact_information !== undefined)
+            issue.contactInformation = issueData.contact_information;
+          if (issueData.contact_info_confidential !== undefined)
+            issue.contactInfoConfidential = issueData.contact_info_confidential;
+          if (issueData.resolution_days !== undefined)
+            issue.resolutionDays = issueData.resolution_days;
+          if (issueData.resolution_accepted !== undefined)
+            issue.resolutionAccepted = issueData.resolution_accepted;
+          if (issueData.rating !== undefined) issue.rating = issueData.rating;
+          if (issueData.escalate_flag !== undefined) issue.escalateFlag = issueData.escalate_flag;
+          if (issueData.confirmed !== undefined) issue.confirmed = issueData.confirmed;
+
+          // Foreign key fields using _setRaw (for relation decorators)
+          if (issueData.project_id !== undefined)
+            issue._setRaw('project_id', issueData.project_id || '');
+          if (issueData.category_id !== undefined)
+            issue._setRaw('category_id', issueData.category_id || '');
+          if (issueData.issue_type_id !== undefined)
+            issue._setRaw('issue_type_id', issueData.issue_type_id || '');
+          if (issueData.status_id !== undefined)
+            issue._setRaw('status_id', issueData.status_id || '');
+          if (issueData.citizen_age_group_id !== undefined)
+            issue._setRaw('citizen_age_group_id', issueData.citizen_age_group_id);
+          if (issueData.citizen_group_1_id !== undefined)
+            issue._setRaw('citizen_group_1_id', issueData.citizen_group_1_id);
+          if (issueData.citizen_group_2_id !== undefined)
+            issue._setRaw('citizen_group_2_id', issueData.citizen_group_2_id);
+          if (issueData.reporter_id !== undefined)
+            issue._setRaw('reporter_id', issueData.reporter_id || '');
+          if (issueData.assignee_id !== undefined)
+            issue._setRaw('assignee_id', issueData.assignee_id);
+          if (issueData.administrative_region_id !== undefined)
+            issue._setRaw('administrative_region_id', issueData.administrative_region_id || '');
+          if (issueData.amended_from_id !== undefined)
+            issue._setRaw('amended_from_id', issueData.amended_from_id);
+
+          // Date fields - use decorator methods for dates
+          if (issueData.issue_date !== undefined) {
+            const issueDate =
+              typeof issueData.issue_date === 'string'
+                ? new Date(issueData.issue_date)
+                : new Date(issueData.issue_date);
+            issue.issueDate = issueDate;
+          }
+          if (issueData.intake_date !== undefined) {
+            const intakeDate =
+              typeof issueData.intake_date === 'string'
+                ? new Date(issueData.intake_date)
+                : new Date(issueData.intake_date);
+            issue.intakeDate = intakeDate;
+          }
+          if (issueData.resolution_date !== undefined) {
+            const resolutionDate =
+              typeof issueData.resolution_date === 'string'
+                ? new Date(issueData.resolution_date)
+                : new Date(issueData.resolution_date);
+            issue.resolutionDate = resolutionDate;
+          }
+
+          // Complex fields that need JSON serialization
+          if (issueData.issue_location !== undefined) {
+            // ✅ FIXED: Handle circular references in issue_location
+            if (typeof issueData.issue_location === 'object' && issueData.issue_location !== null) {
+              try {
+                // Create a clean object without circular references
+                const cleanLocation = {
+                  id: issueData.issue_location.id,
+                  regionName: issueData.issue_location.regionName || issueData.issue_location.name,
+                  // Only include basic properties, not the complex objects with circular refs
+                  ...(issueData.issue_location.administrativeLevel && {
+                    administrative_level_id:
+                      issueData.issue_location.administrativeLevel.id ||
+                      issueData.issue_location.administrativeLevel._columnName,
+                  }),
+                };
+                issue.issueLocation = JSON.stringify(cleanLocation);
+              } catch (error) {
+                console.warn(
+                  '🔍 [WM] Error stringifying issue_location, storing as string:',
+                  error
+                );
+                // Fallback: store just the basic info
+                issue.issueLocation = JSON.stringify({
+                  id: issueData.issue_location.id || 'unknown',
+                  regionName:
+                    issueData.issue_location.regionName ||
+                    issueData.issue_location.name ||
+                    'unknown',
+                });
               }
+            } else {
+              issue.issueLocation = issueData.issue_location;
             }
-          });
-          
-          // Set timestamps
+          }
+
+          // Timestamps
           const now = new Date();
-          issue._raw.created_at = now.getTime();
-          issue._raw.updated_at = now.getTime();
-          issue._raw._status = 'created';
-          issue._raw._changed = '';
+          issue.createdAt = now;
+          issue.updatedAt = now;
 
           console.log('🔍 [WM] Issue record created with ID:', issue.id);
-          console.log('🔍 [WM] Issue _raw data after direct save:', issue._raw);
+          console.log('🔍 [WM] Issue model fields set:', {
+            description: issue.description,
+            trackingCode: issue.trackingCode,
+            citizen: issue.citizen,
+            statusId: issue._raw.status_id,
+            categoryId: issue._raw.category_id,
+            assigneeId: issue._raw.assignee_id,
+          });
         });
       });
 
@@ -231,23 +331,124 @@ class WatermelonManager {
       const updatedIssue = await db.write(async () => {
         const issue = await db.get('grm_issues').find(issueId);
         return await issue.update((issue) => {
-          // ✅ FIXED: Store data directly without transformation
-          Object.keys(updateData).forEach(key => {
-            if (updateData[key] !== undefined && updateData[key] !== null) {
-              // Handle date fields
-              if (key === 'issue_date' || key === 'intake_date' || key === 'resolution_date') {
-                const dateValue = updateData[key];
-                if (dateValue) {
-                  issue._raw[key] = typeof dateValue === 'string' ? new Date(dateValue).getTime() : dateValue;
-                }
-              } else {
-                // Store all other fields directly
-                issue._raw[key] = updateData[key];
+          // ✅ FIXED: Use model decorators instead of direct _raw assignment
+
+          // Basic fields using model decorators
+          if (updateData.description !== undefined)
+            issue.description = updateData.description || '';
+          if (updateData.tracking_code !== undefined)
+            issue.trackingCode = updateData.tracking_code || '';
+          if (updateData.citizen !== undefined) issue.citizen = updateData.citizen || '';
+          if (updateData.citizen_type !== undefined)
+            issue.citizenType = updateData.citizen_type || '';
+          if (updateData.citizen_confidential !== undefined)
+            issue.citizenConfidential = updateData.citizen_confidential;
+          if (updateData.gender !== undefined) issue.gender = updateData.gender;
+          if (updateData.contact_medium !== undefined)
+            issue.contactMedium = updateData.contact_medium || '';
+          if (updateData.contact_info_type !== undefined)
+            issue.contactInfoType = updateData.contact_info_type;
+          if (updateData.contact_information !== undefined)
+            issue.contactInformation = updateData.contact_information;
+          if (updateData.contact_info_confidential !== undefined)
+            issue.contactInfoConfidential = updateData.contact_info_confidential;
+          if (updateData.resolution_days !== undefined)
+            issue.resolutionDays = updateData.resolution_days;
+          if (updateData.resolution_accepted !== undefined)
+            issue.resolutionAccepted = updateData.resolution_accepted;
+          if (updateData.rating !== undefined) issue.rating = updateData.rating;
+          if (updateData.escalate_flag !== undefined) issue.escalateFlag = updateData.escalate_flag;
+          if (updateData.confirmed !== undefined) issue.confirmed = updateData.confirmed;
+
+          // Foreign key fields using _setRaw (for relation decorators)
+          if (updateData.project_id !== undefined)
+            issue._setRaw('project_id', updateData.project_id || '');
+          if (updateData.category_id !== undefined)
+            issue._setRaw('category_id', updateData.category_id || '');
+          if (updateData.issue_type_id !== undefined)
+            issue._setRaw('issue_type_id', updateData.issue_type_id || '');
+          if (updateData.status_id !== undefined)
+            issue._setRaw('status_id', updateData.status_id || '');
+          if (updateData.citizen_age_group_id !== undefined)
+            issue._setRaw('citizen_age_group_id', updateData.citizen_age_group_id);
+          if (updateData.citizen_group_1_id !== undefined)
+            issue._setRaw('citizen_group_1_id', updateData.citizen_group_1_id);
+          if (updateData.citizen_group_2_id !== undefined)
+            issue._setRaw('citizen_group_2_id', updateData.citizen_group_2_id);
+          if (updateData.reporter_id !== undefined)
+            issue._setRaw('reporter_id', updateData.reporter_id || '');
+          if (updateData.assignee_id !== undefined)
+            issue._setRaw('assignee_id', updateData.assignee_id);
+          if (updateData.administrative_region_id !== undefined)
+            issue._setRaw('administrative_region_id', updateData.administrative_region_id || '');
+          if (updateData.amended_from_id !== undefined)
+            issue._setRaw('amended_from_id', updateData.amended_from_id);
+
+          // Date fields - use decorator methods for dates
+          if (updateData.issue_date !== undefined) {
+            const issueDate =
+              typeof updateData.issue_date === 'string'
+                ? new Date(updateData.issue_date)
+                : new Date(updateData.issue_date);
+            issue.issueDate = issueDate;
+          }
+          if (updateData.intake_date !== undefined) {
+            const intakeDate =
+              typeof updateData.intake_date === 'string'
+                ? new Date(updateData.intake_date)
+                : new Date(updateData.intake_date);
+            issue.intakeDate = intakeDate;
+          }
+          if (updateData.resolution_date !== undefined) {
+            const resolutionDate =
+              typeof updateData.resolution_date === 'string'
+                ? new Date(updateData.resolution_date)
+                : new Date(updateData.resolution_date);
+            issue.resolutionDate = resolutionDate;
+          }
+
+          // Complex fields that need JSON serialization
+          if (updateData.issue_location !== undefined) {
+            // ✅ FIXED: Handle circular references in issue_location
+            if (
+              typeof updateData.issue_location === 'object' &&
+              updateData.issue_location !== null
+            ) {
+              try {
+                // Create a clean object without circular references
+                const cleanLocation = {
+                  id: updateData.issue_location.id,
+                  regionName:
+                    updateData.issue_location.regionName || updateData.issue_location.name,
+                  // Only include basic properties, not the complex objects with circular refs
+                  ...(updateData.issue_location.administrativeLevel && {
+                    administrative_level_id:
+                      updateData.issue_location.administrativeLevel.id ||
+                      updateData.issue_location.administrativeLevel._columnName,
+                  }),
+                };
+                issue.issueLocation = JSON.stringify(cleanLocation);
+              } catch (error) {
+                console.warn(
+                  '🔍 [WM] Error stringifying issue_location, storing as string:',
+                  error
+                );
+                // Fallback: store just the basic info
+                issue.issueLocation = JSON.stringify({
+                  id: updateData.issue_location.id || 'unknown',
+                  regionName:
+                    updateData.issue_location.regionName ||
+                    updateData.issue_location.name ||
+                    'unknown',
+                });
               }
+            } else {
+              issue.issueLocation = updateData.issue_location;
             }
-          });
-          
-          issue._raw.updated_at = new Date().getTime();
+          }
+
+          // Update timestamp
+          issue.updatedAt = new Date();
         });
       });
 
@@ -798,10 +999,16 @@ class WatermelonManager {
 
   updateIssueFromServerData(issue, serverData) {
     // ✅ FIXED: Store data directly without transformation
-    Object.keys(serverData).forEach(key => {
+    Object.keys(serverData).forEach((key) => {
       if (serverData[key] !== undefined && serverData[key] !== null) {
         // Handle date fields
-        if (key === 'issue_date' || key === 'intake_date' || key === 'resolution_date' || key === 'creation' || key === 'modified') {
+        if (
+          key === 'issue_date' ||
+          key === 'intake_date' ||
+          key === 'resolution_date' ||
+          key === 'creation' ||
+          key === 'modified'
+        ) {
           const dateValue = serverData[key];
           if (dateValue) {
             if (key === 'creation') {
@@ -809,7 +1016,8 @@ class WatermelonManager {
             } else if (key === 'modified') {
               issue._raw.updated_at = new Date(dateValue).getTime();
             } else {
-              issue._raw[key] = typeof dateValue === 'string' ? new Date(dateValue).getTime() : dateValue;
+              issue._raw[key] =
+                typeof dateValue === 'string' ? new Date(dateValue).getTime() : dateValue;
             }
           }
         } else {
@@ -818,7 +1026,7 @@ class WatermelonManager {
         }
       }
     });
-    
+
     // Ensure timestamps exist
     const now = new Date().getTime();
     if (!issue._raw.created_at) issue._raw.created_at = now;
