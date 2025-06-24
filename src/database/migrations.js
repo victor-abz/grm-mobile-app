@@ -1,4 +1,4 @@
-import { schemaMigrations, createTable } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, createTable, addColumns } from '@nozbe/watermelondb/Schema/migrations';
 
 export default schemaMigrations({
   migrations: [
@@ -20,6 +20,37 @@ export default schemaMigrations({
             { name: 'last_updated', type: 'number' },
             { name: 'created_at', type: 'number' },
             { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    // Migration to add action tracking fields
+    {
+      toVersion: 3,
+      steps: [
+        addColumns({
+          table: 'grm_issues',
+          columns: [
+            { name: 'accepted_date', type: 'number', isOptional: true },
+            { name: 'reject_reason', type: 'string', isOptional: true },
+            { name: 'rejected_date', type: 'number', isOptional: true },
+            { name: 'rejected_by', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'escalated_date', type: 'number', isOptional: true },
+            { name: 'escalated_by', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'escalation_reason', type: 'string', isOptional: true },
+            { name: 'resolution_text', type: 'string', isOptional: true },
+            { name: 'resolved_by', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'rated_date', type: 'number', isOptional: true },
+            { name: 'appeal_submitted', type: 'boolean', isOptional: true },
+            { name: 'appeal_date', type: 'number', isOptional: true },
+          ],
+        }),
+        addColumns({
+          table: 'grm_issue_logs',
+          columns: [
+            { name: 'action_taken', type: 'string', isOptional: true },
+            { name: 'action_taken_date', type: 'number', isOptional: true },
+            { name: 'action_taken_by', type: 'string', isOptional: true, isIndexed: true },
           ],
         }),
       ],

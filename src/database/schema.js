@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 2,
+  version: 3,
   tables: [
     tableSchema({
       name: 'grm_issues',
@@ -36,6 +36,18 @@ export default appSchema({
         { name: 'escalate_flag', type: 'boolean', isOptional: true },
         { name: 'confirmed', type: 'boolean', isOptional: true },
         { name: 'amended_from_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'accepted_date', type: 'number', isOptional: true },
+        { name: 'reject_reason', type: 'string', isOptional: true },
+        { name: 'rejected_date', type: 'number', isOptional: true },
+        { name: 'rejected_by', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'escalated_date', type: 'number', isOptional: true },
+        { name: 'escalated_by', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'escalation_reason', type: 'string', isOptional: true },
+        { name: 'resolution_text', type: 'string', isOptional: true },
+        { name: 'resolved_by', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'rated_date', type: 'number', isOptional: true },
+        { name: 'appeal_submitted', type: 'boolean', isOptional: true },
+        { name: 'appeal_date', type: 'number', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],
@@ -182,6 +194,9 @@ export default appSchema({
         { name: 'text', type: 'string' },
         { name: 'user_id', type: 'string', isIndexed: true },
         { name: 'timestamp', type: 'number' },
+        { name: 'action_taken', type: 'string', isOptional: true },
+        { name: 'action_taken_date', type: 'number', isOptional: true },
+        { name: 'action_taken_by', type: 'string', isOptional: true, isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

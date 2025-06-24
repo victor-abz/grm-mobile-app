@@ -25,6 +25,7 @@ import StarRating from 'react-native-star-rating-widget';
 import { useData } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
+import watermelonManager from '../../../../database/watermelonManager';
 
 const theme = {
   roundness: 12,
@@ -214,6 +215,17 @@ function Content({ issue, navigation, statuses = [], userContext }) {
     ToastAndroid.show(message, ToastAndroid.SHORT);
   };
 
+  /**
+   * Check if escalation is enabled for the current issue state
+   * RULE: Escalate button enabled when:
+   * 1. Record resolution buttons are enabled (open status + assigned)
+   * 2. Issue has not been escalated yet
+   * 3. Escalation is not disabled
+   */
+  const _isEscalateEnabled = () => {
+    return isRecordResolutionEnabled && !enrichedIssue?.escalate_flag && !disableEscalation;
+  };
+
   const updateActionButtons = () => {
     console.log('🔍 [IssueActions] updateActionButtons called with:', {
       enrichedIssue: enrichedIssue
@@ -227,8 +239,13 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       statusesCount: statuses?.length || 0,
     });
 
-    function _isAcceptEnabled(x) {
-      const statusData = x._raw || x;
+    /**
+     * Modern Action Button Rules - Consistent with Frappe backend expectations
+     * Each function returns boolean indicating if the button should be enabled
+     */
+
+    function _isAcceptEnabled(statusItem) {
+      const statusData = statusItem._raw || statusItem;
       const currentStatusId = enrichedIssue?.status_id || enrichedIssue?.status?.id;
 
       console.log('🔍 [IssueActions] _isAcceptEnabled check:', {
@@ -240,15 +257,36 @@ function Content({ issue, navigation, statuses = [], userContext }) {
         matches: currentStatusId === statusData.id,
       });
 
-      // Accept button should show when issue is in initial status and assigned to me
-      if (statusData.initial_status && isIssueAssignedToMe) {
-        return currentStatusId === statusData.id;
-      }
-      return false;
+      // RULE: Accept button enabled when:
+      // 1. Issue is in initial status (newly submitted) AND current user is assigned to the issue AND current issue status matches this status
+      const isInitialStatusMatch =
+        statusData.initial_status === true &&
+        isIssueAssignedToMe &&
+        currentStatusId === statusData.id;
+
+      return isInitialStatusMatch;
     }
 
-    function _isRecordResolutionEnabled(x) {
-      const statusData = x._raw || x;
+    // Check if accept should be enabled for Unknown status issues
+    const isUnknownStatusAndAssigned = () => {
+      const currentStatusId = enrichedIssue?.status_id || enrichedIssue?.status?.id;
+      const isUnknownStatus = !currentStatusId || currentStatusId === '';
+      const result = isUnknownStatus && isIssueAssignedToMe;
+
+      if (isUnknownStatus) {
+        console.log('🔍 [IssueActions] Unknown status check:', {
+          currentStatusId,
+          isUnknownStatus,
+          isIssueAssignedToMe,
+          result,
+        });
+      }
+
+      return result;
+    };
+
+    function _isRecordResolutionEnabled(statusItem) {
+      const statusData = statusItem._raw || statusItem;
       const currentStatusId = enrichedIssue?.status_id || enrichedIssue?.status?.id;
 
       console.log('🔍 [IssueActions] _isRecordResolutionEnabled check:', {
@@ -261,15 +299,21 @@ function Content({ issue, navigation, statuses = [], userContext }) {
         matches: currentStatusId === statusData.id,
       });
 
-      // Record resolution buttons should show when issue is in open status and assigned to me
-      if (statusData.open_status && isIssueAssignedToMe) {
-        return currentStatusId === statusData.id && !enrichedIssue?.escalate_flag;
-      }
-      return false;
+      // RULE: Record resolution buttons enabled when:
+      // 1. Issue is in open status (being worked on)
+      // 2. Current user is assigned to the issue
+      // 3. Issue has not been escalated
+      // 4. Current issue status matches this status
+      return (
+        statusData.open_status === true &&
+        isIssueAssignedToMe &&
+        !enrichedIssue?.escalate_flag &&
+        currentStatusId === statusData.id
+      );
     }
 
-    function _isRateAppealEnabled(x) {
-      const statusData = x._raw || x;
+    function _isRateAppealEnabled(statusItem) {
+      const statusData = statusItem._raw || statusItem;
       const currentStatusId = enrichedIssue?.status_id || enrichedIssue?.status?.id;
 
       console.log('🔍 [IssueActions] _isRateAppealEnabled check:', {
@@ -281,17 +325,22 @@ function Content({ issue, navigation, statuses = [], userContext }) {
         matches: currentStatusId === statusData.id,
       });
 
-      // Rate/appeal button should show when issue is in final status and NOT assigned to me
-      if (statusData.final_status && !isIssueAssignedToMe) {
-        return currentStatusId === statusData.id;
-      }
-      return false;
+      // RULE: Rate/Appeal button enabled when:
+      // 1. Issue is in final status (resolved/closed)
+      // 2. Current user is NOT assigned (citizen can rate)
+      // 3. Current issue status matches this status
+      return (
+        statusData.final_status === true &&
+        !isIssueAssignedToMe &&
+        currentStatusId === statusData.id
+      );
     }
 
+    // Apply the rules to determine button states
     if (statuses && statuses.length > 0) {
       console.log('🔍 [IssueActions] Checking statuses for button enablement...');
 
-      const acceptEnabled = statuses.some(_isAcceptEnabled);
+      const acceptEnabled = statuses.some(_isAcceptEnabled) || isUnknownStatusAndAssigned();
       const recordResolutionEnabled = statuses.some(_isRecordResolutionEnabled);
       const rateAppealEnabled = statuses.some(_isRateAppealEnabled);
 
@@ -299,6 +348,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
         acceptEnabled,
         recordResolutionEnabled,
         rateAppealEnabled,
+        escalateEnabled: _isEscalateEnabled(),
       });
 
       setIsAcceptEnabled(acceptEnabled);
@@ -306,6 +356,10 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       setIsRateAppealEnabled(rateAppealEnabled);
     } else {
       console.warn('🔍 [IssueActions] No statuses available for button enablement');
+      // Disable all buttons if no statuses available
+      setIsAcceptEnabled(false);
+      setIsRecordResolutionEnabled(false);
+      setIsRateAppealEnabled(false);
     }
   };
 
@@ -379,147 +433,337 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       });
   };
 
-  const saveIssueStatus = async (newStatus, type = 'none') => {
+  /**
+   * Modern Issue Status Update Function - Offline First with WatermelonDB
+   * Updates WatermelonDB directly, which then syncs to Frappe automatically
+   */
+  const saveIssueStatus = async (newStatus, actionType = 'none', additionalData = {}) => {
     setIsUpdating(true);
 
     try {
-      const updateData = {};
+      const db = watermelonManager.getDatabase();
 
-      // Prepare update data based on action type
-      if (newStatus) {
-        updateData.status = newStatus.name || newStatus.id;
-      }
+      await db.write(async () => {
+        // Get the current issue record
+        const issueRecord = await db.get('grm_issues').find(enrichedIssue.id);
 
-      // Handle comments
-      if (!enrichedIssue?.comments) {
-        enrichedIssue.comments = [];
-      }
-
-      const newComment = {
-        comment_by: currentUserId,
-        comment_text: '',
-        comment_date: moment().toISOString(),
-      };
-
-      switch (type) {
-        case 'accept':
-          newComment.comment_text = t('issue_was_accepted');
-          break;
-        case 'reject':
-          newComment.comment_text = t('issue_was_rejected');
-          updateData.reject_reason = reason;
-          break;
-        case 'record_resolution':
-          newComment.comment_text = t('issue_was_resolved');
-          updateData.research_result = resolution;
-          updateData.resolution_date = moment().toISOString();
-          break;
-        default:
-          if (comment) {
-            newComment.comment_text = comment;
+        // Update the issue record using WatermelonDB writer
+        await issueRecord.update((issue) => {
+          // Handle status change using proper field assignment
+          if (newStatus) {
+            const statusId = newStatus.id || newStatus._raw?.id;
+            // ✅ FIXED: Use _setRaw method for relation fields in WatermelonDB
+            // This is the correct way to set foreign key fields
+            issue._setRaw('status_id', statusId);
+            console.log('🔄 [IssueActions] Status change:', {
+              from: enrichedIssue.status_id,
+              to: statusId,
+              actionType,
+            });
           }
-      }
 
-      // Add comment if there's one
-      if (newComment.comment_text) {
-        updateData.comments = [...(enrichedIssue?.comments || []), newComment];
-      }
+          // Handle specific action types with proper field updates
+          const now = new Date();
 
-      // Handle escalation
-      if (type === 'escalate') {
-        updateData.escalate_flag = true;
-        updateData.escalation_reasons = [
-          ...(enrichedIssue?.escalation_reasons || []),
-          {
-            reason_by: currentUserId,
-            reason_text: escalateComment,
-            reason_date: moment().toISOString(),
-          },
-        ];
-      }
+          switch (actionType) {
+            case 'accept':
+              // ✅ FIXED: Use _setRaw method for assignee relation field
+              issue._setRaw('assignee_id', currentUserId);
+              issue.acceptedDate = now;
+              break;
 
-      // Handle rating
-      if (rating > 0 && type === 'rate') {
-        updateData.rating = rating;
-      }
+            case 'reject':
+              issue.rejectReason = reason;
+              issue.rejectedDate = now;
+              // ✅ FIXED: Use _setRaw method for rejectedBy relation field
+              issue._setRaw('rejected_by', currentUserId);
+              break;
 
-      // TODO: Use DataManager to update the issue
-      console.log('Issue update data:', updateData);
-      console.log('Issue update would be sent for:', enrichedIssue?.id);
+            case 'record_resolution':
+              issue.resolutionText = resolution;
+              issue.resolutionDate = now;
+              // ✅ FIXED: Use _setRaw method for resolvedBy relation field
+              issue._setRaw('resolved_by', currentUserId);
+              break;
 
-      // Update local issue object for UI
-      Object.assign(enrichedIssue, updateData);
+            case 'escalate':
+              issue.escalateFlag = true;
+              issue.escalatedDate = now;
+              // ✅ FIXED: Use _setRaw method for escalatedBy relation field
+              issue._setRaw('escalated_by', currentUserId);
+              issue.escalationReason = escalateComment;
+              break;
+
+            case 'record_steps':
+              // For record steps, we don't update the main issue but will create a log entry
+              break;
+
+            case 'rate':
+              issue.rating = rating;
+              issue.ratedDate = now;
+              break;
+
+            case 'appeal':
+              issue.appealSubmitted = true;
+              issue.appealDate = now;
+              break;
+          }
+
+          // Add any additional data passed to the function
+          Object.keys(additionalData).forEach((key) => {
+            if (additionalData[key] !== undefined && issue[key] !== undefined) {
+              issue[key] = additionalData[key];
+            }
+          });
+
+          // Update timestamp
+          issue.updatedAt = now;
+        });
+
+        // ✅ VALIDATION: Verify the status was actually updated
+        if (newStatus) {
+          const updatedIssue = await db.get('grm_issues').find(enrichedIssue.id);
+          const expectedStatusId = newStatus.id || newStatus._raw?.id;
+
+          if (updatedIssue._raw.status_id !== expectedStatusId) {
+            throw new Error(
+              `Status update failed: expected ${expectedStatusId}, got ${updatedIssue._raw.status_id}`
+            );
+          }
+
+          console.log('✅ [IssueActions] Status update verified in database:', {
+            issueId: enrichedIssue.id,
+            newStatusId: updatedIssue._raw.status_id,
+            actionType,
+          });
+        }
+
+        // Create comment entry if action type is specified
+        if (actionType !== 'none') {
+          const commentMap = {
+            accept: t('issue_was_accepted_by_user', { user: currentUserId }),
+            reject: t('issue_was_rejected_by_user', { user: currentUserId, reason: reason }),
+            record_resolution: t('issue_was_resolved_by_user', { user: currentUserId }),
+            escalate: t('issue_was_escalated_by_user', {
+              user: currentUserId,
+              reason: escalateComment,
+            }),
+            record_steps: t('steps_recorded_by_user', { user: currentUserId, steps: comment }),
+            rate: t('issue_was_rated_by_citizen', { rating: rating }),
+            appeal: t('appeal_submitted_by_citizen'),
+          };
+
+          const commentText = commentMap[actionType] || t('status_updated');
+
+          // Create comment record in WatermelonDB
+          await db.get('grm_issue_comments').create((commentRecord) => {
+            // ✅ FIXED: Use _setRaw method for relation fields
+            commentRecord._setRaw('grm_issue_id', enrichedIssue.id);
+            commentRecord._setRaw('user_id', currentUserId);
+            commentRecord.comment = commentText;
+            commentRecord.createdAt = new Date();
+            commentRecord.updatedAt = new Date();
+          });
+
+          // Create log entry for audit trail
+          await db.get('grm_issue_logs').create((logRecord) => {
+            // ✅ FIXED: Use _setRaw method for relation fields
+            logRecord._setRaw('grm_issue_id', enrichedIssue.id);
+            logRecord._setRaw('user_id', currentUserId);
+            logRecord.text = `${actionType.toUpperCase()}: ${commentText}`;
+            logRecord.timestamp = new Date();
+
+            // Add specific action tracking for record_steps
+            if (actionType === 'record_steps') {
+              logRecord.actionTaken = comment;
+              logRecord.actionTakenDate = new Date();
+              // ✅ FIXED: Use _setRaw method for actionTakenBy relation field
+              logRecord._setRaw('action_taken_by', currentUserId);
+            }
+
+            logRecord.createdAt = new Date();
+            logRecord.updatedAt = new Date();
+          });
+        }
+      });
+
+      console.log('✅ [IssueActions] Issue updated successfully in WatermelonDB');
+
+      // Update local UI state (enrichedIssue is used for immediate UI feedback)
       if (newStatus) {
+        const statusData = newStatus._raw || newStatus;
+        enrichedIssue.status_id = statusData.id;
         enrichedIssue.status = {
-          id: newStatus.id || newStatus.name,
-          name: newStatus.name,
+          id: statusData.id,
+          name: statusData.status_name || statusData.name,
         };
+        enrichedIssue.statusLabel = statusData.status_name || statusData.name;
       }
 
-      updateActionButtons();
-
-      // Show appropriate dialog
-      switch (type) {
+      // Update other fields in local state based on action
+      switch (actionType) {
         case 'accept':
-          setAcceptedDialog(true);
+          enrichedIssue.assignee_id = currentUserId;
           break;
         case 'reject':
-          setRejectedDialog(true);
+          enrichedIssue.reject_reason = reason;
           break;
         case 'record_resolution':
-          setRecordedResolution(false);
-          _hideRecordResolutionDialog();
+          enrichedIssue.resolution_text = resolution;
           break;
         case 'escalate':
-          setDisableEscalation(true);
-          setEscalatedDialog(true);
-          break;
-        case 'record_steps':
-          setRecordedSteps(true);
+          enrichedIssue.escalate_flag = true;
           break;
         case 'rate':
-          if (rating === 0) {
-            _showRateAppealDialog();
-          }
-          _hideRatingDialog();
+          enrichedIssue.rating = rating;
           break;
       }
 
-      showToast(t('issue_updated_successfully'));
+      // Refresh action buttons based on new state
+      updateActionButtons();
+
+      // Handle UI state updates for each action type
+      const handleUIStateUpdate = (actionType) => {
+        switch (actionType) {
+          case 'accept':
+            setAcceptedDialog(true);
+            _hideDialog();
+            break;
+          case 'reject':
+            setRejectedDialog(true);
+            _hideRejectDialog();
+            break;
+          case 'record_resolution':
+            setRecordedResolution(false);
+            _hideRecordResolutionDialog();
+            break;
+          case 'escalate':
+            setDisableEscalation(true);
+            setEscalatedDialog(true);
+            _hideEscalateDialog();
+            break;
+          case 'record_steps':
+            setRecordedSteps(true);
+            _hideRecordStepsDialog();
+            break;
+          case 'rate':
+            if (rating === 0) {
+              _showRateAppealDialog();
+            } else {
+              _hideRatingDialog();
+            }
+            break;
+          case 'appeal':
+            _hideRateAppealDialog();
+            break;
+        }
+      };
+
+      handleUIStateUpdate(actionType);
     } catch (error) {
-      console.error('Error updating issue:', error);
-      showToast(t('error_updating_issue'));
+      console.error('❌ [IssueActions] Error updating issue status:', error);
+      console.error('❌ [IssueActions] Error details:', {
+        issueId: enrichedIssue?.id,
+        actionType,
+        newStatusId: newStatus?.id || newStatus?._raw?.id,
+        errorMessage: error.message,
+        errorStack: error.stack,
+      });
+
+      // Show user-friendly error message
+      showToast(
+        t('error_updating_issue_status') || 'Error updating issue status. Please try again.'
+      );
+
+      // Reset updating state
+      setIsUpdating(false);
+      return;
     } finally {
       setIsUpdating(false);
     }
   };
 
+  /**
+   * Modern Action Functions - Each action uses standardized status finding and processing
+   */
   const acceptIssue = async () => {
-    const newStatus = statuses.find((x) => x.open_status === true);
+    // Find the "In Progress" status (open_status = true means open for activities/accepted)
+    const newStatus = statuses.find((status) => {
+      const statusData = status._raw || status;
+      return statusData.open_status === true;
+    });
+
+    if (!newStatus) {
+      console.error('❌ [IssueActions] No open status found for accept action');
+      showToast(t('error_no_open_status_found'));
+      return;
+    }
+
     await saveIssueStatus(newStatus, 'accept');
   };
 
   const rejectIssue = async () => {
-    const newStatus = statuses.find((x) => x.rejected_status === true);
+    if (!reason || reason.trim() === '') {
+      showToast(t('please_provide_rejection_reason'));
+      return;
+    }
+
+    const newStatus = statuses.find((status) => {
+      const statusData = status._raw || status;
+      return statusData.rejected_status === true;
+    });
+
+    if (!newStatus) {
+      console.error('❌ [IssueActions] No rejected status found for reject action');
+      showToast(t('error_no_rejected_status_found'));
+      return;
+    }
+
     await saveIssueStatus(newStatus, 'reject');
   };
 
   const rateIssue = async () => {
+    if (rating === 0) {
+      showToast(t('please_select_rating'));
+      return;
+    }
+
+    // Rating doesn't change status, just adds rating data
     await saveIssueStatus(null, 'rate');
   };
 
   const appealIssue = async () => {
-    const newStatus = statuses.find((x) => x.open_status === true);
+    const newStatus = statuses.find((status) => {
+      const statusData = status._raw || status;
+      return statusData.open_status === true;
+    });
+
+    if (!newStatus) {
+      console.error('❌ [IssueActions] No open status found for appeal action');
+      showToast(t('error_no_open_status_found'));
+      return;
+    }
+
     await saveIssueStatus(newStatus, 'appeal');
-    _hideRateAppealDialog();
-    showToast('Votre demande a bien été prise en compte.');
   };
 
   const escalateIssue = async () => {
+    if (!escalateComment || escalateComment.trim() === '') {
+      showToast(t('please_provide_escalation_reason'));
+      return;
+    }
+
+    // Escalation doesn't change status immediately, just sets escalation flag
     await saveIssueStatus(null, 'escalate');
   };
 
   const recordStep = async () => {
+    if (!comment || comment.trim() === '') {
+      showToast(t('please_provide_steps_taken'));
+      return;
+    }
+
+    // Recording steps doesn't change status, just adds action log
     await saveIssueStatus(null, 'record_steps');
   };
 
@@ -528,9 +772,23 @@ function Content({ issue, navigation, statuses = [], userContext }) {
   };
 
   const recordResolutionConfirmation = async () => {
-    const newStatus = statuses.find((x) => x.final_status === true);
+    if (!resolution || resolution.trim() === '') {
+      showToast(t('please_provide_resolution_details'));
+      return;
+    }
+
+    const newStatus = statuses.find((status) => {
+      const statusData = status._raw || status;
+      return statusData.final_status === true;
+    });
+
+    if (!newStatus) {
+      console.error('❌ [IssueActions] No final status found for resolution action');
+      showToast(t('error_no_final_status_found'));
+      return;
+    }
+
     await saveIssueStatus(newStatus, 'record_resolution');
-    _hideRecordResolutionDialog();
   };
 
   if (!enrichedIssue) {
@@ -707,9 +965,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
           </View>
           <TouchableOpacity
             onPress={_showEscalateDialog}
-            disabled={
-              disableEscalation || !isRecordResolutionEnabled || enrichedIssue.escalate_flag
-            }
+            disabled={!_isEscalateEnabled()}
             style={{
               alignItems: 'center',
               flexDirection: 'row',
@@ -724,9 +980,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
                 style={{ marginRight: 5 }}
                 name="rightsquare"
                 size={35}
-                color={
-                  !disableEscalation && isRecordResolutionEnabled ? colors.primary : colors.disabled
-                }
+                color={_isEscalateEnabled() ? colors.primary : colors.disabled}
               />
               <Feather name="help-circle" size={24} color="gray" />
             </View>
