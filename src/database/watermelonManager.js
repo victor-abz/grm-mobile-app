@@ -104,12 +104,12 @@ class WatermelonManager {
         queryFilters.push(Q.where('issue_date', Q.lte(new Date(filters.to_date).getTime())));
       }
 
+      // Add sorting using correct WatermelonDB syntax
       if (queryFilters.length > 0) {
-        query = issuesCollection.query(...queryFilters);
+        query = issuesCollection.query(...queryFilters, Q.sortBy('issue_date', Q.desc));
+      } else {
+        query = issuesCollection.query(Q.sortBy('issue_date', Q.desc));
       }
-
-      // Add sorting
-      query = query.sortBy('issue_date', Q.desc);
 
       const issues = await query.fetch();
       // Return raw data directly - no transformation
@@ -176,12 +176,32 @@ class WatermelonManager {
         return await db.get('grm_issues').create((issue) => {
           console.log('🔍 [WM] Creating new issue record');
 
-          this._mapIssueDataToModel(issue, issueData);
-          issue.createdAt = new Date();
-          issue.updatedAt = new Date();
+          // ✅ FIXED: Store data directly without transformation to avoid data loss
+          // Set all fields directly from issueData - no transformation
+          Object.keys(issueData).forEach(key => {
+            if (issueData[key] !== undefined && issueData[key] !== null) {
+              // Handle date fields
+              if (key === 'issue_date' || key === 'intake_date' || key === 'resolution_date') {
+                const dateValue = issueData[key];
+                if (dateValue) {
+                  issue._raw[key] = typeof dateValue === 'string' ? new Date(dateValue).getTime() : dateValue;
+                }
+              } else {
+                // Store all other fields directly
+                issue._raw[key] = issueData[key];
+              }
+            }
+          });
+          
+          // Set timestamps
+          const now = new Date();
+          issue._raw.created_at = now.getTime();
+          issue._raw.updated_at = now.getTime();
+          issue._raw._status = 'created';
+          issue._raw._changed = '';
 
           console.log('🔍 [WM] Issue record created with ID:', issue.id);
-          console.log('🔍 [WM] Issue _raw data:', issue._raw);
+          console.log('🔍 [WM] Issue _raw data after direct save:', issue._raw);
         });
       });
 
@@ -211,8 +231,23 @@ class WatermelonManager {
       const updatedIssue = await db.write(async () => {
         const issue = await db.get('grm_issues').find(issueId);
         return await issue.update((issue) => {
-          this._mapIssueDataToModel(issue, updateData);
-          issue.updatedAt = new Date();
+          // ✅ FIXED: Store data directly without transformation
+          Object.keys(updateData).forEach(key => {
+            if (updateData[key] !== undefined && updateData[key] !== null) {
+              // Handle date fields
+              if (key === 'issue_date' || key === 'intake_date' || key === 'resolution_date') {
+                const dateValue = updateData[key];
+                if (dateValue) {
+                  issue._raw[key] = typeof dateValue === 'string' ? new Date(dateValue).getTime() : dateValue;
+                }
+              } else {
+                // Store all other fields directly
+                issue._raw[key] = updateData[key];
+              }
+            }
+          });
+          
+          issue._raw.updated_at = new Date().getTime();
         });
       });
 
@@ -272,14 +307,33 @@ class WatermelonManager {
       // This would need to be implemented through relationships if needed
 
       const categories = await query.fetch();
+
+      console.log('🔍 [WATERMELON] Raw categories from DB:', categories?.length || 0);
+      if (categories.length > 0) {
+        console.log('🔍 [WATERMELON] Sample category raw data:', categories[0]._raw);
+        console.log('🔍 [WATERMELON] Sample category model properties:', {
+          categoryName: categories[0].categoryName,
+          assignedDepartmentId: categories[0].assignedDepartmentId,
+          administrativeLevelId: categories[0].administrativeLevelId,
+          confidentialityLevel: categories[0].confidentialityLevel,
+        });
+      }
+
       // Return raw data directly - no transformation
-      return categories
+      const result = categories
         .filter((category) => category && category._raw)
         .map((category) => ({
           ...category._raw,
           name: category._raw.id || category._raw.name,
         }))
         .filter((category) => category !== null);
+
+      console.log('🔍 [WATERMELON] Processed categories result:', result?.length || 0);
+      if (result.length > 0) {
+        console.log('🔍 [WATERMELON] Sample processed category:', result[0]);
+      }
+
+      return result;
     } catch (error) {
       console.error('Error fetching categories from WatermelonDB:', error);
       return [];
@@ -565,9 +619,15 @@ class WatermelonManager {
    * Reactive Query Methods for UI Components
    */
   observeIssues(filters = {}) {
+    console.log('🔍 [WatermelonDB] observeIssues called with filters:', filters);
+
     try {
       const db = this.getDatabase();
+      console.log('🔍 [WatermelonDB] Database instance obtained');
+
       const issuesCollection = db.get('grm_issues');
+      console.log('🔍 [WatermelonDB] Issues collection obtained');
+
       let query = issuesCollection.query();
 
       // Apply filters similar to getIssues
@@ -597,13 +657,36 @@ class WatermelonManager {
         queryFilters.push(Q.where('administrative_region_id', filters.administrative_region_id));
       }
 
+      // Apply filters and sorting using correct WatermelonDB syntax
       if (queryFilters.length > 0) {
-        query = issuesCollection.query(...queryFilters);
+        console.log('🔍 [WatermelonDB] Applying', queryFilters.length, 'filters');
+        query = issuesCollection.query(...queryFilters, Q.sortBy('issue_date', Q.desc));
+      } else {
+        console.log('🔍 [WatermelonDB] No filters, only sorting');
+        query = issuesCollection.query(Q.sortBy('issue_date', Q.desc));
       }
 
-      query = query.sortBy('issue_date', Q.desc);
+      console.log('🔍 [WatermelonDB] Query created, returning observable');
+      const observable = query.observe();
 
-      return query.observe();
+      // Test the observable immediately to see if it works
+      observable.subscribe({
+        next: (results) => {
+          console.log(`✅ [WatermelonDB] Observable emitted ${results?.length || 0} issues`);
+          if (results && results.length > 0) {
+            console.log('🔍 [WatermelonDB] Sample issue from observable:', {
+              id: results[0].id,
+              _raw: results[0]._raw ? 'Present' : 'Missing',
+              fields: Object.keys(results[0]._raw || {}),
+            });
+          }
+        },
+        error: (error) => {
+          console.error('❌ [WatermelonDB] Observable error:', error);
+        },
+      });
+
+      return observable;
     } catch (error) {
       console.error('Error creating observable issues query:', error);
       // Return empty observable
@@ -620,47 +703,6 @@ class WatermelonManager {
       // Return empty observable
       return { subscribe: () => ({ unsubscribe: () => {} }) };
     }
-  }
-
-  /**
-   * Helper method to map issue data to model
-   */
-  _mapIssueDataToModel(issue, data) {
-    if (data.project_id !== undefined) issue.projectId = data.project_id;
-    if (data.issue_date !== undefined) issue.issueDate = new Date(data.issue_date || Date.now());
-    if (data.intake_date !== undefined) issue.intakeDate = new Date(data.intake_date || Date.now());
-    if (data.category_id !== undefined) issue.categoryId = data.category_id;
-    if (data.issue_type_id !== undefined) issue.issueTypeId = data.issue_type_id;
-    if (data.status_id !== undefined) issue.statusId = data.status_id;
-    if (data.tracking_code !== undefined) issue.trackingCode = data.tracking_code;
-    if (data.description !== undefined) issue.description = data.description;
-    if (data.issue_location !== undefined) issue.issueLocation = data.issue_location;
-    if (data.citizen_type !== undefined) issue.citizenType = data.citizen_type;
-    if (data.citizen !== undefined) issue.citizen = data.citizen;
-    if (data.citizen_confidential !== undefined)
-      issue.citizenConfidential = data.citizen_confidential;
-    if (data.gender !== undefined) issue.gender = data.gender;
-    if (data.contact_medium !== undefined) issue.contactMedium = data.contact_medium;
-    if (data.contact_info_type !== undefined) issue.contactInfoType = data.contact_info_type;
-    if (data.contact_information !== undefined) issue.contactInformation = data.contact_information;
-    if (data.contact_info_confidential !== undefined)
-      issue.contactInfoConfidential = data.contact_info_confidential;
-    if (data.citizen_age_group_id !== undefined)
-      issue.citizenAgeGroupId = data.citizen_age_group_id;
-    if (data.citizen_group_1_id !== undefined) issue.citizenGroup1Id = data.citizen_group_1_id;
-    if (data.citizen_group_2_id !== undefined) issue.citizenGroup2Id = data.citizen_group_2_id;
-    if (data.reporter_id !== undefined) issue.reporterId = data.reporter_id;
-    if (data.assignee_id !== undefined) issue.assigneeId = data.assignee_id;
-    if (data.administrative_region_id !== undefined)
-      issue.administrativeRegionId = data.administrative_region_id;
-    if (data.resolution_days !== undefined) issue.resolutionDays = data.resolution_days;
-    if (data.resolution_date !== undefined)
-      issue.resolutionDate = data.resolution_date ? new Date(data.resolution_date) : null;
-    if (data.resolution_accepted !== undefined) issue.resolutionAccepted = data.resolution_accepted;
-    if (data.rating !== undefined) issue.rating = data.rating;
-    if (data.escalate_flag !== undefined) issue.escalateFlag = data.escalate_flag || false;
-    if (data.confirmed !== undefined) issue.confirmed = data.confirmed || false;
-    if (data.amended_from_id !== undefined) issue.amendedFromId = data.amended_from_id;
   }
 
   /**
@@ -681,15 +723,32 @@ class WatermelonManager {
         break;
 
       case 'grm_issue_categories':
+        console.log('🔍 [WATERMELON] Storing category data from Frappe:', {
+          categoryName: frappeData.category_name,
+          assignedDepartment: frappeData.assigned_department,
+          assignedDepartmentId: frappeData.assigned_department_id,
+          department: frappeData.department,
+          administrativeLevelId: frappeData.administrative_level_id,
+          confidentialityLevel: frappeData.confidentiality_level,
+          fullFrappeData: frappeData,
+        });
+
         record.categoryName = frappeData.category_name || '';
         record.label = frappeData.label || '';
         record.abbreviation = frappeData.abbreviation || '';
-        record.assignedDepartmentId = frappeData.assigned_department_id || '';
+        record.assignedDepartmentId = frappeData.assigned_department;
         record.assignedAppealDepartmentId = frappeData.assigned_appeal_department_id || '';
         record.assignedEscalationDepartmentId = frappeData.assigned_escalation_department_id || '';
         record.confidentialityLevel = frappeData.confidentiality_level || '';
         record.redirectionProtocol = frappeData.redirection_protocol || '';
-        record.administrativeLevelId = frappeData.administrative_level_id || '';
+        record.administrativeLevelId = frappeData.administrative_level_id;
+
+        console.log('🔍 [WATERMELON] After storing, record state:', {
+          categoryName: record.categoryName,
+          assignedDepartmentId: record.assignedDepartmentId,
+          administrativeLevelId: record.administrativeLevelId,
+          confidentialityLevel: record.confidentialityLevel,
+        });
         break;
 
       case 'grm_issue_types':
@@ -738,9 +797,32 @@ class WatermelonManager {
   }
 
   updateIssueFromServerData(issue, serverData) {
-    this._mapIssueDataToModel(issue, serverData);
-    issue.createdAt = serverData.creation ? new Date(serverData.creation) : new Date();
-    issue.updatedAt = serverData.modified ? new Date(serverData.modified) : new Date();
+    // ✅ FIXED: Store data directly without transformation
+    Object.keys(serverData).forEach(key => {
+      if (serverData[key] !== undefined && serverData[key] !== null) {
+        // Handle date fields
+        if (key === 'issue_date' || key === 'intake_date' || key === 'resolution_date' || key === 'creation' || key === 'modified') {
+          const dateValue = serverData[key];
+          if (dateValue) {
+            if (key === 'creation') {
+              issue._raw.created_at = new Date(dateValue).getTime();
+            } else if (key === 'modified') {
+              issue._raw.updated_at = new Date(dateValue).getTime();
+            } else {
+              issue._raw[key] = typeof dateValue === 'string' ? new Date(dateValue).getTime() : dateValue;
+            }
+          }
+        } else {
+          // Store all other fields directly
+          issue._raw[key] = serverData[key];
+        }
+      }
+    });
+    
+    // Ensure timestamps exist
+    const now = new Date().getTime();
+    if (!issue._raw.created_at) issue._raw.created_at = now;
+    if (!issue._raw.updated_at) issue._raw.updated_at = now;
   }
 
   updateLookupFromServerData(record, serverData, tableName) {

@@ -83,14 +83,31 @@ const LookupAPI = {
    * Fetch categories - return raw Frappe data
    */
   async getCategories(call, projectId = null) {
+    console.log('🔍 [FRAPPE_API] Fetching categories from Frappe...');
     const response = await this.callAPI(call, 'egrm.api.lookup.categories', {
       project_id: projectId,
     });
 
     if (response.status === 'success') {
+      console.log(
+        '🔍 [FRAPPE_API] Categories response success, data length:',
+        response.data?.length || 0
+      );
+      if (response.data && response.data.length > 0) {
+        console.log('🔍 [FRAPPE_API] Sample category from Frappe:', response.data[0]);
+        console.log('🔍 [FRAPPE_API] Sample category fields:', {
+          name: response.data[0].name,
+          category_name: response.data[0].category_name,
+          assigned_department_id: response.data[0].assigned_department_id,
+          administrative_level_id: response.data[0].administrative_level_id,
+          confidentiality_level: response.data[0].confidentiality_level,
+        });
+      }
       // Return raw Frappe data directly - no transformation
       return response.data || [];
     }
+
+    console.log('🔍 [FRAPPE_API] Categories response failed or empty:', response);
     return [];
   },
 

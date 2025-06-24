@@ -42,6 +42,156 @@ function Content({
   const [sound, setSound] = useState();
   const [playing, setPlaying] = useState(false);
 
+  /**
+   * Determine if the current user should be assigned to the issue
+   * based on their region assignments and the category's assigned department
+   */
+  const determineIssueAssignment = () => {
+    try {
+      // Get user context from DataManager
+      const userContext = dataManager.getUserContext();
+
+      if (!userContext) {
+        console.log('🔍 [ASSIGNMENT] No user context available');
+        return {
+          shouldAssign: false,
+          assigneeId: null,
+          reason: 'No user context available',
+        };
+      }
+
+      // Get selected region ID
+      const selectedRegionId =
+        stepLocationParams.issueLocation?.id || stepLocationParams.issueLocation?.administrative_id;
+
+      if (!selectedRegionId) {
+        console.log('🔍 [ASSIGNMENT] No region selected');
+        return {
+          shouldAssign: false,
+          assigneeId: null,
+          reason: 'No region selected',
+        };
+      }
+
+      // Check if user has access to the selected region
+      const hasRegionAccess = dataManager.hasRegionAccess(selectedRegionId);
+
+      if (!hasRegionAccess) {
+        console.log('🔍 [ASSIGNMENT] User does not have access to region:', selectedRegionId);
+        return {
+          shouldAssign: false,
+          assigneeId: null,
+          reason: `User does not have access to region: ${selectedRegionId}`,
+        };
+      }
+
+      // Get user assignment for this region
+      const regionAssignment = dataManager.getUserAssignmentForRegion(selectedRegionId);
+
+      if (!regionAssignment) {
+        console.log('🔍 [ASSIGNMENT] No user assignment found for region:', selectedRegionId);
+        return {
+          shouldAssign: false,
+          assigneeId: null,
+          reason: `No user assignment found for region: ${selectedRegionId}`,
+        };
+      }
+
+      // Check if category matches user's department in the region
+      const categoryDepartment =
+        stepTwoParams.category?.assigned_department ||
+        stepTwoParams.category?.assigned_department_id;
+      const userDepartment = regionAssignment.department?.id || regionAssignment.department?.name;
+
+      if (!categoryDepartment) {
+        console.log('🔍 [ASSIGNMENT] Category has no assigned department');
+        console.log(
+          '🔍 [ASSIGNMENT] Available category fields:',
+          Object.keys(stepTwoParams.category || {})
+        );
+        console.log('🔍 [ASSIGNMENT] Category object:', stepTwoParams.category);
+        return {
+          shouldAssign: false,
+          assigneeId: null,
+          reason: 'Category has no assigned department',
+        };
+      }
+
+      if (!userDepartment) {
+        console.log('🔍 [ASSIGNMENT] User has no department in region assignment');
+        return {
+          shouldAssign: false,
+          assigneeId: null,
+          reason: 'User has no department in region assignment',
+        };
+      }
+
+      const isDepartmentMatch = categoryDepartment === userDepartment;
+
+      // Additional check for administrative level if available
+      const categoryAdminLevel =
+        stepTwoParams.category?.administrative_level ||
+        stepTwoParams.category?.administrative_level_id;
+      const userAdminLevel = regionAssignment.administrative_level;
+
+      let isAdminLevelMatch = true; // Default to true if no admin level specified
+      if (categoryAdminLevel && userAdminLevel) {
+        isAdminLevelMatch = categoryAdminLevel === userAdminLevel;
+      }
+
+      const shouldAssign = isDepartmentMatch && isAdminLevelMatch;
+      const assigneeId = shouldAssign
+        ? userContext.user?.id
+        : null;
+
+      console.log('🔍 [ASSIGNMENT] Assignment determination:', {
+        selectedRegion: {
+          id: selectedRegionId,
+          name: stepLocationParams.issueLocation?.name,
+        },
+        hasRegionAccess,
+        regionAssignment: {
+          region: regionAssignment.region?.id || regionAssignment.region?.name,
+          department: userDepartment,
+          role: regionAssignment.role,
+          adminLevel: userAdminLevel,
+        },
+        category: {
+          id: stepTwoParams.category?.id,
+          name: stepTwoParams.category?.categoryName,
+          assignedDepartment: categoryDepartment,
+          adminLevel: categoryAdminLevel,
+        },
+        checks: {
+          isDepartmentMatch,
+          isAdminLevelMatch,
+        },
+        result: {
+          shouldAssign,
+          assigneeId,
+          reason: shouldAssign
+            ? `Assigned to user - department and admin level match`
+            : `Not assigned - department match: ${isDepartmentMatch}, admin level match: ${isAdminLevelMatch}`,
+        },
+      });
+
+      return {
+        shouldAssign,
+        assigneeId,
+        reason: shouldAssign
+          ? `Assigned to user - department and admin level match`
+          : `Not assigned - department match: ${isDepartmentMatch}, admin level match: ${isAdminLevelMatch}`,
+      };
+    } catch (error) {
+      console.error('❌ [ASSIGNMENT] Error determining assignment:', error);
+      return {
+        shouldAssign: false,
+        assigneeId: null,
+        reason: `Error determining assignment: ${error.message}`,
+      };
+    }
+  };
+
   const submitIssue = async () => {
     try {
       setIsSubmitting(true);
@@ -50,6 +200,14 @@ function Content({
       console.log('🔍 [STEP3] stepOneParams:', stepOneParams);
       console.log('🔍 [STEP3] stepTwoParams:', stepTwoParams);
       console.log('🔍 [STEP3] stepLocationParams:', stepLocationParams);
+
+      // ✅ Get user context for both assignment and reporter ID
+      const userContext = dataManager.getUserContext();
+      console.log('🔍 [STEP3] User context for issue creation:', userContext);
+
+      // Determine assignment before preparing issue data
+      const assignmentResult = determineIssueAssignment();
+      console.log('🔍 [STEP3] Assignment result:', assignmentResult);
 
       // Prepare issue data in format expected by backend API
       const issueDate = stepTwoParams.date ? new Date(stepTwoParams.date) : new Date();
@@ -92,14 +250,24 @@ function Content({
         // Set default status as pending/submitted
         status_id: 'pending',
 
-        // Set reporter (would need to get from user context)
-        reporter_id: stepOneParams.reporterId || 'mobile_app_user',
+        reporter_id: userContext?.user?.id,
 
         // Set project if available
         project_id: stepLocationParams.projectId || '',
+
+        // ✅ RESTORED: Assignment logic - assign user if they match region and department
+        ...(assignmentResult.shouldAssign &&
+          assignmentResult.assigneeId && {
+            assignee_id: assignmentResult.assigneeId,
+          }),
       };
 
       console.log('🔍 [STEP3] Prepared issue data for DataManager:', issueData);
+      console.log('🔍 [STEP3] Assignment info:', {
+        willAssign: assignmentResult.shouldAssign,
+        assigneeId: assignmentResult.assigneeId,
+        reason: assignmentResult.reason,
+      });
       console.log(
         '🔍 [STEP3] Date formats - issue_date:',
         issueData.issue_date,
@@ -120,6 +288,8 @@ function Content({
         issueTypeId: newIssue.issue_type_id,
         categoryId: newIssue.category_id,
         status: newIssue.status_id,
+        assigneeId: newIssue.assignee_id,
+        assignmentReason: assignmentResult.reason,
       });
 
       // Verify the issue was actually saved by trying to fetch it from local database

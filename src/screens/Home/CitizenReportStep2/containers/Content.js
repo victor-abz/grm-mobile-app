@@ -434,7 +434,9 @@ function Content({ stepOneParams, categories = [], types = [] }) {
         name: category.id, // Frappe uses id as name
         confidentiality_level: category.confidentialityLevel,
         assigned_department_id: category.assignedDepartmentId,
+        assigned_department: category.assignedDepartmentId,
         administrative_level_id: category.administrativeLevelId,
+        administrative_level: category.administrativeLevelId,
         categoryName: category.categoryName,
       };
 

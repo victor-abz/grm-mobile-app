@@ -3,9 +3,17 @@ import { useBackHandler } from '@react-native-community/hooks';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
-import { default as React, useEffect, useRef, useState } from 'react';
+import { default as React, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { 
+  Image, 
+  Platform, 
+  ScrollView, 
+  Text, 
+  TouchableOpacity, 
+  View, 
+  ActivityIndicator 
+} from 'react-native';
 import Collapsible from 'react-native-collapsible';
 import { Button, IconButton, TextInput } from 'react-native-paper';
 import CustomSeparator from '../../../../components/CustomSeparator/CustomSeparator';
@@ -25,10 +33,20 @@ const theme = {
   },
 };
 
-function Content({ issue }) {
+function Content({ 
+  issue, 
+  categories = [],
+  types = [],
+  statuses = [],
+  ageGroups = [],
+  citizenGroups = [],
+  regions = [],
+  projects = [],
+  users = []
+}) {
   const { t } = useTranslation();
   const { dataManager } = useData();
-  const [comments, setComments] = useState(issue.comments);
+  const [comments, setComments] = useState([]);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
   const [newComment, setNewComment] = useState();
@@ -51,6 +69,79 @@ function Content({ issue }) {
       true
   );
 
+  // Create lookup helper functions for efficient ID-to-label resolution
+  const createLookupMap = (items, labelField) => {
+    const map = new Map();
+    if (!items || !Array.isArray(items)) return map;
+    
+    items.forEach(item => {
+      if (item && item.id) {
+        const label = item[labelField] || item.id;
+        map.set(item.id, label);
+      }
+    });
+    return map;
+  };
+
+  // Create lookup maps for all related data (memoized for performance)
+  const lookupMaps = useMemo(() => ({
+    categoryMap: createLookupMap(categories, 'categoryName'),
+    typeMap: createLookupMap(types, 'typeName'),
+    statusMap: createLookupMap(statuses, 'statusName'),
+    ageGroupMap: createLookupMap(ageGroups, 'ageGroup'),
+    citizenGroupMap: createLookupMap(citizenGroups, 'groupName'),
+    regionMap: createLookupMap(regions, 'regionName'),
+    projectMap: createLookupMap(projects, 'title'),
+    userMap: createLookupMap(users, 'fullName'),
+  }), [categories, types, statuses, ageGroups, citizenGroups, regions, projects, users]);
+
+  // Enrich single issue with resolved labels
+  const enrichedIssue = useMemo(() => {
+    if (!issue) return null;
+    
+    // Handle both array from observable and single issue object
+    const issueData = Array.isArray(issue) ? issue[0] : issue;
+    if (!issueData) return null;
+
+    // Handle both WatermelonDB model objects and raw data
+    const rawData = issueData._raw || issueData;
+
+    return {
+      // Keep all original issue data
+      ...rawData,
+      
+      // Add resolved labels for display
+      categoryLabel: lookupMaps.categoryMap.get(rawData.category_id) || rawData.category_id || t('information_not_available'),
+      typeLabel: lookupMaps.typeMap.get(rawData.issue_type_id) || rawData.issue_type_id || t('information_not_available'),
+      statusLabel: lookupMaps.statusMap.get(rawData.status_id) || rawData.status_id || t('information_not_available'),
+      ageGroupLabel: lookupMaps.ageGroupMap.get(rawData.citizen_age_group_id) || rawData.citizen_age_group_id || t('information_not_available'),
+      citizenGroup1Label: lookupMaps.citizenGroupMap.get(rawData.citizen_group_1_id) || rawData.citizen_group_1_id || t('information_not_available'),
+      citizenGroup2Label: lookupMaps.citizenGroupMap.get(rawData.citizen_group_2_id) || rawData.citizen_group_2_id || t('information_not_available'),
+      regionLabel: lookupMaps.regionMap.get(rawData.administrative_region_id) || rawData.administrative_region_id || t('information_not_available'),
+      projectLabel: lookupMaps.projectMap.get(rawData.project_id) || rawData.project_id || t('information_not_available'),
+      reporterLabel: lookupMaps.userMap.get(rawData.reporter_id) || rawData.reporter_id || t('information_not_available'),
+      assigneeLabel: lookupMaps.userMap.get(rawData.assignee_id) || rawData.assignee_id || 'Pending Assignment',
+      
+      // Format dates for display
+      issueDateFormatted: rawData.issue_date ? moment(rawData.issue_date).format('DD-MMM-YYYY HH:mm') : '',
+      intakeDateFormatted: rawData.intake_date ? moment(rawData.intake_date).format('DD-MMM-YYYY HH:mm') : '',
+      
+      // Backward compatibility fields for existing code
+      issue_type: { name: lookupMaps.typeMap.get(rawData.issue_type_id) || rawData.issue_type_id },
+      category: { name: lookupMaps.categoryMap.get(rawData.category_id) || rawData.category_id },
+      citizen_age_group: { name: lookupMaps.ageGroupMap.get(rawData.citizen_age_group_id) || rawData.citizen_age_group_id },
+      citizen_group_1: { name: lookupMaps.citizenGroupMap.get(rawData.citizen_group_1_id) || rawData.citizen_group_1_id },
+      citizen_group_2: { name: lookupMaps.citizenGroupMap.get(rawData.citizen_group_2_id) || rawData.citizen_group_2_id },
+      administrative_region: { name: lookupMaps.regionMap.get(rawData.administrative_region_id) || rawData.administrative_region_id },
+      assignee: { name: rawData.assignee_id ? lookupMaps.userMap.get(rawData.assignee_id) || rawData.assignee_id : 'Pending Assignment' },
+      reporter: { id: rawData.reporter_id },
+      
+      // Handle attachments and comments
+      attachments: rawData.attachments || [],
+      comments: rawData.comments || [],
+    };
+  }, [issue, lookupMaps, t]);
+
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
@@ -63,14 +154,19 @@ function Content({ issue }) {
   }, []);
 
   useEffect(() => {
-    function _isIssueAssignedToMe() {
-      if (issue.assignee && issue.assignee.id) {
-        return issue.reporter.id === issue.assignee.id;
+    if (enrichedIssue) {
+      setComments(enrichedIssue.comments || []);
+      
+      function _isIssueAssignedToMe() {
+        if (enrichedIssue.assignee && enrichedIssue.assignee.id) {
+          return enrichedIssue.reporter.id === enrichedIssue.assignee.id;
+        }
+        return false;
       }
-    }
 
-    setIsIssueAssignedToMe(_isIssueAssignedToMe());
-  }, []);
+      setIsIssueAssignedToMe(_isIssueAssignedToMe());
+    }
+  }, [enrichedIssue]);
 
   const upsertNewComment = async () => {
     if (isUpdating) return;
@@ -78,8 +174,8 @@ function Content({ issue }) {
     setIsUpdating(true);
     try {
       // Update the issue with new comments using DataManager
-      // await updateIssue(issue._id, {
-      //   comments: issue.comments,
+      // await updateIssue(enrichedIssue._id, {
+      //   comments: enrichedIssue.comments,
       // });
       console.log('Comment added successfully');
     } catch (error) {
@@ -126,16 +222,16 @@ function Content({ issue }) {
   };
 
   const onAddComment = async () => {
-    if (newComment && !isUpdating) {
+    if (newComment && !isUpdating && enrichedIssue) {
       const commentDate = moment().toISOString();
       const newCommentObj = {
-        comment_by: issue.reporter.id, // Use proper user ID
+        comment_by: enrichedIssue.reporter.id, // Use proper user ID
         comment_text: newComment,
         comment_date: commentDate,
       };
 
       // Update issue comments
-      issue.comments = [...(issue.comments || []), newCommentObj];
+      enrichedIssue.comments = [...(enrichedIssue.comments || []), newCommentObj];
 
       // Update local state
       setComments([...comments, newCommentObj]);
@@ -162,6 +258,18 @@ function Content({ issue }) {
     [_sound]
   );
 
+  // Loading state while data is being fetched or enriched
+  if (!enrichedIssue) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 16, fontSize: 16, color: colors.secondary }}>
+          {t('loading_issue_details') || 'Loading issue details...'}
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView ref={scrollViewRef} contentContainerStyle={{ alignItems: 'center', padding: 20 }}>
       <View style={styles.infoContainer}>
@@ -171,8 +279,8 @@ function Content({ issue }) {
           >
             <Text style={[styles.text, { fontSize: 12, color: colors.primary }]}>
               {' '}
-              {issue.issue_date && moment(issue.issue_date).format('DD-MMM-YYYY')}{' '}
-              {issue.issue_date && currentDate.diff(issue.issue_date, 'days')} {t('days_ago')}
+              {enrichedIssue.issue_date && moment(enrichedIssue.issue_date).format('DD-MMM-YYYY')}{' '}
+              {enrichedIssue.issue_date && currentDate.diff(enrichedIssue.issue_date, 'days')} {t('days_ago')}
             </Text>
           </View>
         </View>
@@ -188,81 +296,81 @@ function Content({ issue }) {
             <Text style={styles.subtitle}>
               {t('type')}{' '}
               <Text style={[styles.text]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.issue_type?.name ?? t('information_not_available')}
+                  : enrichedIssue.typeLabel}
               </Text>
             </Text>
             <Text style={styles.subtitle}>
               {t('lodged_by')}
               <Text style={styles.text}>
                 {' '}
-                {citizenTypes[issue.citizen_type] ?? t('information_not_available')}
+                {citizenTypes[enrichedIssue.citizen_type] ?? t('information_not_available')}
               </Text>
             </Text>
             <Text style={styles.subtitle}>
               {t('name')}
               <Text style={styles.text}>
                 {' '}
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.citizen}
+                  : enrichedIssue.citizen}
               </Text>
             </Text>
             <Text style={styles.subtitle}>
               {t('age')}{' '}
               <Text style={styles.text}>
                 {' '}
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.citizen_age_group?.name ?? t('information_not_available')}
+                  : enrichedIssue.ageGroupLabel}
               </Text>
             </Text>
             <View>
               <Text style={[styles.subtitle, { marginBottom: 0 }]}>{t('profession')} </Text>
               <Text style={[styles.text, { marginBottom: 5 }]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.citizen_group_1?.name ?? t('information_not_available')}
+                  : enrichedIssue.citizenGroup1Label}
               </Text>
             </View>
             <View>
               <Text style={[styles.subtitle, { marginBottom: 0 }]}>{t('educational_level')} </Text>
               <Text style={[styles.text, { marginBottom: 5 }]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.citizen_group_2?.name ?? t('information_not_available')}
+                  : enrichedIssue.citizenGroup2Label}
               </Text>
             </View>
             <View>
               <Text style={[styles.subtitle, { marginBottom: 0 }]}>{t('sub_type')} </Text>
               <Text style={[styles.text, { marginBottom: 5 }]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.issue_sub_type?.name ?? t('information_not_available')}
+                  : enrichedIssue.issue_sub_type?.name ?? t('information_not_available')}
               </Text>
             </View>
             <View>
               <Text style={[styles.subtitle, { marginBottom: 0 }]}>{t('category')} </Text>
               <Text style={[styles.text, { marginBottom: 5 }]}>
-                {issue.category?.name ?? t('information_not_available')}
+                {enrichedIssue.categoryLabel}
               </Text>
             </View>
             <Text style={styles.subtitle}>
               {t('location')}{' '}
               <Text style={styles.text}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.administrative_region?.name ?? t('information_not_available')}
+                  : enrichedIssue.regionLabel}
               </Text>
             </Text>
             <Text style={styles.subtitle}>
               {t('assigned_to')}{' '}
-              <Text style={styles.text}> {issue.assignee?.name ?? 'Pending Assigment'}</Text>
+              <Text style={styles.text}> {enrichedIssue.assignee?.name ?? 'Pending Assignment'}</Text>
             </Text>
-            {issue.attachments?.length > 0 &&
-              issue.attachments.map((item, index) => (
-                <View>
+            {enrichedIssue.attachments?.length > 0 &&
+              enrichedIssue.attachments.map((item, index) => (
+                <View key={index}>
                   {item.isAudio ? (
                     <View
                       style={{
@@ -345,18 +453,18 @@ function Content({ issue }) {
               {t('component')}{' '}
               <Text style={styles.text}>
                 {' '}
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.component?.name ?? t('information_not_available')}
+                  : enrichedIssue.component?.name ?? t('information_not_available')}
               </Text>
             </Text>
             <Text style={styles.subtitle}>
               {t('sub_component')}{' '}
               <Text style={styles.text}>
                 {' '}
-                {issue.citizen_type === 1 && !isIssueAssignedToMe
+                {enrichedIssue.citizen_type === 1 && !isIssueAssignedToMe
                   ? t('confidential')
-                  : issue.sub_component?.name ?? t('information_not_available')}
+                  : enrichedIssue.sub_component?.name ?? t('information_not_available')}
               </Text>
             </Text>
           </View>
@@ -375,7 +483,7 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isDescriptionCollapsed}>
           <View style={styles.collapsibleContent}>
-            <Text style={styles.collapsibleTextArea}>{issue.description}</Text>
+            <Text style={styles.collapsibleTextArea}>{enrichedIssue.description}</Text>
           </View>
         </Collapsible>
         <CustomSeparator />
@@ -394,7 +502,7 @@ function Content({ issue }) {
         <Collapsible collapsed={isDecisionCollapsed}>
           <View style={styles.collapsibleContent}>
             <Text style={styles.collapsibleTextArea}>
-              {issue.research_result ?? t('information_not_available')}
+              {enrichedIssue.research_result ?? t('information_not_available')}
             </Text>
           </View>
         </Collapsible>
@@ -434,63 +542,17 @@ function Content({ issue }) {
             <Text style={styles.collapsibleTextArea}>{t('information_not_available')}</Text>
           </View>
         </Collapsible>
-        {/* <CustomSeparator /> */}
-        {/* <Text style={styles.title}>{t("attachments_label")}</Text> */}
-        {/* {issue?.attachments.map((item) => ( */}
-        {/*  <Text style={[styles.text, { marginBottom: 10 }]}>{item.uri}</Text> */}
-        {/* ))} */}
-        {/* <CustomSeparator /> */}
-        {/* <Text style={styles.title}>Activity</Text> */}
-        {/* {comments?.map((item) => ( */}
-        {/*  <View style={{ flex: 1 }}> */}
-        {/*    <View style={{ flexDirection: "row", marginVertical: 10, flex: 1 }}> */}
-        {/*      <View */}
-        {/*        style={{ */}
-        {/*          width: 32, */}
-        {/*          height: 32, */}
-        {/*          backgroundColor: "#f5ba74", */}
-        {/*          borderRadius: 16, */}
-        {/*        }} */}
-        {/*      /> */}
-        {/*      <View style={{ marginLeft: 10 }}> */}
-        {/*        <Text style={styles.text}>{item.name}</Text> */}
-        {/*        <Text style={styles.text}> */}
-        {/*          {moment(item.due_at).format("DD-MMM-YYYY")} */}
-        {/*        </Text> */}
-        {/*      </View> */}
-        {/*    </View> */}
-        {/*    <Text style={styles.text}>{item.comment}</Text> */}
-        {/*  </View> */}
-        {/* ))} */}
 
-        {/* <TextInput */}
-        {/*  multiline */}
-        {/*  numberOfLines={4} */}
-        {/*  style={[styles.grmInput, { height: 80 }]} */}
-        {/*  placeholder={t("comment_placeholder")} */}
-        {/*  outlineColor={"#f6f6f6"} */}
-        {/*  theme={theme} */}
-        {/*  mode={"outlined"} */}
-        {/*  value={newComment} */}
-        {/*  onChangeText={(text) => setNewComment(text)} */}
-        {/* /> */}
-
-        {/* <Button */}
-        {/*  theme={theme} */}
-        {/*  style={{ alignSelf: "center", margin: 24 }} */}
-        {/*  labelStyle={{ color: "white", fontFamily: "Poppins_500Medium" }} */}
-        {/*  mode="contained" */}
-        {/*  onPress={onAddComment} */}
-        {/* > */}
-        {/*  Add comment */}
-        {/* </Button> */}
         <CustomSeparator />
         <Button
           theme={theme}
           style={{ alignSelf: 'center', margin: 24 }}
           labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
           mode="contained"
-          onPress={onAddComment}
+          onPress={() => {
+            // Navigate back or handle back action
+            console.log('Back button pressed');
+          }}
         >
           {t('back')}
         </Button>
