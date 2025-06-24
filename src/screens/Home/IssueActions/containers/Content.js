@@ -540,20 +540,27 @@ function Content({ issue, navigation, statuses = [], userContext }) {
 
         // Create comment entry if action type is specified
         if (actionType !== 'none') {
-          const commentMap = {
-            accept: t('issue_was_accepted_by_user', { user: currentUserId }),
-            reject: t('issue_was_rejected_by_user', { user: currentUserId, reason: reason }),
-            record_resolution: t('issue_was_resolved_by_user', { user: currentUserId }),
-            escalate: t('issue_was_escalated_by_user', {
-              user: currentUserId,
-              reason: escalateComment,
-            }),
-            record_steps: t('steps_recorded_by_user', { user: currentUserId, steps: comment }),
-            rate: t('issue_was_rated_by_citizen', { rating: rating }),
-            appeal: t('appeal_submitted_by_citizen'),
-          };
+          let commentText;
 
-          const commentText = commentMap[actionType] || t('status_updated');
+          // ✅ FIXED: For record_steps, use the actual user input as the comment
+          if (actionType === 'record_steps') {
+            commentText = comment; // Use the actual steps text entered by user
+          } else {
+            // For other actions, use templated messages
+            const commentMap = {
+              accept: t('issue_was_accepted_by_user', { user: currentUserId }),
+              reject: t('issue_was_rejected_by_user', { user: currentUserId, reason: reason }),
+              record_resolution: t('issue_was_resolved_by_user', { user: currentUserId }),
+              escalate: t('issue_was_escalated_by_user', {
+                user: currentUserId,
+                reason: escalateComment,
+              }),
+              rate: t('issue_was_rated_by_citizen', { rating: rating }),
+              appeal: t('appeal_submitted_by_citizen'),
+            };
+
+            commentText = commentMap[actionType] || t('status_updated');
+          }
 
           // Create comment record in WatermelonDB
           await db.get('grm_issue_comments').create((commentRecord) => {
@@ -570,17 +577,54 @@ function Content({ issue, navigation, statuses = [], userContext }) {
             // ✅ FIXED: Use _setRaw method for relation fields
             logRecord._setRaw('grm_issue_id', enrichedIssue.id);
             logRecord._setRaw('user_id', currentUserId);
-            logRecord.text = `${actionType.toUpperCase()}: ${commentText}`;
-            logRecord.timestamp = new Date();
 
-            // Add specific action tracking for record_steps
-            if (actionType === 'record_steps') {
-              logRecord.actionTaken = comment;
-              logRecord.actionTakenDate = new Date();
-              // ✅ FIXED: Use _setRaw method for actionTakenBy relation field
-              logRecord._setRaw('action_taken_by', currentUserId);
+            // ✅ FIXED: Set proper actionTaken (past tense) and text based on action type
+            switch (actionType) {
+              case 'accept':
+                logRecord.actionTaken = t('accepted_issue');
+                logRecord.text = t('issue_accepted_explanation');
+                break;
+
+              case 'reject':
+                logRecord.actionTaken = t('rejected_issue');
+                logRecord.text = t('issue_rejected_explanation');
+                break;
+
+              case 'record_steps':
+                logRecord.actionTaken = t('added_steps');
+                logRecord.text = comment; // ✅ FIXED: Use actual user input as text
+                logRecord.actionTakenDate = new Date();
+                // ✅ FIXED: Use _setRaw method for actionTakenBy relation field
+                logRecord._setRaw('action_taken_by', currentUserId);
+                break;
+
+              case 'record_resolution':
+                logRecord.actionTaken = t('resolved_issue');
+                logRecord.text = t('issue_resolved_explanation');
+                break;
+
+              case 'escalate':
+                logRecord.actionTaken = t('escalated_issue');
+                logRecord.text = t('issue_escalated_explanation');
+                break;
+
+              case 'rate':
+                logRecord.actionTaken = t('rated_issue');
+                logRecord.text = t('issue_rated_explanation');
+                break;
+
+              case 'appeal':
+                logRecord.actionTaken = t('submitted_appeal');
+                logRecord.text = t('appeal_submitted_explanation');
+                break;
+
+              default:
+                logRecord.actionTaken = t('updated_status');
+                logRecord.text = t('status_updated_explanation');
+                break;
             }
 
+            logRecord.timestamp = new Date();
             logRecord.createdAt = new Date();
             logRecord.updatedAt = new Date();
           });

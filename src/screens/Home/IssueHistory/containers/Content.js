@@ -16,22 +16,42 @@ const theme = {
   },
 };
 
-function Content({ issue }) {
+function Content({ issue, comments: commentsFromDB, users }) {
   const { t } = useTranslation();
 
   // Debug logging for IssueHistory
   console.log('🔍 [IssueHistory] Processing issue data:', {
     isArray: Array.isArray(issue),
     issue: issue?._raw ? 'WatermelonDB Object' : 'Raw Object',
+    commentsFromDB: commentsFromDB?.length || 0,
+    usersCount: users?.length || 0,
   });
 
   if (issue && issue._raw) {
     console.log('🔍 [IssueHistory] Raw issue data:', {
       id: issue._raw.id,
-      comments: issue._raw.comments?.length || 0,
-      hasComments: !!issue._raw.comments,
+      commentsFromDB: commentsFromDB?.length || 0,
+      usersCount: users?.length || 0,
     });
   }
+
+  // Create user lookup map
+  const userMap = useMemo(() => {
+    const map = new Map();
+    if (users && Array.isArray(users)) {
+      users.forEach((user) => {
+        const userData = user._raw || user;
+        if (userData && userData.id) {
+          map.set(userData.id, userData.full_name || userData.email || userData.id);
+        }
+      });
+    }
+
+    // Add Administrator mapping as fallback
+    map.set('Administrator', 'Administrator');
+    console.log('🔍 [IssueHistory] User map created:', map.size, 'users');
+    return map;
+  }, [users]);
 
   // Enrich issue data
   const enrichedIssue = useMemo(() => {
@@ -44,47 +64,101 @@ function Content({ issue }) {
 
     const enriched = {
       ...rawData,
-
-      // Handle comments - ensure they're an array
-      comments: rawData.comments || [],
-
-      // Other enriched fields for consistency
       id: rawData.id,
       name: rawData.name || rawData.id,
     };
 
     console.log('✅ [IssueHistory] Enriched issue:', {
       id: enriched.id,
-      commentsCount: enriched.comments?.length || 0,
-      sampleComment: enriched.comments?.[0],
+      commentsFromDB: commentsFromDB?.length || 0,
+      usersInMap: userMap.size,
     });
 
     return enriched;
-  }, [issue]);
+  }, [issue, commentsFromDB, userMap]);
 
   const [comments, setComments] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
   const [selected, setSelected] = useState(null);
 
   const loadComments = () => {
-    if (!enrichedIssue?.comments) {
-      console.log('🔍 [IssueHistory] No comments found');
+    if (!commentsFromDB || commentsFromDB.length === 0) {
+      console.log('🔍 [IssueHistory] No comments found from database');
       setComments([]);
       return;
     }
 
-    console.log('🔍 [IssueHistory] Loading comments:', enrichedIssue.comments);
+    console.log('🔍 [IssueHistory] Loading comments from database:', commentsFromDB.length);
 
-    // Create inverted comments array and sort by date (most recent first)
-    const invertedComments = [...enrichedIssue.comments];
-    const sortedComments = invertedComments.sort((a, b) => {
-      const dateA = new Date(a.comment_date || a.due_at || a.created_at);
-      const dateB = new Date(b.comment_date || b.due_at || b.created_at);
-      return dateB.getTime() - dateA.getTime();
+    // Process comments from WatermelonDB
+    const processedComments = commentsFromDB.map((commentRecord) => {
+      const rawComment = commentRecord._raw || commentRecord;
+
+      // Get user name from user map
+      const userName = userMap.get(rawComment.user_id) || rawComment.user_id || 'System';
+
+      // Determine activity type based on comment content
+      let activityType = 'General Activity';
+      let displayText = rawComment.comment;
+      let fullText = rawComment.comment;
+
+      // Check for templated messages (system actions)
+      if (rawComment.comment.includes('issue_was_accepted_by_user')) {
+        activityType = t('accept_issue') || 'Issue Accepted';
+        displayText = `${activityType} by ${userName}`;
+        fullText =
+          t('issue_accepted_explanation') || 'Issue has been accepted and assigned for processing';
+      } else if (rawComment.comment.includes('issue_was_rejected_by_user')) {
+        activityType = t('reject_issue') || 'Issue Rejected';
+        displayText = `${activityType} by ${userName}`;
+        fullText =
+          t('issue_rejected_explanation') || 'Issue has been rejected with provided reason';
+      } else if (rawComment.comment.includes('issue_was_resolved_by_user')) {
+        activityType = t('record_resolution') || 'Issue Resolved';
+        displayText = `${activityType} by ${userName}`;
+        fullText = t('issue_resolved_explanation') || 'Issue has been marked as resolved';
+      } else if (rawComment.comment.includes('issue_was_escalated_by_user')) {
+        activityType = t('escalate') || 'Issue Escalated';
+        displayText = `${activityType} by ${userName}`;
+        fullText =
+          t('issue_escalated_explanation') || 'Issue has been escalated for higher-level attention';
+      } else if (rawComment.comment.includes('issue_was_rated_by_citizen')) {
+        activityType = t('rate_issue') || 'Issue Rated';
+        displayText = `${activityType}`;
+        fullText = t('issue_rated_explanation') || 'Citizen has provided feedback rating';
+      } else if (rawComment.comment.includes('appeal_submitted_by_citizen')) {
+        activityType = t('appeal_issue') || 'Appeal Submitted';
+        displayText = `${activityType}`;
+        fullText = t('appeal_submitted_explanation') || 'Appeal has been submitted for review';
+      } else {
+        // For record_steps (new format), the comment contains actual user input
+        activityType = t('record_steps_taken') || 'Steps Recorded';
+        displayText = rawComment.comment; // Show the actual steps
+        fullText = rawComment.comment; // Full text is the same
+      }
+
+      console.log('🔍 [IssueHistory] Processing comment:', {
+        id: rawComment.id,
+        activityType: activityType,
+        displayText: displayText?.substring(0, 50) + '...',
+        user_id: rawComment.user_id,
+        userName: userName,
+        created_at: rawComment.created_at,
+      });
+
+      return {
+        id: rawComment.id,
+        comment_text: displayText,
+        full_text: fullText,
+        activity_type: activityType,
+        comment_by: userName,
+        comment_date: rawComment.created_at,
+        user_id: rawComment.user_id,
+      };
     });
 
-    console.log('✅ [IssueHistory] Sorted comments:', sortedComments.length);
-    setComments(sortedComments);
+    console.log('✅ [IssueHistory] Processed comments:', processedComments.length);
+    setComments(processedComments);
   };
 
   const _hideDialog = () => setShowDialog(false);
@@ -94,23 +168,35 @@ function Content({ issue }) {
   };
 
   const renderItem = ({ item, index }) => {
-    // Handle different comment formats
-    const commentText = item.comment_text || item.comment || 'No comment text';
-    const commentAuthor = item.comment_by || item.name || item.author || 'System';
-    const commentDate = item.comment_date || item.due_at || item.created_at || new Date();
+    const commentText = item.comment_text;
+    const commentAuthor = item.comment_by;
+    const commentDate = item.comment_date;
+    const activityType = item.activity_type;
 
     return (
       <View key={index} style={styles.commentCard}>
         <TouchableOpacity onPress={() => _showDialog(item)}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
             <View style={styles.greenCircle} />
-            <View>
-              <Text style={styles.radioLabel}>{commentAuthor}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.radioLabel}>{activityType}</Text>
+              <Text style={[styles.radioLabel, { fontSize: 12, color: 'gray' }]}>
+                by {commentAuthor}
+              </Text>
             </View>
           </View>
-          <Text style={styles.stepNote} numberOfLines={2}>
-            {commentText}
-          </Text>
+
+          {/* Show different content based on activity type */}
+          {activityType === (t('record_steps_taken') || 'Steps Recorded') ? (
+            <Text style={styles.stepNote} numberOfLines={3}>
+              {commentText}
+            </Text>
+          ) : (
+            <Text style={[styles.stepNote, { fontStyle: 'italic' }]} numberOfLines={2}>
+              {commentText}
+            </Text>
+          )}
+
           <Text style={styles.dateLabel}>{moment(commentDate).format('LLL')}</Text>
         </TouchableOpacity>
       </View>
@@ -120,10 +206,16 @@ function Content({ issue }) {
   const listHeader = () => <Text style={styles.title}>{t('activity_label')}</Text>;
 
   useEffect(() => {
+    console.log('🔍 [IssueHistory] useEffect triggered:', {
+      enrichedIssue: !!enrichedIssue,
+      commentsFromDB: commentsFromDB?.length || 0,
+      userMapSize: userMap.size,
+    });
+
     if (enrichedIssue) {
       loadComments();
     }
-  }, [enrichedIssue]);
+  }, [enrichedIssue, commentsFromDB, userMap]);
 
   const dividerItem = () => <Divider />;
 
@@ -143,9 +235,7 @@ function Content({ issue }) {
           ListHeaderComponent={listHeader}
           data={comments}
           renderItem={renderItem}
-          keyExtractor={(item, index) =>
-            item.id || item.comment_date || item.due_at || item.created_at || `comment_${index}`
-          }
+          keyExtractor={(item, index) => item.id || `comment_${index}`}
         />
       ) : (
         <View style={styles.container}>
@@ -156,19 +246,28 @@ function Content({ issue }) {
 
       <Portal>
         <Dialog visible={showDialog} onDismiss={_hideDialog}>
-          <Dialog.Title>
-            {selected?.comment_by || selected?.name || selected?.author || 'System'}
-          </Dialog.Title>
+          <Dialog.Title>{selected?.activity_type || 'Activity'}</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>
-              {selected?.comment_text || selected?.comment || 'No comment text'}
-            </Paragraph>
-            <Text style={{ marginTop: 10, fontSize: 12, color: 'gray' }}>
-              {selected &&
-                moment(selected.comment_date || selected.due_at || selected.created_at).format(
-                  'LLL'
-                )}
+            <Text style={{ fontWeight: 'bold', marginBottom: 5, fontSize: 14 }}>
+              {t('performed_by') || 'Performed by'}: {selected?.comment_by || 'System'}
             </Text>
+            <Text style={{ fontWeight: 'bold', marginBottom: 10, fontSize: 12, color: 'gray' }}>
+              {selected && moment(selected.comment_date).format('LLL')}
+            </Text>
+
+            {/* Show activity details */}
+            {selected?.activity_type === (t('record_steps_taken') || 'Steps Recorded') ? (
+              <View>
+                <Text style={{ fontWeight: 'bold', marginBottom: 5, fontSize: 14 }}>
+                  {t('steps_details') || 'Steps Details'}:
+                </Text>
+                <Paragraph style={{ backgroundColor: '#f5f5f5', padding: 10, borderRadius: 5 }}>
+                  {selected?.full_text || 'No details provided'}
+                </Paragraph>
+              </View>
+            ) : (
+              <Paragraph>{selected?.full_text || 'No comment text'}</Paragraph>
+            )}
           </Dialog.Content>
           <Dialog.Actions>
             <Button
