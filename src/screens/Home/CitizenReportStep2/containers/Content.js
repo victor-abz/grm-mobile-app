@@ -39,6 +39,11 @@ import { colors } from '../../../../utils/colors';
 import { formatDuration } from '../../../../utils/functions';
 import { styles } from './Content.styles';
 import { useSelector } from 'react-redux';
+import {
+  processCategories,
+  processTypes,
+  getCategoryById,
+} from '../../../../utils/citizenReportUtils';
 
 const theme = {
   roundness: 12,
@@ -101,6 +106,16 @@ function Content({ stepOneParams, categories = [], types = [] }) {
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
+  // Process categories using shared utility (replaces inline filtering)
+  const processedCategories = useMemo(() => {
+    return processCategories(categories);
+  }, [categories]);
+
+  // Process types using shared utility (replaces inline processing)
+  const processedTypes = useMemo(() => {
+    return processTypes(types);
+  }, [types]);
+
   // Placeholder for sub-types (not implemented in current Frappe structure)
   const itemsSubTypes = useMemo(() => {
     console.log('🔍 [STEP2] ItemsSubTypes - returning empty array (not implemented)');
@@ -128,11 +143,14 @@ function Content({ stepOneParams, categories = [], types = [] }) {
     return result;
   }, [selectedIssueType, itemsSubTypes]);
 
-  // Show all categories (no filtering needed currently)
+  // Show all categories (using processed categories from shared utility)
   const filterCategory = useMemo(() => {
-    console.log('🔍 [STEP2] FilterCategory - using categories directly:', categories.length);
-    return categories;
-  }, [categories]);
+    console.log(
+      '🔍 [STEP2] FilterCategory - using processed categories:',
+      processedCategories.length
+    );
+    return processedCategories;
+  }, [processedCategories]);
 
   // Filtering logic for sub-components (currently empty)
   const filterSubComponent = useMemo(() => {
@@ -420,28 +438,10 @@ function Content({ stepOneParams, categories = [], types = [] }) {
     }
   };
 
+  // Use shared utility to get category (replaces inline getCategory function)
   const getCategory = useCallback(
     (value) => {
-      const result = categories.filter((obj) => obj.id === value);
-      if (result.length === 0) {
-        console.warn('🔍 [STEP2] Category not found for value:', value);
-        return null;
-      }
-
-      const category = result[0];
-      const _category = {
-        id: category.id,
-        name: category.id, // Frappe uses id as name
-        confidentiality_level: category.confidentialityLevel,
-        assigned_department_id: category.assignedDepartmentId,
-        assigned_department: category.assignedDepartmentId,
-        administrative_level_id: category.administrativeLevelId,
-        administrative_level: category.administrativeLevelId,
-        categoryName: category.categoryName,
-      };
-
-      console.log('🔍 [STEP2] Selected category:', _category);
-      return _category;
+      return getCategoryById(categories, value);
     },
     [categories]
   );
@@ -588,22 +588,23 @@ function Content({ stepOneParams, categories = [], types = [] }) {
     console.log('🔍 CitizenReportStep2 Debug Info:', {
       categoriesCount: categories.length,
       typesCount: types.length,
+      processedCategoriesCount: processedCategories.length,
+      processedTypesCount: processedTypes.length,
     });
-    if (categories.length > 0) {
-      console.log('🔍 [STEP2] Sample category properties:', {
-        id: categories[0].id,
-        categoryName: categories[0].categoryName,
-        confidentialityLevel: categories[0].confidentialityLevel,
-        assignedDepartmentId: categories[0].assignedDepartmentId,
+    if (processedCategories.length > 0) {
+      console.log('🔍 [STEP2] Sample processed category:', {
+        id: processedCategories[0].id,
+        categoryName: processedCategories[0].categoryName,
+        confidentiality_level: processedCategories[0].confidentiality_level,
       });
     }
-    if (types.length > 0) {
-      console.log('🔍 [STEP2] Sample type properties:', {
-        id: types[0].id,
-        typeName: types[0].typeName,
+    if (processedTypes.length > 0) {
+      console.log('🔍 [STEP2] Sample processed type:', {
+        id: processedTypes[0].id,
+        typeName: processedTypes[0].typeName,
       });
     }
-  }, [categories, types]);
+  }, [categories, types, processedCategories, processedTypes]);
 
   // Show loading state while data is being loaded
   if (!categories.length && !types.length) {
@@ -622,7 +623,7 @@ function Content({ stepOneParams, categories = [], types = [] }) {
   }
 
   // Show error state if no categories are available (categories are required)
-  if (categories.length === 0) {
+  if (processedCategories.length === 0) {
     return (
       <ScrollView>
         <View style={{ padding: 23 }}>
@@ -636,6 +637,8 @@ function Content({ stepOneParams, categories = [], types = [] }) {
             {JSON.stringify({
               categoriesCount: categories.length,
               typesCount: types.length,
+              processedCategoriesCount: processedCategories.length,
+              processedTypesCount: processedTypes.length,
             })}
           </Text>
           <Button
@@ -747,6 +750,7 @@ function Content({ stepOneParams, categories = [], types = [] }) {
           onConfirm={handleConfirm}
           onCancel={hideDatePicker}
         />
+        {/* Issue Types Dropdown - Using processed data from shared utility */}
         <View style={{ zIndex: 2000 }}>
           <CustomDropDownPicker
             schema={{
@@ -757,20 +761,21 @@ function Content({ stepOneParams, categories = [], types = [] }) {
             zIndexInverse={2000}
             placeholder={t('step_2_placeholder_1')}
             value={pickerValue}
-            items={types}
+            items={processedTypes}
             setPickerValue={setPickerValue}
-            loading={!types.length}
+            loading={!processedTypes.length}
             onSelectItem={(item) => setSelectedIssueType(item)}
           />
         </View>
+        {/* Issue Categories Dropdown - Using processed data from shared utility */}
         <View style={{ zIndex: 1000 }}>
           <CustomDropDownPicker
             schema={{
               label: 'categoryName',
               value: 'id',
               id: 'id',
-              confidentiality_level: 'confidentialityLevel',
-              assigned_department: 'assignedDepartmentId',
+              confidentiality_level: 'confidentiality_level',
+              assigned_department: 'assigned_department_id',
             }}
             zIndex={3000}
             zIndexInverse={2000}
@@ -778,7 +783,7 @@ function Content({ stepOneParams, categories = [], types = [] }) {
             value={pickerValue2}
             items={filterCategory}
             setPickerValue={setPickerValue2}
-            loading={!categories.length}
+            loading={!processedCategories.length}
             // setItems={setItems2}
           />
         </View>

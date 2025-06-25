@@ -1,6 +1,6 @@
 import { useBackHandler } from '@react-native-community/hooks';
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dimensions, ScrollView, Text, View, ActivityIndicator } from 'react-native';
 import { Button } from 'react-native-paper';
@@ -10,6 +10,7 @@ import LockImage from '../../../../../assets/lock.svg';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { Q } from '@nozbe/watermelondb';
+import { enrichIssueData, createDetailLookupMaps } from '../../../../utils/issueDetailUtils';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -24,21 +25,68 @@ const theme = {
   },
 };
 
-function Content({ route, navigation, issue }) {
+function Content({
+  route,
+  navigation,
+  issue,
+  // Add lookup data for enrichment
+  categories = [],
+  types = [],
+  statuses = [],
+  ageGroups = [],
+  citizenGroups = [],
+  regions = [],
+  projects = [],
+  users = [],
+}) {
   const { t } = useTranslation();
   const { issueId, trackingCode } = route?.params || {};
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Extract the actual issue from the query result array
-  const actualIssue = Array.isArray(issue) && issue.length > 0 ? issue[0] : null;
+  // Create lookup maps using shared utility for enriching issue data
+  const lookupMaps = useMemo(() => {
+    const lookupData = {
+      categories,
+      types,
+      statuses,
+      ageGroups,
+      citizenGroups,
+      regions,
+      projects,
+      users,
+    };
+    return createDetailLookupMaps(lookupData);
+  }, [categories, types, statuses, ageGroups, citizenGroups, regions, projects, users]);
+
+  // Extract the actual issue from the query result array and enrich it
+  const actualIssue = useMemo(() => {
+    const rawIssue = Array.isArray(issue) && issue.length > 0 ? issue[0] : null;
+    if (!rawIssue) return null;
+
+    // Use shared utility to enrich issue data with lookup labels
+    return enrichIssueData(rawIssue, lookupMaps, t);
+  }, [issue, lookupMaps, t]);
 
   console.log('🔍 [STEP4] Component rendered with:', {
     issueId,
     trackingCode,
     hasIssue: !!actualIssue,
     issueArray: issue,
-    actualIssue,
+    actualIssue: actualIssue
+      ? {
+          id: actualIssue.id,
+          trackingCode: actualIssue.tracking_code || actualIssue.trackingCode,
+          categoryLabel: actualIssue.categoryLabel,
+          typeLabel: actualIssue.typeLabel,
+          statusLabel: actualIssue.statusLabel,
+        }
+      : null,
+    lookupMapsSize: {
+      categories: lookupMaps.categoryMap?.size || 0,
+      types: lookupMaps.typeMap?.size || 0,
+      statuses: lookupMaps.statusMap?.size || 0,
+    },
   });
 
   useBackHandler(
@@ -66,7 +114,12 @@ function Content({ route, navigation, issue }) {
 
       // If issue is found, clear timeout and stop loading
       if (actualIssue) {
-        console.log('✅ [STEP4] Issue loaded successfully:', actualIssue);
+        console.log('✅ [STEP4] Issue loaded and enriched successfully:', {
+          id: actualIssue.id,
+          trackingCode: actualIssue.tracking_code || actualIssue.trackingCode,
+          categoryLabel: actualIssue.categoryLabel,
+          statusLabel: actualIssue.statusLabel,
+        });
         clearTimeout(timeoutId);
         setIsLoading(false);
         setError(null);
@@ -179,7 +232,7 @@ function Content({ route, navigation, issue }) {
           marginBottom: 40,
         }}
       >
-        {actualIssue?.trackingCode || trackingCode || 'PENDING'}
+        {actualIssue?.trackingCode || actualIssue?.tracking_code || trackingCode || 'PENDING'}
       </Text>
       <View style={{ alignSelf: 'center' }}>
         {/* <View */}
@@ -230,19 +283,33 @@ function Content({ route, navigation, issue }) {
   );
 }
 
-// ✅ FIXED: withObservables with better error handling and proper route access
+// ✅ Enhanced withObservables with better error handling and proper route access
+// Includes all lookup data for issue enrichment
 const enhance = withObservables(['route'], ({ route }) => {
   console.log('🔍 [STEP4] withObservables called with route:', route);
 
   // Safety check for route and params
   if (!route || !route.params) {
-    console.log('🔍 [STEP4] No route or params provided, returning empty issue observable');
+    console.log('🔍 [STEP4] No route or params provided, returning empty observables');
     return {
       issue: watermelonManager
         .getDatabase()
         .get('grm_issues')
         .query(Q.where('id', 'none'))
         .observe(),
+      // Include empty lookup data for consistency
+      categories: watermelonManager.getDatabase().get('grm_issue_categories').query().observe(),
+      types: watermelonManager.getDatabase().get('grm_issue_types').query().observe(),
+      statuses: watermelonManager.getDatabase().get('grm_issue_statuses').query().observe(),
+      ageGroups: watermelonManager.getDatabase().get('grm_issue_age_groups').query().observe(),
+      citizenGroups: watermelonManager
+        .getDatabase()
+        .get('grm_issue_citizen_groups')
+        .query()
+        .observe(),
+      regions: watermelonManager.getDatabase().get('grm_administrative_regions').query().observe(),
+      projects: watermelonManager.getDatabase().get('grm_projects').query().observe(),
+      users: watermelonManager.getDatabase().get('users').query().observe(),
     };
   }
 
@@ -252,18 +319,31 @@ const enhance = withObservables(['route'], ({ route }) => {
   console.log('🔍 [STEP4] withObservables called with issueId:', issueId);
 
   if (!issueId) {
-    console.log('🔍 [STEP4] No issueId provided, returning empty issue observable');
+    console.log('🔍 [STEP4] No issueId provided, returning empty observables');
     return {
       issue: watermelonManager
         .getDatabase()
         .get('grm_issues')
         .query(Q.where('id', 'none'))
         .observe(),
+      // Include empty lookup data for consistency
+      categories: watermelonManager.getDatabase().get('grm_issue_categories').query().observe(),
+      types: watermelonManager.getDatabase().get('grm_issue_types').query().observe(),
+      statuses: watermelonManager.getDatabase().get('grm_issue_statuses').query().observe(),
+      ageGroups: watermelonManager.getDatabase().get('grm_issue_age_groups').query().observe(),
+      citizenGroups: watermelonManager
+        .getDatabase()
+        .get('grm_issue_citizen_groups')
+        .query()
+        .observe(),
+      regions: watermelonManager.getDatabase().get('grm_administrative_regions').query().observe(),
+      projects: watermelonManager.getDatabase().get('grm_projects').query().observe(),
+      users: watermelonManager.getDatabase().get('users').query().observe(),
     };
   }
 
   try {
-    console.log('🔍 [STEP4] Creating issue observable for ID:', issueId);
+    console.log('🔍 [STEP4] Creating observables for ID:', issueId);
     const database = watermelonManager.getDatabase();
     const issuesCollection = database.get('grm_issues');
 
@@ -272,6 +352,15 @@ const enhance = withObservables(['route'], ({ route }) => {
 
     return {
       issue: issueQuery.observe(),
+      // Include all lookup data for issue enrichment using shared utilities
+      categories: database.get('grm_issue_categories').query().observe(),
+      types: database.get('grm_issue_types').query().observe(),
+      statuses: database.get('grm_issue_statuses').query().observe(),
+      ageGroups: database.get('grm_issue_age_groups').query().observe(),
+      citizenGroups: database.get('grm_issue_citizen_groups').query().observe(),
+      regions: database.get('grm_administrative_regions').query().observe(),
+      projects: database.get('grm_projects').query().observe(),
+      users: database.get('users').query().observe(),
     };
   } catch (error) {
     console.error('❌ [STEP4] Error in withObservables:', error);
@@ -281,6 +370,19 @@ const enhance = withObservables(['route'], ({ route }) => {
         .get('grm_issues')
         .query(Q.where('id', 'none'))
         .observe(),
+      // Include empty lookup data for consistency
+      categories: watermelonManager.getDatabase().get('grm_issue_categories').query().observe(),
+      types: watermelonManager.getDatabase().get('grm_issue_types').query().observe(),
+      statuses: watermelonManager.getDatabase().get('grm_issue_statuses').query().observe(),
+      ageGroups: watermelonManager.getDatabase().get('grm_issue_age_groups').query().observe(),
+      citizenGroups: watermelonManager
+        .getDatabase()
+        .get('grm_issue_citizen_groups')
+        .query()
+        .observe(),
+      regions: watermelonManager.getDatabase().get('grm_administrative_regions').query().observe(),
+      projects: watermelonManager.getDatabase().get('grm_projects').query().observe(),
+      users: watermelonManager.getDatabase().get('users').query().observe(),
     };
   }
 });

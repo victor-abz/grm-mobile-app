@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, ScrollView, Text, View, Alert } from 'react-native';
 import { Button, Dialog, Paragraph, Portal } from 'react-native-paper';
@@ -11,6 +11,7 @@ import watermelonManager from '../../../../database/watermelonManager';
 import dataManager from '../../../../services/DataManager'; // Import DataManager for proper API sync
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
+import { createLookupMap } from '../../../../utils/issueDetailUtils';
 
 const SAMPLE_WORDS = ['car', 'house', 'tree', 'ball'];
 const theme = {
@@ -42,6 +43,22 @@ function Content({
   const randomWord = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const [sound, setSound] = useState();
   const [playing, setPlaying] = useState(false);
+
+  // Create status lookup map using shared utility for performance
+  const statusMap = useMemo(() => {
+    return createLookupMap(statuses, 'status_name');
+  }, [statuses]);
+
+  // Debug logging for status processing
+  useEffect(() => {
+    console.log('🔍 [STEP3] Status data info:', {
+      statusesCount: statuses.length,
+      statusMapSize: statusMap.size,
+    });
+    if (statusMap.size > 0) {
+      console.log('🔍 [STEP3] Status map sample:', Array.from(statusMap.entries()).slice(0, 3));
+    }
+  }, [statuses, statusMap]);
 
   /**
    * Determine if the current user should be assigned to the issue
@@ -204,7 +221,7 @@ function Content({
       const userContext = dataManager.getUserContext();
       console.log('🔍 [STEP3] User context for issue creation:', userContext);
 
-      // Get the initial status from available statuses
+      // Get the initial status from available statuses using shared utility processing
       const initialStatus = statuses.find((status) => {
         const statusData = status._raw || status;
         return statusData.initial_status === true;
@@ -216,9 +233,13 @@ function Content({
       }
 
       const initialStatusId = initialStatus._raw?.id || initialStatus.id;
+      const initialStatusName =
+        statusMap.get(initialStatusId) ||
+        initialStatus._raw?.status_name ||
+        initialStatus.status_name;
       console.log('🔍 [STEP3] Using initial status:', {
         id: initialStatusId,
-        name: initialStatus._raw?.status_name || initialStatus.status_name,
+        name: initialStatusName,
       });
 
       // Determine assignment based on user context and region/department rules
@@ -298,6 +319,7 @@ function Content({
         issueTypeId: newIssue.issue_type_id,
         categoryId: newIssue.category_id,
         status: newIssue.status_id,
+        statusName: statusMap.get(newIssue.status_id) || newIssue.status_id,
         assigneeId: newIssue.assignee_id,
         assignmentReason: assignmentResult.reason,
       });
@@ -506,12 +528,12 @@ function Content({
   );
 }
 
-// ✅ ADD: withObservables HOC at bottom of file
+// ✅ Enhanced withObservables with proper status inclusion
 const enhance = withObservables([], () => ({
-  // For displaying any lookup data if needed (categories, types, etc.)
+  // Include statuses for initial status lookup using shared lookup processing
   categories: watermelonManager.getDatabase().get('grm_issue_categories').query().observe(),
   types: watermelonManager.getDatabase().get('grm_issue_types').query().observe(),
-  // Add other lookup tables if referenced in confirmation display
+  statuses: watermelonManager.getDatabase().get('grm_issue_statuses').query().observe(),
 }));
 
 export default enhance(Content);

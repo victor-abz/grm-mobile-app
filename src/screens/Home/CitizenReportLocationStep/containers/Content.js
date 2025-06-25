@@ -21,6 +21,7 @@ import { DataContext } from '../../../../providers/DataProvider';
 import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
+import { processRegions } from '../../../../utils/citizenReportUtils';
 
 const theme = {
   roundness: 12,
@@ -232,6 +233,11 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
 
   console.log('🔍 [LOCATION] Component initialized with:', { regionsCount: regions.length });
 
+  // Process regions using shared utility for consistent structure
+  const processedRegions = useMemo(() => {
+    return processRegions(regions);
+  }, [regions]);
+
   // State for region selection with auto-selection logic
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [regionHierarchy, setRegionHierarchy] = useState([]);
@@ -250,22 +256,23 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
   const [mapHtml, setMapHtml] = useState('');
 
   // Filter regions based on user access and hierarchy - with auto-selection logic
+  // Uses processed regions for consistent data structure
   const availableRegions = useMemo(() => {
-    if (!regions || regions.length === 0) {
-      console.log('🔍 [LOCATION] No regions available');
+    if (!processedRegions || processedRegions.length === 0) {
+      console.log('🔍 [LOCATION] No processed regions available');
       return [];
     }
 
     // Get top-level regions (regions without parent)
-    const topLevelRegions = regions.filter((region) => !region.parentRegion);
+    const topLevelRegions = processedRegions.filter((region) => !region.parentRegion);
 
     console.log('🔍 [LOCATION] Available regions:', {
-      total: regions.length,
+      total: processedRegions.length,
       topLevel: topLevelRegions.length,
     });
 
     // If no top-level regions, use all regions as available
-    const available = topLevelRegions.length > 0 ? topLevelRegions : regions;
+    const available = topLevelRegions.length > 0 ? topLevelRegions : processedRegions;
 
     // **AUTO-SELECTION**: If user has only one accessible region level, automatically select it
     if (available.length === 1 && !selectedRegion) {
@@ -277,14 +284,14 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
     }
 
     return available;
-  }, [regions, selectedRegion]);
+  }, [processedRegions, selectedRegion]);
 
-  // Get children regions for a specific parent
+  // Get children regions for a specific parent using processed regions
   const getRegionChildren = useCallback(
     (parentId) => {
-      return regions.filter((region) => region.parentRegion?.id === parentId);
+      return processedRegions.filter((region) => region.parentRegion?.id === parentId);
     },
-    [regions]
+    [processedRegions]
   );
 
   // Get regions for a specific hierarchy level
@@ -346,7 +353,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
         return;
       }
 
-      if (regions.length === 0) {
+      if (processedRegions.length === 0) {
         setLocationError({
           type: 'NO_REGIONS',
           message: 'No administrative regions available. Please contact administrator.',
@@ -354,7 +361,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
         return;
       }
 
-      console.log(`🔍 [LOCATION] Loaded ${regions.length} total regions`);
+      console.log(`🔍 [LOCATION] Loaded ${processedRegions.length} processed regions`);
       setIsInitialized(true);
 
       // Try to get cached location - FIX: Handle null response properly
@@ -485,8 +492,8 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
     debounce((selectedRegionId, level = 0) => {
       console.log(`🔍 [LOCATION] Region selected at level ${level}:`, selectedRegionId);
 
-      // Find the selected region using direct WatermelonDB data
-      const region = regions.find((r) => r.id === selectedRegionId);
+      // Find the selected region using processed regions data
+      const region = processedRegions.find((r) => r.id === selectedRegionId);
 
       if (!region) {
         console.error('🔍 [LOCATION] Selected region not found:', selectedRegionId);
@@ -513,7 +520,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
         console.log(`🔍 [LOCATION] Final region selected: ${region.regionName}`);
       }
     }, 300),
-    [regionHierarchy, regions, getRegionChildren]
+    [regionHierarchy, processedRegions, getRegionChildren]
   );
 
   const handleNearestRegionSelect = () => {
@@ -521,7 +528,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       const region = nearestRegion.region;
       setSelectedRegion(region);
 
-      // Build hierarchy path to this region using WatermelonDB relationships
+      // Build hierarchy path to this region using processed region relationships
       const hierarchy = [];
       let currentRegion = region;
 
@@ -544,17 +551,14 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       return;
     }
 
-    // ✅ FIXED: Extract primitive values to avoid circular reference
+    // ✅ FIXED: Extract primitive values to avoid circular reference using processed region data
     const locationParams = {
       issueLocation: {
         id: selectedRegion.id,
         regionName: selectedRegion.regionName,
-        // Extract primitive value from WatermelonDB relation by accessing raw data
+        // Extract primitive value from processed region data
         administrativeLevel:
-          selectedRegion._raw?.administrative_level_id ||
-          selectedRegion.administrativeLevelId ||
-          selectedRegion.administrativeLevel?.id ||
-          selectedRegion.administrativeLevel,
+          selectedRegion.administrativeLevel || selectedRegion.administrativeLevelId,
       },
       locationDescription,
     };
@@ -766,8 +770,8 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
   );
 
   const renderRegionSelector = () => {
-    // Updated condition: check if initialized AND has any regions
-    if (!isInitialized || regions.length === 0) {
+    // Updated condition: check if initialized AND has any processed regions
+    if (!isInitialized || processedRegions.length === 0) {
       return (
         <View style={{ padding: 16, alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#24c38b" />
@@ -826,7 +830,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
             <Text style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>Selected path:</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {regionHierarchy.map((regionId, index) => {
-                const region = regions.find((r) => r.id === regionId);
+                const region = processedRegions.find((r) => r.id === regionId);
                 return (
                   <Chip
                     key={regionId}
@@ -842,10 +846,10 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
           </View>
         )}
 
-        {/* Current level selector */}
+        {/* Current level selector using processed region data */}
         <CustomDropDownPicker
           schema={{
-            // ✅ OPTIMIZED: Use direct WatermelonDB properties
+            // ✅ OPTIMIZED: Use processed region properties
             label: 'regionName',
             value: 'id',
           }}
@@ -875,7 +879,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
                   </Text>
                   <CustomDropDownPicker
                     schema={{
-                      // ✅ OPTIMIZED: Use direct WatermelonDB properties
+                      // ✅ OPTIMIZED: Use processed region properties
                       label: 'regionName',
                       value: 'id',
                     }}

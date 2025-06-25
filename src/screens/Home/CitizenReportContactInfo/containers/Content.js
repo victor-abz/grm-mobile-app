@@ -8,6 +8,11 @@ import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/Cu
 import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
+import {
+  processAgeGroups,
+  processCitizenGroupsByType,
+  createNavigationData,
+} from '../../../../utils/citizenReportUtils';
 
 const theme = {
   roundness: 12,
@@ -42,117 +47,19 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
     [t]
   );
 
-  // Process age groups from WatermelonDB model objects
-  // Data comes from Frappe backend with 'name' as primary identifier
-  // Backend sends 'age_group_name' field which maps to 'ageGroup' property
+  // Process age groups using shared utility (replaces inline processing)
   const processedAgeGroups = useMemo(() => {
-    if (!ageGroups || ageGroups.length === 0) {
-      console.log('🔍 [CONTACT] Age groups - no data available');
-      return [];
-    }
-
-    // Handle WatermelonDB model objects - access properties via getters
-    const result = ageGroups
-      .filter((ageGroup) => ageGroup && ageGroup.id) // Ensure valid records
-      .map((ageGroup) => ({
-        // Use Frappe's native structure
-        name: ageGroup.id, // Frappe primary identifier (stored as WatermelonDB id)
-        label: ageGroup.ageGroup || ageGroup.id, // Display name from age_group_name field with fallback
-        value: ageGroup.id, // Use id as value for form
-        // Keep reference to original model
-        _model: ageGroup,
-        // Include additional properties for debugging
-        ageGroup: ageGroup.ageGroup,
-        createdAt: ageGroup.createdAt,
-        updatedAt: ageGroup.updatedAt,
-      }));
-
-    console.log(`✅ [CONTACT] Age groups processed: ${result.length} items`);
-    if (result.length > 0) {
-      console.log('🔍 [CONTACT] Sample age group:', {
-        name: result[0].name,
-        label: result[0].label,
-        ageGroup: result[0].ageGroup,
-      });
-    }
-    return result;
+    return processAgeGroups(ageGroups);
   }, [ageGroups]);
 
-  // Process citizen groups for type 1 (first dropdown)
+  // Process citizen groups for type 1 using shared utility (replaces inline processing)
   const citizenGroupsI = useMemo(() => {
-    if (!citizenGroups || citizenGroups.length === 0) {
-      console.log('🔍 [CONTACT] Citizen groups I - no data available');
-      return [];
-    }
-
-    // Handle WatermelonDB model objects and filter for group_type 1
-    const result = citizenGroups
-      .filter((group) => group && group.id && (group.groupType === '1' || group.groupType === 1))
-      .map((group) => {
-        console.log('🔍 [CONTACT] Processing citizen group I:', {
-          id: group.id,
-          groupName: group.groupName,
-          groupType: group.groupType,
-        });
-
-        return {
-          // Use Frappe's native structure
-          name: group.id, // Frappe primary identifier (stored as WatermelonDB id)
-          label: group.groupName || group.id, // Display name from group_name field - FIXED
-          value: group.id, // Use id as value for form
-          group_type: group.groupType,
-          // Keep reference to original model
-          _model: group,
-          // Include additional properties for debugging
-          groupName: group.groupName,
-          groupType: group.groupType,
-          createdAt: group.createdAt,
-          updatedAt: group.updatedAt,
-        };
-      });
-
-    console.log(`✅ [CONTACT] Citizen groups I processed: ${result.length} items`);
-    if (result.length > 0) {
-      console.log('🔍 [CONTACT] Sample citizen group I:', {
-        name: result[0].name,
-        label: result[0].label,
-        groupName: result[0].groupName,
-        groupType: result[0].groupType,
-      });
-    }
-    return result;
+    return processCitizenGroupsByType(citizenGroups, 1);
   }, [citizenGroups]);
 
-  // Process citizen groups for type 2 (second dropdown)
+  // Process citizen groups for type 2 using shared utility (replaces inline processing)
   const citizenGroupsII = useMemo(() => {
-    if (!citizenGroups || citizenGroups.length === 0) {
-      console.log('🔍 [CONTACT] Citizen groups II - no data available');
-      return [];
-    }
-
-    // Handle WatermelonDB model objects and filter for group_type 2
-    const result = citizenGroups
-      .filter((group) => group && group.id && (group.groupType === '2' || group.groupType === 2))
-      .map((group) => ({
-        // Use Frappe's native structure
-        name: group.id, // Frappe primary identifier (stored as WatermelonDB id)
-        label: group.groupName || group.id, // Display name from group_name field
-        value: group.id, // Use id as value for form
-        group_type: group.groupType,
-        // Keep reference to original model
-        _model: group,
-        // Include additional properties for debugging
-        groupName: group.groupName,
-        groupType: group.groupType,
-        createdAt: group.createdAt,
-        updatedAt: group.updatedAt,
-      }));
-
-    console.log(`✅ [CONTACT] Citizen groups II processed: ${result.length} items`);
-    if (result.length > 0) {
-      console.log('🔍 [CONTACT] Sample citizen group II:', result[0]);
-    }
-    return result;
+    return processCitizenGroupsByType(citizenGroups, 2);
   }, [citizenGroups]);
 
   // Event handlers
@@ -165,38 +72,19 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
   }, []);
 
   const handleNavigateToStep2 = useCallback(() => {
+    // Use shared utility to create navigation data with proper field extraction
+    const navigationData = createNavigationData(stepOneParams, {
+      name,
+      selectedAge,
+      citizen_type: confidentialValue,
+      selectedCitizenGroupI,
+      selectedCitizenGroupII,
+      gender: pickerGenderValue,
+    });
+
     // Navigate with processed data that includes Frappe identifiers
-    // Only pass essential data to avoid circular reference warnings
     navigation.navigate('CitizenReportStep2', {
-      stepOneParams: {
-        ...stepOneParams,
-        name,
-        ageGroup: selectedAge
-          ? {
-              name: selectedAge.name,
-              label: selectedAge.label,
-              ageGroup: selectedAge.ageGroup,
-            }
-          : null,
-        citizen_type: confidentialValue,
-        citizen_group_1: selectedCitizenGroupI
-          ? {
-              name: selectedCitizenGroupI.name,
-              label: selectedCitizenGroupI.label,
-              groupName: selectedCitizenGroupI.groupName,
-              groupType: selectedCitizenGroupI.groupType,
-            }
-          : null,
-        citizen_group_2: selectedCitizenGroupII
-          ? {
-              name: selectedCitizenGroupII.name,
-              label: selectedCitizenGroupII.label,
-              groupName: selectedCitizenGroupII.groupName,
-              groupType: selectedCitizenGroupII.groupType,
-            }
-          : null,
-        gender: pickerGenderValue,
-      },
+      stepOneParams: navigationData,
     });
   }, [
     navigation,
@@ -301,7 +189,7 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
         </View>
         <Text />
 
-        {/* Age Groups Dropdown - Using Frappe data structure */}
+        {/* Age Groups Dropdown - Using processed data from shared utility */}
         <CustomDropDownPicker
           schema={{
             label: 'label', // Display field from processed data
@@ -330,7 +218,7 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
               setPickerValue={setPickerGenderValue}
             />
 
-            {/* Citizen Group I Dropdown - Using Frappe data structure */}
+            {/* Citizen Group I Dropdown - Using processed data from shared utility */}
             <CustomDropDownPicker
               schema={{
                 label: 'label', // Display field from processed data
@@ -344,7 +232,7 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
               setPickerValue={setSelectedCitizenGroupI}
             />
 
-            {/* Citizen Group II Dropdown - Using Frappe data structure */}
+            {/* Citizen Group II Dropdown - Using processed data from shared utility */}
             <CustomDropDownPicker
               schema={{
                 label: 'label', // Display field from processed data
