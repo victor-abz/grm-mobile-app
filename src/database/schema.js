@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 3,
+  version: 4,
   tables: [
     tableSchema({
       name: 'grm_issues',
@@ -172,6 +172,7 @@ export default appSchema({
         { name: 'grm_issue_id', type: 'string', isIndexed: true },
         { name: 'user_id', type: 'string', isIndexed: true },
         { name: 'comment', type: 'string' },
+        { name: 'activity_type', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

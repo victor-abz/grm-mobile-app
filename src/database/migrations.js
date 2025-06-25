@@ -55,5 +55,15 @@ export default schemaMigrations({
         }),
       ],
     },
+    // Migration to add activity_type to comments
+    {
+      toVersion: 4,
+      steps: [
+        addColumns({
+          table: 'grm_issue_comments',
+          columns: [{ name: 'activity_type', type: 'string', isOptional: true }],
+        }),
+      ],
+    },
   ],
 });

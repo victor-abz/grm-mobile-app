@@ -97,44 +97,26 @@ function Content({ issue, comments: commentsFromDB, users }) {
       // Get user name from user map
       const userName = userMap.get(rawComment.user_id) || rawComment.user_id || 'System';
 
-      // Determine activity type based on comment content
+      // Determine activity type and display format
       let activityType = 'General Activity';
       let displayText = rawComment.comment;
       let fullText = rawComment.comment;
 
-      // Check for templated messages (system actions)
-      if (rawComment.comment.includes('issue_was_accepted_by_user')) {
-        activityType = t('accept_issue') || 'Issue Accepted';
-        displayText = `${activityType} by ${userName}`;
-        fullText =
-          t('issue_accepted_explanation') || 'Issue has been accepted and assigned for processing';
-      } else if (rawComment.comment.includes('issue_was_rejected_by_user')) {
-        activityType = t('reject_issue') || 'Issue Rejected';
-        displayText = `${activityType} by ${userName}`;
-        fullText =
-          t('issue_rejected_explanation') || 'Issue has been rejected with provided reason';
-      } else if (rawComment.comment.includes('issue_was_resolved_by_user')) {
-        activityType = t('record_resolution') || 'Issue Resolved';
-        displayText = `${activityType} by ${userName}`;
-        fullText = t('issue_resolved_explanation') || 'Issue has been marked as resolved';
-      } else if (rawComment.comment.includes('issue_was_escalated_by_user')) {
-        activityType = t('escalate') || 'Issue Escalated';
-        displayText = `${activityType} by ${userName}`;
-        fullText =
-          t('issue_escalated_explanation') || 'Issue has been escalated for higher-level attention';
-      } else if (rawComment.comment.includes('issue_was_rated_by_citizen')) {
-        activityType = t('rate_issue') || 'Issue Rated';
-        displayText = `${activityType}`;
-        fullText = t('issue_rated_explanation') || 'Citizen has provided feedback rating';
-      } else if (rawComment.comment.includes('appeal_submitted_by_citizen')) {
-        activityType = t('appeal_issue') || 'Appeal Submitted';
-        displayText = `${activityType}`;
-        fullText = t('appeal_submitted_explanation') || 'Appeal has been submitted for review';
-      } else {
-        // For record_steps (new format), the comment contains actual user input
-        activityType = t('record_steps_taken') || 'Steps Recorded';
-        displayText = rawComment.comment; // Show the actual steps
-        fullText = rawComment.comment; // Full text is the same
+      // Use activity_type from comment record if available (new format)
+      switch (rawComment.activity_type) {
+        case 'accept':
+          activityType = t('accept_issue') || 'Issue Accepted';
+          displayText = `${activityType} by ${userName}`;
+          fullText =
+            t('issue_accepted_explanation') ||
+            'Issue has been accepted and assigned for processing';
+          break;
+
+        default:
+          activityType = rawComment.activity_type;
+          displayText = rawComment.comment;
+          fullText = rawComment.comment;
+          break;
       }
 
       console.log('🔍 [IssueHistory] Processing comment:', {
@@ -187,7 +169,8 @@ function Content({ issue, comments: commentsFromDB, users }) {
           </View>
 
           {/* Show different content based on activity type */}
-          {activityType === (t('record_steps_taken') || 'Steps Recorded') ? (
+          {activityType === (t('record_steps_taken') || 'Steps Recorded') ||
+          activityType === (t('record_resolution') || 'Issue Resolved') ? (
             <Text style={styles.stepNote} numberOfLines={3}>
               {commentText}
             </Text>
@@ -263,6 +246,15 @@ function Content({ issue, comments: commentsFromDB, users }) {
                 </Text>
                 <Paragraph style={{ backgroundColor: '#f5f5f5', padding: 10, borderRadius: 5 }}>
                   {selected?.full_text || 'No details provided'}
+                </Paragraph>
+              </View>
+            ) : selected?.activity_type === (t('record_resolution') || 'Issue Resolved') ? (
+              <View>
+                <Text style={{ fontWeight: 'bold', marginBottom: 5, fontSize: 14 }}>
+                  {t('resolution_details') || 'Resolution Details'}:
+                </Text>
+                <Paragraph style={{ backgroundColor: '#f5f5f5', padding: 10, borderRadius: 5 }}>
+                  {selected?.full_text || 'No resolution details provided'}
                 </Paragraph>
               </View>
             ) : (

@@ -542,24 +542,50 @@ function Content({ issue, navigation, statuses = [], userContext }) {
         if (actionType !== 'none') {
           let commentText;
 
-          // ✅ FIXED: For record_steps, use the actual user input as the comment
-          if (actionType === 'record_steps') {
-            commentText = comment; // Use the actual steps text entered by user
-          } else {
-            // For other actions, use templated messages
-            const commentMap = {
-              accept: t('issue_was_accepted_by_user', { user: currentUserId }),
-              reject: t('issue_was_rejected_by_user', { user: currentUserId, reason: reason }),
-              record_resolution: t('issue_was_resolved_by_user', { user: currentUserId }),
-              escalate: t('issue_was_escalated_by_user', {
-                user: currentUserId,
-                reason: escalateComment,
-              }),
-              rate: t('issue_was_rated_by_citizen', { rating: rating }),
-              appeal: t('appeal_submitted_by_citizen'),
-            };
+          // For actions with user input, include the actual details in comments
+          switch (actionType) {
+            case 'record_steps':
+              // For record_steps, use pure user input as comment
+              commentText = comment;
+              console.log('🔍 [IssueActions] record_steps comment:', { comment, commentText });
+              break;
 
-            commentText = commentMap[actionType] || t('status_updated');
+            case 'reject':
+              // For reject, include the actual rejection reason
+              commentText = reason;
+              console.log('🔍 [IssueActions] reject comment:', { reason, commentText });
+              break;
+
+            case 'escalate':
+              // For escalate, include the actual escalation reason
+              commentText = escalateComment;
+              console.log('🔍 [IssueActions] escalate comment:', { escalateComment, commentText });
+              break;
+
+            case 'record_resolution':
+              // For record_resolution, include the actual resolution details
+              commentText = resolution;
+              console.log('🔍 [IssueActions] record_resolution comment:', {
+                resolution,
+                commentText,
+              });
+              break;
+
+            case 'rate':
+              // For rate, include the actual rating value
+              commentText = `Rating: ${rating}/5`;
+              console.log('🔍 [IssueActions] rate comment:', { rating, commentText });
+              break;
+
+            default:
+              // For other actions, use templated messages
+              const commentMap = {
+                accept: t('issue_was_accepted_by_user', { user: currentUserId }),
+                appeal: t('appeal_submitted_by_citizen'),
+              };
+              commentText = commentMap[actionType] || t('status_updated');
+              console.log('🔍 [IssueActions] default comment:', { actionType, commentText });
+              break;
           }
 
           // Create comment record in WatermelonDB
@@ -568,6 +594,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
             commentRecord._setRaw('grm_issue_id', enrichedIssue.id);
             commentRecord._setRaw('user_id', currentUserId);
             commentRecord.comment = commentText;
+            commentRecord.activityType = actionType; // Add activity type for proper classification
             commentRecord.createdAt = new Date();
             commentRecord.updatedAt = new Date();
           });
@@ -581,46 +608,48 @@ function Content({ issue, navigation, statuses = [], userContext }) {
             // ✅ FIXED: Set proper actionTaken (past tense) and text based on action type
             switch (actionType) {
               case 'accept':
-                logRecord.actionTaken = t('accepted_issue');
-                logRecord.text = t('issue_accepted_explanation');
+                logRecord.actionTaken = t('accepted_issue') || 'Accepted issue';
+                logRecord.text =
+                  t('issue_accepted_explanation') ||
+                  'Issue has been accepted and assigned for processing';
                 break;
 
               case 'reject':
-                logRecord.actionTaken = t('rejected_issue');
-                logRecord.text = t('issue_rejected_explanation');
+                logRecord.actionTaken = t('rejected_issue') || 'Rejected issue';
+                logRecord.text = reason; // Use actual rejection reason as text
                 break;
 
               case 'record_steps':
-                logRecord.actionTaken = t('added_steps');
-                logRecord.text = comment; // ✅ FIXED: Use actual user input as text
+                logRecord.actionTaken = t('added_steps') || 'Added steps';
+                logRecord.text = comment; // Use actual user input as text
                 logRecord.actionTakenDate = new Date();
-                // ✅ FIXED: Use _setRaw method for actionTakenBy relation field
                 logRecord._setRaw('action_taken_by', currentUserId);
                 break;
 
               case 'record_resolution':
-                logRecord.actionTaken = t('resolved_issue');
-                logRecord.text = t('issue_resolved_explanation');
+                logRecord.actionTaken = t('resolved_issue') || 'Resolved issue';
+                logRecord.text = resolution; // Use actual resolution details as text
                 break;
 
               case 'escalate':
-                logRecord.actionTaken = t('escalated_issue');
-                logRecord.text = t('issue_escalated_explanation');
+                logRecord.actionTaken = t('escalated_issue') || 'Escalated issue';
+                logRecord.text = escalateComment; // Use actual escalation reason as text
                 break;
 
               case 'rate':
-                logRecord.actionTaken = t('rated_issue');
-                logRecord.text = t('issue_rated_explanation');
+                logRecord.actionTaken = t('rated_issue') || 'Rated issue';
+                logRecord.text = `Rating: ${rating}/5`; // Use actual rating as text
                 break;
 
               case 'appeal':
-                logRecord.actionTaken = t('submitted_appeal');
-                logRecord.text = t('appeal_submitted_explanation');
+                logRecord.actionTaken = t('submitted_appeal') || 'Submitted appeal';
+                logRecord.text =
+                  t('appeal_submitted_explanation') || 'Appeal has been submitted for review';
                 break;
 
               default:
-                logRecord.actionTaken = t('updated_status');
-                logRecord.text = t('status_updated_explanation');
+                logRecord.actionTaken = t('updated_status') || 'Updated status';
+                logRecord.text = t('status_updated_explanation') || 'Issue status has been updated';
                 break;
             }
 
@@ -821,6 +850,12 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       return;
     }
 
+    console.log('🔍 [IssueActions] recordResolutionConfirmation called with:', {
+      resolution,
+      resolutionLength: resolution?.length,
+      resolutionTrimmed: resolution?.trim(),
+    });
+
     const newStatus = statuses.find((status) => {
       const statusData = status._raw || status;
       return statusData.final_status === true;
@@ -831,6 +866,12 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       showToast(t('error_no_final_status_found'));
       return;
     }
+
+    console.log('🔍 [IssueActions] About to call saveIssueStatus with:', {
+      newStatus: newStatus._raw || newStatus,
+      actionType: 'record_resolution',
+      resolution,
+    });
 
     await saveIssueStatus(newStatus, 'record_resolution');
   };
