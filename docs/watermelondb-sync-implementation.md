@@ -96,7 +96,6 @@ def get_changes_since(last_sync_time):
         'GRM Issue Citizen Group',
         'GRM Issue Department',
         'GRM Project',
-        'User'
     ]
     
     changes = {}
@@ -152,7 +151,6 @@ def doctype_to_table_name(doctype):
         'GRM Issue Citizen Group': 'grm_issue_citizen_groups',
         'GRM Issue Department': 'grm_issue_departments',
         'GRM Project': 'grm_projects',
-        'User': 'users'
     }
     return mapping.get(doctype, doctype.lower().replace(' ', '_'))
 ```
@@ -241,7 +239,6 @@ def table_name_to_doctype(table_name):
         'grm_issue_citizen_groups': 'GRM Issue Citizen Group',
         'grm_issue_departments': 'GRM Issue Department',
         'grm_projects': 'GRM Project',
-        'users': 'User'
     }
     return mapping.get(table_name)
 
@@ -380,6 +377,7 @@ def is_sync_operation(self):
 
 #### Field Alignment Strategy (ELIMINATE MAPPING COMPLEXITY)
 **CRITICAL**: Verify WatermelonDB fields match Frappe exactly, fix mismatches:
+**NOTE** ENsure you reset the migration to version 1, assumin g we are starting from scratch, all apps will reset. then the schema will be with corrected data.
 
 **Step 1 - Field Verification (CRITICAL MISMATCHES IDENTIFIED)**:
 
@@ -447,7 +445,7 @@ def verify_field_alignment():
 
 **CRITICAL DATABASE MIGRATION REQUIRED**
 All these fields must be updated in WatermelonDB schema with proper migration:
-
+**NOTE** Ensure you reset the migration to version 1, assumin g we are starting from scratch, all apps will reset. then the schema will be with corrected data.
 ```javascript
 // Required changes to src/database/schema.js - grm_issues table
 // BEFORE (CURRENT - WRONG):
@@ -492,8 +490,8 @@ All these fields must be updated in WatermelonDB schema with proper migration:
 ```
 
 **Database Migration Steps**:
-1. Update schema version from 4 to 5
-2. Create migration to rename all mismatched fields
+1. Make schema version 1
+2. Create the first migration to rename all mismatched fields
 3. Update all existing data to use new field names
 4. Update model classes to use new field names
 
@@ -585,70 +583,11 @@ def sync_watermelon_data(self, watermelon_record):
 **Documentation Requirements**:
 - **MANDATORY:** Inspect actual GRM Issue doctype fields in running Frappe instance
 - **MANDATORY:** Verify field types, constraints, and naming patterns in Frappe
-- **MANDATORY:** Test field mappings with actual Frappe data
 - **MANDATORY:** Validate that no fields are hallucinated or assumed
-
-### 3. Enhance Existing Permission System for Sync
-
-**Task**: Integrate sync with Frappe's existing permission system
-
-**CRITICAL FIXES:**
-- **WRONG:** Custom permission enhancement functions
-- **CORRECT:** Use Frappe's built-in `has_permission` and role-based access control
-- **WRONG:** Custom get_user_data modifications
-- **CORRECT:** Use Frappe's standard list filtering with permission checks
-
-**Requirements**:
-- Use Frappe's built-in role-based access control system
-- Implement sync filtering using Frappe's standard list permission patterns
-- Extend existing Frappe user permission system without custom modifications
-- Leverage Frappe's assignment and user role system for data filtering
-- Add sync audit logging using Frappe's standard activity log
-- Implement permission caching using Frappe's session management
-
-**Implementation Details**:
-
-#### Permission Integration (CORRECTED)
-```python
-def get_user_sync_data(user, last_pulled_at=None):
-    """Get user's accessible data using Frappe's permission system"""
-    
-    # Use Frappe's standard permission checking
-    accessible_data = {}
-    
-    for doctype in SYNC_DOCTYPES:
-        # Use Frappe's has_permission for each record
-        filters = {}
-        if last_pulled_at:
-            filters['modified'] = ['>', last_pulled_at]
-            
-        # Get records with permission filtering
-        records = frappe.get_list(
-            doctype, 
-            filters=filters,
-            ignore_permissions=False  # Use standard permission checking
-        )
-        
-        accessible_data[doctype] = records
-    
-    return accessible_data
-```
-
-**Documentation Requirements**:
-- **MANDATORY:** Review actual permission implementation in current Frappe app
-- **MANDATORY:** Test existing role assignments and user permissions
-- **MANDATORY:** Verify current user assignment patterns in the system
-- **MANDATORY:** Document actual permission field names from live system
 
 ### 4. Direct Data Sync (No Transformation Layer Needed)
 
 **Task**: Eliminate transformation complexity through field alignment
-
-**CRITICAL INSIGHT:**
-- **WRONG:** Complex data transformation functions between systems
-- **CORRECT:** Direct field-to-field mapping after schema alignment
-- **WRONG:** Custom validation and conversion logic
-- **CORRECT:** Use WatermelonDB and Frappe's native data handling
 
 **Requirements**:
 - Use WatermelonDB's standard raw record format directly
@@ -715,36 +654,6 @@ def watermelon_to_frappe_data(raw_record):
 - Frappe handles its own validation and business logic
 - No complex mapping dictionaries or field transformations needed
 
-### 5. Implement Soft Delete Tracking
-
-**Task**: Add deletion tracking using Frappe patterns
-
-**CRITICAL FIXES:**
-- **WRONG:** Using docstatus field for deletion tracking
-- **CORRECT:** Use Frappe's built-in document deletion and restoration patterns
-- **WRONG:** Custom deletion detection
-- **CORRECT:** Use Frappe's `deleted_documents` table and hooks
-
-**Requirements**:
-- Use Frappe's standard document lifecycle (Draft=0, Submitted=1, Cancelled=2)
-- Implement deletion tracking using Frappe's `on_trash` and `on_delete` hooks
-- Add deleted record detection using Frappe's built-in deleted document tracking
-- Ensure proper deletion synchronization using Frappe's change tracking
-
-**Implementation Details**:
-
-```python
-def get_deleted_records(doctype, since_timestamp):
-    """Get records deleted since timestamp"""
-    return frappe.get_list(
-        'Deleted Document',
-        filters={
-            'doctype': doctype,
-            'deleted_at': ['>', since_timestamp]
-        },
-        fields=['name', 'deleted_at']
-    )
-```
 
 ## Mobile App Modifications
 
@@ -874,8 +783,6 @@ export default WatermelonSyncManager;
 **Documentation Requirements**:
 - **MANDATORY:** Follow WatermelonDB sync frontend documentation exactly
 - **MANDATORY:** Use existing app authentication patterns from AuthProvider
-- **MANDATORY:** Test network request patterns with existing API endpoints
-- **MANDATORY:** Verify error handling matches app standards
 
 ### 7. Update WatermelonManager (`/Users/victor/Documents/dev/grm-mobile-app/src/database/watermelonManager.js`)
 
@@ -1166,7 +1073,6 @@ async function validateSyncCompatibility() {
 - **Build upon existing get_user_data endpoint by adding date filtering**
 - **Leverage existing permission system and user assignments**
 - **Utilize existing role-based access control already implemented**
-- **Extend existing validation and business logic**
 - **Reuse existing error handling patterns**
 
 ### Senior Programming Patterns
@@ -1193,63 +1099,6 @@ async function validateSyncCompatibility() {
 
 ### Field Verification Requirements
 - **Check actual Frappe doctype fields before mapping**
-- **Verify WatermelonDB schema columns exist before sync**
-- **Validate user permission fields in both systems**
-- **Test data type compatibility between systems**
-
-## Implementation Phases
-
-### Phase 1: Backend Sync Infrastructure
-- [ ] Rewrite sync.py with WatermelonDB protocol endpoints
-- [ ] Update get_user_data to accept date parameters
-- [ ] Enhance existing permission system for sync
-- [ ] Add data transformation layer using existing fields
-- [ ] Test sync endpoints with manual requests
-
-### Phase 2: Mobile Sync Infrastructure
-- [ ] Create WatermelonSyncManager following WatermelonDB protocol
-- [ ] Update database schema to use existing timestamp fields
-- [ ] Create SyncProvider for state management
-- [ ] Add offline operations queue
-- [ ] Test sync infrastructure with mock data
-
-### Phase 3: Integration and Data Flow
-- [ ] Update WatermelonManager for sync compatibility
-- [ ] Replace DataManager sync methods
-- [ ] Update SyncAttachments screen with new sync UI
-- [ ] Test end-to-end sync with real data
-- [ ] Validate existing permission filtering works with sync
-
-### Phase 4: Robustness and Error Handling
-- [ ] Add comprehensive error handling
-- [ ] Implement conflict resolution
-- [ ] Add sync diagnostics and monitoring
-- [ ] Implement offline operation queuing
-- [ ] Test failure scenarios and recovery
-
-### Phase 5: Performance and Production
-- [ ] Optimize sync performance
-- [ ] Add automatic sync scheduling
-- [ ] Implement sync monitoring and alerting
-- [ ] Add comprehensive testing
-- [ ] Deploy and monitor production sync
-
-## Success Criteria
-
-Each implementation must meet these criteria before proceeding:
-
-- [ ] **Data Synchronization**: Issues created offline sync to backend with existing user permissions
-- [ ] **Bidirectional Sync**: Lookup data syncs bidirectionally using existing access control
-- [ ] **Reliability**: Sync works reliably on regular intervals and manual triggers
-- [ ] **User Experience**: Sync status and progress are clearly visible to users
-- [ ] **Security**: Users can only sync data they have permission to access via existing roles
-- [ ] **ID Compatibility**: Backend correctly handles WatermelonDB-generated IDs
-- [ ] **Data Integrity**: No data loss occurs during sync operations using existing timestamps
-- [ ] **Conflict Resolution**: Sync conflicts are detected and resolved appropriately
-- [ ] **Performance**: Sync performance is acceptable for production use
-- [ ] **Offline Support**: Offline operations are queued and synced when online
-- [ ] **Error Handling**: Network failures are handled gracefully with recovery
-- [ ] **Audit Compliance**: All sync operations respect existing permission and audit systems
 
 ## Implementation Tasks Checklist
 
@@ -1259,8 +1108,6 @@ Each implementation must meet these criteria before proceeding:
 - [ ] **Task 1.3**: Add data transformation layer
 - [ ] **Task 1.4**: Update GRM Issue doctype for sync compatibility
 - [ ] **Task 1.5**: Enhance permission system for sync operations
-- [ ] **Task 1.6**: Add soft delete tracking using existing docstatus
-- [ ] **Task 1.7**: Test all backend endpoints with manual requests
 
 ### Mobile App Tasks
 - [ ] **Task 2.1**: Create WatermelonSyncManager class
@@ -1270,15 +1117,10 @@ Each implementation must meet these criteria before proceeding:
 - [ ] **Task 2.5**: Create SyncProvider for state management
 - [ ] **Task 2.6**: Update SyncAttachments screen with new UI
 - [ ] **Task 2.7**: Add offline operations queue
-- [ ] **Task 2.8**: Test end-to-end sync functionality
 
-### Integration Tasks
+### Integration Tasks (Manual by User)
 - [ ] **Task 3.1**: Test sync with different user permission levels
 - [ ] **Task 3.2**: Validate data integrity across sync operations
 - [ ] **Task 3.3**: Test offline-to-online sync scenarios
-- [ ] **Task 3.4**: Implement and test conflict resolution
-- [ ] **Task 3.5**: Add comprehensive error handling
-- [ ] **Task 3.6**: Performance testing and optimization
-- [ ] **Task 3.7**: Production deployment and monitoring
 
 All implementations must strictly follow the official WatermelonDB sync documentation and protocol specifications while leveraging existing Frappe infrastructure.
