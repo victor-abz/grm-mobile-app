@@ -20,23 +20,28 @@ const theme = {
 function Content({ selectedProject = null }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const [value, setValue] = React.useState('facilitator');
+  const [contact_medium, setContactMedium] = React.useState('facilitator');
   const [dropdownDisabled, setDropdownDisabled] = React.useState(true);
   const [contactMethodError, setContactMethodError] = React.useState();
-  const [contactInfo, setContactInfo] = React.useState('');
-  const [pickerValue, setPickerValue] = useState('email');
+  const [contact_information, setContactInformation] = React.useState('');
+  const [contact_info_type, setContactInfoType] = useState('email');
   const [items, setItems] = useState([
     { label: t('step_1_method_1'), value: 'phone_number' },
     { label: t('step_1_method_2'), value: 'whatsapp' },
     { label: t('step_1_method_3'), value: 'email' },
   ]);
+
   useEffect(() => {
-    if (value === 'channel-alert') {
+    if (contact_medium === 'channel-alert') {
       setDropdownDisabled(false);
     } else {
       setDropdownDisabled(true);
+      // Reset contact info type and information if not channel-alert
+      setContactInfoType('');
+      setContactInformation('');
     }
-  }, [value, pickerValue]);
+  }, [contact_medium]);
+
   return (
     <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : null}>
@@ -44,7 +49,7 @@ function Content({ selectedProject = null }) {
           <Text style={styles.stepText}>{t('step_1')}</Text>
           <Text style={styles.stepDescription}>{t('stay_touch_question')}</Text>
           <Text style={styles.stepNote}>{t('step_1_hint_1')}</Text>
-          <RadioButton.Group onValueChange={(newValue) => setValue(newValue)} value={value}>
+          <RadioButton.Group onValueChange={setContactMedium} value={contact_medium}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <RadioButton.Android
                 value="anonymous"
@@ -76,9 +81,9 @@ function Content({ selectedProject = null }) {
             <CustomDropDownPicker
               disabled={dropdownDisabled}
               placeholder={t('step_1_placeholder_1')}
-              value={pickerValue}
+              value={contact_info_type}
               items={items}
-              setPickerValue={setPickerValue}
+              setPickerValue={setContactInfoType}
               setItems={setItems}
             />
             <View style={{ paddingHorizontal: 50 }}>
@@ -89,10 +94,10 @@ function Content({ selectedProject = null }) {
                 theme={theme}
                 error={contactMethodError}
                 mode="outlined"
-                value={contactInfo}
+                value={contact_information}
                 onChangeText={(text) => {
                   setContactMethodError();
-                  setContactInfo(text);
+                  setContactInformation(text);
                 }}
               />
             </View>
@@ -106,12 +111,12 @@ function Content({ selectedProject = null }) {
             mode="contained"
             onPress={() => {
               if (!dropdownDisabled) {
-                if (contactInfo) {
+                if (contact_information) {
                   navigation.navigate('CitizenReportContactInfo', {
                     stepOneParams: {
-                      typeOfPerson: value,
-                      methodOfContact: pickerValue,
-                      contactInfo,
+                      contact_medium,
+                      contact_info_type,
+                      contact_information,
                       selectedProject,
                     },
                   });
@@ -121,9 +126,9 @@ function Content({ selectedProject = null }) {
               } else {
                 navigation.navigate('CitizenReportContactInfo', {
                   stepOneParams: {
-                    typeOfPerson: value,
-                    methodOfContact: pickerValue,
-                    contactInfo,
+                    contact_medium,
+                    contact_info_type: '',
+                    contact_information: '',
                     selectedProject,
                   },
                 });

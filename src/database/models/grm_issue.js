@@ -9,12 +9,10 @@ export default class GrmIssue extends Model {
   @field('issue_location') issueLocation;
   @field('citizen_type') citizenType;
   @field('citizen') citizen;
-  @field('citizen_confidential') citizenConfidential;
   @field('gender') gender;
   @field('contact_medium') contactMedium;
   @field('contact_info_type') contactInfoType;
   @field('contact_information') contactInformation;
-  @field('contact_info_confidential') contactInfoConfidential;
   @field('resolution_days') resolutionDays;
   @date('resolution_date') resolutionDate;
   @field('resolution_accepted') resolutionAccepted;

@@ -408,8 +408,8 @@ def verify_field_alignment():
     frappe_fields = [
         'project', 'issue_date', 'intake_date', 'category', 'issue_type', 'status',
         'tracking_code', 'description', 'issue_location', 'citizen_type', 'citizen',
-        'citizen_confidential', 'gender', 'contact_medium', 'contact_info_type',
-        'contact_information', 'contact_info_confidential', 'citizen_age_group',
+        'gender', 'contact_medium', 'contact_info_type',
+        'contact_information', 'citizen_age_group',
         'citizen_group_1', 'citizen_group_2', 'reporter', 'assignee', 
         'administrative_region', 'resolution_days', 'resolution_date',
         'resolution_accepted', 'rating', 'escalate_flag', 'confirmed',

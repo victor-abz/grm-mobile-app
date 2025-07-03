@@ -266,17 +266,17 @@ function Content({
         administrative_region: stepLocationParams.administrative_region,
 
         // Contact information
-        contact_medium: stepOneParams.medium,
-        contact_info_type: stepOneParams.contactType,
-        contact_information: stepOneParams.contactInfo,
+        contact_medium: stepOneParams.methodOfContact || stepOneParams.contact_medium,
+        contact_info_type: stepOneParams.contactType || stepOneParams.contact_info_type,
+        contact_information: stepOneParams.contactInfo || stepOneParams.contact_information,
 
-        // Citizen information
-        citizen: stepOneParams.name,
-        citizen_type: stepOneParams.citizenType,
+        // Citizen information - using correct field names from model
+        citizen: stepOneParams.citizen,
+        citizen_type: stepOneParams.citizen_type,
         gender: stepOneParams.gender,
-        citizen_age_group: stepOneParams.selectedAge?.id || null,
-        citizen_group_1: stepOneParams.selectedCitizenGroupI?.id || null,
-        citizen_group_2: stepOneParams.selectedCitizenGroupII?.id || null,
+        citizen_age_group: stepOneParams.citizen_age_group,
+        citizen_group_1: stepOneParams.citizen_group_1,
+        citizen_group_2: stepOneParams.citizen_group_2,
 
         // Generate tracking code
         tracking_code: `${randomWord(SAMPLE_WORDS)}${Math.floor(Math.random() * 1000)}`,
@@ -289,7 +289,7 @@ function Content({
         reporter: userContext?.user?.id,
 
         // Set project if available
-        project: stepLocationParams.projectId || '',
+        project: stepLocationParams.projectId || stepOneParams.selectedProject?.id || '',
 
         ...(assignmentResult.shouldAssign &&
           assignmentResult.assigneeId && {

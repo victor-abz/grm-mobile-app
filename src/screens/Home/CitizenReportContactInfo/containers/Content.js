@@ -30,7 +30,7 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
 
   // Form state
   const [name, setName] = useState('');
-  const [confidentialValue, setConfidentialValue] = useState(null);
+  const [confidentialValue, setConfidentialValue] = useState('Visible');
   const [isPreviousPickerClosed, setIsPreviousPickerClosed] = useState(true);
   const [pickerAgeValue, setPickerAgeValue] = useState(null);
   const [selectedAge, setSelectedAge] = useState(null);
@@ -65,26 +65,29 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
   }, [citizenGroups, projectId, projectLinks]);
 
   // Event handlers
-  const handleConfidentialValueChange = useCallback((newValue) => {
-    setConfidentialValue((prevValue) => (newValue === prevValue ? null : newValue));
-  }, []);
+  const handleConfidentialValueChange = useCallback(
+    (newValue) => {
+      setConfidentialValue(newValue === confidentialValue ? 'Visible' : newValue);
+    },
+    [confidentialValue]
+  );
 
   const handleNameChange = useCallback((text) => {
     setName(text);
   }, []);
 
   const handleNavigateToStep2 = useCallback(() => {
-    // Use shared utility to create navigation data with proper field extraction
-    const navigationData = createNavigationData(stepOneParams, {
-      name,
-      selectedAge,
-      citizen_type: confidentialValue,
-      selectedCitizenGroupI,
-      selectedCitizenGroupII,
+    const navigationData = {
+      ...stepOneParams,
+      citizen: name,
+      citizen_age_group: selectedAge?.id || selectedAge?.value,
+      citizen_type: confidentialValue || 'Visible',
+      citizen_group_1: selectedCitizenGroupI,
+      citizen_group_2: selectedCitizenGroupII,
       gender: pickerGenderValue,
-    });
+      selectedProject: stepOneParams?.selectedProject,
+    };
 
-    // Navigate with processed data that includes Frappe identifiers
     navigation.navigate('CitizenReportStep2', {
       stepOneParams: navigationData,
     });
@@ -107,11 +110,12 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
           uncheckedColor="#dedede"
           color={colors.primary}
           onPress={() => handleConfidentialValueChange(value)}
+          status={confidentialValue === value ? 'checked' : 'unchecked'}
         />
         <Text style={styles.radioLabel}>{label}</Text>
       </View>
     ),
-    [handleConfidentialValueChange]
+    [handleConfidentialValueChange, confidentialValue]
   );
 
   // Show loading state while data is being loaded

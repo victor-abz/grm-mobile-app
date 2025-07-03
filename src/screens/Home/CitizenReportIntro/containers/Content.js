@@ -36,7 +36,16 @@ function Content({ projects = [] }) {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   const selectedProject = useMemo(() => {
-    return projects.find((p) => p.id === selectedProjectId) || null;
+    const project = projects.find((p) => p.id === selectedProjectId);
+    if (project) {
+      return {
+        id: project.id,
+        title: project.title || project.projectCode,
+        projectCode: project.projectCode,
+        description: project.description,
+      };
+    }
+    return null;
   }, [projects, selectedProjectId]);
 
   return (
@@ -81,7 +90,13 @@ function Content({ projects = [] }) {
             disabled={!selectedProject}
             onPress={() => {
               if (selectedProject) {
-                navigation.navigate('CitizenReport', { selectedProject });
+                navigation.navigate('CitizenReport', {
+                  selectedProject: {
+                    id: selectedProject.id,
+                    title: selectedProject.title,
+                    projectCode: selectedProject.projectCode,
+                  },
+                });
               }
             }}
           >

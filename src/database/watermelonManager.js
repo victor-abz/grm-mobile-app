@@ -165,8 +165,6 @@ class WatermelonManager {
           if (issueData.citizen !== undefined) issue.citizen = issueData.citizen || '';
           if (issueData.citizen_type !== undefined)
             issue.citizenType = issueData.citizen_type || '';
-          if (issueData.citizen_confidential !== undefined)
-            issue.citizenConfidential = issueData.citizen_confidential;
           if (issueData.gender !== undefined) issue.gender = issueData.gender;
           if (issueData.contact_medium !== undefined)
             issue.contactMedium = issueData.contact_medium || '';
@@ -174,8 +172,6 @@ class WatermelonManager {
             issue.contactInfoType = issueData.contact_info_type;
           if (issueData.contact_information !== undefined)
             issue.contactInformation = issueData.contact_information;
-          if (issueData.contact_info_confidential !== undefined)
-            issue.contactInfoConfidential = issueData.contact_info_confidential;
           if (issueData.resolution_days !== undefined)
             issue.resolutionDays = issueData.resolution_days;
           if (issueData.resolution_accepted !== undefined)
@@ -251,8 +247,6 @@ class WatermelonManager {
           if (updateData.tracking_code !== undefined) issue.trackingCode = updateData.tracking_code;
           if (updateData.citizen !== undefined) issue.citizen = updateData.citizen;
           if (updateData.citizen_type !== undefined) issue.citizenType = updateData.citizen_type;
-          if (updateData.citizen_confidential !== undefined)
-            issue.citizenConfidential = updateData.citizen_confidential;
           if (updateData.gender !== undefined) issue.gender = updateData.gender;
           if (updateData.contact_medium !== undefined)
             issue.contactMedium = updateData.contact_medium;
@@ -260,8 +254,6 @@ class WatermelonManager {
             issue.contactInfoType = updateData.contact_info_type;
           if (updateData.contact_information !== undefined)
             issue.contactInformation = updateData.contact_information;
-          if (updateData.contact_info_confidential !== undefined)
-            issue.contactInfoConfidential = updateData.contact_info_confidential;
           if (updateData.resolution_days !== undefined)
             issue.resolutionDays = updateData.resolution_days;
           if (updateData.resolution_accepted !== undefined)
