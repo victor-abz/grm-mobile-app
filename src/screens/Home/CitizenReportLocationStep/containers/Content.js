@@ -538,17 +538,20 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       return;
     }
 
-    // ✅ FIXED: Extract primitive values to avoid circular reference using processed region data
+    // ✅ FIXED: Properly structure location params with administrative_region
     const locationParams = {
-      issueLocation: {
-        id: selectedRegion.id,
+      // Set administrative_region as the primary field
+      administrative_region: selectedRegion.id,
+      // Keep location description
+      locationDescription,
+      // Keep project reference
+      projectId,
+      // Store region metadata for display
+      regionMetadata: {
         regionName: selectedRegion.regionName,
-        // Extract primitive value from processed region data
         administrativeLevel:
           selectedRegion.administrativeLevel || selectedRegion.administrativeLevelId,
       },
-      locationDescription,
-      projectId,
     };
 
     // Include geolocation if available (prefer map selection over GPS)
@@ -563,7 +566,12 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       };
     }
 
-    console.log('➡️ Proceeding to step 3 with location params:', locationParams);
+    console.log('➡️ [LOCATION] Proceeding to step 3 with location params:', {
+      administrative_region: locationParams.administrative_region,
+      regionName: locationParams.regionMetadata.regionName,
+      projectId: locationParams.projectId,
+      hasCoordinates: !!locationParams.coordinates,
+    });
 
     navigation.navigate('CitizenReportStep3', {
       stepOneParams,

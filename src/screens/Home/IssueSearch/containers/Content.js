@@ -80,17 +80,7 @@ function Content({
     console.log('  - Types:', lookupMaps.typeMap.size);
     console.log('  - Statuses:', lookupMaps.statusMap.size);
     console.log('  - Users:', lookupMaps.userMap.size);
-
-    // Debug: Show lookup map contents
-    if (lookupMaps.categoryMap.size > 0) {
-      console.log('  - Category map contents:', Array.from(lookupMaps.categoryMap.entries()));
-    }
-    if (lookupMaps.statusMap.size > 0) {
-      console.log('  - Status map contents:', Array.from(lookupMaps.statusMap.entries()));
-    }
-    if (lookupMaps.typeMap.size > 0) {
-      console.log('  - Type map contents:', Array.from(lookupMaps.typeMap.entries()));
-    }
+    console.log('  - Regions:', lookupMaps.regionMap.size);
 
     const enrichedData = issues.map((issue, index) => {
       // Handle both WatermelonDB model objects and raw data
@@ -104,6 +94,7 @@ function Content({
           issue_type: issueData.issue_type,
           assignee: issueData.assignee,
           reporter: issueData.reporter,
+          administrative_region: issueData.administrative_region,
         });
       }
 
@@ -162,6 +153,8 @@ function Content({
           categoryLabel: enriched.categoryLabel,
           statusLabel: enriched.statusLabel,
           typeLabel: enriched.typeLabel,
+          regionLabel: enriched.regionLabel,
+          administrative_region: enriched.administrative_region,
         });
       }
 
@@ -297,6 +290,7 @@ function Content({
     const citizen = item.citizen || item.citizen_name;
     const intakeDate = item.intake_date || item.creation;
     const statusLabel = item.statusLabel;
+    const regionLabel = item.regionLabel;
 
     return (
       <TouchableOpacity onPress={onPress} style={[styles.item]}>
@@ -327,6 +321,7 @@ function Content({
               >
                 {statusLabel}
               </Text>
+              {regionLabel !== 'Unknown' && ` • ${regionLabel}`}
             </Text>
           </View>
           <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />

@@ -79,15 +79,14 @@ function Content({
       }
 
       // Get selected region ID
-      const selectedRegionId =
-        stepLocationParams.issueLocation?.id || stepLocationParams.issueLocation?.administrative_id;
+      const selectedRegionId = stepLocationParams.administrative_region;
 
       if (!selectedRegionId) {
-        console.log('🔍 [ASSIGNMENT] No region selected');
+        console.log('🔍 [ASSIGNMENT] No administrative region selected');
         return {
           shouldAssign: false,
           assigneeId: null,
-          reason: 'No region selected',
+          reason: 'No administrative region selected',
         };
       }
 
@@ -95,11 +94,14 @@ function Content({
       const hasRegionAccess = dataManager.hasRegionAccess(selectedRegionId);
 
       if (!hasRegionAccess) {
-        console.log('🔍 [ASSIGNMENT] User does not have access to region:', selectedRegionId);
+        console.log(
+          '🔍 [ASSIGNMENT] User does not have access to administrative region:',
+          selectedRegionId
+        );
         return {
           shouldAssign: false,
           assigneeId: null,
-          reason: `User does not have access to region: ${selectedRegionId}`,
+          reason: `User does not have access to administrative region: ${selectedRegionId}`,
         };
       }
 
@@ -107,11 +109,14 @@ function Content({
       const regionAssignment = dataManager.getUserAssignmentForRegion(selectedRegionId);
 
       if (!regionAssignment) {
-        console.log('🔍 [ASSIGNMENT] No user assignment found for region:', selectedRegionId);
+        console.log(
+          '🔍 [ASSIGNMENT] No user assignment found for administrative region:',
+          selectedRegionId
+        );
         return {
           shouldAssign: false,
           assigneeId: null,
-          reason: `No user assignment found for region: ${selectedRegionId}`,
+          reason: `No user assignment found for administrative region: ${selectedRegionId}`,
         };
       }
 
@@ -249,17 +254,16 @@ function Content({
       // Prepare issue data for creation
       const issueData = {
         // Basic issue information
-        issue_type_id: stepTwoParams.issueType?.id,
-        category_id: stepTwoParams.category?.id,
+        issue_type: stepTwoParams.issueType?.id,
+        category: stepTwoParams.category?.id,
         description: stepTwoParams.additionalDetails,
 
         // Date information - ensure proper format
         issue_date: stepTwoParams.date ? new Date(stepTwoParams.date).getTime() : Date.now(),
         intake_date: Date.now(),
 
-        // Location information
-        issue_location: stepLocationParams.issueLocation,
-        administrative_region_id: stepLocationParams.regionId,
+        // ✅ FIXED: Set administrative_region properly from location params
+        administrative_region: stepLocationParams.administrative_region,
 
         // Contact information
         contact_medium: stepOneParams.medium,
@@ -270,9 +274,9 @@ function Content({
         citizen: stepOneParams.name,
         citizen_type: stepOneParams.citizenType,
         gender: stepOneParams.gender,
-        citizen_age_group_id: stepOneParams.selectedAge?.id || null,
-        citizen_group_1_id: stepOneParams.selectedCitizenGroupI?.id || null,
-        citizen_group_2_id: stepOneParams.selectedCitizenGroupII?.id || null,
+        citizen_age_group: stepOneParams.selectedAge?.id || null,
+        citizen_group_1: stepOneParams.selectedCitizenGroupI?.id || null,
+        citizen_group_2: stepOneParams.selectedCitizenGroupII?.id || null,
 
         // Generate tracking code
         tracking_code: `${randomWord(SAMPLE_WORDS)}${Math.floor(Math.random() * 1000)}`,
@@ -280,20 +284,24 @@ function Content({
         // Set confirmed flag
         confirmed: true,
 
-        status_id: initialStatusId,
+        status: initialStatusId,
 
-        reporter_id: userContext?.user?.id,
+        reporter: userContext?.user?.id,
 
         // Set project if available
-        project_id: stepLocationParams.projectId || '',
+        project: stepLocationParams.projectId || '',
 
         ...(assignmentResult.shouldAssign &&
           assignmentResult.assigneeId && {
-            assignee_id: assignmentResult.assigneeId,
+            assignee: assignmentResult.assigneeId,
           }),
       };
 
-      console.log('🔍 [STEP3] Prepared issue data for DataManager:', issueData);
+      console.log('🔍 [STEP3] Prepared issue data for DataManager:', {
+        ...issueData,
+        administrative_region: issueData.administrative_region, // Explicitly log this field
+        regionMetadata: stepLocationParams.regionMetadata, // Log metadata for verification
+      });
       console.log('🔍 [STEP3] Assignment info:', {
         willAssign: assignmentResult.shouldAssign,
         assigneeId: assignmentResult.assigneeId,

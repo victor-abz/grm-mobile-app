@@ -61,12 +61,16 @@ function Content({ issue, comments: commentsFromDB, users }) {
       ...rawData,
       id: rawData.id,
       name: rawData.name || rawData.id,
+      administrative_region: rawData.administrative_region,
+      regionName: rawData.regionName || rawData.region_name,
     };
 
     console.log('✅ [IssueHistory] Enriched issue:', {
       id: enriched.id,
       commentsFromDB: commentsFromDB?.length || 0,
       usersInMap: userMap.size,
+      administrative_region: enriched.administrative_region,
+      regionName: enriched.regionName,
     });
 
     return enriched;
