@@ -108,7 +108,7 @@ export const withAllLookupData = (Component, projectId = null) => {
     citizenGroups: LookupDataManager.observeCitizenGroups(),
     departments: LookupDataManager.observeDepartments(),
     projects: LookupDataManager.observeProjects(),
-    regions: LookupDataManager.observeRegions({ project_id: projectId }),
+    regions: LookupDataManager.observeRegions({ project: projectId }),
   }));
 
   return enhance(Component);

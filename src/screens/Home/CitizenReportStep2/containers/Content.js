@@ -70,7 +70,7 @@ const styles_audio = StyleSheet.create({
   },
 });
 
-function Content({ stepOneParams, categories = [], types = [] }) {
+function Content({ stepOneParams, categories = [], types = [], projectLinks = [] }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
 
@@ -106,15 +106,17 @@ function Content({ stepOneParams, categories = [], types = [] }) {
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
-  // Process categories using shared utility (replaces inline filtering)
-  const processedCategories = useMemo(() => {
-    return processCategories(categories);
-  }, [categories]);
+  const projectId = stepOneParams?.selectedProject?.id || null;
 
-  // Process types using shared utility (replaces inline processing)
+  // Process categories using shared utility with project filtering
+  const processedCategories = useMemo(() => {
+    return processCategories(categories, projectId, projectLinks);
+  }, [categories, projectId, projectLinks]);
+
+  // Process types using shared utility with project filtering
   const processedTypes = useMemo(() => {
-    return processTypes(types);
-  }, [types]);
+    return processTypes(types, projectId, projectLinks);
+  }, [types, projectId, projectLinks]);
 
   // Placeholder for sub-types (not implemented in current Frappe structure)
   const itemsSubTypes = useMemo(() => {
@@ -1048,6 +1050,7 @@ function Content({ stepOneParams, categories = [], types = [] }) {
 const enhance = withObservables([], () => ({
   categories: watermelonManager.getDatabase().get('grm_issue_categories').query().observe(),
   types: watermelonManager.getDatabase().get('grm_issue_types').query().observe(),
+  projectLinks: watermelonManager.getDatabase().get('grm_project_links').query().observe(),
 }));
 
 export default enhance(Content);

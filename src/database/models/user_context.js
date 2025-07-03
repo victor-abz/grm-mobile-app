@@ -7,13 +7,13 @@ export default class UserContext extends Model {
     users: { type: 'belongs_to', key: 'user_id' },
   };
 
-  @relation('users', 'user_id') user;
+  @field('user_id') userId;
   @field('context_data') contextData;
-  @field('accessible_projects') accessibleProjects;
-  @field('accessible_regions') accessibleRegions;
-  @field('assignments') assignments;
-  @field('permissions') permissions;
-  @date('last_updated') lastUpdated;
+
+  // Add Frappe sync timestamp fields
+  @date('creation') creation;
+  @date('modified') modified;
+
   @date('created_at') createdAt;
   @date('updated_at') updatedAt;
 
@@ -29,7 +29,8 @@ export default class UserContext extends Model {
 
   getAccessibleProjects() {
     try {
-      return this.accessibleProjects ? JSON.parse(this.accessibleProjects) : [];
+      const data = this.getContextData();
+      return data.accessible_projects || [];
     } catch (error) {
       console.error('Error parsing accessible projects:', error);
       return [];
@@ -38,7 +39,8 @@ export default class UserContext extends Model {
 
   getAccessibleRegions() {
     try {
-      return this.accessibleRegions ? JSON.parse(this.accessibleRegions) : [];
+      const data = this.getContextData();
+      return data.accessible_regions || [];
     } catch (error) {
       console.error('Error parsing accessible regions:', error);
       return [];
@@ -47,7 +49,8 @@ export default class UserContext extends Model {
 
   getAssignments() {
     try {
-      return this.assignments ? JSON.parse(this.assignments) : [];
+      const data = this.getContextData();
+      return data.assignments || [];
     } catch (error) {
       console.error('Error parsing assignments:', error);
       return [];
@@ -56,7 +59,8 @@ export default class UserContext extends Model {
 
   getPermissions() {
     try {
-      return this.permissions ? JSON.parse(this.permissions) : {};
+      const data = this.getContextData();
+      return data.permissions || {};
     } catch (error) {
       console.error('Error parsing permissions:', error);
       return {};

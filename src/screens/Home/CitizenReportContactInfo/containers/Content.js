@@ -24,7 +24,7 @@ const theme = {
   },
 };
 
-function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
+function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLinks = [] }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
 
@@ -47,20 +47,22 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
     [t]
   );
 
+  const projectId = stepOneParams?.selectedProject?.id || null;
+
   // Process age groups using shared utility (replaces inline processing)
   const processedAgeGroups = useMemo(() => {
-    return processAgeGroups(ageGroups);
-  }, [ageGroups]);
+    return processAgeGroups(ageGroups, projectId, projectLinks);
+  }, [ageGroups, projectId, projectLinks]);
 
   // Process citizen groups for type 1 using shared utility (replaces inline processing)
   const citizenGroupsI = useMemo(() => {
-    return processCitizenGroupsByType(citizenGroups, 1);
-  }, [citizenGroups]);
+    return processCitizenGroupsByType(citizenGroups, 1, projectId, projectLinks);
+  }, [citizenGroups, projectId, projectLinks]);
 
   // Process citizen groups for type 2 using shared utility (replaces inline processing)
   const citizenGroupsII = useMemo(() => {
-    return processCitizenGroupsByType(citizenGroups, 2);
-  }, [citizenGroups]);
+    return processCitizenGroupsByType(citizenGroups, 2, projectId, projectLinks);
+  }, [citizenGroups, projectId, projectLinks]);
 
   // Event handlers
   const handleConfidentialValueChange = useCallback((newValue) => {
@@ -268,6 +270,7 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [] }) {
 const enhance = withObservables([], () => ({
   ageGroups: watermelonManager.getDatabase().get('grm_issue_age_groups').query().observe(),
   citizenGroups: watermelonManager.getDatabase().get('grm_issue_citizen_groups').query().observe(),
+  projectLinks: watermelonManager.getDatabase().get('grm_project_links').query().observe(),
 }));
 
 export default enhance(Content);

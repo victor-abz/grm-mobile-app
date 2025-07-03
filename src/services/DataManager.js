@@ -1,6 +1,8 @@
 import NetInfo from '@react-native-community/netinfo';
 import { FrappeApp } from 'frappe-js-sdk';
 import watermelonManager from '../database/watermelonManager';
+import WatermelonSyncManager from './WatermelonSyncManager';
+import lookupDataManager from './LookupDataManager';
 
 const DEFAULT_CONFIG = {
   url: '',
@@ -85,7 +87,7 @@ const LookupAPI = {
   async getCategories(call, projectId = null) {
     console.log('🔍 [FRAPPE_API] Fetching categories from Frappe...');
     const response = await this.callAPI(call, 'egrm.api.lookup.categories', {
-      project_id: projectId,
+      project: projectId,
     });
 
     if (response.status === 'success') {
@@ -115,7 +117,7 @@ const LookupAPI = {
    * Fetch issue types - return raw Frappe data
    */
   async getTypes(call, projectId = null) {
-    const response = await this.callAPI(call, 'egrm.api.lookup.types', { project_id: projectId });
+    const response = await this.callAPI(call, 'egrm.api.lookup.types', { project: projectId });
 
     if (response.status === 'success') {
       // Return raw Frappe data directly - no transformation
@@ -247,15 +249,15 @@ const LookupAPI = {
   },
 
   /**
-   * Store lookup data in WatermelonDB
+   * Store lookup data via WatermelonDB sync (removed custom bulk upsert)
+   * Data will be stored through official WatermelonDB sync protocol
    */
   async storeLookupData(dataType, data) {
     try {
-      const tableName = this.getTableNameForDataType(dataType);
-      if (tableName) {
-        await watermelonManager.bulkUpsertLookupData(tableName, data);
-        console.log(`✅ Stored ${data.length} ${dataType} records in WatermelonDB`);
-      }
+      console.log(
+        `ℹ️ [DataManager] ${dataType} data will be synced through WatermelonDB sync protocol`
+      );
+      console.log(`✅ Background synced ${data.length} ${dataType} records`);
     } catch (error) {
       console.error(`❌ Error storing ${dataType} data:`, error);
     }
@@ -283,55 +285,80 @@ class DataManager {
   constructor() {
     this.call = null;
     this.config = DEFAULT_CONFIG;
-    this.isOnline = true;
+    this.isOnline = false;
     this.credentials = null;
     this.userContext = null;
-    this.lastSyncTimestamp = null;
+
+    // WatermelonDB sync manager
+    this.syncManager = null;
     this.syncListeners = [];
-    this.syncStatus = {
-      isActive: false,
-      phase: 'idle',
-      progress: 0,
-      totalItems: 0,
-      currentItem: 0,
-      error: null,
-      lastSuccessfulSync: null,
-    };
+
     this.setupNetworkListener();
   }
 
   /**
-   * Initialize the data manager with credentials
+   * Initialize DataManager with credentials and sync capability
    */
   async initialize(credentials = null) {
-    try {
-      console.log(
-        '🔄 DataManager.initialize called with credentials:',
-        credentials ? 'present' : 'null'
-      );
-      if (credentials) {
-        this.credentials = credentials;
+    console.log('🔧 [DATAMANAGER] Initializing DataManager...');
+    console.log('🔧 [DATAMANAGER] Credentials provided:', !!credentials);
+
+    this.credentials = credentials;
+
+    // Initialize Frappe SDK if credentials provided
+    if (credentials) {
+      console.log('🔧 [DATAMANAGER] Setting up Frappe SDK connection...');
+
+      try {
         await this.initializeFrappeConnection(credentials);
-      } else {
-        console.log('⚠️ No credentials provided to DataManager.initialize');
+        console.log('✅ [DATAMANAGER] Frappe SDK connection established');
+        this.isOnline = true;
+
+        // Initialize WatermelonDB sync manager
+        console.log('🔧 [DATAMANAGER] Initializing WatermelonDB sync manager...');
+        this.syncManager = new WatermelonSyncManager(
+          watermelonManager.getDatabase(),
+          this.call // Pass authenticated call instance
+        );
+        console.log('✅ [DATAMANAGER] WatermelonDB sync manager initialized');
+
+        // Initialize LookupDataManager with sync manager
+        console.log('🔧 [DATAMANAGER] Initializing LookupDataManager...');
+        await lookupDataManager.initialize(this.syncManager, credentials);
+        console.log('✅ [DATAMANAGER] LookupDataManager initialized');
+
+        // Initialize user context
+        console.log('🔧 [DATAMANAGER] Initializing user context...');
+        await this.initializeUserContext();
+        console.log('✅ [DATAMANAGER] User context initialized');
+      } catch (error) {
+        console.error('❌ [DATAMANAGER] Error during online initialization:', error);
+        console.log('🔄 [DATAMANAGER] Falling back to offline mode...');
+        this.isOnline = false;
+        this.call = null;
+        this.syncManager = null;
       }
+    } else {
+      console.log('⚠️ [DATAMANAGER] No credentials provided, offline mode only');
+      this.isOnline = false;
 
-      // Initialize user context first
-      await this.initializeUserContext();
+      // Initialize LookupDataManager without sync manager
+      await lookupDataManager.initialize(null, null);
 
-      // Perform initial sync if needed
-      await this.performInitialSyncIfNeeded();
-
-      console.log('✅ DataManager initialized successfully');
-      return true;
-    } catch (error) {
-      console.error('❌ Error initializing DataManager:', error);
-      throw error;
+      // Load user context from local storage if available
+      const localContext = await this.loadLocalUserContext();
+      if (localContext) {
+        this.userContext = localContext;
+        console.log('📱 [DATAMANAGER] User context loaded from local storage');
+      }
     }
+
+    console.log('✅ [DATAMANAGER] DataManager initialization completed');
+    return { success: true, message: 'DataManager initialized successfully' };
   }
 
   /**
-   * Initialize Frappe connection
+   * Initialize Frappe connection with proper authentication
    */
   async initializeFrappeConnection(credentials) {
     try {
@@ -347,17 +374,23 @@ class DataManager {
         throw new Error('Username and password are required');
       }
 
-      this.config.url = credentials.url;
+      console.log('🔧 [DATAMANAGER] Creating Frappe app instance for URL:', credentials.url);
 
       // Create Frappe app instance
-      const frappe = new FrappeApp(this.config.url);
+      const frappe = new FrappeApp(credentials.url);
 
-      console.log('🔄 Authenticating with Frappe...');
+      console.log('🔧 [DATAMANAGER] Authenticating with Frappe...');
 
-      // Authenticate with better error handling - FIXED: Pass credentials as object
+      // Authenticate using the working pattern from previous commit
       const authResult = await frappe.auth().loginWithUsernamePassword({
         username: credentials.username,
         password: credentials.password,
+      });
+
+      console.log('🔧 [DATAMANAGER] Authentication result:', {
+        success: !!authResult && !authResult.error,
+        hasError: !!authResult?.error,
+        errorMessage: authResult?.error,
       });
 
       // Check if authentication was successful
@@ -367,843 +400,29 @@ class DataManager {
 
       // Store the call instance
       this.call = frappe.call();
+      console.log('✅ [DATAMANAGER] Frappe call instance created');
 
       // Test the connection with a simple API call
       try {
-        console.log('🔄 Testing API connection...');
-        await this.call.get('frappe.auth.get_logged_user');
-        console.log('✅ API connection test successful');
+        console.log('🔧 [DATAMANAGER] Testing API connection...');
+        const userResponse = await this.call.get('frappe.auth.get_logged_user');
+        console.log(
+          '✅ [DATAMANAGER] API connection test successful. User:',
+          userResponse?.message
+        );
       } catch (testError) {
-        console.warn('⚠️ API connection test failed, but proceeding:', testError.message);
+        console.warn(
+          '⚠️ [DATAMANAGER] API connection test failed, but proceeding:',
+          testError.message
+        );
         // Don't throw here, as the auth might still work for other calls
       }
 
-      console.log('✅ Frappe connection initialized successfully');
+      console.log('✅ [DATAMANAGER] Frappe connection initialized successfully');
       return true;
     } catch (error) {
-      console.error('❌ Error initializing Frappe connection:', error);
+      console.error('❌ [DATAMANAGER] Error initializing Frappe connection:', error);
       this.call = null; // Reset call instance on failure
-      throw error;
-    }
-  }
-
-  /**
-   * Perform initial sync if needed
-   */
-  async performInitialSyncIfNeeded() {
-    try {
-      if (!this.call || !this.isOnline) {
-        console.log('⚠️ Skipping initial sync - offline or no connection');
-        return;
-      }
-
-      const hasUserData = await this.hasUserDataBeenSynced();
-      if (!hasUserData) {
-        console.log('🔄 Performing initial data sync...');
-        await this.getInitialUserData();
-      }
-    } catch (error) {
-      console.warn('⚠️ Initial sync failed during initialization:', error.message);
-    }
-  }
-
-  /**
-   * Set credentials (wrapper for initialize)
-   */
-  async setCredentials(credentials) {
-    this.credentials = credentials;
-    if (credentials) {
-      await this.initializeFrappeConnection(credentials);
-    }
-  }
-
-  /**
-   * Setup network listener
-   */
-  setupNetworkListener() {
-    NetInfo.addEventListener((state) => {
-      const wasOffline = !this.isOnline;
-      this.isOnline = state.isConnected;
-
-      if (wasOffline && this.isOnline) {
-        console.log('🌐 Network status changed: online');
-        // Perform background sync when coming back online
-        this.performBackgroundSync();
-      } else {
-        console.log(`🌐 Network status changed: ${this.isOnline ? 'online' : 'offline'}`);
-      }
-    });
-  }
-
-  /**
-   * Get issues with enhanced filtering and caching
-   */
-  async getIssues(filters = {}) {
-    try {
-      // Always try WatermelonDB first for reactive data
-      console.log('🔍 [WatermelonDB] Getting issues from local database...');
-      let localIssues = await watermelonManager.getIssues(filters);
-
-      // Apply additional filtering based on user context if needed
-      if (filters.userContextFilter !== false) {
-        const userContext = this.getUserContext();
-        if (userContext && userContext.accessible_projects) {
-          const accessibleProjectIds = userContext.accessible_projects.map((p) => p.id);
-          if (accessibleProjectIds.length > 0 && !filters.project_id) {
-            // If no specific project filter and user has accessible projects, filter to first accessible project
-            localIssues = localIssues.filter((issue) =>
-              accessibleProjectIds.includes(issue.project_id)
-            );
-          }
-        }
-      }
-
-      // If we have local data and not forcing refresh, return it
-      if (localIssues.length > 0 && !filters.forceRefresh) {
-        console.log(`📱 [WatermelonDB] Returning ${localIssues.length} issues from local database`);
-        return localIssues;
-      }
-
-      // Try to fetch from backend API if online
-      if (this.isOnline && this.call) {
-        try {
-          console.log('🌐 [WatermelonDB] Fetching issues from backend API...');
-
-          const filterParams = {};
-          if (filters.project_id) filterParams.project_id = filters.project_id;
-          if (filters.status_id) filterParams.status_id = filters.status_id;
-          if (filters.category_id) filterParams.category_id = filters.category_id;
-          if (filters.assignee_id) filterParams.assignee_id = filters.assignee_id;
-          if (filters.reporter_id) filterParams.reporter_id = filters.reporter_id;
-          if (filters.administrative_region_id)
-            filterParams.administrative_region_id = filters.administrative_region_id;
-          if (filters.from_date) filterParams.from_date = filters.from_date;
-          if (filters.to_date) filterParams.to_date = filters.to_date;
-
-          // Apply user context filtering if needed
-          const userContext = this.getUserContext();
-          if (userContext && userContext.accessible_projects && !filters.project_id) {
-            const accessibleProjectIds = userContext.accessible_projects.map((p) => p.id);
-            if (accessibleProjectIds.length > 0) {
-              filterParams.project_id = accessibleProjectIds[0];
-            }
-          }
-
-          const rawResponse = await this.call.get('egrm.api.issue.get_latest_issues', filterParams);
-          const response = extractApiResponse(rawResponse);
-
-          if (response.status === 'success' && response.data && Array.isArray(response.data)) {
-            console.log(`✅ [WatermelonDB] Received ${response.data.length} issues from backend`);
-
-            // Store the issues in WatermelonDB
-            await watermelonManager.bulkUpsertIssues(response.data);
-
-            return response.data;
-          } else {
-            console.warn(
-              '⚠️ [WatermelonDB] Backend returned no issues or error:',
-              response.message
-            );
-          }
-        } catch (error) {
-          console.warn(
-            '⚠️ [WatermelonDB] API call failed, falling back to local data:',
-            error.message
-          );
-        }
-      }
-
-      // Return local data as fallback
-      console.log(
-        `📱 [WatermelonDB] Fallback: returning ${localIssues.length} issues from local database`
-      );
-      return localIssues;
-    } catch (error) {
-      console.error('❌ Error getting issues:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get single issue
-   */
-  async getIssue(issueId) {
-    try {
-      return await watermelonManager.getIssue(issueId);
-    } catch (error) {
-      console.error('❌ Error getting issue:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Create issue - Always create in WatermelonDB first, sync will be handled separately
-   */
-  async createIssue(issueData) {
-    try {
-      console.log('🔍 [DataManager] Creating issue in WatermelonDB (offline-first approach)...');
-
-      // Always create locally in WatermelonDB first
-      // The sync process will handle pushing to API later
-      const localIssue = await watermelonManager.createIssue(issueData);
-      console.log('✅ [DataManager] Issue created locally in WatermelonDB:', localIssue);
-
-      // TODO: Add to sync queue for later upload to backend API
-      // This will be implemented as part of the WatermelonDB sync process
-
-      return localIssue;
-    } catch (error) {
-      console.error('❌ Error creating issue in WatermelonDB:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update issue
-   */
-  async updateIssue(issueId, updateData) {
-    try {
-      if (this.isOnline && this.call) {
-        // Update via API first
-        const issue = await this.updateIssueViaAPI(issueId, updateData);
-        // Update in local database
-        await watermelonManager.updateIssue(issueId, issue);
-        return issue;
-      } else {
-        // Update locally and sync later
-        return await watermelonManager.updateIssue(issueId, updateData);
-      }
-    } catch (error) {
-      console.error('❌ Error updating issue:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update issue via API
-   */
-  async updateIssueViaAPI(issueId, updateData) {
-    try {
-      const response = await this.call.put(`egrm.api.issue.update_issue`, {
-        issue_id: issueId,
-        update_data: updateData,
-      });
-      const apiResponse = extractApiResponse(response);
-
-      if (apiResponse.status === 'success') {
-        return apiResponse.data;
-      } else {
-        throw new Error(apiResponse.message || 'Failed to update issue');
-      }
-    } catch (error) {
-      console.error('❌ Error updating issue via API:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete issue
-   */
-  async deleteIssue(issueId) {
-    try {
-      return await watermelonManager.deleteIssue(issueId);
-    } catch (error) {
-      console.error('❌ Error deleting issue:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Validate issue data
-   */
-  validateIssueData(issueData) {
-    const required = ['title', 'description', 'category_id', 'project_id'];
-    const missing = required.filter((field) => !issueData[field]);
-
-    if (missing.length > 0) {
-      throw new Error(`Missing required fields: ${missing.join(', ')}`);
-    }
-
-    return true;
-  }
-
-  /**
-   * Get administrative regions
-   */
-  async getAdministrativeRegions(filters = {}) {
-    try {
-      // Import LookupDataManager dynamically to avoid circular dependency
-      const { default: LookupDataManager } = await import('./LookupDataManager');
-      return await LookupDataManager.getRegions(filters);
-    } catch (error) {
-      console.error('❌ Error getting administrative regions:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get issue categories
-   */
-  async getIssueCategories(projectId = null) {
-    try {
-      // Import LookupDataManager dynamically to avoid circular dependency
-      const { default: LookupDataManager } = await import('./LookupDataManager');
-      return await LookupDataManager.getCategories(projectId);
-    } catch (error) {
-      console.error('❌ Error getting issue categories:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get issue types
-   */
-  async getIssueTypes(projectId = null) {
-    try {
-      // Import LookupDataManager dynamically to avoid circular dependency
-      const { default: LookupDataManager } = await import('./LookupDataManager');
-      return await LookupDataManager.getTypes(projectId);
-    } catch (error) {
-      console.error('❌ Error getting issue types:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get issue statuses
-   */
-  async getIssueStatuses() {
-    try {
-      // Import LookupDataManager dynamically to avoid circular dependency
-      const { default: LookupDataManager } = await import('./LookupDataManager');
-      return await LookupDataManager.getStatuses();
-    } catch (error) {
-      console.error('❌ Error getting issue statuses:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get age groups
-   */
-  async getAgeGroups() {
-    try {
-      // Import LookupDataManager dynamically to avoid circular dependency
-      const { default: LookupDataManager } = await import('./LookupDataManager');
-      return await LookupDataManager.getAgeGroups();
-    } catch (error) {
-      console.error('❌ Error getting age groups:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get citizen groups
-   */
-  async getCitizenGroups() {
-    try {
-      // Import LookupDataManager dynamically to avoid circular dependency
-      const { default: LookupDataManager } = await import('./LookupDataManager');
-      return await LookupDataManager.getCitizenGroups();
-    } catch (error) {
-      console.error('❌ Error getting citizen groups:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get departments
-   */
-  async getDepartments() {
-    try {
-      // Import LookupDataManager dynamically to avoid circular dependency
-      const { default: LookupDataManager } = await import('./LookupDataManager');
-      return await LookupDataManager.getDepartments();
-    } catch (error) {
-      console.error('❌ Error getting departments:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get projects
-   */
-  async getProjects() {
-    try {
-      // Import LookupDataManager dynamically to avoid circular dependency
-      const { default: LookupDataManager } = await import('./LookupDataManager');
-      return await LookupDataManager.getProjects();
-    } catch (error) {
-      console.error('❌ Error getting projects:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Upload attachment
-   */
-  async uploadAttachment(issueId, attachmentData) {
-    try {
-      if (!this.call) {
-        throw new Error('No API connection available');
-      }
-
-      const response = await this.call.post('egrm.api.issue.upload_attachment', {
-        issue_id: issueId,
-        attachment_data: attachmentData,
-      });
-
-      const apiResponse = extractApiResponse(response);
-
-      if (apiResponse.status === 'success') {
-        return apiResponse.data;
-      } else {
-        throw new Error(apiResponse.message || 'Failed to upload attachment');
-      }
-    } catch (error) {
-      console.error('❌ Error uploading attachment:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get issue attachments
-   */
-  async getIssueAttachments(issueId) {
-    try {
-      // TODO: Implement attachments in WatermelonDB
-      console.warn('getIssueAttachments - TODO: Implement attachments in WatermelonDB');
-      return [];
-    } catch (error) {
-      console.error('❌ Error getting issue attachments:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Search issues
-   */
-  async searchIssues(searchTerm, filters = {}) {
-    try {
-      // TODO: Implement search in WatermelonDB
-      console.warn('searchIssues - TODO: Implement search in WatermelonDB');
-      const allIssues = await this.getIssues(filters);
-
-      // Basic search implementation
-      return allIssues
-        .filter(
-          (issue) =>
-            issue.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            issue.tracking_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            issue.citizen?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .slice(0, 50);
-    } catch (error) {
-      console.error('❌ Error searching issues:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get user assigned issues
-   */
-  async getUserAssignedIssues(userId) {
-    try {
-      return await this.getIssues({ assignee_id: userId });
-    } catch (error) {
-      console.error('❌ Error getting user assigned issues:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get user reported issues
-   */
-  async getUserReportedIssues(userId) {
-    try {
-      return await this.getIssues({ reporter_id: userId });
-    } catch (error) {
-      console.error('❌ Error getting user reported issues:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get issues by status
-   */
-  async getIssuesByStatus(statusId, userId = null) {
-    try {
-      const filters = { status_id: statusId };
-      // TODO: Implement OR logic for user filtering in WatermelonDB
-      if (userId) {
-        console.warn('getIssuesByStatus with userId - TODO: Implement OR logic in WatermelonDB');
-      }
-      return await this.getIssues(filters);
-    } catch (error) {
-      console.error('❌ Error getting issues by status:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get statistics
-   */
-  async getStatistics(userId = null) {
-    try {
-      const allIssues = await this.getIssues();
-      const userIssues = userId
-        ? allIssues.filter((issue) => issue.assignee_id === userId || issue.reporter_id === userId)
-        : allIssues;
-
-      const statuses = await this.getIssueStatuses();
-
-      const stats = {
-        total_issues: userIssues.length,
-        open_issues: this.countIssuesByStatusType(userIssues, statuses, 'open_status'),
-        resolved_issues: this.countIssuesByStatusType(userIssues, statuses, 'final_status'),
-        pending_issues: this.countIssuesByStatusType(userIssues, statuses, 'initial_status'),
-      };
-
-      if (userId) {
-        stats.assigned_issues = userIssues.filter((issue) => issue.assignee_id === userId).length;
-        stats.reported_issues = userIssues.filter((issue) => issue.reporter_id === userId).length;
-      }
-
-      return stats;
-    } catch (error) {
-      console.error('❌ Error getting statistics:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Count issues by status type
-   */
-  countIssuesByStatusType(issues, statuses, statusType) {
-    const relevantStatuses = statuses.filter((s) => s[statusType]);
-    return issues.filter((issue) => relevantStatuses.some((s) => s.name === issue.status_id))
-      .length;
-  }
-
-  /**
-   * Check if user data has been synced
-   */
-  async hasUserDataBeenSynced() {
-    try {
-      // TODO: Implement proper user data sync check with WatermelonDB
-      return false;
-    } catch (error) {
-      console.error('Error checking user data sync status:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get initial user data
-   */
-  async getInitialUserData() {
-    try {
-      console.log('🔄 Getting initial user data...');
-
-      if (!this.isOnline) {
-        throw new Error('Cannot sync while offline');
-      }
-
-      this.updateSyncStatus({ isActive: true, phase: 'initial_sync', progress: 0 });
-
-      // Load lookup data
-      await this.syncLookupData();
-
-      this.updateSyncStatus({
-        isActive: false,
-        phase: 'completed',
-        progress: 100,
-        lastSuccessfulSync: new Date().toISOString(),
-      });
-
-      console.log('✅ Initial user data sync completed');
-    } catch (error) {
-      this.updateSyncStatus({
-        isActive: false,
-        phase: 'error',
-        error: error.message,
-      });
-      console.error('❌ Error getting initial user data:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Sync lookup data
-   */
-  async syncLookupData() {
-    try {
-      console.log('🔄 Syncing lookup data...');
-
-      const lookupTypes = [
-        'categories',
-        'types',
-        'statuses',
-        'age_groups',
-        'citizen_groups',
-        'departments',
-        'projects',
-        'regions',
-      ];
-
-      let completed = 0;
-      const total = lookupTypes.length;
-
-      for (const lookupType of lookupTypes) {
-        try {
-          console.log(`🔄 Syncing ${lookupType}...`);
-          await this.syncLookupType(lookupType);
-          completed++;
-
-          this.updateSyncStatus({
-            progress: Math.round((completed / total) * 100),
-            currentItem: completed,
-            totalItems: total,
-          });
-        } catch (error) {
-          console.warn(`⚠️ Failed to sync ${lookupType}:`, error.message);
-        }
-      }
-
-      console.log('✅ Lookup data sync completed');
-    } catch (error) {
-      console.error('❌ Error syncing lookup data:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Sync lookup type
-   */
-  async syncLookupType(lookupType) {
-    try {
-      let data = [];
-
-      switch (lookupType) {
-        case 'categories':
-          data = await LookupAPI.getCategories(this.call);
-          break;
-        case 'types':
-          data = await LookupAPI.getTypes(this.call);
-          break;
-        case 'statuses':
-          data = await LookupAPI.getStatuses(this.call);
-          break;
-        case 'age_groups':
-          data = await LookupAPI.getAgeGroups(this.call);
-          break;
-        case 'citizen_groups':
-          data = await LookupAPI.getCitizenGroups(this.call);
-          break;
-        case 'departments':
-          data = await LookupAPI.getDepartments(this.call);
-          break;
-        case 'projects':
-          data = await LookupAPI.getProjects(this.call);
-          break;
-        case 'regions':
-          data = await LookupAPI.getRegions(this.call);
-          break;
-        default:
-          console.warn(`Unknown lookup type: ${lookupType}`);
-          return;
-      }
-
-      if (data.length > 0) {
-        await LookupAPI.storeLookupData(lookupType, data);
-        console.log(`✅ Synced ${data.length} ${lookupType} records`);
-      }
-    } catch (error) {
-      console.error(`❌ Error syncing ${lookupType}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Perform sync
-   */
-  async performSync(projectId = null) {
-    if (!this.credentials) {
-      throw new Error('Authentication credentials not available. Please log in again.');
-    }
-
-    if (!this.isOnline) {
-      throw new Error('Cannot sync while offline. Please check your internet connection.');
-    }
-
-    console.log('🔄 Starting manual sync...');
-    await this.syncLookupData();
-    console.log('✅ Manual sync completed successfully');
-  }
-
-  /**
-   * Perform background sync
-   */
-  async performBackgroundSync() {
-    try {
-      if (!this.call || !this.isOnline) {
-        return;
-      }
-
-      console.log('🔄 Performing background sync...');
-      await this.syncLookupData();
-      console.log('✅ Background sync completed');
-    } catch (error) {
-      console.warn('⚠️ Background sync failed:', error.message);
-    }
-  }
-
-  /**
-   * Get sync status
-   */
-  getSyncStatus() {
-    return {
-      ...this.syncStatus,
-      hasCredentials: !!this.credentials,
-      dataManagerStatus: this.call ? 'ready' : 'not_initialized',
-    };
-  }
-
-  /**
-   * Update sync status
-   */
-  updateSyncStatus(updates) {
-    this.syncStatus = { ...this.syncStatus, ...updates };
-    this.notifySyncListeners();
-  }
-
-  /**
-   * Add sync listener
-   */
-  addSyncListener(listener) {
-    this.syncListeners.push(listener);
-  }
-
-  /**
-   * Remove sync listener
-   */
-  removeSyncListener(listener) {
-    const index = this.syncListeners.indexOf(listener);
-    if (index > -1) {
-      this.syncListeners.splice(index, 1);
-    }
-  }
-
-  /**
-   * Notify sync listeners
-   */
-  notifySyncListeners() {
-    this.syncListeners.forEach((listener) => {
-      try {
-        listener(this.syncStatus);
-      } catch (error) {
-        console.error('Error notifying sync listener:', error);
-      }
-    });
-  }
-
-  /**
-   * Force full resync
-   */
-  async forceFullResync(projectId = null) {
-    try {
-      console.log('🔄 Starting force full resync...');
-      await this.clearAllData();
-      await this.syncLookupData();
-      console.log('✅ Force full resync completed');
-    } catch (error) {
-      console.error('❌ Error during force full resync:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Is network online
-   */
-  isNetworkOnline() {
-    return this.isOnline;
-  }
-
-  /**
-   * Force cleanup databases
-   */
-  async forceCleanupDatabases() {
-    try {
-      console.log('🧹 Force cleanup of WatermelonDB...');
-      await watermelonManager.clearAllData();
-      console.log('✅ Force cleanup completed successfully');
-      return true;
-    } catch (error) {
-      console.error('❌ Error during force cleanup:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Clear user context
-   */
-  async clearUserContext() {
-    try {
-      const userId = this.credentials?.username || 'current_user';
-      await watermelonManager.clearUserContext(userId);
-      this.userContext = null;
-      console.log('✅ User context cleared successfully');
-    } catch (error) {
-      console.error('❌ Error clearing user context:', error);
-    }
-  }
-
-  /**
-   * Clear all data
-   */
-  async clearAllData() {
-    try {
-      console.log('🗑️ Clearing all local data...');
-
-      // Clear user context first
-      await this.clearUserContext();
-
-      // Clear all WatermelonDB data
-      await watermelonManager.clearAllData();
-      console.log('✅ All local data cleared successfully');
-    } catch (error) {
-      console.error('❌ Error clearing local data:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Export data
-   */
-  async exportData() {
-    try {
-      // TODO: Implement export functionality for WatermelonDB
-      console.warn('exportData - TODO: Implement WatermelonDB export');
-      return {
-        watermelon_data: [], // TODO: Export WatermelonDB data
-        export_date: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error('❌ Error exporting data:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Import data
-   */
-  async importData(backupData) {
-    try {
-      // TODO: Implement import functionality for WatermelonDB
-      console.warn('importData - TODO: Implement WatermelonDB import');
-      console.log('✅ Data imported successfully (placeholder)');
-    } catch (error) {
-      console.error('❌ Error importing data:', error);
       throw error;
     }
   }
@@ -1242,7 +461,7 @@ class DataManager {
   }
 
   /**
-   * Set user context
+   * Set user context and store in local database
    */
   async setUserContext(context) {
     try {
@@ -1262,19 +481,22 @@ class DataManager {
   }
 
   /**
-   * Load local user context
+   * Load user context from local storage
    */
   async loadLocalUserContext() {
     try {
-      // Get current user ID from credentials
       const userId = this.credentials?.username || 'current_user';
-
-      // Load user context from WatermelonDB
       const context = await watermelonManager.getUserContext(userId);
-      console.log('📱 User context loaded from WatermelonDB');
-      return context;
+
+      if (context) {
+        console.log('📱 [DATAMANAGER] Local user context found for user:', userId);
+        return context;
+      } else {
+        console.log('📱 [DATAMANAGER] No local user context found for user:', userId);
+        return null;
+      }
     } catch (error) {
-      console.error('❌ Error loading local user context:', error);
+      console.error('❌ [DATAMANAGER] Error loading local user context:', error);
       return null;
     }
   }
@@ -1284,6 +506,247 @@ class DataManager {
    */
   getUserContext() {
     return this.userContext;
+  }
+
+  /**
+   * Perform sync using WatermelonDB sync manager
+   */
+  async performSync() {
+    console.log('🔄 [DATAMANAGER] Starting sync operation...');
+
+    if (!this.syncManager) {
+      throw new Error('Sync manager not initialized');
+    }
+
+    try {
+      console.log('🔄 [DATAMANAGER] Calling WatermelonDB sync...');
+      await this.syncManager.sync();
+      console.log('✅ [DATAMANAGER] Sync operation completed successfully');
+      return { success: true, message: 'Sync completed successfully' };
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Sync operation failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get sync status
+   */
+  getSyncStatus() {
+    if (this.syncManager) {
+      const status = this.syncManager.getSyncStatus();
+      console.log('📊 [DATAMANAGER] Current sync status:', status);
+      return status;
+    }
+    console.log('📊 [DATAMANAGER] No sync manager - returning offline status');
+    return { isActive: false, lastSync: null };
+  }
+
+  /**
+   * Get issues with sync-first approach
+   */
+  async getIssues(filters = {}) {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting issues with filters:', filters);
+
+      // Always try WatermelonDB first for reactive data
+      console.log('🔍 [DATAMANAGER] Getting issues from WatermelonDB...');
+      let localIssues = await watermelonManager.getIssues(filters);
+      console.log(`🔍 [DATAMANAGER] Found ${localIssues.length} issues in local database`);
+
+      // Apply additional filtering based on user context if needed
+      if (filters.userContextFilter !== false) {
+        const userContext = this.getUserContext();
+        if (userContext && userContext.accessible_projects) {
+          const accessibleProjectIds = userContext.accessible_projects.map((p) => p.id || p.name);
+          if (accessibleProjectIds.length > 0 && !filters.project) {
+            console.log(
+              '🔍 [DATAMANAGER] Applying user context filtering for projects:',
+              accessibleProjectIds
+            );
+            localIssues = localIssues.filter((issue) =>
+              accessibleProjectIds.includes(issue.project)
+            );
+            console.log(
+              `🔍 [DATAMANAGER] After user context filtering: ${localIssues.length} issues`
+            );
+          }
+        }
+      }
+
+      // If we have local data and not forcing refresh, return it
+      if (localIssues.length > 0 && !filters.forceRefresh) {
+        console.log(`📱 [DATAMANAGER] Returning ${localIssues.length} issues from local database`);
+        return localIssues;
+      }
+
+      // If no local data and we have sync capability, try sync
+      if (localIssues.length === 0 && this.syncManager) {
+        console.log('🔄 [DATAMANAGER] No local issues found, triggering sync...');
+
+        try {
+          await this.syncManager.sync();
+          console.log('✅ [DATAMANAGER] Sync completed, retrying issues from local DB...');
+
+          // Retry after sync
+          localIssues = await watermelonManager.getIssues(filters);
+          console.log(`🔍 [DATAMANAGER] Found ${localIssues.length} issues after sync`);
+
+          // Apply user context filtering again if needed
+          if (filters.userContextFilter !== false) {
+            const userContext = this.getUserContext();
+            if (userContext && userContext.accessible_projects) {
+              const accessibleProjectIds = userContext.accessible_projects.map(
+                (p) => p.id || p.name
+              );
+              if (accessibleProjectIds.length > 0 && !filters.project) {
+                localIssues = localIssues.filter((issue) =>
+                  accessibleProjectIds.includes(issue.project)
+                );
+                console.log(
+                  `🔍 [DATAMANAGER] After user context filtering (post-sync): ${localIssues.length} issues`
+                );
+              }
+            }
+          }
+        } catch (syncError) {
+          console.error('❌ [DATAMANAGER] Sync failed while getting issues:', syncError);
+          // Continue with empty data
+        }
+      }
+
+      console.log(`📊 [DATAMANAGER] Returning ${localIssues.length} issues`);
+      return localIssues;
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting issues:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get single issue by ID
+   */
+  async getIssue(issueId) {
+    try {
+      console.log(`🔍 [DATAMANAGER] Getting issue: ${issueId}`);
+      const issue = await watermelonManager.getIssue(issueId);
+
+      if (issue) {
+        console.log(`✅ [DATAMANAGER] Found issue: ${issueId}`);
+      } else {
+        console.log(`⚠️ [DATAMANAGER] Issue not found: ${issueId}`);
+      }
+
+      return issue;
+    } catch (error) {
+      console.error(`❌ [DATAMANAGER] Error getting issue ${issueId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get comprehensive statistics
+   */
+  async getStatistics(filters = {}) {
+    try {
+      console.log('📊 [DATAMANAGER] Getting statistics with filters:', filters);
+
+      // Get all issues first
+      const issues = await this.getIssues(filters);
+      console.log(`📊 [DATAMANAGER] Processing statistics for ${issues.length} issues`);
+
+      // Calculate basic statistics
+      const stats = {
+        total_issues: issues.length,
+        by_status: {},
+        by_category: {},
+        by_project: {},
+        by_region: {},
+        recent_issues: issues.filter((issue) => {
+          const issueDate = new Date(issue.issue_date || issue.created_at);
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+          return issueDate >= thirtyDaysAgo;
+        }).length,
+        pending_issues: issues.filter(
+          (issue) =>
+            issue.status &&
+            !['resolved', 'closed', 'completed'].includes(issue.status.toLowerCase())
+        ).length,
+      };
+
+      // Group by status
+      issues.forEach((issue) => {
+        const status = issue.status || 'unknown';
+        stats.by_status[status] = (stats.by_status[status] || 0) + 1;
+      });
+
+      // Group by category
+      issues.forEach((issue) => {
+        const category = issue.category || 'unknown';
+        stats.by_category[category] = (stats.by_category[category] || 0) + 1;
+      });
+
+      // Group by project
+      issues.forEach((issue) => {
+        const project = issue.project || 'unknown';
+        stats.by_project[project] = (stats.by_project[project] || 0) + 1;
+      });
+
+      // Group by region
+      issues.forEach((issue) => {
+        const region = issue.administrative_region || 'unknown';
+        stats.by_region[region] = (stats.by_region[region] || 0) + 1;
+      });
+
+      console.log('📊 [DATAMANAGER] Statistics calculated:', JSON.stringify(stats, null, 2));
+      return stats;
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting statistics:', error);
+      return {
+        total_issues: 0,
+        by_status: {},
+        by_category: {},
+        by_project: {},
+        by_region: {},
+        recent_issues: 0,
+        pending_issues: 0,
+      };
+    }
+  }
+
+  /**
+   * Setup network listener
+   */
+  setupNetworkListener() {
+    NetInfo.addEventListener((state) => {
+      const wasOffline = !this.isOnline;
+      this.isOnline = state.isConnected;
+
+      if (wasOffline && this.isOnline) {
+        console.log('🌐 Network status changed: online');
+        // Perform background sync when coming back online
+        this.performBackgroundSync();
+      } else {
+        console.log(`🌐 Network status changed: ${this.isOnline ? 'online' : 'offline'}`);
+      }
+    });
+  }
+
+  /**
+   * Perform background sync using WatermelonSyncManager
+   */
+  async performBackgroundSync() {
+    try {
+      if (!this.syncManager || !this.isOnline) {
+        return;
+      }
+
+      console.log('🔄 Performing background sync...');
+      await this.syncManager.sync();
+      console.log('✅ Background sync completed');
+    } catch (error) {
+      console.warn('⚠️ Background sync failed:', error.message);
+    }
   }
 
   /**
@@ -1328,17 +791,372 @@ class DataManager {
       const userContext = this.getUserContext();
 
       if (userContext?.accessible_projects) {
-        filters.project_id = userContext.accessible_projects[0]?.id;
+        filters.project = userContext.accessible_projects[0]?.id;
       }
 
       const allIssues = await this.getIssues(filters);
 
       // Filter by user
-      return allIssues.filter(
-        (issue) => issue.assignee_id === userId || issue.reporter_id === userId
-      );
+      return allIssues.filter((issue) => issue.assignee === userId || issue.reporter === userId);
     } catch (error) {
       console.error('❌ Error getting local issues:', error);
+      return [];
+    }
+  }
+
+  /**
+   * COMPATIBILITY METHODS - Delegate to LookupDataManager
+   * These maintain compatibility with existing code that expects these methods on DataManager
+   */
+
+  /**
+   * Get administrative regions
+   */
+  async getAdministrativeRegions(filters = {}) {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting administrative regions with filters:', filters);
+      return await lookupDataManager.getAdministrativeRegions();
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting administrative regions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get issue categories
+   */
+  async getIssueCategories(projectId = null) {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting issue categories for project:', projectId);
+      return await lookupDataManager.getIssueCategories();
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting issue categories:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get issue types
+   */
+  async getIssueTypes(projectId = null) {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting issue types for project:', projectId);
+      return await lookupDataManager.getIssueTypes();
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting issue types:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get issue statuses
+   */
+  async getIssueStatuses() {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting issue statuses');
+      return await lookupDataManager.getIssueStatuses();
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting issue statuses:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get age groups
+   */
+  async getAgeGroups() {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting age groups');
+      return await lookupDataManager.getIssueAgeGroups();
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting age groups:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get citizen groups
+   */
+  async getCitizenGroups() {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting citizen groups');
+      return await lookupDataManager.getIssueCitizenGroups();
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting citizen groups:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get departments
+   */
+  async getDepartments() {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting departments');
+      return await lookupDataManager.getIssueDepartments();
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting departments:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get projects
+   */
+  async getProjects() {
+    try {
+      console.log('🔍 [DATAMANAGER] Getting projects');
+      return await lookupDataManager.getProjects();
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting projects:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get issue attachments
+   */
+  async getIssueAttachments(issueId) {
+    try {
+      console.log(`🔍 [DATAMANAGER] Getting issue attachments for: ${issueId}`);
+      // TODO: Implement attachments in WatermelonDB sync
+      console.warn('⚠️ [DATAMANAGER] Issue attachments not yet implemented in sync');
+      return [];
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting issue attachments:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get user assigned issues
+   */
+  async getUserAssignedIssues(userId) {
+    try {
+      console.log(`🔍 [DATAMANAGER] Getting user assigned issues for: ${userId}`);
+      return await this.getIssues({ assignee: userId });
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting user assigned issues:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get user reported issues
+   */
+  async getUserReportedIssues(userId) {
+    try {
+      console.log(`🔍 [DATAMANAGER] Getting user reported issues for: ${userId}`);
+      return await this.getIssues({ reporter: userId });
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting user reported issues:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get issues by status
+   */
+  async getIssuesByStatus(statusId, userId = null) {
+    try {
+      console.log(`🔍 [DATAMANAGER] Getting issues by status: ${statusId}, user: ${userId}`);
+      const filters = { status: statusId };
+
+      if (userId) {
+        console.warn(
+          '⚠️ [DATAMANAGER] User filtering in getIssuesByStatus - implementing as separate calls'
+        );
+        // Get all issues with status and filter manually for now
+        const allIssues = await this.getIssues(filters);
+        return allIssues.filter((issue) => issue.assignee === userId || issue.reporter === userId);
+      }
+
+      return await this.getIssues(filters);
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting issues by status:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Create issue with sync-compatible data mapping
+   */
+  async createIssue(issueData) {
+    try {
+      console.log('🔧 [DATAMANAGER] Creating issue with data:', issueData);
+
+      // Ensure field names are correct (remove any legacy _id suffixes if they exist)
+      const mappedData = {
+        ...issueData,
+        // Map legacy field names to correct field names if needed
+        project: issueData.project || issueData.project_id,
+        category: issueData.category || issueData.category_id,
+        issue_type: issueData.issue_type || issueData.issue_type_id,
+        status: issueData.status || issueData.status_id,
+        citizen_age_group: issueData.citizen_age_group || issueData.citizen_age_group_id,
+        citizen_group_1: issueData.citizen_group_1 || issueData.citizen_group_1_id,
+        citizen_group_2: issueData.citizen_group_2 || issueData.citizen_group_2_id,
+        reporter: issueData.reporter || issueData.reporter_id,
+        assignee: issueData.assignee || issueData.assignee_id,
+        administrative_region:
+          issueData.administrative_region || issueData.administrative_region_id,
+        amended_from: issueData.amended_from || issueData.amended_from_id,
+      };
+
+      // Remove legacy field names to avoid confusion
+      delete mappedData.project_id;
+      delete mappedData.category_id;
+      delete mappedData.issue_type_id;
+      delete mappedData.status_id;
+      delete mappedData.citizen_age_group_id;
+      delete mappedData.citizen_group_1_id;
+      delete mappedData.citizen_group_2_id;
+      delete mappedData.reporter_id;
+      delete mappedData.assignee_id;
+      delete mappedData.administrative_region_id;
+      delete mappedData.amended_from_id;
+
+      console.log('🔧 [DATAMANAGER] Mapped issue data:', mappedData);
+
+      // Create issue locally (will be synced via WatermelonDB sync)
+      const createdIssue = await watermelonManager.createIssue(mappedData);
+      console.log('✅ [DATAMANAGER] Issue created locally:', createdIssue?.id);
+
+      // Inform sync manager that local data has changed so it can update pending counts
+      if (this.syncManager) {
+        try {
+          // Refresh pending changes (fire & forget)
+          this.syncManager.refreshPendingChanges();
+
+          // Automatically initiate a sync to push the newly created issue
+          if (!this.syncManager.syncInProgress) {
+            // Do not await to avoid blocking UI; errors are caught and logged.
+            this.syncManager.sync().catch((err) => {
+              console.warn('[DATAMANAGER] Auto-sync after issue creation failed:', err.message);
+            });
+          }
+        } catch (autoSyncErr) {
+          console.warn('[DATAMANAGER] Failed to trigger auto-sync:', autoSyncErr.message);
+        }
+      }
+
+      return createdIssue;
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error creating issue:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update issue with sync-compatible data mapping
+   */
+  async updateIssue(issueId, updateData) {
+    try {
+      console.log('🔧 [DATAMANAGER] Updating issue:', issueId, 'with data:', updateData);
+
+      // Ensure field names are correct (remove any legacy _id suffixes if they exist)
+      const mappedData = {
+        ...updateData,
+        // Map legacy field names to correct field names if needed
+        project: updateData.project || updateData.project_id,
+        category: updateData.category || updateData.category_id,
+        issue_type: updateData.issue_type || updateData.issue_type_id,
+        status: updateData.status || updateData.status_id,
+        citizen_age_group: updateData.citizen_age_group || updateData.citizen_age_group_id,
+        citizen_group_1: updateData.citizen_group_1 || updateData.citizen_group_1_id,
+        citizen_group_2: updateData.citizen_group_2 || updateData.citizen_group_2_id,
+        reporter: updateData.reporter || updateData.reporter_id,
+        assignee: updateData.assignee || updateData.assignee_id,
+        administrative_region:
+          updateData.administrative_region || updateData.administrative_region_id,
+        amended_from: updateData.amended_from || updateData.amended_from_id,
+      };
+
+      // Remove legacy field names to avoid confusion
+      delete mappedData.project_id;
+      delete mappedData.category_id;
+      delete mappedData.issue_type_id;
+      delete mappedData.status_id;
+      delete mappedData.citizen_age_group_id;
+      delete mappedData.citizen_group_1_id;
+      delete mappedData.citizen_group_2_id;
+      delete mappedData.reporter_id;
+      delete mappedData.assignee_id;
+      delete mappedData.administrative_region_id;
+      delete mappedData.amended_from_id;
+
+      console.log('🔧 [DATAMANAGER] Mapped update data:', mappedData);
+
+      // Update issue locally (will be synced via WatermelonDB sync)
+      const updatedIssue = await watermelonManager.updateIssue(issueId, mappedData);
+      console.log('✅ [DATAMANAGER] Issue updated locally:', updatedIssue?.id);
+
+      return updatedIssue;
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error updating issue:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upload attachment (sync-compatible implementation)
+   */
+  async uploadAttachment(issueId, attachmentData) {
+    try {
+      console.log(`🔧 [DATAMANAGER] Uploading attachment for issue: ${issueId}`);
+
+      if (!this.call) {
+        throw new Error('No API connection available for attachment upload');
+      }
+
+      const response = await this.call.post('egrm.api.issue.upload_attachment', {
+        issue_id: issueId,
+        attachment_data: attachmentData,
+      });
+
+      const apiResponse = extractApiResponse(response);
+
+      if (apiResponse.status === 'success') {
+        console.log('✅ [DATAMANAGER] Attachment uploaded successfully');
+        return apiResponse.data;
+      } else {
+        throw new Error(apiResponse.message || 'Failed to upload attachment');
+      }
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error uploading attachment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get local issues with user context filtering
+   */
+  async getLocalIssues(userId) {
+    try {
+      console.log(`🔍 [DATAMANAGER] Getting local issues for user: ${userId}`);
+
+      const filters = {};
+      const userContext = this.getUserContext();
+
+      if (userContext?.accessible_projects) {
+        const projectIds = userContext.accessible_projects.map((p) => p.id || p.name);
+        if (projectIds.length > 0) {
+          filters.project = projectIds[0]; // Use first accessible project for now
+          console.log('🔍 [DATAMANAGER] Filtering by user accessible project:', filters.project);
+        }
+      }
+
+      const allIssues = await this.getIssues(filters);
+
+      // Filter by user
+      const userIssues = allIssues.filter(
+        (issue) => issue.assignee === userId || issue.reporter === userId
+      );
+
+      console.log(`📊 [DATAMANAGER] Found ${userIssues.length} local issues for user ${userId}`);
+      return userIssues;
+    } catch (error) {
+      console.error('❌ [DATAMANAGER] Error getting local issues:', error);
       return [];
     }
   }

@@ -60,9 +60,9 @@ function Content({ issue, navigation, statuses = [], userContext }) {
   if (issue && issue._raw) {
     console.log('🔍 [IssueActions] Raw issue data:', {
       id: issue._raw.id,
-      status_id: issue._raw.status_id,
-      assignee_id: issue._raw.assignee_id,
-      reporter_id: issue._raw.reporter_id,
+      status: issue._raw.status,
+      assignee: issue._raw.assignee,
+      reporter: issue._raw.reporter,
       issue_date: issue._raw.issue_date,
       intake_date: issue._raw.intake_date,
     });
@@ -114,7 +114,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       ...rawData,
 
       // Add resolved labels
-      statusLabel: statusMap.get(rawData.status_id) || rawData.status_id || 'Unknown',
+      statusLabel: statusMap.get(rawData.status) || rawData.status || 'Unknown',
 
       // Format dates
       issueDateFormatted: rawData.issue_date
@@ -129,16 +129,16 @@ function Content({ issue, navigation, statuses = [], userContext }) {
 
       // Backward compatibility fields
       status: {
-        id: rawData.status_id,
-        name: statusMap.get(rawData.status_id) || rawData.status_id,
+        id: rawData.status,
+        name: statusMap.get(rawData.status) || rawData.status,
       },
       assignee: {
-        id: rawData.assignee_id,
-        name: rawData.assignee_id,
+        id: rawData.assignee,
+        name: rawData.assignee,
       },
       reporter: {
-        id: rawData.reporter_id,
-        name: rawData.reporter_id,
+        id: rawData.reporter,
+        name: rawData.reporter,
       },
 
       // Contact information handling
@@ -173,8 +173,8 @@ function Content({ issue, navigation, statuses = [], userContext }) {
     statusMap,
     // Only depend on issue properties that actually matter for the calculation
     issue?._raw?.id,
-    issue?._raw?.status_id,
-    issue?._raw?.assignee_id,
+    issue?._raw?.status,
+    issue?._raw?.assignee,
     issue?._raw?.issue_date,
     issue?._raw?.intake_date,
   ]);

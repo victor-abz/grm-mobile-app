@@ -9,8 +9,8 @@
 export const createLookupMap = (items, labelField) => {
   const map = new Map();
   if (!items || !Array.isArray(items)) return map;
-  
-  items.forEach(item => {
+
+  items.forEach((item) => {
     const itemData = item._raw || item;
     if (itemData && itemData.id) {
       const label = itemData[labelField] || itemData.name || itemData.id;
@@ -32,7 +32,7 @@ export const createDetailLookupMaps = (lookupData) => {
     citizenGroups = [],
     regions = [],
     projects = [],
-    users = []
+    users = [],
   } = lookupData;
 
   return {
@@ -53,8 +53,8 @@ export const createDetailLookupMaps = (lookupData) => {
 export const checkUserAssignment = (enrichedIssue, currentUserId) => {
   if (!enrichedIssue || !currentUserId) return false;
 
-  const assigneeId = enrichedIssue.assignee_id || enrichedIssue.assignee?.id;
-  const reporterId = enrichedIssue.reporter_id || enrichedIssue.reporter?.id;
+  const assigneeId = enrichedIssue.assignee;
+  const reporterId = enrichedIssue.reporter;
 
   if (assigneeId && assigneeId === currentUserId) {
     return true;
@@ -78,7 +78,12 @@ export const isContentConfidential = (enrichedIssue, isUserAssigned) => {
 /**
  * Get display value with confidentiality check
  */
-export const getDisplayValue = (value, enrichedIssue, isUserAssigned, fallback = 'Information not available') => {
+export const getDisplayValue = (
+  value,
+  enrichedIssue,
+  isUserAssigned,
+  fallback = 'Information not available'
+) => {
   if (isContentConfidential(enrichedIssue, isUserAssigned)) {
     return 'Confidential';
   }
@@ -92,10 +97,13 @@ export const processSatisfactionData = (enrichedIssue, t) => {
   if (!enrichedIssue) return { hasData: false, content: '' };
 
   const rating = enrichedIssue.rating;
-  const ratedDate = enrichedIssue.ratedDate || enrichedIssue.rated_date;
+  const ratedDate = enrichedIssue.rated_date;
 
   if (!rating && !ratedDate) {
-    return { hasData: false, content: t('no_satisfaction_data') || 'No satisfaction data available' };
+    return {
+      hasData: false,
+      content: t('no_satisfaction_data') || 'No satisfaction data available',
+    };
   }
 
   let content = '';
@@ -118,9 +126,9 @@ export const processSatisfactionData = (enrichedIssue, t) => {
 export const processAppealData = (enrichedIssue, t) => {
   if (!enrichedIssue) return { hasData: false, content: '' };
 
-  const appealSubmitted = enrichedIssue.appealSubmitted || enrichedIssue.appeal_submitted;
-  const appealReason = enrichedIssue.appealReason || enrichedIssue.appeal_reason;
-  const appealDate = enrichedIssue.appealDate || enrichedIssue.appeal_date;
+  const appealSubmitted = enrichedIssue.appeal_submitted;
+  const appealReason = enrichedIssue.appeal_reason;
+  const appealDate = enrichedIssue.appeal_date;
 
   if (!appealSubmitted && !appealReason && !appealDate) {
     return { hasData: false, content: t('no_appeal_data') || 'No appeal submitted' };
@@ -149,8 +157,8 @@ export const processAppealData = (enrichedIssue, t) => {
 export const processResolutionData = (enrichedIssue, t) => {
   if (!enrichedIssue) return { hasData: false, content: '' };
 
-  const resolutionText = enrichedIssue.resolutionText || enrichedIssue.resolution_text;
-  const resolutionDate = enrichedIssue.resolutionDate || enrichedIssue.resolution_date;
+  const resolutionText = enrichedIssue.resolution_text;
+  const resolutionDate = enrichedIssue.resolution_date;
   const resolvedBy = enrichedIssue.resolved_by;
 
   if (!resolutionText && !resolutionDate && !resolvedBy) {
@@ -179,7 +187,7 @@ export const processResolutionData = (enrichedIssue, t) => {
  */
 export const enrichIssueData = (issue, lookupMaps, t) => {
   if (!issue) return null;
-  
+
   // Handle both array from observable and single issue object
   const issueData = Array.isArray(issue) ? issue[0] : issue;
   if (!issueData) return null;
@@ -190,38 +198,63 @@ export const enrichIssueData = (issue, lookupMaps, t) => {
   return {
     // Keep all original issue data
     ...rawData,
-    
-    // Add resolved labels for display
-    categoryLabel: lookupMaps.categoryMap.get(rawData.category_id) || rawData.category_id || t('information_not_available'),
-    typeLabel: lookupMaps.typeMap.get(rawData.issue_type_id) || rawData.issue_type_id || t('information_not_available'),
-    statusLabel: lookupMaps.statusMap.get(rawData.status_id) || rawData.status_id || t('information_not_available'),
-    ageGroupLabel: lookupMaps.ageGroupMap.get(rawData.citizen_age_group_id) || rawData.citizen_age_group_id || t('information_not_available'),
-    citizenGroup1Label: lookupMaps.citizenGroupMap.get(rawData.citizen_group_1_id) || rawData.citizen_group_1_id || t('information_not_available'),
-    citizenGroup2Label: lookupMaps.citizenGroupMap.get(rawData.citizen_group_2_id) || rawData.citizen_group_2_id || t('information_not_available'),
-    regionLabel: lookupMaps.regionMap.get(rawData.administrative_region_id) || rawData.administrative_region_id || t('information_not_available'),
-    projectLabel: lookupMaps.projectMap.get(rawData.project_id) || rawData.project_id || t('information_not_available'),
-    reporterLabel: lookupMaps.userMap.get(rawData.reporter_id) || rawData.reporter_id || t('information_not_available'),
-    assigneeLabel: lookupMaps.userMap.get(rawData.assignee_id) || rawData.assignee_id || 'Pending Assignment',
-    
+
+    // Add resolved labels for display using corrected field names
+    categoryLabel:
+      lookupMaps.categoryMap.get(rawData.category) ||
+      rawData.category ||
+      t('information_not_available'),
+    typeLabel:
+      lookupMaps.typeMap.get(rawData.issue_type) ||
+      rawData.issue_type ||
+      t('information_not_available'),
+    statusLabel:
+      lookupMaps.statusMap.get(rawData.status) || rawData.status || t('information_not_available'),
+    ageGroupLabel:
+      lookupMaps.ageGroupMap.get(rawData.citizen_age_group) ||
+      rawData.citizen_age_group ||
+      t('information_not_available'),
+    citizenGroup1Label:
+      lookupMaps.citizenGroupMap.get(rawData.citizen_group_1) ||
+      rawData.citizen_group_1 ||
+      t('information_not_available'),
+    citizenGroup2Label:
+      lookupMaps.citizenGroupMap.get(rawData.citizen_group_2) ||
+      rawData.citizen_group_2 ||
+      t('information_not_available'),
+    regionLabel:
+      lookupMaps.regionMap.get(rawData.administrative_region) ||
+      rawData.administrative_region ||
+      t('information_not_available'),
+    projectLabel:
+      lookupMaps.projectMap.get(rawData.project) ||
+      rawData.project ||
+      t('information_not_available'),
+    reporterLabel:
+      lookupMaps.userMap.get(rawData.reporter) ||
+      rawData.reporter ||
+      t('information_not_available'),
+    assigneeLabel:
+      lookupMaps.userMap.get(rawData.assignee) || rawData.assignee || 'Pending Assignment',
+
     // Format dates for display
     issueDateFormatted: rawData.issue_date ? new Date(rawData.issue_date).toLocaleDateString() : '',
-    intakeDateFormatted: rawData.intake_date ? new Date(rawData.intake_date).toLocaleDateString() : '',
-    
-    // Backward compatibility fields for existing code
-    issue_type: { name: lookupMaps.typeMap.get(rawData.issue_type_id) || rawData.issue_type_id },
-    category: { name: lookupMaps.categoryMap.get(rawData.category_id) || rawData.category_id },
-    citizen_age_group: { name: lookupMaps.ageGroupMap.get(rawData.citizen_age_group_id) || rawData.citizen_age_group_id },
-    citizen_group_1: { name: lookupMaps.citizenGroupMap.get(rawData.citizen_group_1_id) || rawData.citizen_group_1_id },
-    citizen_group_2: { name: lookupMaps.citizenGroupMap.get(rawData.citizen_group_2_id) || rawData.citizen_group_2_id },
-    administrative_region: { name: lookupMaps.regionMap.get(rawData.administrative_region_id) || rawData.administrative_region_id },
-    assignee: { 
-      id: rawData.assignee_id,
-      name: rawData.assignee_id ? lookupMaps.userMap.get(rawData.assignee_id) || rawData.assignee_id : 'Pending Assignment' 
-    },
-    reporter: { id: rawData.reporter_id },
-    
+    intakeDateFormatted: rawData.intake_date
+      ? new Date(rawData.intake_date).toLocaleDateString()
+      : '',
+
+    // Keep original field values
+    issue_type: rawData.issue_type,
+    category: rawData.category,
+    citizen_age_group: rawData.citizen_age_group,
+    citizen_group_1: rawData.citizen_group_1,
+    citizen_group_2: rawData.citizen_group_2,
+    administrative_region: rawData.administrative_region,
+    assignee: rawData.assignee,
+    reporter: rawData.reporter,
+
     // Handle attachments and comments
     attachments: rawData.attachments || [],
     comments: rawData.comments || [],
   };
-}; 
+};

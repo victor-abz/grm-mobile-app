@@ -1,88 +1,67 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import dataManager from './DataManager';
+import watermelonManager from '../database/watermelonManager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Storage keys for user region data
 const STORAGE_KEYS = {
-  USER_REGIONS: 'user_assigned_regions',
-  USER_REGION_HIERARCHY: 'user_region_hierarchy',
-  LAST_REGION_SYNC: 'last_region_sync',
-  USER_GEOLOCATION: 'user_geolocation',
+  USER_REGIONS: 'user_regions',
+  REGION_HIERARCHY: 'region_hierarchy',
+  USER_LOCATION: 'user_location',
+  LAST_FETCH_TIME: 'regions_last_fetch',
 };
 
 /**
- * Helper function to extract data from API response
+ * User Region Service - Sync-First Approach
+ *
+ * Manages user-assigned regions using WatermelonDB sync as the single source.
+ * Fetches user assignments from backend and builds region hierarchy locally.
  */
-function extractApiResponse(response) {
-  if (response?.response?.message) {
-    const { message } = response.response;
-    return {
-      status: message.status,
-      data: message.data,
-      message: message.message || (message.status === 'success' ? 'Success' : 'Error'),
-    };
-  }
-
-  if (response?.message?.status) {
-    const { message } = response;
-    return {
-      status: message.status,
-      data: message.data,
-      message: message.message || (message.status === 'success' ? 'Success' : 'Error'),
-    };
-  }
-
-  if (response?.status) {
-    return {
-      status: response.status,
-      data: response.data,
-      message: response.message || (response.status === 'success' ? 'Success' : 'Error'),
-    };
-  }
-
-  if (response && !response.status && !response.response && !response.message) {
-    return {
-      status: 'success',
-      data: response,
-      message: 'Success',
-    };
-  }
-
-  return {
-    status: 'error',
-    data: null,
-    message: 'Invalid response format',
-  };
-}
-
 class UserRegionService {
   constructor() {
+    this.syncManager = null;
+    this.cachedRegions = null;
+    this.lastFetchTime = null;
+    this.credentials = null;
+    this.isInitialized = false;
+    this.currentLocation = null;
+
+    // Legacy properties for compatibility
     this.userRegions = [];
     this.regionHierarchy = [];
-    this.isInitialized = false;
-    this.credentials = null;
-    this.userProject = null;
-    this.currentLocation = null;
   }
 
   /**
-   * Initialize the service with user credentials
+   * Initialize with credentials (DataProvider compatibility)
    */
   async initialize(credentials, userProject = null) {
+    console.log('🔧 [USER_REGIONS] Initializing UserRegionService with credentials...');
+
     try {
       this.credentials = credentials;
-      this.userProject = userProject; // Keep for backward compatibility, but API won't need it
 
-      // Load cached data
+      // Get sync manager from DataManager
+      const { default: dataManager } = await import('./DataManager');
+      this.syncManager = dataManager.syncManager;
+
+      if (this.syncManager) {
+        console.log('✅ [USER_REGIONS] Sync manager obtained from DataManager');
+      } else {
+        console.warn('⚠️ [USER_REGIONS] No sync manager available - offline mode only');
+      }
+
+      // Load cached data first
       await this.loadCachedData();
 
-      // Fetch fresh data if online
-      if (credentials) {
+      // Fetch fresh data if we have sync capability
+      if (credentials && this.syncManager) {
+        console.log('🔄 [USER_REGIONS] Fetching fresh region data via sync...');
         await this.fetchUserAssignedRegions();
+      } else {
+        console.log('📱 [USER_REGIONS] Using cached data only');
       }
 
       this.isInitialized = true;
-      console.log('✅ UserRegionService initialized');
+      console.log('✅ [USER_REGIONS] UserRegionService initialized');
 
       return {
         success: true,
@@ -90,408 +69,309 @@ class UserRegionService {
         hierarchyCount: this.regionHierarchy.length,
       };
     } catch (error) {
-      console.error('❌ Error initializing UserRegionService:', error);
+      console.error('❌ [USER_REGIONS] Error initializing UserRegionService:', error);
 
-      // If user has no regions assigned, this is a critical error
-      if (error.message?.includes('no regions assigned')) {
+      // Try to use cached data as fallback
+      await this.loadCachedData();
+
+      if (this.userRegions.length === 0) {
         return {
           success: false,
           error: 'NO_REGIONS_ASSIGNED',
-          message: 'User has no administrative regions assigned. Please contact administrator.',
+          message: 'No administrative regions found. Please contact your administrator.',
         };
       }
 
       return {
         success: false,
-        error: 'INITIALIZATION_FAILED',
+        error: 'REGION_INITIALIZATION_FAILED',
         message: error.message,
       };
     }
   }
 
   /**
-   * Load cached region data
+   * Load cached region data from local storage
    */
   async loadCachedData() {
     try {
-      const [userRegions, regionHierarchy] = await Promise.all([
+      console.log('📱 [USER_REGIONS] Loading cached region data...');
+
+      const [cachedRegions, cachedHierarchy, lastFetch] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.USER_REGIONS),
-        AsyncStorage.getItem(STORAGE_KEYS.USER_REGION_HIERARCHY),
+        AsyncStorage.getItem(STORAGE_KEYS.REGION_HIERARCHY),
+        AsyncStorage.getItem(STORAGE_KEYS.LAST_FETCH_TIME),
       ]);
 
-      this.userRegions = userRegions ? JSON.parse(userRegions) : [];
-      this.regionHierarchy = regionHierarchy ? JSON.parse(regionHierarchy) : [];
+      if (cachedRegions) {
+        this.userRegions = JSON.parse(cachedRegions);
+        console.log(`📱 [USER_REGIONS] Loaded ${this.userRegions.length} cached user regions`);
+      }
 
-      console.log(`📱 Loaded ${this.userRegions.length} user regions from cache`);
+      if (cachedHierarchy) {
+        this.regionHierarchy = JSON.parse(cachedHierarchy);
+        console.log(
+          `📱 [USER_REGIONS] Loaded ${this.regionHierarchy.length} cached hierarchy regions`
+        );
+      }
+
+      if (lastFetch) {
+        this.lastFetchTime = parseInt(lastFetch);
+      }
     } catch (error) {
-      console.error('❌ Error loading cached region data:', error);
+      console.error('❌ [USER_REGIONS] Error loading cached data:', error);
+      this.userRegions = [];
+      this.regionHierarchy = [];
     }
   }
 
   /**
-   * Fetch user-assigned regions from backend through DataManager
+   * Cache region data to local storage
+   */
+  async cacheRegionData() {
+    try {
+      console.log('💾 [USER_REGIONS] Caching region data...');
+
+      await Promise.all([
+        AsyncStorage.setItem(STORAGE_KEYS.USER_REGIONS, JSON.stringify(this.userRegions)),
+        AsyncStorage.setItem(STORAGE_KEYS.REGION_HIERARCHY, JSON.stringify(this.regionHierarchy)),
+        AsyncStorage.setItem(STORAGE_KEYS.LAST_FETCH_TIME, this.lastFetchTime.toString()),
+      ]);
+
+      console.log('✅ [USER_REGIONS] Region data cached successfully');
+    } catch (error) {
+      console.error('❌ [USER_REGIONS] Error caching region data:', error);
+    }
+  }
+
+  /**
+   * Fetch user assigned regions using sync-first approach
    */
   async fetchUserAssignedRegions() {
+    console.log('🔍 [USER_REGIONS] Fetching user assigned regions...');
+
     try {
-      if (!this.credentials) {
-        throw new Error('No credentials available for API calls');
+      // Step 1: Check if we have recent cached data
+      if (this.regionHierarchy.length > 0 && this.isDataFresh()) {
+        console.log('📱 [USER_REGIONS] Using fresh cached regions');
+        return this.regionHierarchy;
       }
 
-      console.log('🔄 Fetching user-assigned regions...');
+      // Step 2: Trigger WatermelonDB sync if we have sync capability
+      if (this.syncManager && this.credentials) {
+        console.log('🔄 [USER_REGIONS] Triggering WatermelonDB sync for regions...');
 
-      // Use DataManager to get regions which will handle API calls and caching
-      const regions = await dataManager.getAdministrativeRegions({ forceRefresh: true });
-
-      if (!regions || regions.length === 0) {
-        throw new Error(
-          'User has no regions assigned. Please contact administrator to assign administrative regions.'
-        );
+        try {
+          await this.syncManager.sync();
+          console.log('✅ [USER_REGIONS] Sync completed, processing regions...');
+        } catch (syncError) {
+          console.error('❌ [USER_REGIONS] Sync failed:', syncError);
+          // Continue with local data
+        }
       }
 
-      // Transform the regions - backend now returns enhanced data automatically
-      const transformedRegions = regions.map((region) => ({
-        _id: region.name || region._id,
-        type: 'administrative_level',
-        administrative_id: region.name || region.administrative_id,
-        name: region.region_name || region.name,
-        administrative_level: region.administrative_level,
-        parent_id: region.parent_region || region.parent_id,
-        latitude: region.latitude,
-        longitude: region.longitude,
-        project: region.project,
-        path: region.path,
-        // Enhanced fields from backend
-        user_role: region.user_role,
-        user_department: region.user_department,
-        is_directly_assigned:
-          region.is_directly_assigned !== undefined ? region.is_directly_assigned : true,
-        is_user_assigned:
-          region.is_directly_assigned !== undefined ? region.is_directly_assigned : true, // For backward compatibility
-      }));
+      // Step 3: Get regions from local WatermelonDB
+      console.log('📱 [USER_REGIONS] Fetching regions from local WatermelonDB...');
+      const regions = await this.getRegionsFromLocalDB();
+      console.log(`📱 [USER_REGIONS] Found ${regions.length} regions in local DB`);
 
-      // Backend returns complete hierarchy, separate directly assigned vs accessible
-      this.userRegions = transformedRegions.filter((region) => region.is_directly_assigned);
-      this.regionHierarchy = transformedRegions;
+      // Step 4: Get user context for region filtering
+      const userContext = await this.getUserContext();
+
+      // Step 5: Process regions with user assignments
+      const processedRegions = this.processRegionsWithUserAssignments(regions, userContext);
+
+      // Step 6: Build hierarchy and cache
+      const hierarchicalRegions = this.buildRegionHierarchy(processedRegions);
+
+      // Update both new and legacy properties
+      this.regionHierarchy = hierarchicalRegions;
+      this.userRegions = processedRegions; // Flat list for legacy compatibility
+      this.lastFetchTime = Date.now();
 
       // Cache the data
       await this.cacheRegionData();
 
-      console.log(`✅ Fetched ${this.userRegions.length} directly assigned regions`);
-      console.log(`📊 Total accessible regions: ${this.regionHierarchy.length}`);
-
-      // Log projects for debugging
-      const projects = [...new Set(transformedRegions.map((r) => r.project))];
-      console.log(`📁 User has access to projects: ${projects.join(', ')}`);
-
-      return {
-        assignedRegions: this.userRegions,
-        hierarchicalRegions: this.regionHierarchy,
-      };
+      console.log(
+        `📊 [USER_REGIONS] Returning ${hierarchicalRegions.length} user-assigned regions`
+      );
+      return hierarchicalRegions;
     } catch (error) {
-      console.error('❌ Error fetching user-assigned regions:', error);
-      throw error;
+      console.error('❌ [USER_REGIONS] Error fetching user assigned regions:', error);
+      return this.regionHierarchy || [];
     }
   }
 
   /**
-   * Fetch children of a specific region (for hierarchical navigation)
+   * Get regions from local WatermelonDB
    */
-  async fetchRegionChildren(parentId) {
+  async getRegionsFromLocalDB() {
     try {
-      console.log(`🔄 Fetching children for region: ${parentId}`);
+      const database = watermelonManager.getDatabase();
+      if (!database) {
+        console.error('❌ [USER_REGIONS_LOCAL] Database not available');
+        return [];
+      }
 
-      // Get all regions and filter by parent
-      const allRegions = await dataManager.getAdministrativeRegions();
-      const children = allRegions.filter((region) => region.parent_id === parentId);
+      const collection = database.get('grm_administrative_regions');
+      const records = await collection.query().fetch();
 
-      console.log(`✅ Found ${children.length} children for region ${parentId}`);
-      return children;
+      // Convert to plain objects
+      const regions = records.map((record) => ({
+        id: record.id,
+        name: record.name || record._raw.name,
+        ...record._raw,
+      }));
+
+      return regions;
     } catch (error) {
-      console.error(`❌ Error fetching children for region ${parentId}:`, error);
+      console.error('❌ [USER_REGIONS_LOCAL] Error fetching regions from local DB:', error);
       return [];
     }
   }
 
   /**
-   * Build hierarchical structure from flat region data
+   * Get user context
    */
-  async buildRegionHierarchy(assignedRegions) {
-    // For now, just return the assigned regions
-    // TODO: Implement proper hierarchy building if needed
-    return assignedRegions;
-  }
-
-  /**
-   * Cache region data to persistent storage
-   */
-  async cacheRegionData() {
+  async getUserContext() {
     try {
-      await Promise.all([
-        AsyncStorage.setItem(STORAGE_KEYS.USER_REGIONS, JSON.stringify(this.userRegions)),
-        AsyncStorage.setItem(
-          STORAGE_KEYS.USER_REGION_HIERARCHY,
-          JSON.stringify(this.regionHierarchy)
-        ),
-        AsyncStorage.setItem(STORAGE_KEYS.LAST_REGION_SYNC, new Date().toISOString()),
-      ]);
-
-      console.log('✅ Region data cached successfully');
+      const userId = this.credentials?.username || 'current_user';
+      return await watermelonManager.getUserContext(userId);
     } catch (error) {
-      console.error('❌ Error caching region data:', error);
+      console.error('❌ [USER_REGIONS_CONTEXT] Error getting user context:', error);
+      return null;
     }
   }
 
   /**
-   * Get all accessible regions (including hierarchy)
+   * Process regions with user assignments
    */
-  getAccessibleRegions() {
-    return this.regionHierarchy;
+  processRegionsWithUserAssignments(regions, userContext) {
+    // For now, return all regions - user context filtering can be enhanced later
+    return regions.map((region) => ({
+      ...region,
+      isAssigned: this.isUserAssignedToRegion(region, userContext),
+      userRole: this.getUserRoleForRegion(region, userContext),
+      user_assignment: {
+        is_assigned: this.isUserAssignedToRegion(region, userContext),
+        role: this.getUserRoleForRegion(region, userContext),
+        department: this.getUserDepartmentForRegion(region, userContext),
+      },
+    }));
   }
 
   /**
-   * Get directly assigned regions only
+   * Check if user is assigned to region
    */
-  getAssignedRegions() {
-    return this.userRegions;
-  }
-
-  /**
-   * Get regions by administrative level
-   */
-  getRegionsByLevel(level) {
-    return this.regionHierarchy.filter((region) => region.administrative_level === level);
-  }
-
-  /**
-   * Get children regions for a parent
-   */
-  getRegionChildren(parentId) {
-    return this.regionHierarchy.filter((region) => region.parent_id === parentId);
-  }
-
-  /**
-   * Get top-level regions (no parent)
-   */
-  getTopLevelRegions() {
-    return this.regionHierarchy.filter((region) => !region.parent_id);
-  }
-
-  /**
-   * Check if user has access to a specific region
-   */
-  hasAccessToRegion(regionId) {
-    return this.regionHierarchy.some(
-      (region) => region.administrative_id === regionId || region._id === regionId
+  isUserAssignedToRegion(region, userContext) {
+    if (!userContext?.accessible_regions) return false;
+    return userContext.accessible_regions.some(
+      (accessibleRegion) => accessibleRegion.name === region.id || accessibleRegion.id === region.id
     );
   }
 
   /**
-   * Request location permission
+   * Get user role for region
    */
-  async requestLocationPermission() {
-    try {
-      console.log('🔄 Requesting location permission...');
-
-      let { status } = await Location.getForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
-        status = newStatus;
-      }
-
-      if (status !== 'granted') {
-        console.warn('⚠️ Location permission denied');
-        return {
-          success: false,
-          error: 'PERMISSION_DENIED',
-          message: 'Location permission is required to find nearby regions',
-        };
-      }
-
-      console.log('✅ Location permission granted');
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error requesting location permission:', error);
-      return {
-        success: false,
-        error: 'PERMISSION_ERROR',
-        message: error.message,
-      };
-    }
+  getUserRoleForRegion(region, userContext) {
+    if (!userContext?.assignments) return null;
+    const assignment = userContext.assignments.find(
+      (assignment) => assignment.region?.id === region.id || assignment.region?.name === region.id
+    );
+    return assignment?.role || null;
   }
 
   /**
-   * Get current location
+   * Get user department for region
    */
-  async getCurrentLocation() {
-    try {
-      console.log('🔄 Getting current location...');
-
-      const permissionResult = await this.requestLocationPermission();
-      if (!permissionResult.success) {
-        return permissionResult;
-      }
-
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-        timeout: 15000,
-        maximumAge: 300000, // 5 minutes
-      });
-
-      this.currentLocation = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        accuracy: location.coords.accuracy,
-        timestamp: location.timestamp,
-      };
-
-      // Cache the location
-      await this.cacheLocation(this.currentLocation);
-
-      console.log('✅ Location obtained successfully');
-      return {
-        success: true,
-        location: this.currentLocation,
-      };
-    } catch (error) {
-      console.error('❌ Error getting current location:', error);
-
-      // Try to return cached location as fallback
-      const cachedLocation = await this.getCachedLocation();
-      if (cachedLocation) {
-        console.log('📱 Using cached location as fallback');
-        this.currentLocation = cachedLocation;
-        return {
-          success: true,
-          location: cachedLocation,
-          isCached: true,
-        };
-      }
-
-      return {
-        success: false,
-        error: 'LOCATION_ERROR',
-        message: error.message,
-      };
-    }
+  getUserDepartmentForRegion(region, userContext) {
+    if (!userContext?.assignments) return null;
+    const assignment = userContext.assignments.find(
+      (assignment) => assignment.region?.id === region.id || assignment.region?.name === region.id
+    );
+    return assignment?.department || null;
   }
 
   /**
-   * Cache location data
+   * Build region hierarchy
    */
-  async cacheLocation(location) {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_GEOLOCATION, JSON.stringify(location));
-    } catch (error) {
-      console.error('❌ Error caching location:', error);
-    }
-  }
+  buildRegionHierarchy(regions) {
+    // Create a map for quick lookup
+    const regionMap = new Map();
+    regions.forEach((region) => {
+      regionMap.set(region.id, { ...region, children: [] });
+    });
 
-  /**
-   * Get cached location
-   */
-  async getCachedLocation() {
-    try {
-      const cachedLocation = await AsyncStorage.getItem(STORAGE_KEYS.USER_GEOLOCATION);
-      if (cachedLocation) {
-        const location = JSON.parse(cachedLocation);
+    const rootRegions = [];
 
-        // Check if cached location is not too old (1 hour)
-        const now = Date.now();
-        const locationAge = now - location.timestamp;
-        const oneHour = 60 * 60 * 1000;
+    // Build hierarchy
+    regions.forEach((region) => {
+      const regionNode = regionMap.get(region.id);
+      const parentId = region.parent_region;
 
-        if (locationAge < oneHour) {
-          return location;
-        }
-      }
-      return null;
-    } catch (error) {
-      console.error('❌ Error getting cached location:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Find nearest region based on user location
-   */
-  findNearestRegion(userLocation = null) {
-    try {
-      const location = userLocation || this.currentLocation;
-      if (!location) {
-        console.warn('⚠️ No location available for region matching');
-        return null;
-      }
-
-      let nearestRegion = null;
-      let shortestDistance = Infinity;
-
-      for (const region of this.regionHierarchy) {
-        if (region.latitude && region.longitude) {
-          const distance = this.calculateDistance(
-            location.latitude,
-            location.longitude,
-            region.latitude,
-            region.longitude
-          );
-
-          if (distance < shortestDistance) {
-            shortestDistance = distance;
-            nearestRegion = { ...region, distance };
-          }
-        }
-      }
-
-      if (nearestRegion) {
-        console.log(`✅ Nearest region: ${nearestRegion.name} (${shortestDistance.toFixed(2)} km)`);
+      if (parentId && regionMap.has(parentId)) {
+        // Has parent - add to parent's children
+        const parent = regionMap.get(parentId);
+        parent.children.push(regionNode);
       } else {
-        console.warn('⚠️ No regions with coordinates found');
+        // No parent or parent not found - add to root
+        rootRegions.push(regionNode);
       }
+    });
 
-      return nearestRegion;
+    return rootRegions;
+  }
+
+  /**
+   * Check if cached data is fresh (less than 5 minutes old)
+   */
+  isDataFresh() {
+    if (!this.lastFetchTime) return false;
+    const fiveMinutes = 5 * 60 * 1000;
+    return Date.now() - this.lastFetchTime < fiveMinutes;
+  }
+
+  /**
+   * Clear cache to force refresh
+   */
+  async clearCache() {
+    console.log('🧹 [USER_REGIONS] Clearing region cache...');
+
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem(STORAGE_KEYS.USER_REGIONS),
+        AsyncStorage.removeItem(STORAGE_KEYS.REGION_HIERARCHY),
+        AsyncStorage.removeItem(STORAGE_KEYS.LAST_FETCH_TIME),
+        AsyncStorage.removeItem(STORAGE_KEYS.USER_LOCATION),
+      ]);
+
+      this.lastFetchTime = null;
+      this.userRegions = [];
+      this.regionHierarchy = [];
+      this.currentLocation = null;
+
+      console.log('✅ [USER_REGIONS] Cache cleared successfully');
     } catch (error) {
-      console.error('❌ Error finding nearest region:', error);
-      return null;
+      console.error('❌ [USER_REGIONS] Error clearing cache:', error);
     }
   }
 
   /**
-   * Calculate distance between two coordinates using Haversine formula
-   */
-  calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-  /**
-   * Refresh regions from server
+   * Force refresh regions
    */
   async refreshRegions() {
-    try {
-      if (!this.credentials) {
-        throw new Error('No credentials available');
-      }
+    console.log('🔄 [USER_REGIONS] Force refreshing regions...');
 
-      console.log('🔄 Refreshing regions from server...');
+    try {
+      await this.clearCache();
       await this.fetchUserAssignedRegions();
-      console.log('✅ Regions refreshed successfully');
 
       return {
         success: true,
         regionsCount: this.userRegions.length,
-        hierarchyCount: this.regionHierarchy.length,
       };
     } catch (error) {
-      console.error('❌ Error refreshing regions:', error);
+      console.error('❌ [USER_REGIONS] Error refreshing regions:', error);
       return {
         success: false,
         error: error.message,
@@ -500,25 +380,97 @@ class UserRegionService {
   }
 
   /**
-   * Clear cached data
+   * COMPATIBILITY METHODS - Maintain compatibility with existing code
    */
-  async clearCache() {
-    try {
-      await Promise.all([
-        AsyncStorage.removeItem(STORAGE_KEYS.USER_REGIONS),
-        AsyncStorage.removeItem(STORAGE_KEYS.USER_REGION_HIERARCHY),
-        AsyncStorage.removeItem(STORAGE_KEYS.LAST_REGION_SYNC),
-        AsyncStorage.removeItem(STORAGE_KEYS.USER_GEOLOCATION),
-      ]);
 
-      this.userRegions = [];
-      this.regionHierarchy = [];
-      this.currentLocation = null;
+  /**
+   * Get accessible regions (returns the cached hierarchy)
+   */
+  getAccessibleRegions() {
+    console.log(
+      `📱 [USER_REGIONS] Getting accessible regions: ${this.regionHierarchy?.length || 0} available`
+    );
+    return this.regionHierarchy || [];
+  }
 
-      console.log('✅ UserRegionService cache cleared');
-    } catch (error) {
-      console.error('❌ Error clearing cache:', error);
+  /**
+   * Get assigned regions (flattened list of all regions with assignments)
+   */
+  getAssignedRegions() {
+    console.log('📱 [USER_REGIONS] Getting assigned regions...');
+    return this.userRegions || [];
+  }
+
+  /**
+   * Get regions by administrative level
+   */
+  getRegionsByLevel(level) {
+    const flattenRegions = (regions) => {
+      let flattened = [];
+      regions.forEach((region) => {
+        flattened.push(region);
+        if (region.children && region.children.length > 0) {
+          flattened = flattened.concat(flattenRegions(region.children));
+        }
+      });
+      return flattened;
+    };
+
+    const allRegions = flattenRegions(this.regionHierarchy || []);
+    return allRegions.filter(
+      (region) =>
+        region.administrative_level === level ||
+        region.level === level ||
+        region.admin_level === level
+    );
+  }
+
+  /**
+   * Get children of a specific region
+   */
+  getRegionChildren(parentId) {
+    const findRegionRecursive = (regions) => {
+      for (const region of regions) {
+        if (region.id === parentId) {
+          return region.children || [];
+        }
+        if (region.children) {
+          const found = findRegionRecursive(region.children);
+          if (found.length > 0) return found;
+        }
+      }
+      return [];
+    };
+
+    return findRegionRecursive(this.regionHierarchy || []);
+  }
+
+  /**
+   * Get top-level regions (root nodes of hierarchy)
+   */
+  getTopLevelRegions() {
+    return this.regionHierarchy || [];
+  }
+
+  /**
+   * Check if user has access to a specific region
+   */
+  hasAccessToRegion(regionId) {
+    return this.userRegions.some((region) => region.id === regionId && region.isAssigned);
+  }
+
+  /**
+   * Find nearest region to user location
+   */
+  findNearestRegion(userLocation = null) {
+    const location = userLocation || this.currentLocation;
+    if (!location) {
+      return null;
     }
+
+    // Simple implementation - return first accessible region
+    const accessibleRegions = this.userRegions.filter((region) => region.isAssigned);
+    return accessibleRegions.length > 0 ? accessibleRegions[0] : null;
   }
 
   /**
@@ -528,15 +480,125 @@ class UserRegionService {
     return {
       isInitialized: this.isInitialized,
       hasCredentials: !!this.credentials,
-      userRegionsCount: this.userRegions.length,
-      hierarchyRegionsCount: this.regionHierarchy.length,
+      regionsCount: this.userRegions.length,
+      hierarchyCount: this.regionHierarchy.length,
       hasCurrentLocation: !!this.currentLocation,
-      currentLocation: this.currentLocation,
+      lastFetchTime: this.lastFetchTime,
+      dataFreshness: this.isDataFresh() ? 'fresh' : 'stale',
     };
+  }
+
+  /**
+   * LOCATION METHODS
+   */
+
+  /**
+   * Request location permission
+   */
+  async requestLocationPermission() {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      const granted = status === 'granted';
+
+      return {
+        success: granted,
+        status,
+        message: granted ? 'Location permission granted' : 'Location permission denied',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get current location
+   */
+  async getCurrentLocation() {
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      this.currentLocation = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        timestamp: Date.now(),
+      };
+
+      // Cache the location
+      await this.cacheLocation(this.currentLocation);
+
+      return {
+        success: true,
+        location: this.currentLocation,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Cache user location
+   */
+  async cacheLocation(location) {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_LOCATION, JSON.stringify(location));
+    } catch (error) {
+      console.error('❌ [USER_REGIONS] Error caching location:', error);
+    }
+  }
+
+  /**
+   * Get cached location
+   */
+  async getCachedLocation() {
+    try {
+      const cachedLocation = await AsyncStorage.getItem(STORAGE_KEYS.USER_LOCATION);
+      return cachedLocation ? JSON.parse(cachedLocation) : null;
+    } catch (error) {
+      console.error('❌ [USER_REGIONS] Error getting cached location:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get region by ID
+   */
+  async getRegionById(regionId) {
+    const regions = await this.fetchUserAssignedRegions();
+
+    // Search in flat list including children
+    const findRegionRecursive = (regionList) => {
+      for (const region of regionList) {
+        if (region.id === regionId) {
+          return region;
+        }
+        if (region.children) {
+          const found = findRegionRecursive(region.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    return findRegionRecursive(regions);
+  }
+
+  /**
+   * Get user's accessible project IDs
+   */
+  async getUserAccessibleProjects() {
+    const userContext = await this.getUserContext();
+    return userContext?.accessible_projects || [];
   }
 }
 
-// Create singleton instance
+// Create and export singleton instance
 const userRegionService = new UserRegionService();
-
 export default userRegionService;

@@ -1,15 +1,17 @@
-import { Model } from "@nozbe/watermelondb";
-import { field, date, relation, children } from "@nozbe/watermelondb/decorators";
+import { Model } from '@nozbe/watermelondb';
+import { field, date } from '@nozbe/watermelondb/decorators';
 
 export default class GrmAdministrativeLevelType extends Model {
-	static table = "grm_administrative_level_types";
+  static table = 'grm_administrative_level_types';
 
-	@field("level_name") levelName;
-	@field("level_order") levelOrder;
-	@relation("grm_projects", "project_id") project;
-	@date("created_at") createdAt;
-	@date("updated_at") updatedAt;
+  @field('level_name') levelName;
+  @field('level_order') levelOrder;
+  @field('project') project;
 
-	@children("grm_administrative_regions") administrativeRegions;
-	@children("grm_issue_categories") issueCategories;
+  // Add Frappe sync timestamp fields
+  @date('creation') creation;
+  @date('modified') modified;
+
+  @date('created_at') createdAt;
+  @date('updated_at') updatedAt;
 }

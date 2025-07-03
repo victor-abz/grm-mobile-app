@@ -145,7 +145,7 @@ function DataProvider({ children }) {
       }
 
       // Load lookup data
-      await loadLookupData();
+      // await loadLookupData();
 
       setIsDataInitialized(true);
       console.log('✅ All data services initialized successfully');
@@ -432,7 +432,6 @@ function DataProvider({ children }) {
     regionError,
 
     // Actions
-    refreshLookupData,
     refreshRegionData,
     performEmergencyCleanup,
     getSystemStatus,

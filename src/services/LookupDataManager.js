@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { of } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 import { Q } from '@nozbe/watermelondb';
+import WatermelonSyncManager from './WatermelonSyncManager';
+import watermelonManager from '../database/watermelonManager';
 
 // Storage keys for persistent lookup data
 const STORAGE_KEYS = {
@@ -13,546 +15,297 @@ const STORAGE_KEYS = {
 const CACHE_VERSION = '1.0.2';
 
 /**
- * Reactive Lookup Data Manager
- * Uses WatermelonDB as single source of truth with reactive queries
- * Sync happens in background without blocking reads
+ * Lookup Data Manager - Pure Sync-First Approach
+ *
+ * This service manages all lookup data (categories, types, statuses, etc.) using
+ * WatermelonDB sync as the single source of truth. No direct API calls - all data
+ * comes from local WatermelonDB after sync.
  */
 class LookupDataManager {
   constructor() {
-    this.isInitialized = false;
-    this.isOnline = true;
-    this.syncInProgress = false;
+    this.syncManager = null;
     this.credentials = null;
-    this.watermelonManager = null;
-    this.dataManager = null;
+    this.lastSyncStatus = { isActive: false, lastSync: null };
   }
 
   /**
-   * Initialize the lookup data manager
+   * Initialize with sync manager and credentials
    */
-  async initialize(credentials = null, projectId = null) {
-    try {
-      console.log('🔄 LookupDataManager: Initializing...');
+  async initialize(syncManager, credentials) {
+    console.log('🔧 [LOOKUP] Initializing LookupDataManager...');
+    console.log('🔧 [LOOKUP] Credentials available:', !!credentials);
+    console.log('🔧 [LOOKUP] Sync manager available:', !!syncManager);
 
-      // Import dependencies
-      const { default: watermelonManager } = await import('../database/watermelonManager');
-      this.watermelonManager = watermelonManager;
+    this.syncManager = syncManager;
+    this.credentials = credentials;
 
-      this.credentials = credentials;
-      this.isInitialized = true;
-
-      console.log('✅ LookupDataManager initialized');
-
-      // Start background sync if credentials are available (non-blocking)
-      if (credentials) {
-        console.log('🔄 LookupDataManager: Starting background sync...');
-        this.performBackgroundSync(projectId).catch((error) => {
-          console.warn('⚠️ Background sync failed:', error.message);
-        });
-      } else {
-        console.log('🔄 LookupDataManager: No credentials provided, using local data only...');
-      }
-
-      return {
-        success: true,
-        message: 'LookupDataManager initialized successfully',
-      };
-    } catch (error) {
-      console.error('❌ Error initializing LookupDataManager:', error);
-      return {
-        success: false,
-        error: error.message,
-      };
+    if (syncManager) {
+      console.log('✅ [LOOKUP] LookupDataManager initialized with sync manager');
+    } else {
+      console.warn('⚠️ [LOOKUP] LookupDataManager initialized without sync manager');
     }
   }
 
   /**
-   * Get data reactively from WatermelonDB - primary method
+   * Get data using sync-first approach
+   * 1. Check local WatermelonDB first
+   * 2. If empty and credentials available, trigger sync
+   * 3. Return data from local DB (post-sync if triggered)
    */
-  async getData(dataType, projectId = null) {
+  async getData(type) {
+    console.log(`🔍 [LOOKUP] Getting ${type} data...`);
+
     try {
-      if (!this.watermelonManager) {
-        const { default: watermelonManager } = await import('../database/watermelonManager');
-        this.watermelonManager = watermelonManager;
+      // Step 1: Check local data first
+      console.log(`🔍 [LOOKUP] Checking local ${type} data...`);
+      let data = await this.getFromLocalDB(type);
+      console.log(`🔍 [LOOKUP] Found ${data.length} ${type} records in local DB`);
+
+      // Step 2: If no local data and we have credentials, try sync
+      if (data.length === 0 && this.credentials && this.syncManager) {
+        console.log(`🔄 [LOOKUP] No local ${type} data found, triggering sync...`);
+
+        try {
+          await this.syncManager.sync();
+          console.log(`✅ [LOOKUP] Sync completed, retrying ${type} data from local DB...`);
+
+          // Retry after sync
+          data = await this.getFromLocalDB(type);
+          console.log(`🔍 [LOOKUP] Found ${data.length} ${type} records after sync`);
+        } catch (syncError) {
+          console.error(`❌ [LOOKUP] Sync failed for ${type}:`, syncError);
+          // Continue with empty data - don't throw
+        }
+      } else if (data.length === 0) {
+        console.warn(`⚠️ [LOOKUP] No ${type} data available and no sync capability`);
       }
 
-      let data = [];
-
-      switch (dataType) {
-        case 'categories':
-          data = await this.watermelonManager.getIssueCategories(projectId);
-          break;
-        case 'types':
-          data = await this.watermelonManager.getIssueTypes(projectId);
-          break;
-        case 'statuses':
-          data = await this.watermelonManager.getIssueStatuses();
-          break;
-        case 'age_groups':
-          data = await this.watermelonManager.getAgeGroups();
-          console.log('HERHEHREHREH', data);
-          break;
-        case 'citizen_groups':
-          data = await this.watermelonManager.getCitizenGroups();
-          break;
-        case 'departments':
-          data = await this.watermelonManager.getDepartments();
-          break;
-        case 'projects':
-          data = await this.watermelonManager.getProjects();
-          break;
-        case 'regions':
-          data = await this.watermelonManager.getAdministrativeRegions({ project_id: projectId });
-          break;
-        default:
-          console.warn(`Unknown data type: ${dataType}`);
-          return [];
-      }
-
-      console.log(
-        `📱 [${dataType.toUpperCase()}] Returning ${data.length} items from WatermelonDB`
-      );
+      console.log(`📊 [LOOKUP] Returning ${data.length} ${type} records`);
       return data;
     } catch (error) {
-      console.error(`❌ Error getting ${dataType} from WatermelonDB:`, error);
+      console.error(`❌ [LOOKUP] Error getting ${type} data:`, error);
       return [];
     }
   }
 
   /**
-   * Get reactive observable for data type - Return raw Frappe data directly
+   * Get data from local WatermelonDB
    */
-  observeData(dataType, projectId = null) {
+  async getFromLocalDB(type) {
     try {
-      if (!this.watermelonManager) {
-        return of([]);
+      console.log(`📱 [LOOKUP_LOCAL] Fetching ${type} from WatermelonDB...`);
+
+      const tableName = this.getTableName(type);
+      if (!tableName) {
+        console.error(`❌ [LOOKUP_LOCAL] Unknown data type: ${type}`);
+        return [];
       }
 
-      const db = this.watermelonManager.getDatabase();
+      console.log(`📱 [LOOKUP_LOCAL] Using table: ${tableName}`);
 
-      switch (dataType) {
-        case 'categories':
-          return db
-            .get('grm_issue_categories')
-            .query()
-            .observe()
-            .pipe(
-              switchMap((records) =>
-                of(
-                  records
-                    .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => ({
-                      ...r._raw,
-                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
-                    }))
-                )
-              ),
-              catchError((error) => {
-                console.error(`Error observing ${dataType}:`, error);
-                return of([]);
-              })
-            );
-        case 'types':
-          return db
-            .get('grm_issue_types')
-            .query()
-            .observe()
-            .pipe(
-              switchMap((records) =>
-                of(
-                  records
-                    .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => ({
-                      ...r._raw,
-                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
-                    }))
-                )
-              ),
-              catchError((error) => {
-                console.error(`Error observing ${dataType}:`, error);
-                return of([]);
-              })
-            );
-        case 'statuses':
-          return db
-            .get('grm_issue_statuses')
-            .query()
-            .observe()
-            .pipe(
-              switchMap((records) =>
-                of(
-                  records
-                    .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => ({
-                      ...r._raw,
-                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
-                    }))
-                )
-              ),
-              catchError((error) => {
-                console.error(`Error observing ${dataType}:`, error);
-                return of([]);
-              })
-            );
-        case 'age_groups':
-          return db
-            .get('grm_issue_age_groups')
-            .query()
-            .observe()
-            .pipe(
-              switchMap((records) =>
-                of(
-                  records
-                    .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => ({
-                      ...r._raw,
-                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
-                    }))
-                )
-              ),
-              catchError((error) => {
-                console.error(`Error observing ${dataType}:`, error);
-                return of([]);
-              })
-            );
-        case 'citizen_groups':
-          return db
-            .get('grm_issue_citizen_groups')
-            .query()
-            .observe()
-            .pipe(
-              switchMap((records) =>
-                of(
-                  records
-                    .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => ({
-                      ...r._raw,
-                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
-                    }))
-                )
-              ),
-              catchError((error) => {
-                console.error(`Error observing ${dataType}:`, error);
-                return of([]);
-              })
-            );
-        case 'departments':
-          return db
-            .get('grm_issue_departments')
-            .query()
-            .observe()
-            .pipe(
-              switchMap((records) =>
-                of(
-                  records
-                    .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => ({
-                      ...r._raw,
-                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
-                    }))
-                )
-              ),
-              catchError((error) => {
-                console.error(`Error observing ${dataType}:`, error);
-                return of([]);
-              })
-            );
-        case 'projects':
-          return db
-            .get('grm_projects')
-            .query()
-            .observe()
-            .pipe(
-              switchMap((records) =>
-                of(
-                  records
-                    .filter((r) => r && r._raw) // Filter out null records
-                    .map((r) => ({
-                      ...r._raw,
-                      name: r._raw.id || r._raw.name, // Ensure Frappe name field
-                    }))
-                )
-              ),
-              catchError((error) => {
-                console.error(`Error observing ${dataType}:`, error);
-                return of([]);
-              })
-            );
-        case 'regions':
-          const query = projectId
-            ? db.get('grm_administrative_regions').query(Q.where('project_id', projectId))
-            : db.get('grm_administrative_regions').query();
-          return query.observe().pipe(
-            switchMap((records) =>
-              of(
-                records
-                  .filter((r) => r && r._raw) // Filter out null records
-                  .map((r) => ({
-                    ...r._raw,
-                    name: r._raw.id || r._raw.name, // Ensure Frappe name field
-                  }))
-              )
-            ),
-            catchError((error) => {
-              console.error(`Error observing ${dataType}:`, error);
-              return of([]);
-            })
-          );
-        default:
-          console.warn(`Unknown data type for observation: ${dataType}`);
-          return of([]);
+      const database = watermelonManager.getDatabase();
+      if (!database) {
+        console.error('❌ [LOOKUP_LOCAL] Database not available');
+        return [];
       }
+
+      const collection = database.get(tableName);
+      const records = await collection.query().fetch();
+
+      console.log(`📱 [LOOKUP_LOCAL] Found ${records.length} records in ${tableName}`);
+
+      // Log sample record for debugging
+      if (records.length > 0) {
+        const sample = records[0];
+        console.log(`📱 [LOOKUP_LOCAL] Sample ${type} record:`, {
+          id: sample.id,
+          name: sample.name || sample.title || sample.label || 'N/A',
+          created_at: sample.created_at,
+          updated_at: sample.updated_at,
+          ...sample._raw,
+        });
+      }
+
+      // Convert WatermelonDB records to plain objects
+      const data = records.map((record) => ({
+        id: record.id,
+        name: record.name || record.title || record.label,
+        ...record._raw,
+      }));
+
+      console.log(`📱 [LOOKUP_LOCAL] Converted ${data.length} records to plain objects`);
+      return data;
     } catch (error) {
-      console.error(`❌ Error setting up observation for ${dataType}:`, error);
-      return of([]);
+      console.error(`❌ [LOOKUP_LOCAL] Error fetching ${type} from local DB:`, error);
+      return [];
     }
   }
 
-  // Specific data getter methods (always from WatermelonDB)
-  async getCategories(projectId = null) {
-    return await this.getData('categories', projectId);
-  }
+  /**
+   * Get table name for data type
+   */
+  getTableName(type) {
+    const tableMap = {
+      categories: 'grm_issue_categories',
+      types: 'grm_issue_types',
+      statuses: 'grm_issue_statuses',
+      departments: 'grm_issue_departments',
+      age_groups: 'grm_issue_age_groups',
+      citizen_groups: 'grm_issue_citizen_groups',
+      escalation_reasons: 'grm_issue_escalation_reasons',
+      projects: 'grm_projects',
+      regions: 'grm_administrative_regions',
+      admin_levels: 'grm_administrative_level_types',
+    };
 
-  async getTypes(projectId = null) {
-    return await this.getData('types', projectId);
-  }
-
-  async getStatuses() {
-    return await this.getData('statuses');
-  }
-
-  async getAgeGroups() {
-    return await this.getData('age_groups');
-  }
-
-  async getCitizenGroups() {
-    return await this.getData('citizen_groups');
-  }
-
-  async getDepartments() {
-    return await this.getData('departments');
-  }
-
-  async getProjects() {
-    return await this.getData('projects');
-  }
-
-  async getRegions(filters = {}) {
-    const projectId = filters.project || filters.project_id;
-    return await this.getData('regions', projectId);
-  }
-
-  // Reactive observable methods
-  observeCategories(projectId = null) {
-    return this.observeData('categories', projectId);
-  }
-
-  observeTypes(projectId = null) {
-    return this.observeData('types', projectId);
-  }
-
-  observeStatuses() {
-    return this.observeData('statuses');
-  }
-
-  observeAgeGroups() {
-    return this.observeData('age_groups');
-  }
-
-  observeCitizenGroups() {
-    return this.observeData('citizen_groups');
-  }
-
-  observeDepartments() {
-    return this.observeData('departments');
-  }
-
-  observeProjects() {
-    return this.observeData('projects');
-  }
-
-  observeRegions(filters = {}) {
-    const projectId = filters.project || filters.project_id;
-    return this.observeData('regions', projectId);
+    const tableName = tableMap[type];
+    console.log(`🗂️ [LOOKUP_TABLE] Mapping ${type} → ${tableName}`);
+    return tableName;
   }
 
   /**
-   * Background sync - non-blocking
+   * Force sync and refresh all lookup data
    */
-  async performBackgroundSync(projectId = null) {
-    // Prevent multiple simultaneous syncs
-    if (this.syncInProgress) {
-      console.log('⚠️ Sync already in progress, skipping...');
-      return;
+  async refreshData() {
+    console.log('🔄 [LOOKUP] Force refreshing all lookup data...');
+
+    if (!this.syncManager) {
+      console.warn('⚠️ [LOOKUP] Cannot refresh - no sync manager available');
+      return false;
     }
 
     try {
-      this.syncInProgress = true;
-      console.log('🔄 Starting background lookup data sync...');
-
-      // Import DataManager dynamically to avoid circular dependency
-      if (!this.dataManager) {
-        const { default: DataManager } = await import('./DataManager');
-        this.dataManager = DataManager;
-      }
-
-      // Only sync if we have credentials and are online
-      if (!this.credentials || !this.isOnline) {
-        console.log('⚠️ No credentials or offline, skipping sync');
-        return;
-      }
-
-      // Sync lookup data through DataManager's API methods
-      const dataTypes = ['statuses', 'age_groups', 'citizen_groups', 'departments', 'projects'];
-
-      for (const dataType of dataTypes) {
-        try {
-          console.log(`🔄 Background syncing ${dataType}...`);
-          await this.syncDataType(dataType);
-          console.log(`✅ Background sync ${dataType} completed`);
-        } catch (error) {
-          console.warn(`⚠️ Failed to sync ${dataType}:`, error.message);
-        }
-      }
-
-      // Sync project-specific data if projectId is provided
-      if (projectId) {
-        const projectSpecificTypes = ['categories', 'types', 'regions'];
-        for (const dataType of projectSpecificTypes) {
-          try {
-            console.log(`🔄 Background syncing ${dataType} for project ${projectId}...`);
-            await this.syncDataType(dataType, projectId);
-            console.log(`✅ Background sync ${dataType} completed`);
-          } catch (error) {
-            console.warn(`⚠️ Failed to sync ${dataType} for project ${projectId}:`, error.message);
-          }
-        }
-      }
-
-      await this.updateSyncTimestamp();
-      console.log('✅ Background lookup data sync completed');
+      await this.syncManager.sync();
+      console.log('✅ [LOOKUP] Data refresh completed');
+      return true;
     } catch (error) {
-      console.error('❌ Error during background sync:', error);
-    } finally {
-      this.syncInProgress = false;
+      console.error('❌ [LOOKUP] Data refresh failed:', error);
+      return false;
     }
-  }
-
-  /**
-   * Sync specific data type through DataManager's LookupAPI
-   */
-  async syncDataType(dataType, projectId = null) {
-    try {
-      // Import LookupAPI from DataManager
-      const { LookupAPI } = await import('./DataManager');
-
-      if (!this.dataManager?.call) {
-        console.warn(`⚠️ No API connection available for syncing ${dataType}`);
-        return;
-      }
-
-      let data = [];
-
-      switch (dataType) {
-        case 'categories':
-          data = await LookupAPI.getCategories(this.dataManager.call, projectId);
-          break;
-        case 'types':
-          data = await LookupAPI.getTypes(this.dataManager.call, projectId);
-          break;
-        case 'statuses':
-          data = await LookupAPI.getStatuses(this.dataManager.call);
-          break;
-        case 'age_groups':
-          data = await LookupAPI.getAgeGroups(this.dataManager.call);
-          break;
-        case 'citizen_groups':
-          data = await LookupAPI.getCitizenGroups(this.dataManager.call);
-          break;
-        case 'departments':
-          data = await LookupAPI.getDepartments(this.dataManager.call);
-          break;
-        case 'projects':
-          data = await LookupAPI.getProjects(this.dataManager.call);
-          break;
-        case 'regions':
-          data = await LookupAPI.getRegions(this.dataManager.call, { project_id: projectId });
-          break;
-        default:
-          console.warn(`Unknown data type for sync: ${dataType}`);
-          return;
-      }
-
-      if (data.length > 0) {
-        await LookupAPI.storeLookupData(dataType, data);
-        console.log(`✅ Background synced ${data.length} ${dataType} records`);
-      }
-    } catch (error) {
-      console.error(`❌ Error syncing ${dataType}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update sync timestamp
-   */
-  async updateSyncTimestamp() {
-    try {
-      const timestamp = new Date().toISOString();
-      await AsyncStorage.setItem(STORAGE_KEYS.SYNC_TIMESTAMP, timestamp);
-    } catch (error) {
-      console.error('❌ Error updating sync timestamp:', error);
-    }
-  }
-
-  /**
-   * Get last sync timestamp
-   */
-  async getLastSyncTimestamp() {
-    try {
-      return await AsyncStorage.getItem(STORAGE_KEYS.SYNC_TIMESTAMP);
-    } catch (error) {
-      console.error('❌ Error getting sync timestamp:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Set online status
-   */
-  setOnlineStatus(isOnline) {
-    this.isOnline = isOnline;
-
-    // Start background sync when coming online
-    if (isOnline && this.credentials && !this.syncInProgress) {
-      this.performBackgroundSync().catch((error) => {
-        console.warn('⚠️ Auto-sync on reconnect failed:', error.message);
-      });
-    }
-  }
-
-  /**
-   * Manual refresh trigger (still non-blocking)
-   */
-  async refresh(projectId = null) {
-    console.log('🔄 Manual refresh triggered...');
-    return this.performBackgroundSync(projectId);
   }
 
   /**
    * Get sync status
    */
   getSyncStatus() {
-    return {
-      syncInProgress: this.syncInProgress,
-      isOnline: this.isOnline,
-      hasCredentials: !!this.credentials,
-      isInitialized: this.isInitialized,
-    };
+    if (this.syncManager) {
+      const status = this.syncManager.getSyncStatus();
+      console.log('📊 [LOOKUP] Current sync status:', status);
+      return status;
+    }
+    console.log('📊 [LOOKUP] No sync manager - returning offline status');
+    return { isActive: false, lastSync: null };
+  }
+
+  /**
+   * Test sync connectivity
+   */
+  async testSync() {
+    console.log('🔧 [LOOKUP] Testing sync connectivity...');
+
+    if (!this.syncManager) {
+      console.warn('⚠️ [LOOKUP] Cannot test sync - no sync manager available');
+      return false;
+    }
+
+    try {
+      const result = await this.syncManager.testConnection();
+      console.log('🔧 [LOOKUP] Sync test result:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [LOOKUP] Sync test failed:', error);
+      return false;
+    }
+  }
+
+  // Individual data type getters (all use the same sync-first pattern)
+  async getIssueCategories() {
+    console.log('📋 [LOOKUP] Getting issue categories...');
+    return await this.getData('categories');
+  }
+
+  async getIssueTypes() {
+    console.log('📋 [LOOKUP] Getting issue types...');
+    return await this.getData('types');
+  }
+
+  async getIssueStatuses() {
+    console.log('📋 [LOOKUP] Getting issue statuses...');
+    return await this.getData('statuses');
+  }
+
+  async getIssueDepartments() {
+    console.log('📋 [LOOKUP] Getting issue departments...');
+    return await this.getData('departments');
+  }
+
+  async getIssueAgeGroups() {
+    console.log('📋 [LOOKUP] Getting issue age groups...');
+    return await this.getData('age_groups');
+  }
+
+  async getIssueCitizenGroups() {
+    console.log('📋 [LOOKUP] Getting issue citizen groups...');
+    return await this.getData('citizen_groups');
+  }
+
+  async getIssueEscalationReasons() {
+    console.log('📋 [LOOKUP] Getting issue escalation reasons...');
+    return await this.getData('escalation_reasons');
+  }
+
+  async getProjects() {
+    console.log('📋 [LOOKUP] Getting projects...');
+    return await this.getData('projects');
+  }
+
+  async getAdministrativeRegions() {
+    console.log('📋 [LOOKUP] Getting administrative regions...');
+    return await this.getData('regions');
+  }
+
+  async getAdministrativeLevelTypes() {
+    console.log('📋 [LOOKUP] Getting administrative level types...');
+    return await this.getData('admin_levels');
+  }
+
+  /**
+   * Get local data counts for debugging
+   */
+  async getDataCounts() {
+    console.log('📊 [LOOKUP] Getting data counts for debugging...');
+
+    const types = [
+      'categories',
+      'types',
+      'statuses',
+      'departments',
+      'age_groups',
+      'citizen_groups',
+      'escalation_reasons',
+      'projects',
+      'regions',
+      'admin_levels',
+    ];
+
+    const counts = {};
+
+    for (const type of types) {
+      try {
+        const data = await this.getFromLocalDB(type);
+        counts[type] = data.length;
+        console.log(`📊 [LOOKUP] ${type}: ${data.length} records`);
+      } catch (error) {
+        console.error(`❌ [LOOKUP] Error counting ${type}:`, error);
+        counts[type] = 'error';
+      }
+    }
+
+    console.log('📊 [LOOKUP] Data counts summary:', counts);
+    return counts;
   }
 }
 
-// Create singleton instance
+// Create and export singleton instance
 const lookupDataManager = new LookupDataManager();
-
 export default lookupDataManager;

@@ -1,12 +1,18 @@
-import { Model } from "@nozbe/watermelondb";
-import { field, date, relation } from "@nozbe/watermelondb/decorators";
+import { Model } from '@nozbe/watermelondb';
+import { field, date } from '@nozbe/watermelondb/decorators';
 
 export default class GrmProjectLink extends Model {
-	static table = "grm_project_links";
+  static table = 'grm_project_links';
 
-	@relation("grm_projects", "project_id") project;
-	@field("parent_id") parentId;
-	@field("parent_type") parentType;
-	@date("created_at") createdAt;
-	@date("updated_at") updatedAt;
+  @field('parent') parent;
+  @field('parenttype') parentType;
+  @field('project') project;
+
+  // Add Frappe sync timestamp fields
+  @date('creation') creation;
+  @date('modified') modified;
+
+  @date('created_at') createdAt;
+  @date('updated_at') updatedAt;
+
 }

@@ -99,11 +99,11 @@ function Content({
       if (index < 2) {
         console.log(`🔍 [IssueSearch] Processing issue ${index}:`, {
           id: issueData.id,
-          category_id: issueData.category_id,
-          status_id: issueData.status_id,
-          issue_type_id: issueData.issue_type_id,
-          assignee_id: issueData.assignee_id,
-          reporter_id: issueData.reporter_id,
+          category: issueData.category,
+          status: issueData.status,
+          issue_type: issueData.issue_type,
+          assignee: issueData.assignee,
+          reporter: issueData.reporter,
         });
       }
 
@@ -113,33 +113,32 @@ function Content({
 
         // Add resolved labels for display
         categoryLabel:
-          lookupMaps.categoryMap.get(issueData.category_id) || issueData.category_id || 'Unknown',
+          lookupMaps.categoryMap.get(issueData.category) || issueData.category || 'Unknown',
         typeLabel:
-          lookupMaps.typeMap.get(issueData.issue_type_id) || issueData.issue_type_id || 'Unknown',
-        statusLabel:
-          lookupMaps.statusMap.get(issueData.status_id) || issueData.status_id || 'Unknown',
+          lookupMaps.typeMap.get(issueData.issue_type) || issueData.issue_type || 'Unknown',
+        statusLabel: lookupMaps.statusMap.get(issueData.status) || issueData.status || 'Unknown',
         ageGroupLabel:
-          lookupMaps.ageGroupMap.get(issueData.citizen_age_group_id) ||
-          issueData.citizen_age_group_id ||
+          lookupMaps.ageGroupMap.get(issueData.citizen_age_group) ||
+          issueData.citizen_age_group ||
           'Unknown',
         citizenGroup1Label:
-          lookupMaps.citizenGroupMap.get(issueData.citizen_group_1_id) ||
-          issueData.citizen_group_1_id ||
+          lookupMaps.citizenGroupMap.get(issueData.citizen_group_1) ||
+          issueData.citizen_group_1 ||
           'Unknown',
         citizenGroup2Label:
-          lookupMaps.citizenGroupMap.get(issueData.citizen_group_2_id) ||
-          issueData.citizen_group_2_id ||
+          lookupMaps.citizenGroupMap.get(issueData.citizen_group_2) ||
+          issueData.citizen_group_2 ||
           'Unknown',
         regionLabel:
-          lookupMaps.regionMap.get(issueData.administrative_region_id) ||
-          issueData.administrative_region_id ||
+          lookupMaps.regionMap.get(issueData.administrative_region) ||
+          issueData.administrative_region ||
           'Unknown',
         projectLabel:
-          lookupMaps.projectMap.get(issueData.project_id) || issueData.project_id || 'Unknown',
+          lookupMaps.projectMap.get(issueData.project) || issueData.project || 'Unknown',
         reporterLabel:
-          lookupMaps.userMap.get(issueData.reporter_id) || issueData.reporter_id || 'Unknown',
+          lookupMaps.userMap.get(issueData.reporter) || issueData.reporter || 'Unknown',
         assigneeLabel:
-          lookupMaps.userMap.get(issueData.assignee_id) || issueData.assignee_id || 'Unassigned',
+          lookupMaps.userMap.get(issueData.assignee) || issueData.assignee || 'Unassigned',
 
         // Format dates for display
         issueDateFormatted: issueData.issue_date
@@ -211,10 +210,10 @@ function Content({
         console.log('  - Final status found:', foundStatus);
 
         filteredIssues = enrichIssuesWithLabels.filter((issue) => {
-          // ✅ FIXED: Handle both backend format (assignee_id) and model format (assigneeId)
+          // ✅ FIXED: Use corrected field names
           // Check both _raw and model properties
-          const assigneeId = issue.assignee_id || issue.assigneeId || issue.assignee?.id;
-          const statusId = issue.status_id || issue.statusId || issue.status?.id;
+          const assigneeId = issue.assignee || issue.assigneeId || issue.assignee?.id;
+          const statusId = issue.status || issue.statusId || issue.status?.id;
           const foundStatusId = foundStatus?.id || foundStatus?.name;
           const isAssignedToUser = assigneeId && assigneeId === currentUserId;
           const isNotFinalStatus = statusId !== foundStatusId;
@@ -233,9 +232,9 @@ function Content({
         console.log('  - Final status found:', foundStatus);
 
         filteredIssues = enrichIssuesWithLabels.filter((issue) => {
-          const assigneeId = issue.assignee_id || issue.assigneeId || issue.assignee?.id;
-          const reporterId = issue.reporter_id || issue.reporterId || issue.reporter?.id;
-          const statusId = issue.status_id || issue.statusId || issue.status?.id;
+          const assigneeId = issue.assignee || issue.assigneeId || issue.assignee?.id;
+          const reporterId = issue.reporter || issue.reporterId || issue.reporter?.id;
+          const statusId = issue.status || issue.statusId || issue.status?.id;
           const foundStatusId = foundStatus?.id || foundStatus?.name;
           const isUserInvolved =
             (assigneeId && assigneeId === currentUserId) ||
@@ -256,9 +255,9 @@ function Content({
         console.log('  - Final status found:', foundStatus);
 
         filteredIssues = enrichIssuesWithLabels.filter((issue) => {
-          const assigneeId = issue.assignee_id || issue.assigneeId || issue.assignee?.id;
-          const reporterId = issue.reporter_id || issue.reporterId || issue.reporter?.id;
-          const statusId = issue.status_id || issue.statusId || issue.status?.id;
+          const assigneeId = issue.assignee || issue.assigneeId || issue.assignee?.id;
+          const reporterId = issue.reporter || issue.reporterId || issue.reporter?.id;
+          const statusId = issue.status || issue.statusId || issue.status?.id;
           const foundStatusId = foundStatus?.id || foundStatus?.name;
           const isUserInvolved =
             (assigneeId && assigneeId === currentUserId) ||
@@ -318,10 +317,10 @@ function Content({
               <Text
                 style={{
                   color:
-                    item.status_id === 1 ||
-                    item.status_id === 2 ||
-                    item.status_id === '1' ||
-                    item.status_id === '2'
+                    item.status === 1 ||
+                    item.status === 2 ||
+                    item.status === '1' ||
+                    item.status === '2'
                       ? colors.inProgress
                       : colors.primary,
                 }}

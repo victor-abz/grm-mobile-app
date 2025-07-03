@@ -66,8 +66,8 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
     );
   }, [
     enrichedIssue?.id,
-    enrichedIssue?.status_id,
-    enrichedIssue?.assignee_id,
+    enrichedIssue?.status,
+    enrichedIssue?.assignee,
     enrichedIssue?.escalate_flag,
     statuses?.length,
     currentUserId,
@@ -210,14 +210,14 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
           // Handle status change
           if (newStatus) {
             const statusId = newStatus.id || newStatus._raw?.id;
-            issue._setRaw('status_id', statusId);
+            issue._setRaw('status', statusId);
           }
 
           // Apply action-specific updates
           const now = new Date();
           const actionUpdates = {
             [ACTION_TYPES.ACCEPT]: () => {
-              issue._setRaw('assignee_id', currentUserId);
+              issue._setRaw('assignee', currentUserId);
               issue.acceptedDate = now;
             },
             [ACTION_TYPES.REJECT]: () => {
@@ -298,8 +298,8 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
 
       // Create comment record
       await db.get('grm_issue_comments').create((commentRecord) => {
-        commentRecord._setRaw('grm_issue_id', enrichedIssue.id);
-        commentRecord._setRaw('user_id', currentUserId);
+        commentRecord._setRaw('grm_issue', enrichedIssue.id);
+        commentRecord._setRaw('user', currentUserId);
         commentRecord.comment = getCommentText();
         commentRecord.activityType = actionType;
         commentRecord.createdAt = now;
@@ -308,8 +308,8 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
 
       // Create log record
       await db.get('grm_issue_logs').create((logRecord) => {
-        logRecord._setRaw('grm_issue_id', enrichedIssue.id);
-        logRecord._setRaw('user_id', currentUserId);
+        logRecord._setRaw('grm_issue', enrichedIssue.id);
+        logRecord._setRaw('user', currentUserId);
 
         const logMappings = {
           [ACTION_TYPES.ACCEPT]: {

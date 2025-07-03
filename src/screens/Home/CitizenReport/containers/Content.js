@@ -17,7 +17,7 @@ const theme = {
   },
 };
 
-function Content() {
+function Content({ selectedProject = null }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [value, setValue] = React.useState('facilitator');
@@ -112,6 +112,7 @@ function Content() {
                       typeOfPerson: value,
                       methodOfContact: pickerValue,
                       contactInfo,
+                      selectedProject,
                     },
                   });
                 } else {
@@ -123,6 +124,7 @@ function Content() {
                     typeOfPerson: value,
                     methodOfContact: pickerValue,
                     contactInfo,
+                    selectedProject,
                   },
                 });
               }

@@ -233,10 +233,11 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
 
   console.log('🔍 [LOCATION] Component initialized with:', { regionsCount: regions.length });
 
-  // Process regions using shared utility for consistent structure
+  const projectId = stepOneParams?.selectedProject?.id || null;
+
   const processedRegions = useMemo(() => {
-    return processRegions(regions);
-  }, [regions]);
+    return processRegions(regions, projectId);
+  }, [regions, projectId]);
 
   // State for region selection with auto-selection logic
   const [selectedRegion, setSelectedRegion] = useState(null);
@@ -371,7 +372,6 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
           console.log('📱 Found cached location:', cachedLocation);
           setCurrentLocation(cachedLocation);
           setSelectedMapLocation(cachedLocation);
-          findAndSetNearestRegion(cachedLocation);
         } else {
           console.log('📱 No cached location found');
         }
@@ -411,7 +411,6 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       if (locationResult.success) {
         setCurrentLocation(locationResult.location);
         setSelectedMapLocation(locationResult.location);
-        findAndSetNearestRegion(locationResult.location);
 
         Alert.alert(
           '📍 Location Detected',
@@ -439,17 +438,6 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
     }
   };
 
-  const findAndSetNearestRegion = (location) => {
-    const nearest = userRegionService.findNearestRegion(location);
-    setNearestRegion(nearest);
-
-    if (nearest) {
-      console.log(
-        `📍 Nearest region: ${nearest.region.regionName} (${nearest.distance.toFixed(2)}km away)`
-      );
-    }
-  };
-
   const handleMapLocationSelect = (coordinate) => {
     const location = {
       latitude: coordinate.latitude,
@@ -459,7 +447,6 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
     };
 
     setSelectedMapLocation(location);
-    findAndSetNearestRegion(location);
 
     console.log('🗺️ Location selected on map:', location);
   };
@@ -561,6 +548,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
           selectedRegion.administrativeLevel || selectedRegion.administrativeLevelId,
       },
       locationDescription,
+      projectId,
     };
 
     // Include geolocation if available (prefer map selection over GPS)

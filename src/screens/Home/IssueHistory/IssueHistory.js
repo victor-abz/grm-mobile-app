@@ -57,7 +57,7 @@ const enhance = withObservables(['route'], ({ route }) => {
         .getDatabase()
         .get('grm_issue_comments')
         .query(
-          Q.where('grm_issue_id', issueId),
+          Q.where('grm_issue', issueId),
           Q.sortBy('created_at', Q.desc) // Sort by newest first
         )
         .observe();

@@ -96,6 +96,7 @@ def get_changes_since(last_sync_time):
         'GRM Issue Citizen Group',
         'GRM Issue Department',
         'GRM Project',
+        "GRM Project Link",
     ]
     
     changes = {}
@@ -172,7 +173,7 @@ def push_changes():
     """
     
     # Get JSON data from request body
-    data = frappe.get_request_data()
+    data = 
     changes = data.get('changes', {})
     last_pulled_at = data.get('lastPulledAt')
     
@@ -1115,7 +1116,7 @@ async function validateSyncCompatibility() {
 - [ ] **Task 2.3**: Update DataManager to use new sync system
 - [ ] **Task 2.4**: Update database schema for sync compatibility
 - [ ] **Task 2.5**: Create SyncProvider for state management
-- [ ] **Task 2.6**: Update SyncAttachments screen with new UI
+- [ ] **Task 2.6**: Update SyncAttachments screen with new UI *(Not Implemented)*
 - [ ] **Task 2.7**: Add offline operations queue
 
 ### Integration Tasks (Manual by User)

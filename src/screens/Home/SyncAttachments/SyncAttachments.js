@@ -34,6 +34,14 @@ function SyncAttachments({ navigation, issues = [] }) {
     errors: [],
   });
 
+  const [syncStatus, setSyncStatus] = useState({
+    isActive: false,
+    phase: 'idle',
+    progress: 0,
+    error: null,
+    lastSync: null,
+  });
+
   const onDismissSnackBar = () => setErrorVisible(false);
 
   const { username, userPassword } = useSelector((state) => state.get('authentication').toObject());
@@ -273,6 +281,27 @@ function SyncAttachments({ navigation, issues = [] }) {
     return () => clearTimeout(timer);
   }, []);
 
+  // Listen to sync manager status
+  useEffect(() => {
+    if (!dataManager || !dataManager.syncManager) return;
+
+    const handleStatus = (statusUpdate) => {
+      setSyncStatus((prev) => ({ ...prev, ...statusUpdate }));
+    };
+
+    dataManager.syncManager.addSyncListener(handleStatus);
+
+    // Initialize with current status if available
+    const current = dataManager.syncManager.getSyncStatus
+      ? dataManager.syncManager.getSyncStatus()
+      : {};
+    handleStatus(current);
+
+    return () => {
+      dataManager.syncManager.removeSyncListener(handleStatus);
+    };
+  }, [dataManager]);
+
   return (
     <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
       {/* Main Content */}
@@ -283,12 +312,75 @@ function SyncAttachments({ navigation, issues = [] }) {
             {t('sync_status', 'Sync Status')}
           </Text>
           <Text>
+            {t('phase', 'Phase')}: {syncStatus.phase}
+          </Text>
+          {syncStatus.lastSync && (
+            <Text>
+              {t('last_sync', 'Last Sync')}: {new Date(syncStatus.lastSync).toLocaleString()}
+            </Text>
+          )}
+          {syncStatus.error && (
+            <Text style={{ color: 'red' }}>
+              {t('error', 'Error')}: {syncStatus.error}
+            </Text>
+          )}
+          <Text>
+            {t('pending_changes', 'Pending Changes')}: {syncStatus.pendingChangesCount || 0}
+          </Text>
+          <Text>
             {t('pending_attachments', 'Pending Attachments')}:{' '}
             {attachments.filter((a) => !a.attachment.uploaded).length}
           </Text>
           <Text>
             {t('pending_issues', 'Pending Issues')}: {pendingIssues.length}
           </Text>
+          {syncStatus.isActive && (
+            <View style={{ marginTop: 8 }}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={{ marginTop: 4 }}>{syncStatus.progress}%</Text>
+            </View>
+          )}
+        </Card>
+
+        {/* Manual Sync Controls */}
+        <Card style={{ marginBottom: 16, padding: 16 }}>
+          <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>
+            {t('manual_sync', 'Manual Sync')}
+          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <CustomGreenButton
+              title={t('pull', 'Pull')}
+              onPress={async () => {
+                try {
+                  setLoading(true);
+                  await dataManager.performSync();
+                } catch (err) {
+                  console.error('[SyncAttachments] Manual pull failed:', err);
+                  setErrorMessage(err.message || 'Sync failed');
+                  setErrorVisible(true);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              style={{ flex: 1, marginRight: 8 }}
+            />
+            <CustomGreenButton
+              title={t('push', 'Push')}
+              onPress={async () => {
+                try {
+                  setLoading(true);
+                  await dataManager.performSync();
+                } catch (err) {
+                  console.error('[SyncAttachments] Manual push failed:', err);
+                  setErrorMessage(err.message || 'Sync failed');
+                  setErrorVisible(true);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              style={{ flex: 1, marginLeft: 8 }}
+            />
+          </View>
         </Card>
 
         {/* Attachments List */}
