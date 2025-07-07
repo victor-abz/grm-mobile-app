@@ -11,9 +11,9 @@
  */
 export const isAcceptEnabled = (statuses, enrichedIssue, isIssueAssignedToMe) => {
   if (!statuses || !enrichedIssue) return false;
-  
-  const currentStatusId = enrichedIssue.status.id;
-  
+
+  const currentStatusId = enrichedIssue.status;
+
   // Check for initial status match
   const hasInitialStatusMatch = statuses.some((status) => {
     const statusData = status._raw || status;
@@ -21,7 +21,7 @@ export const isAcceptEnabled = (statuses, enrichedIssue, isIssueAssignedToMe) =>
       statusData.initial_status === true && isIssueAssignedToMe && currentStatusId === statusData.id
     );
   });
-  
+
   // Check for unknown status and assigned
   const isUnknownStatusAndAssigned =
     (!currentStatusId || currentStatusId === '') && isIssueAssignedToMe;
@@ -42,7 +42,7 @@ export const isRecordResolutionEnabled = (statuses, enrichedIssue, isIssueAssign
     return false;
   }
 
-  const currentStatusId = enrichedIssue.status.id;
+  const currentStatusId = enrichedIssue.status;
 
   return statuses.some((status) => {
     const statusData = status._raw || status;
@@ -62,7 +62,7 @@ export const isRateAppealEnabled = (statuses, enrichedIssue, isIssueAssignedToMe
     return false;
   }
 
-  const currentStatusId = enrichedIssue.status.id;
+  const currentStatusId = enrichedIssue.status;
 
   return statuses.some((status) => {
     const statusData = status._raw || status;
@@ -90,11 +90,11 @@ export const isEscalateEnabled = (
  */
 export const checkIsIssueAssignedToMe = (enrichedIssue, currentUserId) => {
   if (!enrichedIssue || !currentUserId) return false;
-  
+
   // Check assignee from raw data
-  const assigneeId = enrichedIssue.assignee.id;
-  const reporterId = enrichedIssue.reporter.id;
-  
+  const assigneeId = enrichedIssue.assignee;
+  const reporterId = enrichedIssue.reporter;
+
   if (assigneeId) {
     return assigneeId === currentUserId;
   }

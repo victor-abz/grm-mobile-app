@@ -127,20 +127,6 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       // Calculate days ago (memoized calculation)
       daysAgo: rawData.intake_date ? moment().diff(moment(rawData.intake_date), 'days') : 0,
 
-      // Backward compatibility fields
-      status: {
-        id: rawData.status,
-        name: statusMap.get(rawData.status) || rawData.status,
-      },
-      assignee: {
-        id: rawData.assignee,
-        name: rawData.assignee,
-      },
-      reporter: {
-        id: rawData.reporter,
-        name: rawData.reporter,
-      },
-
       // Contact information handling
       contact_information: rawData.contact_information
         ? {
