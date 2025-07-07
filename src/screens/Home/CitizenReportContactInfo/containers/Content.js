@@ -67,7 +67,8 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
   // Event handlers
   const handleConfidentialValueChange = useCallback(
     (newValue) => {
-      setConfidentialValue(newValue === confidentialValue ? 'Visible' : newValue);
+      console.log(newValue);
+      setConfidentialValue(newValue);
     },
     [confidentialValue]
   );
@@ -109,7 +110,9 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
           value={value}
           uncheckedColor="#dedede"
           color={colors.primary}
-          onPress={() => handleConfidentialValueChange(value)}
+          onValueChange={(newValue) => {
+            handleConfidentialValueChange(newValue);
+          }}
           status={confidentialValue === value ? 'checked' : 'unchecked'}
         />
         <Text style={styles.radioLabel}>{label}</Text>
@@ -188,9 +191,12 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
             onValueChange={handleConfidentialValueChange}
             value={confidentialValue}
           >
-            {renderRadioButton(1, t('step_2_keep_name_confidential'))}
-            {renderRadioButton(2, t('step_2_on_behalf_of_someone'))}
-            {renderRadioButton(3, t('step_2_organization_behalf_someone'))}
+            {renderRadioButton('Confidential', t('step_2_keep_name_confidential'))}
+            {renderRadioButton('On behalf of Individual', t('step_2_on_behalf_of_someone'))}
+            {renderRadioButton(
+              'On behalf of Organization',
+              t('step_2_organization_behalf_someone')
+            )}
           </RadioButton.Group>
         </View>
         <Text />

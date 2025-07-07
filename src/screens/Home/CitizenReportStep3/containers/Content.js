@@ -12,8 +12,7 @@ import dataManager from '../../../../services/DataManager'; // Import DataManage
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { createLookupMap } from '../../../../utils/issueDetailUtils';
-
-const SAMPLE_WORDS = ['car', 'house', 'tree', 'ball'];
+import { generateTrackingCode } from '../../../../utils/trackingCodeGenerator';
 const theme = {
   roundness: 12,
   colors: {
@@ -40,7 +39,6 @@ function Content({
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
 
-  const randomWord = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const [sound, setSound] = useState();
   const [playing, setPlaying] = useState(false);
 
@@ -278,8 +276,11 @@ function Content({
         citizen_group_1: stepOneParams.citizen_group_1,
         citizen_group_2: stepOneParams.citizen_group_2,
 
-        // Generate tracking code
-        tracking_code: `${randomWord(SAMPLE_WORDS)}${Math.floor(Math.random() * 1000)}`,
+        // Generate tracking code using simple format: {PROJECT_CODE}-{YYMMDD}-{RRRR}
+        tracking_code: generateTrackingCode(
+          stepOneParams.selectedProject?.id,
+          stepTwoParams.date ? new Date(stepTwoParams.date) : new Date()
+        ),
 
         // Set confirmed flag
         confirmed: true,

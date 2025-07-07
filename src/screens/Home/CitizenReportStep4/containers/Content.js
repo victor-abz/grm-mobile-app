@@ -152,59 +152,6 @@ function Content({
     );
   }
 
-  // Show error state with fallback to tracking code
-  if (error || (!actualIssue && issueId)) {
-    return (
-      <ScrollView>
-        <View style={{ padding: 23 }}>
-          <Text style={styles.stepText}>{t('step_6')}</Text>
-          <Text style={styles.stepSubtitle}>{t('step_4_subtitle')}</Text>
-          <Text style={styles.stepDescription}>{t('step_4_description')}</Text>
-        </View>
-
-        <LockImage
-          style={{ alignSelf: 'center' }}
-          height={screenHeight * 0.2}
-          width={screenWidth * 0.5}
-        />
-        <Text style={[styles.stepSubtitle, { textAlign: 'center' }]}>{t('step_4_issue_code')}</Text>
-        <Text
-          style={{
-            fontSize: 49,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            color: colors.primary,
-            marginBottom: 20,
-          }}
-        >
-          {trackingCode || 'PENDING'}
-        </Text>
-
-        <Text
-          style={{ textAlign: 'center', color: '#666', marginBottom: 20, paddingHorizontal: 20 }}
-        >
-          ✅ Your issue has been submitted successfully!
-          {error && (
-            <Text style={{ color: '#ff9800', fontSize: 12 }}>
-              {'\n'}Note: {error}
-            </Text>
-          )}
-        </Text>
-
-        <View style={{ alignSelf: 'center' }}>
-          <Button
-            theme={theme}
-            labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-            mode="contained"
-            onPress={() => navigation.navigate('GRM')}
-          >
-            {t('step_4_back_text')}
-          </Button>
-        </View>
-      </ScrollView>
-    );
-  }
-
   return (
     <ScrollView>
       <View style={{ padding: 23 }}>
@@ -225,14 +172,14 @@ function Content({
       <Text style={[styles.stepSubtitle, { textAlign: 'center' }]}>{t('step_4_issue_code')}</Text>
       <Text
         style={{
-          fontSize: 49,
+          fontSize: 26,
           fontWeight: 'bold',
           textAlign: 'center',
           color: colors.primary,
           marginBottom: 40,
         }}
       >
-        {actualIssue?.trackingCode || actualIssue?.tracking_code || trackingCode || 'PENDING'}
+        {actualIssue?.tracking_code}
       </Text>
       <View style={{ alignSelf: 'center' }}>
         {/* <View */}
