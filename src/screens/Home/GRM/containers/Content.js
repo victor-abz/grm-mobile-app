@@ -50,17 +50,12 @@ function Content() {
           borderRadius: 15,
         }}
       >
-        <SmallCard
+        <BigCard
           image={require('../../../../../assets/BG_1.png')}
           onCardPress={() => navigation.navigate('Statistics')}
-          title={t('diagnostics')}
+          title={t('View Report')}
           icon={<Chart />}
-        />
-        <SmallCard
-          image={require('../../../../../assets/BG_2.png')}
-          onCardPress={() => alert(t('Upcoming feature'))}
-          title={t('information')}
-          icon={<FileIcon />}
+          // cardHeight={79}
         />
       </View>
 

@@ -219,7 +219,7 @@ function Content({
         {dataIssuePerDate.labels.length > 0 && (
           <View>
             <View style={styles.container}>
-              <Text style={styles.statisticsText}>{t('stat_nb_issue_by_per_date')}</Text>
+              <Text style={styles.statisticsText}>{t('Number of issues by date')}</Text>
             </View>
             <BarChartGrm
               labelNames={dataIssuePerDate.labels}
@@ -229,7 +229,7 @@ function Content({
         )}
         <View>
           <View style={styles.container}>
-            <Text style={styles.statisticsText}>{t('stat_nb_issue_by_age_range')}</Text>
+            <Text style={styles.statisticsText}>{t('Number of issues by age range')}</Text>
           </View>
           <PieChartGrm data={dataAgeGroup} />
         </View>
@@ -237,7 +237,9 @@ function Content({
         {dataCitizenGroup1.length > 0 && (
           <View>
             <View style={styles.container}>
-              <Text style={styles.statisticsText}>{t('stat_nb_issue_by_occupation_status')}</Text>
+              <Text style={styles.statisticsText}>
+                {t('Number of issues by occupation status')}
+              </Text>
             </View>
             <PieChartGrm data={dataCitizenGroup1} />
           </View>
@@ -246,7 +248,7 @@ function Content({
         {dataCitizenGroup2.length > 0 && (
           <View>
             <View style={styles.container}>
-              <Text style={styles.statisticsText}>{t('stat_nb_issue_by_education_level')}</Text>
+              <Text style={styles.statisticsText}>{t('Number of issues by education level')}</Text>
             </View>
             <PieChartGrm data={dataCitizenGroup2} />
           </View>
@@ -254,28 +256,28 @@ function Content({
 
         <View>
           <View style={styles.container}>
-            <Text style={styles.statisticsText}>{t('stat_nb_issue_by_issue_type')}</Text>
+            <Text style={styles.statisticsText}>{t('Number of issues by type')}</Text>
           </View>
           <PieChartGrm data={dataIssueType} />
         </View>
 
         <View>
           <View style={styles.container}>
-            <Text style={styles.statisticsText}>{t('stat_nb_issue_by_issue_category')}</Text>
+            <Text style={styles.statisticsText}>{t('Number of issues by category')}</Text>
           </View>
           <PieChartGrm data={dataIssueCategory} />
         </View>
 
         <View>
           <View style={styles.container}>
-            <Text style={styles.statisticsText}>{t('stat_nb_issue_by_issue_component')}</Text>
+            <Text style={styles.statisticsText}>{t('Number of issues by component')}</Text>
           </View>
           <PieChartGrm data={dataIssueComponent} />
         </View>
 
         <View>
           <View style={styles.container}>
-            <Text style={styles.statisticsText}>{t('stat_nb_issue_by_issue_sub_component')}</Text>
+            <Text style={styles.statisticsText}>{t('Number of issues by sub-component')}</Text>
           </View>
           <PieChartGrm data={dataIssueSubComponent} />
         </View>
