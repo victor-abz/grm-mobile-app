@@ -103,7 +103,7 @@ function Content() {
             } catch (error) {
               console.error('Nuclear reset error:', error);
               Alert.alert(
-                t('❌ Reset Error'),
+                t('Reset Error'),
                 t('An error occurred during reset. Please restart the app.')
               );
             } finally {
