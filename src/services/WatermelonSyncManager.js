@@ -210,8 +210,8 @@ class WatermelonSyncManager {
       if (this.database.adapter) {
         console.log('📊 [DATABASE] Adapter info:', {
           adapterType: this.database.adapter.constructor.name,
-          dbName: this.database.adapter.dbName || 'unknown',
-          schema: this.database.adapter.schema || 'unknown',
+          dbName: this.database.adapter.dbName,
+          schema: this.database.adapter.schema,
         });
       }
 

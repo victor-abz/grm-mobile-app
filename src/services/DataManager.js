@@ -676,25 +676,25 @@ class DataManager {
 
       // Group by status
       issues.forEach((issue) => {
-        const status = issue.status || 'unknown';
+        const status = issue.status;
         stats.by_status[status] = (stats.by_status[status] || 0) + 1;
       });
 
       // Group by category
       issues.forEach((issue) => {
-        const category = issue.category || 'unknown';
+        const category = issue.category;
         stats.by_category[category] = (stats.by_category[category] || 0) + 1;
       });
 
       // Group by project
       issues.forEach((issue) => {
-        const project = issue.project || 'unknown';
+        const project = issue.project;
         stats.by_project[project] = (stats.by_project[project] || 0) + 1;
       });
 
       // Group by region
       issues.forEach((issue) => {
-        const region = issue.administrative_region || 'unknown';
+        const region = issue.administrative_region;
         stats.by_region[region] = (stats.by_region[region] || 0) + 1;
       });
 

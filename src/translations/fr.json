@@ -253,7 +253,6 @@
   "select_project": "Sélectionner un projet",
   "no_attachments_to_sync": "Aucune pièce jointe à synchroniser",
   "no_activity_yet": "Aucune activité pour le moment",
-  "unknown": "Inconnu",
   "steps_details": "Détails des étapes",
   "All (Debug)": "Tout (Debug)",
   "resolution_details": "Détails de la résolution",
@@ -399,6 +398,5 @@
   "Loading statistics...": "Chargement des statistiques...",
   "Refresh": "Actualiser",
   "Monthly Trend (Last 6 Months)": "Tendance mensuelle (6 derniers mois)",
-  "Statistics Dashboard": "Tableau de bord statistique",
-  "Unknown": "TODO"
+  "Statistics Dashboard": "Tableau de bord statistique"
 }

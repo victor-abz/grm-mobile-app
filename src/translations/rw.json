@@ -364,7 +364,6 @@
   "SUIVANT": "KOMEZA",
   "of": "kuri",
   "select_project_placeholder": "Nyamuneka hitamo umushinga",
-  "unknown": "Ntibizwi",
   "steps_details": "Amakuru y'intambwe",
   "resolution_details": "Amakuru yo gukemura",
   "View Report": "Reba raporo",
@@ -400,6 +399,5 @@
   "Issues This Month": "Ibibazo by'uku kwezi",
   "Number of issues by type": "Umubare w'ibibazo hakurikijwe ubwoko",
   "Refresh": "Vuguruza",
-  "average days": "TODO",
-  "Unknown": "TODO"
+  "average days": "Impuzandengo y iminsi"
 }

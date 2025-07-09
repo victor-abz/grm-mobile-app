@@ -361,7 +361,6 @@
   "loading_issue_data": "Loading issue data...",
   "Internet connection has been lost!": "Internet connection has been lost!",
   "Loading lookup data...": "Loading lookup data...",
-  "unknown": "Unknown",
   "attachment_on_task": "Attachment on task",
   "Quel type d'utilisateur\\n êtes vous?": "What type of user\\n are you?",
   "phase": "Phase",
@@ -400,6 +399,5 @@
   "Number of issues by component": "Number of Issues by Component",
   "Number of issues by sub-component": "Number of Issues by Sub-component",
   "resolution rate": "Resolution Rate",
-  "Top Issue Types": "Top Issue Types",
-  "Unknown": "TODO"
+  "Top Issue Types": "Top Issue Types"
 }

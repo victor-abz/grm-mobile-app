@@ -40,7 +40,7 @@ function ImagesList({ attachments }) {
           </View>
           <View style={styles.textView}>
             <Text style={styles.cardTitle}>
-              {t('reference')}: {attachment?.tracking_code || t('unknown')}
+              {t('reference')}: {attachment?.tracking_code}
             </Text>
             <Text style={styles.cardContent}>
               {!attachment.taskOrdinal &&

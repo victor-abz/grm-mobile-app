@@ -103,31 +103,23 @@ function Content({
         ...issueData,
 
         // Add resolved labels for display
-        categoryLabel:
-          lookupMaps.categoryMap.get(issueData.category) || issueData.category || 'Unknown',
-        typeLabel:
-          lookupMaps.typeMap.get(issueData.issue_type) || issueData.issue_type || 'Unknown',
-        statusLabel: lookupMaps.statusMap.get(issueData.status) || issueData.status || 'Unknown',
+        categoryLabel: lookupMaps.categoryMap.get(issueData.category) || issueData.category,
+        typeLabel: lookupMaps.typeMap.get(issueData.issue_type) || issueData.issue_type,
+        statusLabel: lookupMaps.statusMap.get(issueData.status) || issueData.status,
         ageGroupLabel:
           lookupMaps.ageGroupMap.get(issueData.citizen_age_group) ||
-          issueData.citizen_age_group ||
-          'Unknown',
+          issueData.citizen_age_group,
         citizenGroup1Label:
           lookupMaps.citizenGroupMap.get(issueData.citizen_group_1) ||
-          issueData.citizen_group_1 ||
-          'Unknown',
+          issueData.citizen_group_1,
         citizenGroup2Label:
           lookupMaps.citizenGroupMap.get(issueData.citizen_group_2) ||
-          issueData.citizen_group_2 ||
-          'Unknown',
+          issueData.citizen_group_2,
         regionLabel:
           lookupMaps.regionMap.get(issueData.administrative_region) ||
-          issueData.administrative_region ||
-          'Unknown',
-        projectLabel:
-          lookupMaps.projectMap.get(issueData.project) || issueData.project || 'Unknown',
-        reporterLabel:
-          lookupMaps.userMap.get(issueData.reporter) || issueData.reporter || 'Unknown',
+          issueData.administrative_region,
+        projectLabel: lookupMaps.projectMap.get(issueData.project) || issueData.project,
+        reporterLabel: lookupMaps.userMap.get(issueData.reporter) || issueData.reporter,
         assigneeLabel:
           lookupMaps.userMap.get(issueData.assignee) || issueData.assignee || 'Unassigned',
 

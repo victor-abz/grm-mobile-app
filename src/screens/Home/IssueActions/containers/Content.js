@@ -114,7 +114,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       ...rawData,
 
       // Add resolved labels
-      statusLabel: statusMap.get(rawData.status) || rawData.status || 'Unknown',
+      statusLabel: statusMap.get(rawData.status) || rawData.status,
 
       // Format dates
       issueDateFormatted: rawData.issue_date

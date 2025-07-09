@@ -172,11 +172,11 @@ function Statistics({
       const enriched = {
         ...rawIssue,
         issueDate,
-        categoryLabel: lookupMaps.categoryMap.get(rawIssue.category) || t('Unknown'),
-        typeLabel: lookupMaps.typeMap.get(rawIssue.issue_type) || t('Unknown'),
-        statusLabel: lookupMaps.statusMap.get(rawIssue.status) || t('Unknown'),
-        regionLabel: lookupMaps.regionMap.get(rawIssue.administrative_region) || t('Unknown'),
-        projectLabel: lookupMaps.projectMap.get(rawIssue.project) || t('Unknown'),
+        categoryLabel: lookupMaps.categoryMap.get(rawIssue.category),
+        typeLabel: lookupMaps.typeMap.get(rawIssue.issue_type),
+        statusLabel: lookupMaps.statusMap.get(rawIssue.status),
+        regionLabel: lookupMaps.regionMap.get(rawIssue.administrative_region),
+        projectLabel: lookupMaps.projectMap.get(rawIssue.project),
       };
 
       // Debug first few enriched issues
@@ -207,7 +207,7 @@ function Statistics({
     const resolvedStatuses = ['resolved', 'closed', 'completed'];
 
     processedIssues.forEach((issue) => {
-      const status = (issue.statusLabel || 'Unknown').toLowerCase();
+      const status = issue.statusLabel.toLowerCase();
       statusCounts[status] = (statusCounts[status] || 0) + 1;
     });
 

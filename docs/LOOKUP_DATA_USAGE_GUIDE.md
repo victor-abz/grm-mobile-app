@@ -360,8 +360,8 @@ function MyComponent({ categories, types, statuses }) {
   }), [categories, types, statuses]);
   
   // Use maps to resolve labels
-  const categoryLabel = lookupMaps.categoryMap.get('CAT-001') || 'Unknown';
-  const typeLabel = lookupMaps.typeMap.get('TYPE-001') || 'Unknown';
+  const categoryLabel = lookupMaps.categoryMap.get('CAT-001') ;
+  const typeLabel = lookupMaps.typeMap.get('TYPE-001') ;
   
   return <YourComponent />;
 }
