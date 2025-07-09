@@ -79,9 +79,7 @@ const SyncStatusIndicator = ({ hasPendingChanges, pendingCount, isActive, phase 
 
   const getStatusText = () => {
     if (isActive) return SYNC_PHASES[phase] || phase;
-    return hasPendingChanges
-      ? t('has_pending_changes', 'Has pending changes')
-      : t('everything_synced', 'Everything synchronized');
+    return hasPendingChanges ? t('Has pending changes') : t('Everything synchronized');
   };
 
   return (
@@ -98,7 +96,7 @@ const SyncStatusIndicator = ({ hasPendingChanges, pendingCount, isActive, phase 
         <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
         {pendingCount > 0 && (
           <Text style={styles.pendingCount}>
-            {pendingCount} {t('pending_records', 'pending records')}
+            {pendingCount} {t('pending records')}
           </Text>
         )}
       </View>
@@ -117,7 +115,7 @@ function SyncAttachments({ navigation }) {
 
   const handleSync = async () => {
     if (!dataManager?.syncManager) {
-      setError(t('sync_not_available', 'Sync is not available'));
+      setError(t('Sync is not available'));
       return;
     }
 
@@ -126,7 +124,7 @@ function SyncAttachments({ navigation }) {
       setShowSuccessModal(true);
       syncStatus.refreshPendingChanges();
     } catch (syncError) {
-      setError(syncError.message || t('sync_failed', 'Sync failed'));
+      setError(syncError.message || t('Sync failed'));
     }
   };
 
@@ -136,19 +134,16 @@ function SyncAttachments({ navigation }) {
   };
 
   const getSyncButtonText = () => {
-    if (syncStatus.isLoading) return t('syncing', 'Syncing...');
-    return syncStatus.hasPendingChanges
-      ? t('sync_now', 'Sync Now')
-      : t('check_for_updates', 'Check for Updates');
+    if (syncStatus.isLoading) return t('Syncing...');
+    return syncStatus.hasPendingChanges ? t('Sync Now') : t('Check for Updates');
   };
 
   const getDescriptionText = () => {
-    if (syncStatus.isActive)
-      return t('sync_in_progress_desc', 'Synchronization is in progress. Please wait...');
+    if (syncStatus.isActive) return t('Synchronization is in progress. Please wait...');
 
     return syncStatus.hasPendingChanges
-      ? t('sync_pending_desc', 'You have local changes ready to be synchronized.')
-      : t('sync_up_to_date_desc', 'Your data is up to date with the server.');
+      ? t('You have local changes ready to be synchronized.')
+      : t('Your data is up to date with the server.');
   };
 
   return (
@@ -156,7 +151,7 @@ function SyncAttachments({ navigation }) {
       <View style={styles.header}>
         <SyncImage width={48} height={48} />
         <View style={styles.headerContent}>
-          <Text style={styles.title}>{t('data_synchronization', 'Data Synchronization')}</Text>
+          <Text style={styles.title}>{t('Data Synchronization')}</Text>
           <Text style={styles.description}>{getDescriptionText()}</Text>
         </View>
       </View>
@@ -172,7 +167,7 @@ function SyncAttachments({ navigation }) {
 
       {syncStatus.lastSync && (
         <Text style={styles.lastSyncText}>
-          {t('last_sync', 'Last sync')}: {new Date(syncStatus.lastSync).toLocaleString()}
+          {t('Last sync')}: {new Date(syncStatus.lastSync).toLocaleString()}
         </Text>
       )}
 
@@ -189,12 +184,12 @@ function SyncAttachments({ navigation }) {
         <View style={styles.modalOverlay}>
           <Card style={styles.successModal}>
             <CheckCircle width={60} height={60} style={styles.successIcon} />
-            <Text style={styles.successTitle}>{t('sync_successful', 'Sync Successful')}</Text>
+            <Text style={styles.successTitle}>{t('Sync Successful')}</Text>
             <Text style={styles.successMessage}>
-              {t('sync_completed_message', 'Your data has been synchronized successfully')}
+              {t('Your data has been synchronized successfully')}
             </Text>
             <CustomGreenButton
-              title={t('close', 'Close')}
+              title={t('Close')}
               onPress={handleCloseSuccess}
               style={styles.closeButton}
             />
