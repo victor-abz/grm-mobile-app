@@ -1,513 +1,326 @@
-import * as FileSystem from 'expo-file-system';
-import { getInfoAsync, uploadAsync } from 'expo-file-system';
-import React, { useMemo, useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Platform, Text, View, FlatList } from 'react-native';
-import { ActivityIndicator, Snackbar, Card, Badge } from 'react-native-paper';
-import { useSelector } from 'react-redux';
-import withObservables from '@nozbe/with-observables';
-import { Q } from '@nozbe/watermelondb';
+import { Modal, Text, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Snackbar, Card, Divider } from 'react-native-paper';
+import { hasUnsyncedChanges } from '@nozbe/watermelondb/sync';
 import watermelonManager from '../../../database/watermelonManager';
 import { DataContext } from '../../../providers/DataProvider';
 import CheckCircle from '../../../../assets/check-circle.svg';
 import SyncImage from '../../../../assets/sync-image.svg';
 import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreenButton';
 import { colors } from '../../../utils/colors';
-import ImagesList from './components/ImagesList';
 
-function SyncAttachments({ navigation, issues = [] }) {
+const SYNC_PHASES = {
+  idle: 'Ready',
+  starting: 'Initializing...',
+  pulling: 'Downloading updates...',
+  pushing: 'Uploading changes...',
+  completed: 'Completed',
+  error: 'Failed',
+};
+
+const useSyncStatus = (dataManager) => {
+  const [state, setState] = useState({
+    hasPendingChanges: false,
+    isActive: false,
+    phase: 'idle',
+    lastSync: null,
+    pendingCount: 0,
+    isLoading: false,
+  });
+
+  const updatePendingChanges = useCallback(async () => {
+    const database = watermelonManager.getDatabase();
+    const hasChanges = await hasUnsyncedChanges({ database });
+    const syncStatus = dataManager?.getSyncStatus() || {};
+
+    setState((prev) => ({
+      ...prev,
+      hasPendingChanges: hasChanges,
+      pendingCount: hasChanges ? syncStatus.pendingChangesCount || 0 : 0,
+      ...syncStatus,
+    }));
+  }, [dataManager]);
+
+  useEffect(() => {
+    updatePendingChanges();
+    const interval = setInterval(updatePendingChanges, 10000);
+    return () => clearInterval(interval);
+  }, [updatePendingChanges]);
+
+  useEffect(() => {
+    if (!dataManager?.syncManager) return;
+
+    const handleSyncStatus = (statusUpdate) => {
+      setState((prev) => ({ ...prev, ...statusUpdate }));
+
+      const isInProgress = ['starting', 'pulling', 'pushing'].includes(statusUpdate.phase);
+      const isComplete = ['completed', 'error'].includes(statusUpdate.phase);
+
+      setState((prev) => ({ ...prev, isLoading: isInProgress }));
+
+      if (isComplete) updatePendingChanges();
+    };
+
+    dataManager.syncManager.addSyncListener(handleSyncStatus);
+    return () => dataManager.syncManager.removeSyncListener(handleSyncStatus);
+  }, [dataManager, updatePendingChanges]);
+
+  return { ...state, refreshPendingChanges: updatePendingChanges };
+};
+
+const SyncStatusIndicator = ({ hasPendingChanges, pendingCount, isActive, phase }) => {
+  const { t } = useTranslation();
+
+  const getStatusColor = () => {
+    if (isActive) return colors.primary;
+    return hasPendingChanges ? '#ff9800' : '#4caf50';
+  };
+
+  const getStatusText = () => {
+    if (isActive) return SYNC_PHASES[phase] || phase;
+    return hasPendingChanges
+      ? t('has_pending_changes', 'Has pending changes')
+      : t('everything_synced', 'Everything synchronized');
+  };
+
+  return (
+    <View style={styles.statusRow}>
+      <View style={styles.statusIndicator}>
+        {isActive ? (
+          <ActivityIndicator size="small" color={getStatusColor()} />
+        ) : (
+          <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+        )}
+      </View>
+
+      <View style={styles.statusContent}>
+        <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
+        {pendingCount > 0 && (
+          <Text style={styles.pendingCount}>
+            {pendingCount} {t('pending_records', 'pending records')}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+};
+
+function SyncAttachments({ navigation }) {
   const { t } = useTranslation();
   const { dataManager } = useContext(DataContext);
 
-  const FILE_READ_ERROR = t('file_read_error');
-  const FILE_READ_ERROR_TRY_AGAIN = t('file_read_error_try_again');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [error, setError] = useState(null);
 
-  const [loading, setLoading] = useState(true);
-  const [pendingIssues, setPendingIssues] = useState([]);
-  const [successModal, setSuccessModal] = useState(false);
-  const [fetchedContent, setFetchedContent] = useState(false);
-  const [errorVisible, setErrorVisible] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState(FILE_READ_ERROR);
-  const [syncResults, setSyncResults] = useState({
-    created: [],
-    updated: [],
-    errors: [],
-  });
+  const syncStatus = useSyncStatus(dataManager);
 
-  const [syncStatus, setSyncStatus] = useState({
-    isActive: false,
-    phase: 'idle',
-    progress: 0,
-    error: null,
-    lastSync: null,
-  });
-
-  const onDismissSnackBar = () => setErrorVisible(false);
-
-  const { username, userPassword } = useSelector((state) => state.get('authentication').toObject());
-
-  // Get attachments from issues data
-  const attachments = useMemo(() => {
-    if (!issues || issues.length === 0) {
-      return [];
+  const handleSync = async () => {
+    if (!dataManager?.syncManager) {
+      setError(t('sync_not_available', 'Sync is not available'));
+      return;
     }
 
-    return issues.flatMap((issue) => {
-      const attachments = issue?.attachments || [];
-      const reasons = issue?.reasons || [];
-
-      return [
-        ...attachments
-          .filter((attachment) => attachment.user_id === username) // Use username instead of representative ID
-          .map((attachment) => ({
-            attachment,
-            docId: issue.id || issue._id,
-            tracking_code: issue.tracking_code,
-          })),
-        ...reasons
-          .filter((reason) => reason.user_id === username)
-          .map((reason) => ({
-            attachment: reason,
-            docId: issue.id || issue._id,
-            tracking_code: issue.tracking_code,
-          })),
-      ];
-    });
-  }, [issues, username]);
-
-  // Load pending issues on mount
-  useEffect(() => {
-    if (issues.length > 0) {
-      loadPendingIssues();
-    }
-  }, [issues]);
-
-  // Load pending issues from DataManager sync status
-  const loadPendingIssues = () => {
     try {
-      if (!dataManager) {
-        console.warn('[SyncAttachments] DataManager not available');
-        return;
-      }
-
-      // Get sync status and pending changes from DataManager
-      const syncStatus = dataManager.getSyncStatus();
-
-      // For now, create a simple pending issues list based on issues with unsync attachments
-      const pendingIssuesList = issues
-        .filter((issue) => {
-          // Check if issue has unsync attachments
-          const hasUnSyncAttachments = (issue.attachments || []).some(
-            (attachment) => attachment.uploaded === false && attachment.user_id === username
-          );
-          return hasUnSyncAttachments;
-        })
-        .map((issue) => ({
-          id: issue.id || issue._id,
-          tracking_code: issue.tracking_code || 'Unknown',
-          status: 'pending',
-          action: 'sync_attachments',
-          project: issue.project_id || null,
-          error: null,
-        }));
-
-      setPendingIssues(pendingIssuesList);
-      console.log('[SyncAttachments] Loaded pending issues:', pendingIssuesList.length);
-    } catch (error) {
-      console.error('[SyncAttachments] Error loading pending issues:', error);
+      await dataManager.performSync();
+      setShowSuccessModal(true);
+      syncStatus.refreshPendingChanges();
+    } catch (syncError) {
+      setError(syncError.message || t('sync_failed', 'Sync failed'));
     }
   };
 
-  const uploadFile = async (file, dbConfig) => {
-    try {
-      const tmp = await getInfoAsync(file?.attachment?.local_url);
-      if (tmp.exists) {
-        try {
-          console.log('[SyncAttachments] Preparing to upload file:', file?.attachment?.local_url);
-
-          // Prepare file data for Frappe upload
-          const fileData = {
-            filename: file.attachment.filename || file.attachment.id,
-            content_type: file.attachment.isAudio
-              ? 'audio/m4a'
-              : file.attachment.local_url.includes('.pdf')
-              ? 'application/pdf'
-              : 'image/jpeg',
-            file_data: await FileSystem.readAsStringAsync(
-              Platform.OS === 'android'
-                ? file.attachment.local_url
-                : file.attachment.local_url.replace('file://', ''),
-              { encoding: FileSystem.EncodingType.Base64 }
-            ),
-          };
-
-          // Use DataManager to upload the attachment
-          const result = await dataManager.uploadAttachment(file.docId, fileData);
-
-          console.log('[SyncAttachments] File uploaded successfully:', result);
-          return {};
-        } catch (e) {
-          setErrorMessage(FILE_READ_ERROR);
-          setErrorVisible(true);
-          console.log('[SyncAttachments] Error uploading file:', e.message);
-          return { error: FILE_READ_ERROR };
-        }
-      }
-      setErrorMessage(FILE_READ_ERROR);
-      setErrorVisible(true);
-      console.log('[SyncAttachments] File does not exist:', file?.attachment?.local_url);
-      return { error: FILE_READ_ERROR };
-    } catch (e) {
-      console.log('[SyncAttachments] Error reading file:', e.message);
-      setErrorMessage(FILE_READ_ERROR_TRY_AGAIN);
-      setErrorVisible(true);
-      return { error: FILE_READ_ERROR_TRY_AGAIN };
-    }
+  const handleCloseSuccess = () => {
+    setShowSuccessModal(false);
+    navigation.goBack();
   };
 
-  const syncImages = async () => {
-    let isError = false;
-    let syncedCount = 0;
-
-    try {
-      setLoading(true);
-      console.log(
-        '[SyncAttachments] Starting attachment sync. Total attachments:',
-        attachments.length
-      );
-
-      for (let i = 0; i < attachments.length; i++) {
-        if (attachments[i]?.attachment?.uploaded === false) {
-          console.log(
-            `[SyncAttachments] Uploading attachment ${i + 1}/${attachments.length}:`,
-            attachments[i].attachment.filename
-          );
-
-          const result = await uploadFile(attachments[i]);
-
-          if (result.error) {
-            isError = true;
-            console.log(`[SyncAttachments] Failed to upload attachment ${i + 1}: ${result.error}`);
-          } else {
-            syncedCount++;
-            console.log(`[SyncAttachments] Attachment uploaded successfully.`);
-          }
-        }
-      }
-
-      // Then perform a full sync to ensure all changes are pushed to Frappe
-      // and ensure issues have project assignments from user's assigned projects
-      try {
-        console.log('[SyncAttachments] Performing data sync...');
-        await dataManager.performSync();
-        console.log('[SyncAttachments] Sync completed successfully');
-
-        // Update our local state with the results
-        setSyncResults({
-          created: [],
-          updated: [],
-          errors: [],
-        });
-
-        // Update pending issues based on sync results
-        updatePendingIssuesFromSyncResults([], [], []);
-
-        // Show success modal
-        setSuccessModal(true);
-      } catch (syncError) {
-        console.error('[SyncAttachments] Sync error:', syncError);
-        setErrorMessage(syncError.message || 'Sync failed');
-        setErrorVisible(true);
-        isError = true;
-      }
-
-      setLoading(false);
-
-      if (isError) {
-        console.log('[SyncAttachments] Sync completed with errors');
-      } else {
-        console.log(
-          `[SyncAttachments] Sync completed successfully. Uploaded ${syncedCount} attachments`
-        );
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error('[SyncAttachments] Error during sync:', error);
-      setErrorMessage(error.message || 'An error occurred during sync');
-      setErrorVisible(true);
-    }
+  const getSyncButtonText = () => {
+    if (syncStatus.isLoading) return t('syncing', 'Syncing...');
+    return syncStatus.hasPendingChanges
+      ? t('sync_now', 'Sync Now')
+      : t('check_for_updates', 'Check for Updates');
   };
 
-  const updatePendingIssuesFromSyncResults = (created, updated, errors) => {
-    try {
-      // Clear pending issues on successful sync
-      if (errors.length === 0) {
-        setPendingIssues([]);
-      } else {
-        // Update pending issues with error information
-        setPendingIssues((current) =>
-          current.map((issue) => {
-            const error = errors.find((err) => err.id === issue.id);
-            return error ? { ...issue, error: error.error } : issue;
-          })
-        );
-      }
-    } catch (error) {
-      console.error('[SyncAttachments] Error updating pending issues:', error);
-    }
+  const getDescriptionText = () => {
+    if (syncStatus.isActive)
+      return t('sync_in_progress_desc', 'Synchronization is in progress. Please wait...');
+
+    return syncStatus.hasPendingChanges
+      ? t('sync_pending_desc', 'You have local changes ready to be synchronized.')
+      : t('sync_up_to_date_desc', 'Your data is up to date with the server.');
   };
-
-  const renderPendingIssueItem = ({ item }) => (
-    <Card style={{ margin: 8, padding: 12 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: 'bold' }}>{item.tracking_code}</Text>
-          <Text style={{ color: '#666', fontSize: 12 }}>Action: {item.action}</Text>
-          {item.project && (
-            <Text style={{ color: '#666', fontSize: 12 }}>Project: {item.project}</Text>
-          )}
-          {item.error && <Text style={{ color: 'red', fontSize: 12 }}>Error: {item.error}</Text>}
-        </View>
-        <Badge style={{ backgroundColor: item.error ? '#f44336' : '#ff9800' }}>{item.status}</Badge>
-      </View>
-    </Card>
-  );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Listen to sync manager status
-  useEffect(() => {
-    if (!dataManager || !dataManager.syncManager) return;
-
-    const handleStatus = (statusUpdate) => {
-      setSyncStatus((prev) => ({ ...prev, ...statusUpdate }));
-    };
-
-    dataManager.syncManager.addSyncListener(handleStatus);
-
-    // Initialize with current status if available
-    const current = dataManager.syncManager.getSyncStatus
-      ? dataManager.syncManager.getSyncStatus()
-      : {};
-    handleStatus(current);
-
-    return () => {
-      dataManager.syncManager.removeSyncListener(handleStatus);
-    };
-  }, [dataManager]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      {/* Main Content */}
-      <View style={{ flex: 1, padding: 16 }}>
-        {/* Sync Status */}
-        <Card style={{ marginBottom: 16, padding: 16 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
-            {t('sync_status', 'Sync Status')}
-          </Text>
-          <Text>
-            {t('phase', 'Phase')}: {syncStatus.phase}
-          </Text>
-          {syncStatus.lastSync && (
-            <Text>
-              {t('last_sync', 'Last Sync')}: {new Date(syncStatus.lastSync).toLocaleString()}
-            </Text>
-          )}
-          {syncStatus.error && (
-            <Text style={{ color: 'red' }}>
-              {t('error', 'Error')}: {syncStatus.error}
-            </Text>
-          )}
-          <Text>
-            {t('pending_changes', 'Pending Changes')}: {syncStatus.pendingChangesCount || 0}
-          </Text>
-          <Text>
-            {t('pending_attachments', 'Pending Attachments')}:{' '}
-            {attachments.filter((a) => !a.attachment.uploaded).length}
-          </Text>
-          <Text>
-            {t('pending_issues', 'Pending Issues')}: {pendingIssues.length}
-          </Text>
-          {syncStatus.isActive && (
-            <View style={{ marginTop: 8 }}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={{ marginTop: 4 }}>{syncStatus.progress}%</Text>
-            </View>
-          )}
-        </Card>
-
-        {/* Manual Sync Controls */}
-        <Card style={{ marginBottom: 16, padding: 16 }}>
-          <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>
-            {t('manual_sync', 'Manual Sync')}
-          </Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <CustomGreenButton
-              title={t('pull', 'Pull')}
-              onPress={async () => {
-                try {
-                  setLoading(true);
-                  await dataManager.performSync();
-                } catch (err) {
-                  console.error('[SyncAttachments] Manual pull failed:', err);
-                  setErrorMessage(err.message || 'Sync failed');
-                  setErrorVisible(true);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              style={{ flex: 1, marginRight: 8 }}
-            />
-            <CustomGreenButton
-              title={t('push', 'Push')}
-              onPress={async () => {
-                try {
-                  setLoading(true);
-                  await dataManager.performSync();
-                } catch (err) {
-                  console.error('[SyncAttachments] Manual push failed:', err);
-                  setErrorMessage(err.message || 'Sync failed');
-                  setErrorVisible(true);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              style={{ flex: 1, marginLeft: 8 }}
-            />
-          </View>
-        </Card>
-
-        {/* Attachments List */}
-        {attachments.length > 0 && (
-          <Card style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', padding: 16 }}>
-              {t('attachments_to_sync', 'Attachments to Sync')}
-            </Text>
-            <ImagesList attachments={attachments.filter((a) => !a.attachment.uploaded)} />
-          </Card>
-        )}
-
-        {/* Pending Issues List */}
-        {pendingIssues.length > 0 && (
-          <Card style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', padding: 16 }}>
-              {t('pending_issues', 'Pending Issues')}
-            </Text>
-            <FlatList
-              data={pendingIssues}
-              renderItem={renderPendingIssueItem}
-              keyExtractor={(item) => item.id}
-              style={{ maxHeight: 300 }}
-            />
-          </Card>
-        )}
-
-        {/* No Data Message */}
-        {!loading && attachments.length === 0 && pendingIssues.length === 0 && (
-          <Card style={{ padding: 20, alignItems: 'center' }}>
-            <SyncImage width={80} height={80} style={{ marginBottom: 16 }} />
-            <Text style={{ fontSize: 16, textAlign: 'center', color: '#666' }}>
-              {t('no_items_to_sync', 'No items to sync')}
-            </Text>
-          </Card>
-        )}
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <SyncImage width={48} height={48} />
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>{t('data_synchronization', 'Data Synchronization')}</Text>
+          <Text style={styles.description}>{getDescriptionText()}</Text>
+        </View>
       </View>
 
-      {/* Sync Button */}
-      {(attachments.some((a) => !a.attachment.uploaded) || pendingIssues.length > 0) && (
-        <View style={{ padding: 16 }}>
-          <CustomGreenButton
-            title={loading ? t('syncing', 'Syncing...') : t('sync_now', 'Sync Now')}
-            onPress={syncImages}
-            disabled={loading}
-            loading={loading}
-          />
-        </View>
+      <Divider style={styles.divider} />
+
+      <SyncStatusIndicator
+        hasPendingChanges={syncStatus.hasPendingChanges}
+        pendingCount={syncStatus.pendingCount}
+        isActive={syncStatus.isActive}
+        phase={syncStatus.phase}
+      />
+
+      {syncStatus.lastSync && (
+        <Text style={styles.lastSyncText}>
+          {t('last_sync', 'Last sync')}: {new Date(syncStatus.lastSync).toLocaleString()}
+        </Text>
       )}
 
-      {/* Success Modal */}
-      <Modal visible={successModal} animationType="slide" transparent>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Card
-            style={{
-              margin: 20,
-              padding: 20,
-              backgroundColor: 'white',
-              alignItems: 'center',
-              minWidth: 300,
-            }}
-          >
-            <CheckCircle width={60} height={60} style={{ marginBottom: 16 }} />
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
-              {t('sync_successful', 'Sync Successful')}
-            </Text>
-            <Text style={{ textAlign: 'center', marginBottom: 16, color: '#666' }}>
-              {t('all_data_synced', 'All data has been synchronized successfully')}
+      <View style={styles.buttonContainer}>
+        <CustomGreenButton
+          title={getSyncButtonText()}
+          onPress={handleSync}
+          disabled={syncStatus.isLoading}
+          loading={syncStatus.isLoading}
+        />
+      </View>
+
+      <Modal visible={showSuccessModal} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <Card style={styles.successModal}>
+            <CheckCircle width={60} height={60} style={styles.successIcon} />
+            <Text style={styles.successTitle}>{t('sync_successful', 'Sync Successful')}</Text>
+            <Text style={styles.successMessage}>
+              {t('sync_completed_message', 'Your data has been synchronized successfully')}
             </Text>
             <CustomGreenButton
               title={t('close', 'Close')}
-              onPress={() => {
-                setSuccessModal(false);
-                navigation.goBack();
-              }}
-              style={{ minWidth: 120 }}
+              onPress={handleCloseSuccess}
+              style={styles.closeButton}
             />
           </Card>
         </View>
       </Modal>
 
-      {/* Error Snackbar */}
       <Snackbar
-        visible={errorVisible}
-        onDismiss={onDismissSnackBar}
-        duration={5000}
-        style={{ backgroundColor: '#f44336' }}
+        visible={!!error}
+        onDismiss={() => setError(null)}
+        duration={4000}
+        style={styles.errorSnackbar}
       >
-        {errorMessage}
+        {error}
       </Snackbar>
-
-      {/* Loading Overlay */}
-      {loading && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Card style={{ padding: 20, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={{ marginTop: 12, fontSize: 16 }}>
-              {t('syncing_data', 'Syncing data...')}
-            </Text>
-          </Card>
-        </View>
-      )}
     </View>
   );
 }
 
-// Enhanced component with observables
-const SyncAttachmentsWithObservables = withObservables([], () => ({
-  issues: watermelonManager.observeIssues(),
-}))(SyncAttachments);
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  headerContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 22,
+  },
+  divider: {
+    marginHorizontal: 20,
+    marginVertical: 8,
+    backgroundColor: '#e0e0e0',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  statusIndicator: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  statusContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  pendingCount: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  lastSyncText: {
+    fontSize: 13,
+    color: '#999',
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  buttonContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  successModal: {
+    padding: 24,
+    alignItems: 'center',
+    borderRadius: 12,
+    minWidth: 280,
+  },
+  successIcon: {
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  successMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  closeButton: {
+    minWidth: 120,
+  },
+  errorSnackbar: {
+    backgroundColor: '#f44336',
+  },
+});
 
-export default SyncAttachmentsWithObservables;
+export default SyncAttachments;
