@@ -8,6 +8,21 @@ module.exports = function (api) {
         {
           helpers: true,
           regenerator: true,
+          absoluteRuntime: false,
+        },
+      ],
+      // Ensure proper module resolution
+      [
+        'module-resolver',
+        {
+          alias: {
+            '@': './src',
+            '@components': './src/components',
+            '@screens': './src/screens',
+            '@utils': './src/utils',
+            '@services': './src/services',
+            '@assets': './assets',
+          },
         },
       ],
     ],

@@ -86,7 +86,7 @@ function Content({ issues, eadl, department, statuses }) {
         <LanguageSelector />
       </View>
       <View style={styles.containerA}>
-        <Button color={colors.primary} onPress={() => dispatch(logout())}>
+        <Button buttonColor={colors.primary} onPress={() => dispatch(logout())}>
           {t('logout')}
         </Button>
       </View>

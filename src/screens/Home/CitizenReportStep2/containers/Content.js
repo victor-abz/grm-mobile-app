@@ -50,7 +50,7 @@ const theme = {
   colors: {
     ...colors,
     background: 'white',
-    placeholder: '#dedede',
+    placeholder: colors.placeholder,
     text: '#707070',
   },
 };
@@ -803,7 +803,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
               },
             ]}
             placeholder={t('step_2_placeholder_3')}
-            outlineColor="#dedede"
+            outlineColor={colors.lightgray}
             theme={theme}
             mode="outlined"
             value={additionalDetails}

@@ -14,6 +14,7 @@ function SearchBar(props) {
         <TextInput
           style={styles.input}
           placeholder={t('search')}
+          placeholderTextColor={colors.placeholder}
           value={props.searchPhrase}
           onChangeText={props.setSearchPhrase}
           onFocus={() => {

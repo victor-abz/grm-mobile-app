@@ -19,7 +19,7 @@ const theme = {
   colors: {
     ...colors,
     background: 'white',
-    placeholder: '#dedede',
+    placeholder: colors.placeholder,
     text: '#707070',
   },
 };
@@ -180,7 +180,7 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
           <TextInput
             style={styles.grmInput}
             placeholder={t('contact_step_placeholder_1')}
-            outlineColor="#dedede"
+            outlineColor={colors.lightgray}
             theme={theme}
             mode="outlined"
             value={name}

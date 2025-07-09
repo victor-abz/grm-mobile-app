@@ -189,7 +189,7 @@ function SignUp({ route }) {
                   ToastAndroid.show(`${t('error_message_for_code')}`, ToastAndroid.SHORT);
                 }
               }}
-              color="white"
+              buttonColor="white"
             >
               {t('next')}
             </Button>
@@ -271,7 +271,7 @@ function SignUp({ route }) {
                         theme={theme}
                         mode="outlined"
                         label={t('email')}
-                        labelColor="#dedede"
+                        placeholderTextColor={colors.placeholder}
                         style={styles.loginFormTextInput}
                         left={<TextInput.Icon name="account" color="#24c38b" />}
                         onBlur={onBlur}
@@ -300,7 +300,7 @@ function SignUp({ route }) {
                         theme={theme}
                         mode="outlined"
                         label={t('choose_password')}
-                        labelColor="#dedede"
+                        placeholderTextColor={colors.placeholder}
                         style={styles.loginFormTextInput}
                         left={
                           <TextInput.Icon
@@ -351,7 +351,7 @@ function SignUp({ route }) {
                   },
                 ]}
                 onPress={handleSubmit(onPressSignUp)}
-                color="white"
+                buttonColor="white"
               >
                 {t('next')}
               </Button>

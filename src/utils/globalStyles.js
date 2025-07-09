@@ -2,28 +2,42 @@ import { StyleSheet, Platform, Dimensions } from 'react-native';
 import { getStatusBarHeight } from 'react-native-iphone-screen-helper';
 
 export const screenHeight = Dimensions.get('window').height;
-export const shadow = {
-  shadowColor: '#000',
-  shadowOffset: {
-    width: 0,
-    height: 2,
-  },
-  shadowOpacity: 0.23,
-  shadowRadius: 2.62,
 
-  elevation: 4,
-};
+// Updated shadow object for better compatibility with newer React Native versions
+export const shadow = Platform.select({
+  ios: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+  },
+  android: {
+    elevation: 4,
+    // Add shadow properties for Android compatibility
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+  },
+});
 
 const shadowless = {
   shadowColor: 'transparent',
   shadowOffset: {
     width: 0,
     height: 0,
-    shadowOpacity: 0,
-    shadowRadius: 0,
   },
+  shadowOpacity: 0,
+  shadowRadius: 0,
   elevation: 0,
 };
+
 const headerTitle = {
   color: 'rgba(255,255,255,0.87)',
   fontSize: 12,
@@ -35,6 +49,7 @@ const headerTitle = {
 
 export default StyleSheet.create({
   shadowless,
+  shadow,
   marginRight20: {
     marginRight: 20,
   },

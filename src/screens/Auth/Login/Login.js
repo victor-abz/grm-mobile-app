@@ -20,7 +20,7 @@ const theme = {
   colors: {
     ...colors,
     background: 'white',
-    placeholder: '#dedede',
+    placeholder: colors.placeholder,
     text: '#707070',
   },
 };
@@ -104,7 +104,7 @@ function Login() {
                         autoCapitalize="none"
                         label={t('login_identifier')}
                         mode="outlined"
-                        labelColor="#dedede"
+                        placeholderTextColor={colors.placeholder}
                         style={styles.loginFormTextInput}
                         left={<TextInput.Icon name="account" color="#24c38b" />}
                         onBlur={onBlur}
@@ -129,7 +129,7 @@ function Login() {
                       <TextInput
                         theme={theme}
                         mode="outlined"
-                        placeholderColor="#dedede"
+                        placeholderTextColor={colors.placeholder}
                         label={t('password')}
                         style={styles.loginFormTextInput}
                         left={

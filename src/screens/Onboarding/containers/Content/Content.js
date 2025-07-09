@@ -50,7 +50,7 @@ function Content() {
         </Button>
         <Button
           style={customStyles.button}
-          color="white"
+          buttonColor="white"
           mode="contained"
           onPress={() => {
             navigation.navigate('AuthStack', { screen: 'SignUp' });

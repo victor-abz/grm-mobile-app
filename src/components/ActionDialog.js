@@ -16,7 +16,7 @@ const theme = {
   colors: {
     ...colors,
     background: 'white',
-    placeholder: '#dedede',
+    placeholder: colors.placeholder,
     text: '#707070',
   },
 };

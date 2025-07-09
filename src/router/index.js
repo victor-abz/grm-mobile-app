@@ -9,7 +9,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import React, { useEffect, useState, useContext } from 'react';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { init } from '../store/ducks/authentication.duck';
 import { getEncryptedData } from '../utils/storageManager';
@@ -42,7 +42,7 @@ function Router({ theme }) {
     getDBConfig();
   }, []);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
     Poppins_700Bold,
@@ -51,33 +51,43 @@ function Router({ theme }) {
     Poppins_200ExtraLight,
   });
 
-  // Show loading while authentication state is being determined
-  if (loading || !fontsLoaded || authLoading) {
+  // Show loading while authentication state is being determined or fonts are loading
+  if (loading || (!fontsLoaded && !fontError) || authLoading) {
     console.log(
       '🔄 Router: Loading state - loading:',
       loading,
       'fontsLoaded:',
       fontsLoaded,
+      'fontError:',
+      fontError,
       'authLoading:',
       authLoading
     );
-    return <View />;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
   }
 
-  // Log authentication state for debugging
-  const hasAuth = userPassword || isAuthenticated;
-  console.log(
-    '🔄 Router: Authentication check - userPassword:',
-    !!userPassword,
-    'isAuthenticated:',
-    isAuthenticated,
-    'hasAuth:',
-    hasAuth
-  );
+  // If there's a font error, log it but continue with system fonts
+  if (fontError) {
+    console.warn('❌ Font loading error:', fontError);
+  }
+
+  console.log('✅ Router: Ready - isAuthenticated:', isAuthenticated, 'fontsLoaded:', fontsLoaded);
+
+  const navTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: '#ffffff',
+    },
+  };
 
   return (
-    <NavigationContainer theme={theme || DefaultTheme}>
-      {hasAuth ? <PrivateRoutes /> : <PublicRoutes />}
+    <NavigationContainer theme={navTheme}>
+      {isAuthenticated ? <PrivateRoutes /> : <PublicRoutes />}
     </NavigationContainer>
   );
 }

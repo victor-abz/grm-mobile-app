@@ -15,6 +15,7 @@ import { AuthProvider } from './src/providers/AuthProvider';
 import { FrappeProvider } from './src/providers/FrappeProvider';
 import { DataProvider } from './src/providers/DataProvider';
 import Router from './src/router';
+import paperTheme from './src/theme';
 import './src/translations/i18n';
 
 if (__DEV__) {
@@ -49,7 +50,7 @@ const App = () => {
       <AuthProvider>
         <FrappeProvider>
           <DataProvider>
-            <PaperProvider>
+            <PaperProvider theme={paperTheme}>
               <Router />
             </PaperProvider>
           </DataProvider>

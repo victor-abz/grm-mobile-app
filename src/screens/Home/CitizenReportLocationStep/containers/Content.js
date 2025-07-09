@@ -28,7 +28,7 @@ const theme = {
   colors: {
     ...colors,
     background: 'white',
-    placeholder: '#dedede',
+    placeholder: colors.placeholder,
     text: '#707070',
   },
 };
@@ -253,7 +253,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [locationError, setLocationError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(true);
   const [mapHtml, setMapHtml] = useState('');
 
   // Filter regions based on user access and hierarchy - with auto-selection logic
@@ -807,7 +807,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
         <Card style={{ margin: 16, backgroundColor: '#e8f5e8' }}>
           <Card.Content>
             <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginBottom: 4 }}>
-              ✅ Auto-Selected Region
+              Auto-Selected Region
             </Text>
             <Text style={{ fontSize: 14, color: '#388e3c' }}>{selectedRegion.regionName}</Text>
             <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
@@ -937,8 +937,8 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
                 fontSize: 14,
               },
             ]}
-            placeholder={t('step_2_placeholder_3')}
-            outlineColor="#dedede"
+            placeholder={t('step_location_body')}
+            outlineColor={colors.lightgray}
             theme={theme}
             mode="outlined"
             value={locationDescription}
@@ -958,21 +958,6 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
             )}
           />
         </View>
-
-        {/* Selected region summary */}
-        {selectedRegion && (
-          <Card style={{ margin: 16, backgroundColor: '#e8f5e8' }}>
-            <Card.Content>
-              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginBottom: 4 }}>
-                ✅ Selected Location
-              </Text>
-              <Text style={{ fontSize: 14, color: '#388e3c' }}>{selectedRegion.regionName}</Text>
-              <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                ID: {selectedRegion.id}
-              </Text>
-            </Card.Content>
-          </Card>
-        )}
 
         {/* Next button */}
         <View style={{ paddingHorizontal: 50, marginBottom: 32 }}>
