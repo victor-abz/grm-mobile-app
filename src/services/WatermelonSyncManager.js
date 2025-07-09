@@ -493,28 +493,61 @@ class WatermelonSyncManager {
       console.log('📤 [PUSH] Preparing push data...');
 
       // ------------------------------------------------------------------
-      // 🔄 1. Filter changes → ONLY send newly-created grm_issues records
+      // 🔄 1. Filter changes → Issue Actions sync: grm_issues (created/updated) and 
+      //       child tables (grm_issue_logs, grm_issue_comments created only)
       // ------------------------------------------------------------------
-      let filteredChanges = undefined;
+      let filteredChanges = {};
+      let hasChangesToPush = false;
 
-      if (changes && changes.grm_issues && Array.isArray(changes.grm_issues.created)) {
-        // Clone only the created array for grm_issues; ignore updated/deleted & all other tables
-        const createdIssues = changes.grm_issues.created;
+      // Handle grm_issues table - accept both created and updated records
+      if (changes?.grm_issues) {
+        const issueCreated = changes.grm_issues.created || [];
+        const issueUpdated = changes.grm_issues.updated || [];
 
-        if (createdIssues.length > 0) {
-          filteredChanges = {
-            grm_issues: {
-              created: createdIssues,
-              updated: [],
-              deleted: [],
-            },
+        if (issueCreated.length > 0 || issueUpdated.length > 0) {
+          filteredChanges.grm_issues = {
+            created: issueCreated,
+            updated: issueUpdated,
+            deleted: [],
           };
+          hasChangesToPush = true;
+          console.log(`📤 [PUSH] grm_issues: +${issueCreated.length} ~${issueUpdated.length}`);
         }
       }
 
-      // If no issue creations exist, simply return – nothing to push
-      if (!filteredChanges) {
-        console.log('📤 [PUSH] No new grm_issues (created) to push – skipping backend call.');
+      // Handle grm_issue_logs table - accept created records only
+      if (changes?.grm_issue_logs) {
+        const logsCreated = changes.grm_issue_logs.created || [];
+
+        if (logsCreated.length > 0) {
+          filteredChanges.grm_issue_logs = {
+            created: logsCreated,
+            updated: [],
+            deleted: [],
+          };
+          hasChangesToPush = true;
+          console.log(`📤 [PUSH] grm_issue_logs: +${logsCreated.length}`);
+        }
+      }
+
+      // Handle grm_issue_comments table - accept created records only
+      if (changes?.grm_issue_comments) {
+        const commentsCreated = changes.grm_issue_comments.created || [];
+
+        if (commentsCreated.length > 0) {
+          filteredChanges.grm_issue_comments = {
+            created: commentsCreated,
+            updated: [],
+            deleted: [],
+          };
+          hasChangesToPush = true;
+          console.log(`📤 [PUSH] grm_issue_comments: +${commentsCreated.length}`);
+        }
+      }
+
+      // If no Issue Actions changes exist, simply return – nothing to push
+      if (!hasChangesToPush) {
+        console.log('📤 [PUSH] No Issue Actions changes to push – skipping backend call.');
         return; // WatermelonDB treats void as success
       }
 
