@@ -1,19 +1,32 @@
+import moment from 'moment';
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Dimensions, ImageBackground, Image, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import {
+  Alert,
+  Dimensions,
+  Image,
+  ImageBackground,
+  Platform,
+  ScrollView,
+  View,
+} from 'react-native';
 import { Button } from 'react-native-paper';
-const screenWidth = Dimensions.get('window').width;
 import { useNavigation } from '@react-navigation/native';
 import { useData } from '../../../../providers/DataProvider';
-import lookupDataManager from '../../../../services/LookupDataManager';
-import SmallCard from '../components/SmallCard';
+import { performNuclearReset } from '../../../../services/NuclearDataManager';
 import BigCard from '../components/BigCard';
+import SmallCard from '../components/SmallCard';
 import Chart from '../../../../../assets/chart_line_solid.svg';
 import FileIcon from '../../../../../assets/file_alt_regular.svg';
-import TeamWorkIcon from '../../../../../assets/team-work.svg';
 import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
+import TeamWorkIcon from '../../../../../assets/team-work.svg';
+import lookupDataManager from '../../../../services/LookupDataManager';
 import dataManager from '../../../../services/DataManager';
 
+const screenWidth = Dimensions.get('window').width;
+
 function Content() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { performNuclearReset, refreshLookupData } = useData();
   const [isResetting, setIsResetting] = useState(false);
@@ -58,15 +71,17 @@ function Content() {
 
   const handleNuclearReset = () => {
     Alert.alert(
-      '⚠️ Emergency Database Reset',
-      "This will completely clear all local data and recreate databases. Only use if you're experiencing severe storage issues.\n\nThis action cannot be undone. Continue?",
+      t('⚠️ Emergency Database Reset'),
+      t(
+        "This will completely clear all local data and recreate databases. Only use if you're experiencing severe storage issues.\n\nThis action cannot be undone. Continue?"
+      ),
       [
         {
-          text: 'Cancel',
+          text: t('Cancel'),
           style: 'cancel',
         },
         {
-          text: 'Reset Databases',
+          text: t('Reset Databases'),
           style: 'destructive',
           onPress: async () => {
             setIsResetting(true);
@@ -76,20 +91,20 @@ function Content() {
 
               if (success) {
                 Alert.alert(
-                  '✅ Reset Successful',
-                  'Databases have been reset successfully. The app should now work normally.'
+                  t('✅ Reset Successful'),
+                  t('Databases have been reset successfully. The app should now work normally.')
                 );
               } else {
                 Alert.alert(
-                  '❌ Reset Failed',
-                  'Database reset failed. Please restart the app and try again.'
+                  t('❌ Reset Failed'),
+                  t('Database reset failed. Please restart the app and try again.')
                 );
               }
             } catch (error) {
               console.error('Nuclear reset error:', error);
               Alert.alert(
-                '❌ Reset Error',
-                'An error occurred during reset. Please restart the app.'
+                t('❌ Reset Error'),
+                t('An error occurred during reset. Please restart the app.')
               );
             } finally {
               setIsResetting(false);
@@ -130,28 +145,28 @@ function Content() {
       >
         <SmallCard
           image={require('../../../../../assets/BG_1.png')}
-          onCardPress={() => alert('Upcoming feature')}
-          title={'PAI'}
+          onCardPress={() => alert(t('Upcoming feature'))}
+          title={t('PAI')}
           icon={<Chart />}
         />
         <SmallCard
           image={require('../../../../../assets/BG_2.png')}
-          onCardPress={() => alert('Upcoming feature')}
-          title={'Apprendre \n' + 'et actualités'}
+          onCardPress={() => alert(t('Upcoming feature'))}
+          title={t('Apprendre \n' + 'et actualités')}
           icon={<FileIcon />}
         />
       </View>
       <BigCard
         image={require('../../../../../assets/BG_9.png')}
         onCardPress={() => navigation.navigate('CitizenEngagement')}
-        title={"Mécanisme d'engagement des citoyens"}
+        title={t("Mécanisme d'engagement des citoyens")}
         icon={<TeamWorkIcon />}
       />
       <View style={{ marginVertical: 20 }}>
         <BigCard
           image={require('../../../../../assets/small-rectangle.png')}
           onCardPress={() => navigation.navigate('SyncAttachments')}
-          title={'Sync Files'}
+          title={t('Sync Files')}
           icon={<SyncIcon />}
           cardHeight={79}
         />
@@ -172,7 +187,7 @@ function Content() {
             }}
             labelStyle={{ color: '#ff4444' }}
           >
-            {isResetting ? 'Resetting...' : '💥 Emergency Database Reset'}
+            {isResetting ? t('Resetting...') : t('💥 Emergency Database Reset')}
           </Button>
         </View>
       )}

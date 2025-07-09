@@ -10,7 +10,7 @@ export function WorkInProgress() {
   const dispatch = useDispatch();
   return (
     <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Work in Progress </Text>
+      <Text>{t('Work in Progress')}</Text>
       <Button buttonColor="#24c38b" onPress={() => dispatch(logout())}>
         {t('logout')}
       </Button>

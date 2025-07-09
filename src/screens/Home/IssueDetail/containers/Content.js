@@ -144,7 +144,8 @@ function Content({
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          alert('Sorry, we need camera roll permissions to make this work!');
+          alert(t('Sorry, we need camera roll permissions to make this work!'));
+          return;
         }
       }
     })();
@@ -176,7 +177,7 @@ function Content({
               size={24}
               onPress={() => playSound(item.local_url, item.url)}
             />
-            <Text style={styles.audioText}>Play Recorded Audio</Text>
+            <Text style={styles.audioText}>{t('Play Recorded Audio')}</Text>
           </View>
         ) : (
           <View>
@@ -253,7 +254,7 @@ function Content({
             {renderInfoField(t('location'), getSecureDisplayValue(enrichedIssue.regionLabel))}
             {renderInfoField(
               t('assigned_to'),
-              enrichedIssue.assignee?.name ?? 'Pending Assignment'
+              enrichedIssue.assignee?.name ?? t('Pending Assignment')
             )}
 
             {/* Attachments */}

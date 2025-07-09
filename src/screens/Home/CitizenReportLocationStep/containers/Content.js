@@ -534,7 +534,9 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
 
   const handleNext = () => {
     if (!selectedRegion) {
-      Alert.alert(t('error'), 'Please select a location before proceeding.', [{ text: 'OK' }]);
+      Alert.alert(t('error'), t('Please select a location before proceeding.'), [
+        { text: t('OK') },
+      ]);
       return;
     }
 
@@ -589,7 +591,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       <Card style={{ margin: 16, backgroundColor: '#ffebee' }}>
         <Card.Content>
           <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#c62828', marginBottom: 8 }}>
-            {error.title || 'Region Access Error'}
+            {error.title || t('Region Access Error')}
           </Text>
           <Text style={{ color: '#d32f2f', marginBottom: 8 }}>{error.message}</Text>
           <Text style={{ color: '#666', fontSize: 14 }}>{error.action}</Text>
@@ -602,7 +604,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
             style={{ marginTop: 16 }}
             disabled={dataLoading}
           >
-            {dataLoading ? 'Refreshing...' : 'Try Again'}
+            {dataLoading ? t('Refreshing...') : t('Try Again')}
           </Button>
         </Card.Content>
       </Card>
@@ -627,7 +629,9 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
           <View
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '500', color: '#333' }}>GPS Location:</Text>
+            <Text style={{ fontSize: 14, fontWeight: '500', color: '#333' }}>
+              {t('GPS Location:')}
+            </Text>
             <Button
               mode="outlined"
               onPress={requestLocationPermission}
@@ -636,7 +640,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
               style={{ borderColor: '#24c38b' }}
               labelStyle={{ color: '#24c38b', fontSize: 12 }}
             >
-              {currentLocation ? 'Refresh GPS' : 'Get GPS Location'}
+              {currentLocation ? t('Refresh GPS') : t('Get GPS Location')}
             </Button>
           </View>
 
@@ -660,14 +664,16 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
           <View
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '500', color: '#333' }}>Map Selection:</Text>
+            <Text style={{ fontSize: 14, fontWeight: '500', color: '#333' }}>
+              {t('Map Selection:')}
+            </Text>
             <Button
               mode="outlined"
               onPress={() => setShowMap(!showMap)}
               style={{ borderColor: '#2196f3' }}
               labelStyle={{ color: '#2196f3', fontSize: 12 }}
             >
-              {showMap ? 'Hide Map' : 'Show Map'}
+              {showMap ? t('Hide Map') : t('Show Map')}
             </Button>
           </View>
 
@@ -681,7 +687,9 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
               </Text>
               <Text style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
                 Source:{' '}
-                {selectedMapLocation === currentLocation ? 'GPS auto-set' : 'Manual selection'}
+                {selectedMapLocation === currentLocation
+                  ? t('GPS auto-set')
+                  : t('Manual selection')}
               </Text>
             </View>
           )}
@@ -718,7 +726,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
                 renderLoading={() => (
                   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" color="#24c38b" />
-                    <Text style={{ marginTop: 8, color: '#666' }}>Loading map...</Text>
+                    <Text style={{ marginTop: 8, color: '#666' }}>{t('Loading map...')}</Text>
                   </View>
                 )}
               />
@@ -771,7 +779,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       return (
         <View style={{ padding: 16, alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#24c38b" />
-          <Text style={{ marginTop: 8, color: '#666' }}>Loading regions...</Text>
+          <Text style={{ marginTop: 8, color: '#666' }}>{t('Loading regions...')}</Text>
         </View>
       );
     }
@@ -785,8 +793,9 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
               ℹ️ Region Selection
             </Text>
             <Text style={{ fontSize: 14, color: '#666', marginBottom: 12 }}>
-              Your assigned regions don't have top-level categories. Use the nearest region
-              detection above or contact your administrator.
+              {t(
+                "Your assigned regions don't have top-level categories. Use the nearest region detection above or contact your administrator."
+              )}
             </Text>
             <Button
               mode="outlined"
@@ -794,7 +803,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
               style={{ borderColor: '#ff9800' }}
               labelStyle={{ color: '#ff9800' }}
             >
-              Refresh Regions
+              {t('Refresh Regions')}
             </Button>
           </Card.Content>
         </Card>
@@ -807,11 +816,11 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
         <Card style={{ margin: 16, backgroundColor: '#e8f5e8' }}>
           <Card.Content>
             <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginBottom: 4 }}>
-              Auto-Selected Region
+              {t('Auto-Selected Region')}
             </Text>
             <Text style={{ fontSize: 14, color: '#388e3c' }}>{selectedRegion.regionName}</Text>
             <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-              Only one region available - automatically selected
+              {t('Only one region available - automatically selected')}
             </Text>
           </Card.Content>
         </Card>
@@ -823,7 +832,9 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
         {/* Breadcrumb showing selected path */}
         {regionHierarchy.length > 0 && (
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>Selected path:</Text>
+            <Text style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>
+              {t('Selected path:')}
+            </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {regionHierarchy.map((regionId, index) => {
                 const region = processedRegions.find((r) => r.id === regionId);
@@ -871,7 +882,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
               children.length > 0 && (
                 <View style={{ marginTop: 16 }}>
                   <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
-                    Select sub-region (optional):
+                    {t('Select sub-region (optional):')}
                   </Text>
                   <CustomDropDownPicker
                     schema={{
@@ -879,7 +890,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
                       label: 'regionName',
                       value: 'id',
                     }}
-                    placeholder="Select sub-region"
+                    placeholder={t('Select sub-region')}
                     value={null}
                     items={children}
                     setPickerValue={(getValue) => {

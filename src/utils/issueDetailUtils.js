@@ -235,7 +235,7 @@ export const enrichIssueData = (issue, lookupMaps, t) => {
       rawData.reporter ||
       t('information_not_available'),
     assigneeLabel:
-      lookupMaps.userMap.get(rawData.assignee) || rawData.assignee || 'Pending Assignment',
+      lookupMaps.userMap.get(rawData.assignee) || rawData.assignee || t('Pending Assignment'),
 
     // Format dates for display
     issueDateFormatted: rawData.issue_date ? new Date(rawData.issue_date).toLocaleDateString() : '',

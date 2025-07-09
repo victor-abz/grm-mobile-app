@@ -1,5 +1,6 @@
 import React from 'react';
 import { SafeAreaView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import watermelonManager from '../../../database/watermelonManager';
@@ -9,6 +10,7 @@ import { styles } from './IssueHistory.styles';
 const IssueHistory = ({ route, issue, comments, users }) => {
   const { params } = route;
   const customStyles = styles();
+  const { t } = useTranslation();
 
   // Get the issue from route params or from the observable
   const issueData = Array.isArray(issue) && issue.length > 0 ? issue[0] : issue || params.item;
@@ -24,7 +26,7 @@ const IssueHistory = ({ route, issue, comments, users }) => {
     return (
       <SafeAreaView style={customStyles.container}>
         <View style={{ padding: 20, alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>Issue not found</Text>
+          <Text style={{ fontSize: 16, color: 'gray' }}>{t('Issue not found')}</Text>
         </View>
       </SafeAreaView>
     );

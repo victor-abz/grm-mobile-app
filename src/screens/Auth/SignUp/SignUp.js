@@ -75,7 +75,7 @@ function SignUp({ route }) {
     new API().signUp({ ...credentials, validation_code: code }).then((response) => {
       if (response.error) {
         setLoading(false);
-        Alert.alert('Sign Up Error', response?.non_field_errors[0], [{ text: 'OK' }], {
+        Alert.alert(t('Sign Up Error'), response?.non_field_errors[0], [{ text: 'OK' }], {
           cancelable: false,
         });
         return;

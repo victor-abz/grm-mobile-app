@@ -386,9 +386,10 @@ function Content({
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          alert('Sorry, we need camera roll permissions to make this work!');
+          alert(t('Sorry, we need camera roll permissions to make this work!'));
+          return;
         }
       }
     })();
@@ -473,12 +474,12 @@ function Content({
         <Text style={styles.stepSubtitle}>{t('step_3_attachments')}</Text>
         {stepTwoParams.attachments && stepTwoParams.attachments.length > 0 && (
           <Text style={styles.stepDescription}>
-            Images: {stepTwoParams.attachments.length} file(s)
+            {t('Images')}: {stepTwoParams.attachments.length} {t('file(s)')}
           </Text>
         )}
         {stepTwoParams.recordings && stepTwoParams.recordings.length > 0 && (
           <Text style={styles.stepDescription}>
-            Audio: {stepTwoParams.recordings.length} recording(s)
+            {t('Audio')}: {stepTwoParams.recordings.length} {t('recording(s)')}
           </Text>
         )}
       </View>

@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { TouchableOpacity, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Collapsible from 'react-native-collapsible';
 import { colors } from '../utils/colors';
@@ -18,8 +19,11 @@ const CollapsibleSection = ({
   triggerStyle = {},
   contentStyle = {},
   showContent = true,
-  emptyStateText = 'No information available',
+  emptyStateText,
 }) => {
+  const { t } = useTranslation();
+  const defaultEmptyStateText = t('No information available');
+
   return (
     <>
       <TouchableOpacity
@@ -76,7 +80,7 @@ const CollapsibleSection = ({
                 fontSize: 14,
               }}
             >
-              {emptyStateText}
+              {emptyStateText || defaultEmptyStateText}
             </Text>
           )}
         </View>

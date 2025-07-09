@@ -1,0 +1,13 @@
+repos:
+  - repo: https://github.com/gamcoh/translations-checker
+    rev: v0.1.8
+    hooks:
+      - id: translation-checker
+        name: Check English translations
+        args: ['--json-file', 'src/translations/en.json']
+      - id: translation-checker
+        name: Check French translations
+        args: ['--json-file', 'src/translations/fr.json']
+      - id: translation-checker
+        name: Check Kinyarwanda translations
+        args: ['--json-file', 'src/translations/rw.json']

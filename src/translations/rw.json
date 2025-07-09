@@ -1,8 +1,6 @@
 {
-  //Headers
   "citizen_input_header": "Kwakira ikibazo",
   "summary_of_your_work": "Incamake",
-  //Onboarding
   "used_app_before": "Wigeze ukoresha iyi porogaramu mbere?",
   "yes": "YEGO",
   "no": "OYA",
@@ -18,209 +16,110 @@
   "account_create_success": "Konti yawe yafunguwe neza!",
   "logout": "Sohoka",
   "connect": "Injira",
-
-  //GRM
   "diagnostics": "Isuzumabikorwa",
-
   "information": "Amakuru",
-
   "collect_reports": "Gukusanya raporo",
-
   "search_reports": "Shakisha raporo",
-
   "sync_files": "Guhuza dosiye",
-
-  //GRM-Intro
   "intro_text_0": "Icyitonderwa ku bakangurambaga: ",
-
   "intro_text_1": "Kuvuga ingingo zifasha abenegihugu gushyira mu ngiro. Mu gutangira, reka abantu bamenye ibi bikurikira:",
-
   "intro_text_2": "Mbashimiye ibitekerezo muduhaye mutugaragariza  ibikorwa neza n'ibitagenda neza mu mushinga wacu.  uru rutonde rw'ibibazo rugizwe n'ibice 6. Biri bwihute kandi biraba byoroshye. Mbere yo gutangira hari ibintu bike mugomba kumenya.",
-
   "intro_text_3": "Mwemerewe kudatanga umwirondoro wanyu niba mubishaka, Gusa kuduha amakuru ni ingenzi mu kubafasha gukemura ikibazo cyanyu",
-
   "intro_text_4": "Amakuru yose muduha aradufasha kubasha kumva no gukemura ikibazo mufite. ariko ntibibahangayikishe niba ntacyo mwaba mwibuka.",
-
   "intro_text_5": "Ikibazo cyawe kirabikwa muri sisiteme kandi kizakemurwa na komite nkemurampaka(GRC) mu minsi mike",
-
   "intro_text_6": "Tugerageza gukemura ibibazo mwatugejejeho mugihe cy’iminsi {x}.",
-
-  //step 1
   "welcome_citizen_input": "Murakaza neza!",
-
   "step_1_subtitle": "Duha agaciro gakomeye ibyo mutugezaho, kandi twiuza gukorana mu gukemura ikibazo icyo aricyo cyose cyangwa mu kunoza umurimo wacu",
-
   "step_1": "Intambwe ya 1",
-
   "stay_touch_question": "Uburyo buhari  bw’itumanaho",
-
   "step_1_hint_1": "Umukangurambaga:”Niba ubyifuza, dushobora kukugezaho amakuru ku kibazo cyanyu dukoresheje imeri, ubutumwa bugufi kuri telephone cyangwa watsapu. Ariko niba udashaka kugaragaza imyirondoro, turaguha kodi wakoresha ukurikirana ikibazo cyawe cyangwa se ukaba waza kundeba nkagufasha. Ushaka gukoresha ubuhe buryo?”",
-
   "step_1_option_1": "Kutagaragaza imyirondoro",
-
   "step_1_option_2": " Kwakira amakuru ku kibazo binyuze k'umukangurambaga",
-
   "step_1_option_3": "Kohererezwa amakuru",
-
   "step_1_method_1": " Ubutumwa bugufi (Text / SMS)",
-
   "step_1_method_2": "WhatsApp",
-
   "step_1_method_3": "Imeri",
-
   "step_1_placeholder_1": "Uburyo bw’itumanaho",
-
   "step_1_placeholder_2": " Injiza umwirondoro hano",
-
-  //contact step
   "contact_step_title": "Imyirondoro",
-
   "contact_step_subtitle": "Izina ry’umuntu cyangwa itsinda",
-
   "contact_step_explanation": "Umukangurambaga ku muntu utifuza gutangaza imyirondoro ye: “Wifuje kudatangaza imyirondoro yawe, niyo mpamvu ngiye kwandika “Anonymous” hano” \n\n Umukangurambaga kubifuza ko imyirondoro yabo itangazwa: “Ngiye kwandika izina ryawe hano”",
-
   "contact_step_placeholder_1": "Injiza izina ry’ufite ikibazo",
-
   "contact_step_placeholder_2": "Injiza ikiciro cy'imyaka (Singombwa)",
-
   "contact_step_placeholder_3": "Hitamo igitsina (Singombwa)",
-
   "contact_step_placeholder_4": "Uyu muntu ari kuzuriza ikibazo undi muntu.",
   "contact_step_placeholder_5": "Ikiciro  cy'abaturage kindi I",
   "contact_step_placeholder_6": "Ikiciro  cy'abaturage kindi II",
-
-  //step 2//step 2
   "step_2": "Intambwe ya 2",
-
   "step_2_select_date": "Kanda hano uhitemo itariki",
-
   "step_2_subtitle": "Ikibazo cyangwa ibisubizo muburyo burambuye",
-
   "step_2_explanation": "Umukangurambaga: “Nshaka kwandika itariki ibi byabereye. Niba utibuka itariki neza ntuhangayike ikibazo cyawe kizakuriranwa”",
-
   "step_2_ongoing_hint": "Byabaye inshuro nyinshi zitandukanye?",
-
   "step_2_set_today": "Itariki y'uyu munsi",
-
   "step_2_placeholder_1": "Ni ayahe makuru uzanye?",
-
   "step_2_placeholder_2": "Hitamo ubwoko bw'ikibazo",
-
   "step_2_placeholder_3": "Andika ikibazo mu magambo make",
-
   "step_2_placeholder_4": "Tanga andi makuru y'ingenzi kuri iki kibazo",
-
   "step_2_share_photos": "Shyiraho video, amafoto yangwa amajwi nk'ibimemyetso cg ibisobanuro",
-
   "step_2_upload_attachment": "Hitamo ifoto",
-
   "step_2_keep_name_confidential": "Hisha amazina yanjye. (Keretse umuntu uzakemura iki kibazo niwe gusa uzabona amazina).",
   "step_2_on_behalf_of_someone": "Ikibazo gitanzwe n'umuntu uhagarariye undi.",
   "step_2_organization_behalf_someone": "Ikibazo gitanzwe n'itsinda rihagarariye undi muntu.",
   "step_2_placeholder_5": "Hitamo ubwoko(Type) y'ikibazo?",
   "step_2_placeholder_6": "Component (Singombwa)",
   "step_2_placeholder_7": "Sub Component (Singombwa)",
-
-  //step 3
   "step_3": "Intambwe ya 3",
-
   "step_3_confirmation": "Kwemeza amakuru",
-
   "step_3_subtitle": "Genzura ko amakuru watanze ariyo maze ubyemeze. Niba ukeneye guhindura amakuru ayo ari yo yose, kanda buto yo gusubira inyuma.",
-
   "step_3_field_title_1": "Itariki y'ikibazo:",
-
   "step_3_field_title_2": "Iki ni:",
-
   "step_3_field_title_3": "Iki kibazo kijyanye:",
-
   "step_3_field_title_4": "Ubusobanuro ku kibazo:",
-
   "step_3_attachments": "Umugereka:",
   "step_3_field_title_2_1": "Issue Sub Type:",
   "step_3_field_title_5": "Component:",
   "step_3_field_title_6": "Sub Compnent:",
-
-  //location step
   "step_4": "Intambwe ya 4",
-
   "step_location_description": "Ibi byabereye he?",
-
   "step_location_body": "Umukangurambaga: Ugomba gusobanura neza mu buryo bwumvikana aho ikibazo cyabereye\nMu gukemura ikibazo. Akarere, umudugudu, ubusobanuro ndetse n'ibiranga aho ikibazo cyabereye \nbirafasha cyane. Niba iki ari ikibazo cy'ibanga,\nhitamo kugeza ku mudugudu andi makuru uyihorere.",
-
   "step_location_dropdown_placeholder": "Kanda kugirango uhitemo",
-
   "step_location_input_explanation": "Injiza andi makuru yaho byabereye ashobora mu gufasha gukemura ikibazo(Urugero: Munsi y'ikiraro ku giti cy'umwembe,...).",
-
   "step_4_subtitle": "Birarangiye!",
-
   "step_4_description": "Ikibazo cyashyizwe muri sisiteme kandi cyagejejwe ku mukozi ubishinzwe. Kumenya aho ikibazo kigeze gikemuka, uzakoresha iyi code iri hano hepfo. \n (Umukangurambaga: Shishikariza Umwenegihugu kwandika iyi kode cyangwa kuyisubiramo akayifata)",
-
   "step_4_issue_code": "Kode y'ikibazo:",
-
   "step_4_short_code": "Kode ngufi",
-
   "step_4_two_word_code": "Code y'amagambo abiri",
-
   "step_4_back_text": "Subira ahabanza",
-
   "step_en": "Step 5",
   "step_5": "Intambwe ya 5",
-
   "step_6": "Intambwe ya 6",
   "step_5_description": "Kugirango ukurikirane icyifuzo cyawe cyangwa ikirego hamwe na komite nkemurampaka yabaturage, ushobora gukoresha kode iri hepfo. Nyamuneka andika kandi urinde umutekano. Niba ubaye wabuze iyi kode, ushobora kundeba kugirango nongere nyiguhe.",
   "step_6_description": "",
-
-  //general
   "save_button_text": "BIKA & UKOMEZE",
-
   "next": "IBIKURIKIRA",
-
   "submit_button_text": "OHEREZA",
-
   "male": "Gabo",
   "female": "Gore",
   "other": "Ikindi",
   "rather_not_say": "Sinshaka kubivuga",
-
-  //issue detail
   "description_label": "Ibisobanuro",
-
   "reported_label": "Byatanzwe",
-
   "status_label": "Aho bigeze",
-
   "assigned_to_label": "Ugishinzwe",
-
   "reporter_label": "Uwatanze amakuru",
-
   "citizen_label": "Umwenegihugu",
-
   "privacy_label": "Kugirirwa ibanga",
-
   "category_label": "Icyiciro",
-
   "issue_type_label": "Ubwoko bw'ikibazo",
-
   "attachments_label": "Umugereka",
-
   "comment_placeholder": "Andika igitekerezo...",
-
   "information_not_available": "Nta makuru ahari",
-
   "confidential": "Ibanga",
-
-  //issue search
   "overdue_label": "Ibibazo byarengeje igihe",
-
   "assigned_to_you_label": "Ibibazo wahawe",
-
   "resolved_by_you_label": "Ibibazo byakemuwe nawe",
-
   "average_days_label": "Impuzandengo y'iminsi yo gukemura ibibazo",
-
   "average_satisfaction_label": "Impuzandengo yo kunyurwa",
-
   "your_issues_label": "Ibibazo biri mu nshingano zawe",
   "open": "Ibitarakemuka",
   "assigned": "Ibyo nshinzwe",
@@ -229,8 +128,6 @@
   "issue_was_rejected": "Ntikijyanye n'umushinga",
   "issue_was_escalated": "Cyamenyeshejwe inzego zo hejuru",
   "issue_was_resolved": "Cyakemutse",
-
-  // issue detail
   "are_you_accepting": "Uremera ko iki kibazo kijyanye n'uyu mushinga? cyangwa  ntaho gihuriye n'umushinga?",
   "you_have_accepted": "Wemeye Iki kibazo muri porogaramu. Ubutumwa bwohererejwe umuturage bdetse nuwashyize ikibazo muri porogaramu.",
   "finished": "Byarangiye",
@@ -279,8 +176,6 @@
   "component": "Component:",
   "sub_component": "Sub Component:",
   "please_select_option": "Nyamuneka hitamo",
-
-  //login page
   "error_message_for_code": "Nyamuneka Hitamo utugari twose",
   "delete": "Siba",
   "close": "Funga",
@@ -324,7 +219,6 @@
   "please_choose_value_for_required_field": "Uzuza ahakenewe hose.",
   "no_notifications": "Nta menyesha rihari",
   "no_attachment_to_sync": "Nta nyandiko zoherejwe.",
-
   "stat_nb_issue_by_age_range": "Umubare w'ibibazo ugendeye ku myaka",
   "stat_nb_issue_by_occupation_status": "Umubare w'ibibazo ugendeye kucyo bakora",
   "stat_nb_issue_by_education_level": "Umubare w'ibibazo ugendeye ku kigero cy'uburezi",
@@ -332,5 +226,146 @@
   "stat_nb_issue_by_issue_category": "Umubare w'ibibazo ugendeye ku kiciro",
   "stat_nb_issue_by_issue_component": "Umubare w'ibibazo ugendeye kuri compnent",
   "stat_nb_issue_by_issue_sub_component": "Umubare w'ibibazo ugendeye kuri sub component",
-  "stat_nb_issue_by_per_date": "Umubare w'ibibazo ugendeye ku matariki"
+  "stat_nb_issue_by_per_date": "Umubare w'ibibazo ugendeye ku matariki",
+  "error_message_for_limit_audio": "TODO",
+  "retry_button": "TODO",
+  "Upcoming feature": "TODO",
+  "Sorry, we need camera roll permissions to make this work!": "TODO",
+  "error_loading_data": "TODO",
+  "Loading data...": "TODO",
+  "step_2_only_three_files": "TODO",
+  "This will completely clear all local data and recreate databases. Only use if you're experiencing severe storage issues.\\n\\nThis action cannot be undone. Continue?": "TODO",
+  "appeal_reason_placeholder": "TODO",
+  "An error occurred during reset. Please restart the app.": "TODO",
+  "Cancel": "TODO",
+  "Sync Files": "TODO",
+  "⚠️ Emergency Database Reset": "TODO",
+  "issue_not_found": "TODO",
+  "Mécanisme d'engagement des citoyens": "TODO",
+  "Resetting...": "TODO",
+  "Apprendre \\n' + 'et actualités": "TODO",
+  "Database reset failed. Please restart the app and try again.": "TODO",
+  "PAI": "TODO",
+  "❌ Reset Error": "TODO",
+  "❌ Reset Failed": "TODO",
+  "Reset Databases": "TODO",
+  "✅ Reset Successful": "TODO",
+  "💥 Emergency Database Reset": "TODO",
+  "Databases have been reset successfully. The app should now work normally.": "TODO",
+  "✅ React Native is working": "TODO",
+  "appeal_submitted_explanation": "TODO",
+  "EADL Intro": "TODO",
+  "appeal_submitted": "TODO",
+  "reject_issue": "TODO",
+  "App Diagnostic": "TODO",
+  "Status: App is functional": "TODO",
+  "issue_accepted_explanation": "TODO",
+  "✅ JavaScript bundle loaded": "TODO",
+  "Have you use this app before?": "TODO",
+  "✅ Components can render": "TODO",
+  "eADL": "TODO",
+  "please_select_rating": "TODO",
+  "escalated_issue": "TODO",
+  "appeal_date": "TODO",
+  "please_fill_required_fields": "TODO",
+  "added_steps": "TODO",
+  "status_updated_explanation": "TODO",
+  "error_no_appropriate_status_found": "TODO",
+  "resolved_issue": "TODO",
+  "please_provide_steps_taken": "TODO",
+  "submitted": "TODO",
+  "Pending Assignment": "TODO",
+  "no_resolution_data": "TODO",
+  "please_provide_escalation_reason": "TODO",
+  "rejected_issue": "TODO",
+  "no_appeal_data": "TODO",
+  "appeal_submitted_by_citizen": "TODO",
+  "error_updating_issue_status": "TODO",
+  "no_satisfaction_data": "TODO",
+  "please_provide_rejection_reason": "TODO",
+  "rated_on": "TODO",
+  "resolved_by": "TODO",
+  "submitted_appeal": "TODO",
+  "resolution_date": "TODO",
+  "rated_issue": "TODO",
+  "status_updated": "TODO",
+  "appeal_status": "TODO",
+  "resolution": "TODO",
+  "accepted_issue": "TODO",
+  "please_provide_resolution_details": "TODO",
+  "error_no_issue_data": "TODO",
+  "updated_status": "TODO",
+  "loading_issue_details": "TODO",
+  "Play Recorded Audio": "TODO",
+  "Issue not found": "TODO",
+  "login_identifier": "TODO",
+  "invalid_credentials": "TODO",
+  "Work in Progress": "TODO",
+  "login_error": "TODO",
+  "login_identifier_placeholder": "TODO",
+  "No information available": "TODO",
+  "Sign Up Error": "TODO",
+  "close', 'Close": "TODO",
+  "syncing', 'Syncing...": "TODO",
+  "Only one region available - automatically selected": "TODO",
+  "Map Selection:": "TODO",
+  "last_sync', 'Last sync": "TODO",
+  "sync_successful', 'Sync Successful": "TODO",
+  "sync_in_progress_desc', 'Synchronization is in progress. Please wait...": "TODO",
+  "check_for_updates', 'Check for Updates": "TODO",
+  "Refresh Regions": "TODO",
+  "OK": "TODO",
+  "sync_failed', 'Sync failed": "TODO",
+  "sync_up_to_date_desc', 'Your data is up to date with the server.": "TODO",
+  "recording(s)": "TODO",
+  "Region Access Error": "TODO",
+  "Manual selection": "TODO",
+  "data_synchronization', 'Data Synchronization": "TODO",
+  "Hide Map": "TODO",
+  "ok": "TODO",
+  "Selected path:": "TODO",
+  "sync_not_available', 'Sync is not available": "TODO",
+  "Refresh GPS": "TODO",
+  "Select sub-region (optional):": "TODO",
+  "pending_records', 'pending records": "TODO",
+  "has_pending_changes', 'Has pending changes": "TODO",
+  "sync_pending_desc', 'You have local changes ready to be synchronized.": "TODO",
+  "sync_now', 'Sync Now": "TODO",
+  "Select sub-region": "TODO",
+  "issue_creation_error": "TODO",
+  "Get GPS Location": "TODO",
+  "Loading map...": "TODO",
+  "Show Map": "TODO",
+  "Refreshing...": "TODO",
+  "Loading regions...": "TODO",
+  "sync_completed_message', 'Your data has been synchronized successfully": "TODO",
+  "GPS auto-set": "TODO",
+  "error": "TODO",
+  "Your assigned regions don't have top-level categories. Use the nearest region detection above or contact your administrator.": "TODO",
+  "Auto-Selected Region": "TODO",
+  "file(s)": "TODO",
+  "everything_synced', 'Everything synchronized": "TODO",
+  "Please select a location before proceeding.": "TODO",
+  "GPS Location:": "TODO",
+  "Images": "TODO",
+  "Audio": "TODO",
+  "Try Again": "TODO",
+  "select_project": "TODO",
+  "file_belonging_to_issue": "TODO",
+  "no_attachments_to_sync": "TODO",
+  "no_activity_yet": "TODO",
+  "Quel type d'utilisateur\\n êtes vous?": "TODO",
+  "phase": "TODO",
+  "Internet connection has been lost!": "TODO",
+  "All (Debug)": "TODO",
+  "loading_issue_data": "TODO",
+  "Loading lookup data...": "TODO",
+  "attachment_on_task": "TODO",
+  "performed_by": "TODO",
+  "SUIVANT": "TODO",
+  "of": "TODO",
+  "select_project_placeholder": "TODO",
+  "unknown": "TODO",
+  "steps_details": "TODO",
+  "resolution_details": "TODO"
 }

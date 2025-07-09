@@ -1,14 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 const AppDiagnostic = () => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>App Diagnostic</Text>
-      <Text style={styles.text}>✅ React Native is working</Text>
-      <Text style={styles.text}>✅ Components can render</Text>
-      <Text style={styles.text}>✅ JavaScript bundle loaded</Text>
-      <Text style={styles.status}>Status: App is functional</Text>
+      <Text style={styles.title}>{t('App Diagnostic')}</Text>
+      <Text style={styles.text}>{t('✅ React Native is working')}</Text>
+      <Text style={styles.text}>{t('✅ Components can render')}</Text>
+      <Text style={styles.text}>{t('✅ JavaScript bundle loaded')}</Text>
+      <Text style={styles.status}>{t('Status: App is functional')}</Text>
     </View>
   );
 };

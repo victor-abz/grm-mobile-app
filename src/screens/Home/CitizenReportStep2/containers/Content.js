@@ -179,7 +179,8 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          alert('Sorry, we need camera roll permissions to make this work!');
+          alert(t('Sorry, we need camera roll permissions to make this work!'));
+          return;
         }
       }
     })();
@@ -306,7 +307,8 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          alert('Sorry, we need camera roll permissions to make this work!');
+          alert(t('Sorry, we need camera roll permissions to make this work!'));
+          return;
         }
       }
     })();
@@ -614,7 +616,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       <ScrollView>
         <View style={{ padding: 23, alignItems: 'center' }}>
           <Text style={styles.stepText}>{t('step_2')}</Text>
-          <Text style={styles.stepSubtitle}>Loading data...</Text>
+          <Text style={styles.stepSubtitle}>{t('Loading data...')}</Text>
           <Text style={styles.stepDescription}>
             Please wait while we load the categories and types data from the database.
           </Text>

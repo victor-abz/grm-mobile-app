@@ -363,7 +363,7 @@ function Content({
     console.log('⚠️ [IssueSearch] Showing loading state - no lookup data yet');
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading lookup data...</Text>
+        <Text>{t('Loading lookup data...')}</Text>
       </View>
     );
   }
@@ -461,7 +461,7 @@ function Content({
                   fontSize: 12,
                 }}
               >
-                All (Debug)
+                {t('All (Debug)')}
               </Text>
             </View>
           )}

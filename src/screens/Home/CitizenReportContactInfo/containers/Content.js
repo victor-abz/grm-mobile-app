@@ -127,7 +127,7 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
       <ScrollView>
         <View style={{ padding: 23, alignItems: 'center' }}>
           <Text style={styles.stepText}>{t('step_2')}</Text>
-          <Text style={styles.stepSubtitle}>Loading data...</Text>
+          <Text style={styles.stepSubtitle}>{t('Loading data...')}</Text>
           <Text style={styles.stepDescription}>
             Please wait while we load the age groups and citizen groups data from the database.
           </Text>

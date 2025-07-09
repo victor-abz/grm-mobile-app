@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, Dimensions, ImageBackground, Image } from 'react-native';
 import Chart from '../../../../../assets/chart_line_solid.svg';
 import FileIcon from '../../../../../assets/file_alt_regular.svg';
 import SearchIcon from '../../../../../assets/magnifying-glass-solid.svg';
@@ -9,6 +9,8 @@ import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
 import TeamWorkIcon from '../../../../../assets/team-work.svg';
 import BigCard from '../components/BigCard';
 import SmallCard from '../components/SmallCard';
+
+const screenWidth = Dimensions.get('window').width;
 
 function Content() {
   const { t } = useTranslation();
@@ -56,7 +58,7 @@ function Content() {
         />
         <SmallCard
           image={require('../../../../../assets/BG_2.png')}
-          onCardPress={() => alert('Upcoming feature')}
+          onCardPress={() => alert(t('Upcoming feature'))}
           title={t('information')}
           icon={<FileIcon />}
         />
