@@ -10,8 +10,10 @@
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "enabled": false,
-      "url": "https://u.expo.dev/13cc8fd9-97c4-46f0-9f52-d0b0043066cd"
+      "enabled": true,
+      "url": "https://egrm-updates.victor-abz.com",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
