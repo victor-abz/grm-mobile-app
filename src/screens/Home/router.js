@@ -275,7 +275,7 @@ function HomeRouter() {
         }}
         component={NotificationsStackScreen}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Diagnostics"
         options={{
           header: true,
@@ -289,7 +289,7 @@ function HomeRouter() {
           ),
         }}
         component={Diagnostics}
-      />
+      /> */}
       <Tab.Screen
         name="Profile"
         options={{

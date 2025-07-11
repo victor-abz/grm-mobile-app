@@ -1,56 +1,112 @@
-import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, ScrollView, RefreshControl } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import dataManager from '../../../services/DataManager';
+import { useFrappe } from '../../../providers/FrappeProvider';
+import Content from './containers/Content';
 
 function Profile() {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [profileData, setProfileData] = useState(null);
-  const [issueData, setIssueData] = useState([]);
-  const [userData, setUserData] = useState([]);
+  const [isOnline, setIsOnline] = useState(false);
+  const [error, setError] = useState(null);
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { db, auth } = useFrappe();
 
-  useEffect(() => {
-    const loadData = async () => {
+  const checkNetworkStatus = useCallback(() => {
+    const hasValidCredentials = !!(
+      dataManager.credentials?.url && dataManager.credentials?.username
+    );
+    return dataManager.isOnline && hasValidCredentials;
+  }, []);
+
+  const loadData = useCallback(
+    async (isRefresh = false) => {
       try {
-        setLoading(true);
+        if (!isRefresh) {
+          setLoading(true);
+        }
+        setError(null);
 
-        // TODO: Implement profile data loading with DataManager
-        console.warn('Profile - TODO: Implement profile data loading with DataManager');
+        const userContext = await dataManager.getUserContext();
+        const isOnlineStatus = checkNetworkStatus();
+        setIsOnline(isOnlineStatus);
 
-        // Load user's issues
-        const userContext = dataManager.getUserContext();
-        const userId = userContext?.user_id || username;
+        if (!userContext) {
+          throw new Error('User context not found');
+        }
 
-        const userIssues = await dataManager.getUserReportedIssues(userId);
-        setIssueData(userIssues);
+        const userData = {
+          _id: userContext.user?.id || username,
+          email: userContext.user?.email || username,
+          full_name: userContext.user?.full_name,
+          phone: userContext.user?.phone,
+          user_image: userContext.user?.user_image,
+          assignments: userContext.assignments || [],
+          permissions: userContext.permissions || {},
+          accessible_regions: userContext.accessible_regions || [],
+          last_sync: userContext.last_updated,
+        };
 
-        // TODO: Implement communes/representative data loading
-        console.warn('Profile - TODO: Implement communes/representative data loading');
-        setUserData([]);
+        if (isOnlineStatus && db) {
+          try {
+            const frappeUser = await db.getDoc('User', username);
+            if (frappeUser) {
+              userData.full_name = frappeUser.full_name || userData.full_name;
+              userData.phone = frappeUser.phone || userData.phone;
+              userData.user_image = frappeUser.user_image || userData.user_image;
+            }
+          } catch (frappeError) {
+            console.warn('Failed to fetch online user data:', frappeError);
+            if (isRefresh) {
+              throw new Error('Failed to refresh online data');
+            }
+          }
+        }
 
-        // TODO: Implement full profile data
-        console.warn('Profile - TODO: Implement full profile data');
-        setProfileData({
-          _id: 'placeholder',
-          email: username,
-          // TODO: Load actual profile data
-        });
+        setProfileData(userData);
       } catch (error) {
         console.error('Error loading Profile data:', error);
-        // Set empty data to prevent crashes
-        setIssueData([]);
-        setUserData([]);
-        setProfileData({ _id: 'error', email: username });
+        setError(error.message);
+        if (!isRefresh) {
+          setProfileData({
+            _id: username,
+            email: username,
+          });
+        }
       } finally {
         setLoading(false);
       }
+    },
+    [username, db, checkNetworkStatus]
+  );
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      setIsOnline(checkNetworkStatus());
     };
 
-    loadData();
-  }, [username]);
+    updateOnlineStatus();
+    const checkInterval = setInterval(updateOnlineStatus, 1000);
+    return () => clearInterval(checkInterval);
+  }, [checkNetworkStatus]);
+
+  const onRefresh = useCallback(async () => {
+    if (!isOnline) return;
+    setRefreshing(true);
+    try {
+      await loadData(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [isOnline, loadData]);
 
   if (loading) {
     return (
@@ -61,10 +117,14 @@ function Profile() {
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      {/* TODO: Implement Profile UI */}
-      <ActivityIndicator size="small" />
-    </View>
+    <ScrollView
+      style={{ flex: 1 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} enabled={isOnline} />
+      }
+    >
+      <Content profileData={profileData} isOnline={isOnline} error={error} />
+    </ScrollView>
   );
 }
 
