@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { withObservables } from '@nozbe/watermelondb/react';
 import moment from 'moment';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Services and utilities
 import dataManager from '../../../services/DataManager';
@@ -16,6 +17,7 @@ import { colors } from '../../../utils/colors';
 import BarChartGrm from './components/BarChartGrm';
 import PieChartGrm from './components/PieChartGrm';
 import LineChartGrm from './components/LineChartGrm';
+import StackedBarChartGrm from './components/StackedBarChartGrm';
 
 // Card components for statistics display
 import StatCard from './components/StatCard';
@@ -30,6 +32,26 @@ const theme = {
     placeholder: colors.placeholder,
     text: '#707070',
   },
+};
+
+// Helper function to calculate percentage change
+const calculatePercentageChange = (current, previous) => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+};
+
+// Helper function to get period label
+const getPeriodLabel = (period) => {
+  switch (period) {
+    case 'week':
+      return 'Last 7 days vs Previous 7 days';
+    case 'month':
+      return 'This month vs Last month';
+    case 'quarter':
+      return 'Last 3 months vs Previous 3 months';
+    default:
+      return '';
+  }
 };
 
 function Statistics({
@@ -145,31 +167,15 @@ function Statistics({
     const now = moment();
     const thirtyDaysAgo = moment().subtract(30, 'days');
     const sevenDaysAgo = moment().subtract(7, 'days');
+    const threeMonthsAgo = moment().subtract(3, 'months');
+    const sixMonthsAgo = moment().subtract(6, 'months');
 
     // Process issues data
     const processedIssues = issues.map((issue, index) => {
       const rawIssue = issue._raw || issue;
       const issueDate = moment(rawIssue.issue_date || rawIssue.intake_date);
 
-      // Debug first few issues
-      if (index < 2) {
-        console.log(`📊 [STATISTICS] Processing issue ${index}:`, {
-          id: rawIssue.id,
-          category: rawIssue.category,
-          issue_type: rawIssue.issue_type,
-          status: rawIssue.status,
-          administrative_region: rawIssue.administrative_region,
-        });
-
-        // Debug lookup maps for this issue
-        console.log(`📊 [STATISTICS] Lookup values for issue ${index}:`, {
-          categoryLabel: lookupMaps.categoryMap.get(rawIssue.category),
-          typeLabel: lookupMaps.typeMap.get(rawIssue.issue_type),
-          statusLabel: lookupMaps.statusMap.get(rawIssue.status),
-        });
-      }
-
-      const enriched = {
+      return {
         ...rawIssue,
         issueDate,
         categoryLabel: lookupMaps.categoryMap.get(rawIssue.category),
@@ -178,28 +184,167 @@ function Statistics({
         regionLabel: lookupMaps.regionMap.get(rawIssue.administrative_region),
         projectLabel: lookupMaps.projectMap.get(rawIssue.project),
       };
+    });
 
-      // Debug first few enriched issues
-      if (index < 2) {
-        console.log(`📊 [STATISTICS] Enriched issue ${index}:`, {
-          id: enriched.id,
-          categoryLabel: enriched.categoryLabel,
-          typeLabel: enriched.typeLabel,
-          statusLabel: enriched.statusLabel,
+    // Calculate period metrics
+    const currentMonthIssues = processedIssues.filter((issue) =>
+      issue.issueDate.isAfter(moment().startOf('month'))
+    );
+    const lastMonthIssues = processedIssues.filter((issue) =>
+      issue.issueDate.isBetween(
+        moment().subtract(1, 'month').startOf('month'),
+        moment().subtract(1, 'month').endOf('month')
+      )
+    );
+
+    const currentWeekIssues = processedIssues.filter((issue) =>
+      issue.issueDate.isAfter(moment().startOf('week'))
+    );
+    const lastWeekIssues = processedIssues.filter((issue) =>
+      issue.issueDate.isBetween(
+        moment().subtract(1, 'week').startOf('week'),
+        moment().subtract(1, 'week').endOf('week')
+      )
+    );
+
+    // Calculate trends by category and type
+    const getCategoryTrends = () => {
+      const trends = {};
+      categories.forEach((cat) => {
+        const catId = cat._raw?.id || cat.id;
+        const catLabel = lookupMaps.categoryMap.get(catId);
+
+        // Current period (last 3 months)
+        const currentPeriod = processedIssues.filter(
+          (issue) => issue.category === catId && issue.issueDate.isAfter(threeMonthsAgo)
+        ).length;
+
+        // Previous period (3-6 months ago)
+        const previousPeriod = processedIssues.filter(
+          (issue) =>
+            issue.category === catId && issue.issueDate.isBetween(sixMonthsAgo, threeMonthsAgo)
+        ).length;
+
+        trends[catLabel] = {
+          current: currentPeriod,
+          previous: previousPeriod,
+          change: calculatePercentageChange(currentPeriod, previousPeriod),
+        };
+      });
+      return trends;
+    };
+
+    const getTypeTrends = () => {
+      const trends = {};
+      types.forEach((type) => {
+        const typeId = type._raw?.id || type.id;
+        const typeLabel = lookupMaps.typeMap.get(typeId);
+
+        // Current period (last 3 months)
+        const currentPeriod = processedIssues.filter(
+          (issue) => issue.issue_type === typeId && issue.issueDate.isAfter(threeMonthsAgo)
+        ).length;
+
+        // Previous period (3-6 months ago)
+        const previousPeriod = processedIssues.filter(
+          (issue) =>
+            issue.issue_type === typeId && issue.issueDate.isBetween(sixMonthsAgo, threeMonthsAgo)
+        ).length;
+
+        trends[typeLabel] = {
+          current: currentPeriod,
+          previous: previousPeriod,
+          change: calculatePercentageChange(currentPeriod, previousPeriod),
+        };
+      });
+      return trends;
+    };
+
+    // Calculate monthly comparison data
+    const getMonthlyComparisonData = () => {
+      const last3Months = [];
+      const categoryData = {};
+      const typeData = {};
+
+      console.log('📊 [STATISTICS] Starting monthly comparison data processing');
+      console.log('Categories:', categories.length);
+      console.log('Types:', types.length);
+
+      // Initialize category and type data structures
+      categories.forEach((cat) => {
+        const catId = cat._raw?.id || cat.id;
+        const catLabel = lookupMaps.categoryMap.get(catId);
+        if (catLabel) {
+          categoryData[catLabel] = [0, 0, 0]; // Initialize with zeros for 3 months
+        }
+      });
+
+      types.forEach((type) => {
+        const typeId = type._raw?.id || type.id;
+        const typeLabel = lookupMaps.typeMap.get(typeId);
+        if (typeLabel) {
+          typeData[typeLabel] = [0, 0, 0]; // Initialize with zeros for 3 months
+        }
+      });
+
+      console.log('📊 [STATISTICS] Initialized data structures:');
+      console.log('Category labels:', Object.keys(categoryData));
+      console.log('Type labels:', Object.keys(typeData));
+
+      // Collect data for last 3 months
+      for (let i = 2; i >= 0; i--) {
+        const monthStart = moment().subtract(i, 'months').startOf('month');
+        const monthEnd = moment().subtract(i, 'months').endOf('month');
+        const monthLabel = monthStart.format('MMM YY');
+        const monthIndex = 2 - i; // Convert to 0-based index for array
+
+        last3Months.push(monthLabel);
+
+        // Count issues by category and type for this month
+        processedIssues.forEach((issue) => {
+          if (issue.issueDate.isBetween(monthStart, monthEnd, null, '[]')) {
+            // Update category count
+            const catLabel = issue.categoryLabel;
+            if (catLabel && categoryData[catLabel]) {
+              categoryData[catLabel][monthIndex]++;
+            }
+
+            // Update type count
+            const typeLabel = issue.typeLabel;
+            if (typeLabel && typeData[typeLabel]) {
+              typeData[typeLabel][monthIndex]++;
+            }
+          }
         });
       }
 
-      return enriched;
-    });
+      console.log('📊 [STATISTICS] Monthly data processed:');
+      console.log('Months:', last3Months);
+      console.log('Category data:', categoryData);
+      console.log('Type data:', typeData);
 
-    // Calculate basic metrics
+      return {
+        months: last3Months,
+        categoryData,
+        typeData,
+      };
+    };
+
+    const monthlyComparison = getMonthlyComparisonData();
+    const categoryTrends = getCategoryTrends();
+    const typeTrends = getTypeTrends();
+
+    // Calculate basic metrics with trends
     const totalIssues = processedIssues.length;
-    const recentIssues = processedIssues.filter((issue) =>
-      issue.issueDate.isAfter(thirtyDaysAgo)
-    ).length;
-    const weeklyIssues = processedIssues.filter((issue) =>
-      issue.issueDate.isAfter(sevenDaysAgo)
-    ).length;
+    const recentIssues = currentMonthIssues.length;
+    const weeklyIssues = currentWeekIssues.length;
+
+    const monthlyChange = calculatePercentageChange(
+      currentMonthIssues.length,
+      lastMonthIssues.length
+    );
+
+    const weeklyChange = calculatePercentageChange(currentWeekIssues.length, lastWeekIssues.length);
 
     // Status analysis
     const statusCounts = {};
@@ -311,10 +456,17 @@ function Statistics({
       totalIssues,
       recentIssues,
       weeklyIssues,
+      monthlyChange,
+      weeklyChange,
       pendingIssues,
       resolvedIssues,
       resolutionRate,
       avgResolutionDays,
+
+      // Trend data
+      categoryTrends,
+      typeTrends,
+      monthlyComparison,
 
       // Chart data
       monthlyData,
@@ -329,7 +481,7 @@ function Statistics({
       regionCounts,
       statusCounts,
     };
-  }, [issues, lookupMaps]);
+  }, [issues, lookupMaps, categories, types]);
 
   const loadStatistics = async () => {
     try {
@@ -465,7 +617,7 @@ function Statistics({
         {t('Comprehensive overview of issue management data')}
       </Text>
 
-      {/* Key Metrics Cards */}
+      {/* Key Metrics Cards with Trends */}
       <View
         style={{
           flexDirection: 'row',
@@ -480,14 +632,18 @@ function Statistics({
           icon="file-document-multiple"
           color={colors.primary}
           subtitle={`${processedData.recentIssues} ${t('this month')}`}
+          trend={processedData.monthlyChange}
+          trendLabel={t('vs last month')}
         />
 
         <StatCard
-          title={t('Pending')}
-          value={processedData.pendingIssues}
+          title={t('This Week')}
+          value={processedData.weeklyIssues}
           icon="clock-outline"
           color="#f39c12"
-          subtitle={`${processedData.weeklyIssues} ${t('this week')}`}
+          subtitle={t('current week')}
+          trend={processedData.weeklyChange}
+          trendLabel={t('vs last week')}
         />
 
         <StatCard
@@ -496,6 +652,8 @@ function Statistics({
           icon="check-circle"
           color="#2ecc71"
           subtitle={`${processedData.resolutionRate}% ${t('resolution rate')}`}
+          trend={processedData.resolutionRate - (processedData.previousResolutionRate || 0)}
+          trendLabel={t('vs last period')}
         />
 
         <StatCard
@@ -504,8 +662,115 @@ function Statistics({
           icon="timer-outline"
           color="#9b59b6"
           subtitle={t('average days')}
+          trend={processedData.avgResolutionDaysTrend}
+          trendLabel={t('vs last period')}
         />
       </View>
+
+      {/* Monthly Comparison Charts */}
+      {processedData.monthlyComparison && (
+        <>
+          {/* Category Trends */}
+          <Card style={{ marginBottom: 20, borderRadius: 12 }}>
+            <Card.Content style={{ padding: 16 }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                  color: colors.primary,
+                  marginBottom: 12,
+                }}
+              >
+                {t('Category Trends (Last 3 Months)')}
+              </Text>
+              <StackedBarChartGrm
+                data={processedData.monthlyComparison.categoryData}
+                labels={processedData.monthlyComparison.months}
+              />
+
+              {/* Category Change Indicators */}
+              <View style={{ marginTop: 16 }}>
+                {Object.entries(processedData.categoryTrends).map(([category, data]) => (
+                  <View
+                    key={category}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{ flex: 1, color: colors.secondary }}>{category}</Text>
+                    <Text
+                      style={{
+                        color:
+                          data.change > 0
+                            ? '#2ecc71'
+                            : data.change < 0
+                            ? '#e74c3c'
+                            : colors.secondary,
+                        marginLeft: 8,
+                      }}
+                    >
+                      {data.change > 0 ? '▲' : data.change < 0 ? '▼' : '•'}{' '}
+                      {Math.abs(data.change).toFixed(1)}%
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </Card.Content>
+          </Card>
+
+          {/* Type Trends */}
+          <Card style={{ marginBottom: 20, borderRadius: 12 }}>
+            <Card.Content style={{ padding: 16 }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                  color: colors.primary,
+                  marginBottom: 12,
+                }}
+              >
+                {t('Type Trends (Last 3 Months)')}
+              </Text>
+              <StackedBarChartGrm
+                data={processedData.monthlyComparison.typeData}
+                labels={processedData.monthlyComparison.months}
+              />
+
+              {/* Type Change Indicators */}
+              <View style={{ marginTop: 16 }}>
+                {Object.entries(processedData.typeTrends).map(([type, data]) => (
+                  <View
+                    key={type}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{ flex: 1, color: colors.secondary }}>{type}</Text>
+                    <Text
+                      style={{
+                        color:
+                          data.change > 0
+                            ? '#2ecc71'
+                            : data.change < 0
+                            ? '#e74c3c'
+                            : colors.secondary,
+                        marginLeft: 8,
+                      }}
+                    >
+                      {data.change > 0 ? '▲' : data.change < 0 ? '▼' : '•'}{' '}
+                      {Math.abs(data.change).toFixed(1)}%
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </Card.Content>
+          </Card>
+        </>
+      )}
 
       {/* Monthly Trend Chart */}
       {processedData.monthlyData.length > 0 && (

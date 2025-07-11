@@ -399,5 +399,12 @@
   "Number of issues by component": "Number of Issues by Component",
   "Number of issues by sub-component": "Number of Issues by Sub-component",
   "resolution rate": "Resolution Rate",
-  "Top Issue Types": "Top Issue Types"
+  "Top Issue Types": "Top Issue Types",
+  "current week": "Current Week",
+  "vs last week": "vs Last Week",
+  "This Week": "This Week",
+  "Category Trends (Last 3 Months)": "Category Trends (Last 3 Months)",
+  "vs last month": "vs Last Month",
+  "vs last period": "vs Last Period",
+  "Type Trends (Last 3 Months)": "Type Trends (Last 3 Months)"
 }

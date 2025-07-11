@@ -398,5 +398,12 @@
   "Loading statistics...": "Chargement des statistiques...",
   "Refresh": "Actualiser",
   "Monthly Trend (Last 6 Months)": "Tendance mensuelle (6 derniers mois)",
-  "Statistics Dashboard": "Tableau de bord statistique"
+  "Statistics Dashboard": "Tableau de bord statistique",
+  "This Week": "Cette Semaine",
+  "vs last week": "vs Semaine Dernière",
+  "vs last period": "vs Période Précédente",
+  "Category Trends (Last 3 Months)": "Tendances par Catégorie (3 Derniers Mois)",
+  "vs last month": "vs Mois Dernier",
+  "current week": "Semaine en Cours",
+  "Type Trends (Last 3 Months)": "Tendances par Type (3 Derniers Mois)"
 }
