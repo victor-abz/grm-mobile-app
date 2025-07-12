@@ -9,7 +9,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { init } from '../store/ducks/authentication.duck';
 import { getEncryptedData } from '../utils/storageManager';
@@ -65,6 +65,10 @@ function Router({ theme }) {
     );
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Image
+          source={require('../../assets/egrm-logo.png')}
+          style={{ width: 180, height: 180, marginBottom: 24, resizeMode: 'contain' }}
+        />
         <Text>Loading...</Text>
       </View>
     );
