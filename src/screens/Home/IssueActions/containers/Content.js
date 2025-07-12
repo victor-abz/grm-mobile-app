@@ -110,6 +110,8 @@ function Content({ issue, navigation, statuses = [], userContext }) {
 
     const rawData = issueData._raw || issueData;
 
+    console.log('🔍 [IssueActions] Raw data rawData.matwi:', rawData.rating, isNaN(rawData.rating));
+
     const enriched = {
       ...rawData,
 
@@ -141,7 +143,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
 
       // Other fields
       description: rawData.description || '',
-      rating: rawData.rating || null,
+      rating: Number(rawData.rating) || 0,
       escalate_flag: rawData.escalate_flag || false,
       comments: rawData.comments || [],
     };
@@ -310,7 +312,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
             )}
             <StarRating
               starSize={30}
-              rating={() => (enrichedIssue.rating ? enrichedIssue.rating : 0)}
+              rating={enrichedIssue.rating}
               maxStars={5}
               onChange={() => null}
               emptyColor="#dddddd"
