@@ -340,6 +340,38 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     return manipResult;
   };
 
+  // Utility to handle picked image asset from gallery or camera
+  const handlePickedImage = async (asset) => {
+    if (!asset || !asset.uri) {
+      ToastAndroid.show(t('Invalid Image'), ToastAndroid.SHORT);
+      return;
+    }
+    setLoading(true);
+    // Fallbacks for missing width/height
+    let width = asset.width;
+    let height = asset.height;
+    if (!width || !height) {
+      try {
+        const dimensions = await getImageDimensions(asset.uri);
+        width = width || dimensions.width;
+        height = height || dimensions.height;
+      } catch (e) {
+        // fallback to undefined
+      }
+    }
+    let manipResult = await get_image_manipulate(asset.uri, width, height);
+    setAttachments([
+      ...attachments,
+      {
+        ...manipResult,
+        id: new Date().toISOString(),
+        fileName: asset.fileName || asset.uri.split('/').pop(),
+        type: asset.type || 'image',
+      },
+    ]);
+    setLoading(false);
+  };
+
   const openCamera = async () => {
     if (attachments.length < 3) {
       const result = await ImagePicker.launchCameraAsync({
@@ -392,44 +424,55 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     return fileSizeInMB;
   };
   const pickImage = async () => {
-    pickDocument(true);
-    // const result = await ImagePicker.launchImageLibraryAsync({
-    //   mediaTypes: ImagePicker.MediaTypeOptions.All,
-    //   allowsEditing: true,
-    //   // aspect: [4, 3],
-    //   quality: 1,
-    // });
-    // if (!result.cancelled) {
-    //   const manipResult = await ImageManipulator.manipulateAsync(
-    //     result.localUri || result.uri,
-    //     [{ resize: { width: 1000, height: 1000 } }],
-    //     { compress: 1, format: ImageManipulator.SaveFormat.PNG }
-    //   );
-    //   setAttachment({ ...manipResult, id: new Date() });
-    // }
+    if (attachments.length < 3) {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await handlePickedImage(result.assets[0]);
+      }
+    } else {
+      ToastAndroid.show(`${t('step_2_only_three_files')}`, ToastAndroid.SHORT);
+    }
   };
 
-  const pickDocument = async (hasImage = false) => {
+  const takePhoto = async () => {
     if (attachments.length < 3) {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await handlePickedImage(result.assets[0]);
+      }
+    } else {
+      ToastAndroid.show(`${t('step_2_only_three_files')}`, ToastAndroid.SHORT);
+    }
+  };
+
+  const pickAudio = async () => {
+    if (recordingURIs.length < 4) {
       try {
-        // "image/*", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         const result = await DocumentPicker.getDocumentAsync({
-          type: hasImage ? ['image/*', 'application/pdf'] : ['application/pdf'],
+          type: ['audio/*'],
           multiple: false,
         });
         if (result.type != 'cancel') {
           setLoading(true);
 
           let localUri = result.localUri || result.uri;
-          if (result.mimeType && result.mimeType.toLowerCase().includes('image')) {
+          if (result.mimeType && result.mimeType.toLowerCase().includes('audio')) {
             let manipResult = await get_image_manipulate(
               localUri,
               result.assets && result.assets.length > 0 ? result.assets[0].width : null,
               result.assets && result.assets.length > 0 ? result.assets[0].height : null
             );
-            setAttachments([...attachments, { ...manipResult, id: new Date() }]);
+            setRecordingURIs([...recordingURIs, { ...manipResult, id: new Date() }]);
           } else {
-            setAttachments([...attachments, { ...result, id: new Date() }]);
+            setRecordingURIs([...recordingURIs, { ...result, id: new Date() }]);
           }
 
           setLoading(false);
@@ -438,7 +481,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
         console.warn(err);
       }
     } else {
-      ToastAndroid.show(`${t('step_2_only_three_files')}`, ToastAndroid.SHORT);
+      ToastAndroid.show(`${t('error_message_for_limit_audio')}`, ToastAndroid.SHORT);
     }
   };
 
@@ -886,7 +929,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
               {t('step_2_upload_attachment')}
             </Button>
             <View style={styles.iconButtonStyle}>
-              <IconButton icon="camera" color={colors.primary} size={24} onPress={openCamera} />
+              <IconButton icon="camera" color={colors.primary} size={24} onPress={takePhoto} />
             </View>
             <View style={styles.iconButtonStyle}>
               <IconButton

@@ -434,5 +434,7 @@
   "region": "Akarere",
   "Current password is incorrect": "Ijambo ry'ibanga rya none ntabwo ari ryo",
   "Logout": "Logout",
-  "Working offline - some features are disabled": "Uri gukorera offline - ibintu bimwe ntibikora"
+  "Working offline - some features are disabled": "Uri gukorera offline - ibintu bimwe ntibikora",
+  "attachment_creation_error": "Habaye Ikosa mu kubika inyandiko",
+  "Invalid Image": "Ifoto ntabwo ari yo"
 }

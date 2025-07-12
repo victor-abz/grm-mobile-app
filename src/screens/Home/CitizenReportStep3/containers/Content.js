@@ -349,7 +349,10 @@ function Content({
         throw new Error('Failed to verify issue was saved: ' + verifyError.message);
       }
 
-      // Navigation happens immediately after verification
+      // 1. After creating the issue, batch create grm_issue_attachments for all attachments and recordings
+      // 2. Use WatermelonDB database.write and collection.create for each attachment
+      // 3. Link each attachment to the new issue via grm_issue field
+      // 4. Add error handling for attachment saving
       const issueId = newIssue.id;
       const trackingCode = newIssue.tracking_code || newIssue.trackingCode;
 
@@ -359,6 +362,52 @@ function Content({
         'tracking code:',
         trackingCode
       );
+
+      // Batch create attachments
+      const attachmentsToCreate = [];
+      if (stepTwoParams.attachments && stepTwoParams.attachments.length > 0) {
+        for (const attachment of stepTwoParams.attachments) {
+          attachmentsToCreate.push({
+            issue: issueId,
+            attachment_type: 'image', // Assuming all attachments are images for now
+            attachment_url: attachment.uri,
+            attachment_name: attachment.fileName,
+            attachment_size: attachment.fileSize,
+            attachment_mime_type: attachment.type,
+            created_at: Date.now(),
+          });
+        }
+      }
+
+      if (stepTwoParams.recordings && stepTwoParams.recordings.length > 0) {
+        for (const recording of stepTwoParams.recordings) {
+          attachmentsToCreate.push({
+            issue: issueId,
+            attachment_type: 'audio',
+            attachment_url: recording.uri,
+            attachment_name: recording.fileName,
+            attachment_size: recording.fileSize,
+            attachment_mime_type: recording.type,
+            created_at: Date.now(),
+          });
+        }
+      }
+
+      if (attachmentsToCreate.length > 0) {
+        console.log('🔍 [STEP3] Batch creating attachments...');
+        try {
+          await watermelonManager.createIssueAttachments(attachmentsToCreate);
+          console.log('✅ [STEP3] All attachments created successfully.');
+        } catch (attachmentError) {
+          console.error('❌ [STEP3] Error creating attachments:', attachmentError);
+          Alert.alert(t('error'), t('attachment_creation_error'), [
+            { text: t('ok'), style: 'default' },
+          ]);
+        }
+      } else {
+        console.log('🔍 [STEP3] No attachments to create.');
+      }
+
       navigation.navigate('CitizenReportStep4', {
         issueId: issueId,
         trackingCode: trackingCode,

@@ -235,6 +235,36 @@ class WatermelonManager {
     }
   }
 
+  /**
+   * Batch create attachments for an issue
+   */
+  async createIssueAttachments(attachments) {
+    if (!attachments || !attachments.length) return [];
+    const db = this.getDatabase();
+    return await db.write(async () => {
+      const created = [];
+      for (const att of attachments) {
+        const now = Date.now();
+        const record = await db.get('grm_issue_attachments').create((a) => {
+          a._setRaw('grm_issue', att.issue || att.grm_issue);
+          a._setRaw('attachment', att.attachment_url || att.uri);
+          a._setRaw(
+            'file_name',
+            att.attachment_name || att.fileName || (att.uri && att.uri.split('/').pop())
+          );
+          a._setRaw('local_url', att.attachment_url || att.uri);
+          a._setRaw('uploaded', false);
+          a._setRaw('creation', now);
+          a._setRaw('modified', now);
+          a._setRaw('created_at', now);
+          a._setRaw('updated_at', now);
+        });
+        created.push(record._raw);
+      }
+      return created;
+    });
+  }
+
   async updateIssue(issueId, updateData) {
     try {
       const db = this.getDatabase();

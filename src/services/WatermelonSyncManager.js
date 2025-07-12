@@ -91,8 +91,6 @@ class WatermelonSyncManager {
       this.lastSyncTimestamp = new Date().toISOString();
       console.log('🔄 [SYNC] Updated last sync timestamp:', this.lastSyncTimestamp);
 
-      console.log('🔄 [SYNC] Calling logDatabaseState...');
-      await this.logDatabaseState();
 
       console.log('🔄 [SYNC] Notifying listeners - sync completed...');
       this.notifyListeners({
@@ -126,102 +124,6 @@ class WatermelonSyncManager {
       console.log('🔄 [SYNC] Clearing sync in progress flag...');
       this.syncInProgress = false;
       console.log('🔄 [SYNC] Sync cleanup completed');
-    }
-  }
-
-  /**
-   * Log current database state for debugging
-   */
-  async logDatabaseState() {
-    console.log('📊 [DATABASE] Starting database state check...');
-
-    try {
-      const collections = this.database.collections;
-      console.log('📊 [DATABASE] Available collections:', Object.keys(collections));
-
-      console.log('📊 [DATABASE] Collection details:');
-
-      for (const [tableName, collection] of Object.entries(collections)) {
-        try {
-          console.log(`📊 [DATABASE] Checking collection: ${tableName}`);
-
-          // Get total record count
-          const totalCount = await collection.query().fetchCount();
-          console.log(`📊 [DATABASE] ${tableName}: ${totalCount} records`);
-
-          if (totalCount > 0) {
-            // Get a sample record to see the structure
-            const sampleRecords = await collection.query().take(1).fetch();
-            if (sampleRecords.length > 0) {
-              const sample = sampleRecords[0];
-              console.log(`📊 [DATABASE] ${tableName} sample record:`, {
-                id: sample.id,
-                _status: sample._status,
-                _changed: sample._changed,
-                createdAt: sample.createdAt,
-                updatedAt: sample.updatedAt,
-                // Log specific fields based on table type
-                ...(tableName === 'grm_issues' && {
-                  project: sample.project,
-                  category: sample.category,
-                  status: sample.status,
-                  trackingCode: sample.trackingCode,
-                }),
-                ...(tableName === 'grm_issue_categories' && {
-                  name: sample.name,
-                  code: sample.code,
-                }),
-                ...(tableName === 'grm_administrative_regions' && {
-                  name: sample.name,
-                  code: sample.code,
-                  level: sample.administrativeLevel,
-                }),
-              });
-            }
-
-            // Get sync status breakdown
-            const syncedCount = await collection.query().where('_status', 'synced').fetchCount();
-            const createdCount = await collection.query().where('_status', 'created').fetchCount();
-            const updatedCount = await collection.query().where('_status', 'updated').fetchCount();
-            const deletedCount = await collection.query().where('_status', 'deleted').fetchCount();
-
-            console.log(
-              `📊 [DATABASE] ${tableName} sync status: synced:${syncedCount}, created:${createdCount}, updated:${updatedCount}, deleted:${deletedCount}`
-            );
-
-            // Check for recent records
-            const recentRecords = await collection
-              .query()
-              .where('updated_at', Q.gt(Date.now() - 60000)) // Last minute
-              .fetchCount();
-            console.log(
-              `📊 [DATABASE] ${tableName}: ${recentRecords} recent records (last minute)`
-            );
-          }
-        } catch (collectionError) {
-          console.error(`❌ [DATABASE] Error checking collection ${tableName}:`, {
-            message: collectionError.message,
-            stack: collectionError.stack,
-          });
-        }
-      }
-
-      // Check database adapter info
-      if (this.database.adapter) {
-        console.log('📊 [DATABASE] Adapter info:', {
-          adapterType: this.database.adapter.constructor.name,
-          dbName: this.database.adapter.dbName,
-          schema: this.database.adapter.schema,
-        });
-      }
-
-      console.log('📊 [DATABASE] Database state check completed');
-    } catch (error) {
-      console.error('❌ [DATABASE] Failed to log database state:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
     }
   }
 

@@ -433,5 +433,7 @@
   "Please check your internet connection": "Please check your internet connection",
   "profile_image_updated": "Image de profil mise à jour avec succès",
   "Failed to upload profile image. Please try again": "Échec du téléchargement de l'image de profil. Veuillez réessayer",
-  "Phone": "Téléphone"
+  "Phone": "Téléphone",
+  "attachment_creation_error": "Une erreur est survenue lors de la création de la pièce jointe",
+  "Invalid Image": "Image invalide"
 }
