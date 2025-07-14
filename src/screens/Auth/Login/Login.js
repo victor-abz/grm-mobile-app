@@ -48,7 +48,11 @@ function Login() {
     }
   };
 
-  const { control, handleSubmit, errors } = useForm({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     criteriaMode: 'all',
   });
 
@@ -98,7 +102,15 @@ function Login() {
                 <View style={{ borderRadius: 10, marginBottom: 16 }}>
                   <Controller
                     control={control}
-                    render={({ onChange, onBlur, value }) => (
+                    name="login"
+                    defaultValue=""
+                    rules={{
+                      required: {
+                        value: true,
+                        message: MESSAGES.required,
+                      },
+                    }}
+                    render={({ field }) => (
                       <TextInput
                         theme={theme}
                         autoCapitalize="none"
@@ -107,25 +119,29 @@ function Login() {
                         placeholderTextColor={colors.placeholder}
                         style={styles.loginFormTextInput}
                         left={<TextInput.Icon name="account" color="#24c38b" />}
-                        onBlur={onBlur}
-                        onChangeText={onChange}
-                        value={value}
+                        onBlur={field.onBlur}
+                        onChangeText={field.onChange}
+                        value={field.value}
                         placeholder={t('login_identifier_placeholder')}
                       />
                     )}
-                    name="login"
+                  />
+                  {errors.login && <Text style={styles.errorText}>{errors.login.message}</Text>}
+                  <Controller
+                    control={control}
+                    name="password"
+                    defaultValue=""
                     rules={{
                       required: {
                         value: true,
                         message: MESSAGES.required,
                       },
+                      maxLength: {
+                        value: 40,
+                        message: MESSAGES.maxLength,
+                      },
                     }}
-                    defaultValue=""
-                  />
-                  {errors.login && <Text style={styles.errorText}>{errors.login.message}</Text>}
-                  <Controller
-                    control={control}
-                    render={({ onChange, onBlur, value }) => (
+                    render={({ field }) => (
                       <TextInput
                         theme={theme}
                         mode="outlined"
@@ -139,24 +155,12 @@ function Login() {
                             color="#24c38b"
                           />
                         }
-                        value={value}
-                        onBlur={onBlur}
-                        onChangeText={onChange}
+                        value={field.value}
+                        onBlur={field.onBlur}
+                        onChangeText={field.onChange}
                         secureTextEntry={isPasswordSecure}
                       />
                     )}
-                    name="password"
-                    rules={{
-                      required: {
-                        value: true,
-                        message: MESSAGES.required,
-                      },
-                      maxLength: {
-                        value: 40,
-                        message: MESSAGES.maxLength,
-                      },
-                    }}
-                    defaultValue=""
                   />
                   {errors.password && (
                     <Text style={styles.errorText}>{errors.password.message}</Text>

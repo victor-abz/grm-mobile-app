@@ -54,7 +54,12 @@ function SignUp({ route }) {
   const [loading, setLoading] = React.useState(false);
   const [successModal, setSuccessModal] = React.useState(false);
   const [isPasswordSecure, setIsPasswordSecure] = useState(true);
-  const { control, handleSubmit, errors, watch } = useForm({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm({
     criteriaMode: 'all',
   });
   const password = React.useRef({});
@@ -266,20 +271,8 @@ function SignUp({ route }) {
                 <View style={{ borderRadius: 10, marginBottom: 16 }}>
                   <Controller
                     control={control}
-                    render={({ onChange, onBlur, value }) => (
-                      <TextInput
-                        theme={theme}
-                        mode="outlined"
-                        label={t('email')}
-                        placeholderTextColor={colors.placeholder}
-                        style={styles.loginFormTextInput}
-                        left={<TextInput.Icon name="account" color="#24c38b" />}
-                        onBlur={onBlur}
-                        onChangeText={(value) => onChange(value)}
-                        value={value}
-                      />
-                    )}
                     name="email"
+                    defaultValue=""
                     rules={{
                       required: {
                         value: true,
@@ -290,12 +283,24 @@ function SignUp({ route }) {
                         message: 'Please enter a valid email address',
                       },
                     }}
-                    defaultValue=""
+                    render={({ field }) => (
+                      <TextInput
+                        theme={theme}
+                        mode="outlined"
+                        label={t('email')}
+                        placeholderTextColor={colors.placeholder}
+                        style={styles.loginFormTextInput}
+                        left={<TextInput.Icon name="account" color="#24c38b" />}
+                        onBlur={field.onBlur}
+                        onChangeText={field.onChange}
+                        value={field.value}
+                      />
+                    )}
                   />
                   {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
                   <Controller
                     control={control}
-                    render={({ onChange, onBlur, value }) => (
+                    render={({ field }) => (
                       <TextInput
                         theme={theme}
                         mode="outlined"
@@ -309,9 +314,9 @@ function SignUp({ route }) {
                             color="#24c38b"
                           />
                         }
-                        value={value}
-                        onBlur={onBlur}
-                        onChangeText={onChange}
+                        value={field.value}
+                        onBlur={field.onBlur}
+                        onChangeText={field.onChange}
                         secureTextEntry={isPasswordSecure}
                       />
                     )}

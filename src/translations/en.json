@@ -330,7 +330,7 @@
   "Select sub-region": "Select sub-region",
   "Sync Successful": "Sync Successful",
   "Syncing...": "Syncing...",
-  "Audio": "Audio",
+  "Audios": "Audios",
   "GPS auto-set": "GPS auto-set",
   "Refresh Regions": "Refresh Regions",
   "error": "Error",
@@ -436,5 +436,10 @@
   "region": "region",
   "Current password is incorrect": "Current password is incorrect",
   "Invalid Image": "Invalid Image",
-  "attachment_creation_error": "An error occurred while creating the attachment"
+  "attachment_creation_error": "An error occurred while creating the attachment",
+  "Documents": "Documents",
+  "attachments": "attachments",
+  "Image": "Image",
+  "Audio": "Audio",
+  "Doc": "Doc"
 }

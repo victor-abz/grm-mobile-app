@@ -396,7 +396,7 @@ class WatermelonSyncManager {
 
       // ------------------------------------------------------------------
       // 🔄 1. Filter changes → Issue Actions sync: grm_issues (created/updated) and 
-      //       child tables (grm_issue_logs, grm_issue_comments created only)
+      //       child tables (grm_issue_logs, grm_issue_comments, grm_issue_attachments created only)
       // ------------------------------------------------------------------
       let filteredChanges = {};
       let hasChangesToPush = false;
@@ -444,6 +444,21 @@ class WatermelonSyncManager {
           };
           hasChangesToPush = true;
           console.log(`📤 [PUSH] grm_issue_comments: +${commentsCreated.length}`);
+        }
+      }
+
+      // Handle grm_issue_attachments table - accept created records only
+      if (changes?.grm_issue_attachments) {
+        const attachmentsCreated = changes.grm_issue_attachments.created || [];
+
+        if (attachmentsCreated.length > 0) {
+          filteredChanges.grm_issue_attachments = {
+            created: attachmentsCreated,
+            updated: [],
+            deleted: [],
+          };
+          hasChangesToPush = true;
+          console.log(`📤 [PUSH] grm_issue_attachments: +${attachmentsCreated.length}`);
         }
       }
 

@@ -253,7 +253,16 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     const uri = recording.getURI();
     const d = await getAudioDuration(uri);
     setRecordingURI(uri);
-    setRecordingURIs([...recordingURIs, { uri: uri, duration: formatDuration(d) }]);
+    setRecordingURIs([
+      ...recordingURIs,
+      {
+        id: new Date().toISOString(),
+        local_url: uri,
+        fileName: uri.split('/').pop(),
+        type: 'audio',
+        duration: formatDuration(d),
+      },
+    ]);
     setRecording(undefined);
     // console.log("Recording stopped and stored at", uri);
   };
@@ -347,7 +356,6 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       return;
     }
     setLoading(true);
-    // Fallbacks for missing width/height
     let width = asset.width;
     let height = asset.height;
     if (!width || !height) {
@@ -355,18 +363,16 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
         const dimensions = await getImageDimensions(asset.uri);
         width = width || dimensions.width;
         height = height || dimensions.height;
-      } catch (e) {
-        // fallback to undefined
-      }
+      } catch (e) {}
     }
     let manipResult = await get_image_manipulate(asset.uri, width, height);
     setAttachments([
       ...attachments,
       {
-        ...manipResult,
         id: new Date().toISOString(),
+        local_url: manipResult.uri,
         fileName: asset.fileName || asset.uri.split('/').pop(),
-        type: asset.type || 'image',
+        type: 'image',
       },
     ]);
     setLoading(false);
@@ -462,19 +468,17 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
         });
         if (result.type != 'cancel') {
           setLoading(true);
-
-          let localUri = result.localUri || result.uri;
-          if (result.mimeType && result.mimeType.toLowerCase().includes('audio')) {
-            let manipResult = await get_image_manipulate(
-              localUri,
-              result.assets && result.assets.length > 0 ? result.assets[0].width : null,
-              result.assets && result.assets.length > 0 ? result.assets[0].height : null
-            );
-            setRecordingURIs([...recordingURIs, { ...manipResult, id: new Date() }]);
-          } else {
-            setRecordingURIs([...recordingURIs, { ...result, id: new Date() }]);
-          }
-
+          let localUri = result.uri;
+          setRecordingURIs([
+            ...recordingURIs,
+            {
+              id: new Date().toISOString(),
+              local_url: localUri,
+              fileName: localUri.split('/').pop(),
+              type: 'audio',
+              duration: '',
+            },
+          ]);
           setLoading(false);
         }
       } catch (err) {
@@ -519,31 +523,8 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
           ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.id }
           : null,
         ongoingEvent: checked,
-        attachments:
-          attachments.length > 0
-            ? attachments.map((attachment) => ({
-                url: '',
-                id: attachment?.id,
-                uploaded: false,
-                local_url: attachment?.uri,
-                name: attachment?.uri.split('/').pop(),
-                user_id: username,
-                user_name: username,
-              }))
-            : undefined,
-        recordings:
-          recordingURIs.length != 0
-            ? recordingURIs.map((recording_url) => ({
-                url: '',
-                id: recording_url.uri.split('/').pop(),
-                uploaded: false,
-                local_url: recording_url.uri,
-                isAudio: true,
-                name: recording_url.uri.split('/').pop(),
-                user_id: username,
-                user_name: username,
-              }))
-            : [],
+        attachments: attachments.length > 0 ? attachments : undefined,
+        recordings: recordingURIs.length > 0 ? recordingURIs : [],
         category: getCategory(pickerValue2),
         additionalDetails,
       },
@@ -559,7 +540,6 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     checked,
     attachments,
     recordingURIs,
-    username,
     getCategory,
     pickerValue2,
     additionalDetails,
@@ -889,7 +869,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
               attachments.map((attachment, index) => (
                 <ImageBackground
                   key={attachment.id}
-                  source={{ uri: attachment.uri }}
+                  source={{ uri: attachment.local_url }}
                   style={{
                     height: 80,
                     width: 80,
@@ -944,7 +924,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
         {recordingURIs &&
           recordingURIs.map((recording_url, index) => (
             <View
-              key={recording_url.uri}
+              key={recording_url.id}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -952,15 +932,15 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
               }}
             >
               <IconButton
-                icon={!soundOnPause && soundUrl == recording_url.uri ? 'pause' : 'play'}
+                icon={!soundOnPause && soundUrl == recording_url.local_url ? 'pause' : 'play'}
                 color={colors.primary}
                 size={24}
                 onPress={() =>
-                  soundUrl == recording_url.uri
+                  soundUrl == recording_url.local_url
                     ? soundOnPause
                       ? playASoundOnCurrentPause()
                       : pauseASound()
-                    : playASound(recording_url.uri)
+                    : playASound(recording_url.local_url)
                 }
               />
               <Text
@@ -982,7 +962,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
                 <Animated.View
                   style={[
                     styles_audio.bar,
-                    { width: soundUrl == recording_url.uri ? getProgress() ?? 0 : 0 },
+                    { width: soundUrl == recording_url.local_url ? getProgress() ?? 0 : 0 },
                   ]}
                 />
               </View>
@@ -1014,13 +994,15 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
                   marginLeft: 7,
                 }}
               >
-                {parseInt(String(soundUrl == recording_url.uri && position ? position / 1000 : 0))}
+                {parseInt(
+                  String(soundUrl == recording_url.local_url && position ? position / 1000 : 0)
+                )}
               </Text>
               <IconButton
                 icon="close"
                 color={colors.error}
                 size={24}
-                onPress={() => reomveARecordingURI(recording_url.uri)}
+                onPress={() => reomveARecordingURI(recording_url.local_url)}
               />
             </View>
           ))}

@@ -369,11 +369,8 @@ function Content({
         for (const attachment of stepTwoParams.attachments) {
           attachmentsToCreate.push({
             issue: issueId,
-            attachment_type: 'image', // Assuming all attachments are images for now
-            attachment_url: attachment.uri,
-            attachment_name: attachment.fileName,
-            attachment_size: attachment.fileSize,
-            attachment_mime_type: attachment.type,
+            attachment_url: attachment.local_url, // Use local_url from Step 2
+            attachment_name: attachment.fileName, // Use fileName from Step 2
             created_at: Date.now(),
           });
         }
@@ -383,11 +380,8 @@ function Content({
         for (const recording of stepTwoParams.recordings) {
           attachmentsToCreate.push({
             issue: issueId,
-            attachment_type: 'audio',
-            attachment_url: recording.uri,
-            attachment_name: recording.fileName,
-            attachment_size: recording.fileSize,
-            attachment_mime_type: recording.type,
+            attachment_url: recording.local_url, // Use local_url from Step 2
+            attachment_name: recording.fileName, // Use fileName from Step 2
             created_at: Date.now(),
           });
         }

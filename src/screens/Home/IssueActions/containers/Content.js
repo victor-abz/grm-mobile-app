@@ -2,30 +2,12 @@ import { AntDesign, Feather } from '@expo/vector-icons';
 import moment from 'moment';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  ScrollView,
-  Text,
-  ToastAndroid,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {
-  Button,
-  Dialog,
-  IconButton,
-  Paragraph,
-  Portal,
-  RadioButton,
-  TextInput,
-} from 'react-native-paper';
+import { KeyboardAvoidingView, Linking, Platform, ScrollView, Text, View } from 'react-native';
+import { Button, IconButton } from 'react-native-paper';
 import StarRating from 'react-native-star-rating-widget';
 import { useData } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
-import watermelonManager from '../../../../database/watermelonManager';
 import { useIssueActions } from '../../../../hooks/useIssueActions';
 import { ACTION_TYPES, DIALOG_TYPES, DIALOG_STATES } from '../../../../utils/issueActionTypes';
 import ActionButton from '../../../../components/ActionButton';

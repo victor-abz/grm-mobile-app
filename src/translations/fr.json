@@ -314,7 +314,7 @@
   "Data Synchronization": "Synchronisation des données",
   "recording(s)": "enregistrement(s)",
   "Select sub-region (optional):": "Sélectionner une sous-région (optionnel) :",
-  "Audio": "Audio",
+  "Audios": "Audios",
   "Auto-Selected Region": "Région sélectionnée automatiquement",
   "file(s)": "fichier(s)",
   "Last sync": "Dernière synchronisation",
@@ -435,5 +435,10 @@
   "Failed to upload profile image. Please try again": "Échec du téléchargement de l'image de profil. Veuillez réessayer",
   "Phone": "Téléphone",
   "attachment_creation_error": "Une erreur est survenue lors de la création de la pièce jointe",
-  "Invalid Image": "Image invalide"
+  "Invalid Image": "Image invalide",
+  "attachments": "Pièces jointes",
+  "Doc": "Doc",
+  "Image": "Image",
+  "Audio": "Audio",
+  "Documents": "Documents"
 }

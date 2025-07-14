@@ -244,23 +244,33 @@ class WatermelonManager {
     return await db.write(async () => {
       const created = [];
       for (const att of attachments) {
-        const now = Date.now();
+        // Validate required fields - only need issue and attachment_url
+        if (!att.issue || !att.attachment_url) {
+          console.error('[WM] Attachment missing required fields:', att);
+          continue;
+        }
+        console.log('🔍 [WM] Creating attachment:', att);
         const record = await db.get('grm_issue_attachments').create((a) => {
-          a._setRaw('grm_issue', att.issue || att.grm_issue);
-          a._setRaw('attachment', att.attachment_url || att.uri);
+          // Map to backend schema fields only
+          a._setRaw('grm_issue', att.issue);
+          a._setRaw('attachment', att.attachment_url);
           a._setRaw(
             'file_name',
-            att.attachment_name || att.fileName || (att.uri && att.uri.split('/').pop())
+            att.attachment_name || (att.attachment_url && att.attachment_url.split('/').pop())
           );
-          a._setRaw('local_url', att.attachment_url || att.uri);
+          a._setRaw('local_url', att.attachment_url);
           a._setRaw('uploaded', false);
-          a._setRaw('creation', now);
-          a._setRaw('modified', now);
-          a._setRaw('created_at', now);
-          a._setRaw('updated_at', now);
+          
+          // Set timestamps
+          const now = new Date();
+          a._setRaw('creation', now.getTime());
+          a._setRaw('modified', now.getTime());
+          a._setRaw('created_at', now.getTime());
+          a._setRaw('updated_at', now.getTime());
         });
         created.push(record._raw);
       }
+      console.log('🔍 [WM] Created attachments:', created);
       return created;
     });
   }
@@ -718,6 +728,24 @@ class WatermelonManager {
     } catch (error) {
       console.warn('⚠️ Error clearing user context (may not exist):', error.message);
       return false;
+    }
+  }
+
+  /**
+   * Fetch all attachments for a given issue
+   */
+  async getAttachmentsForIssue(issueId) {
+    try {
+      const db = this.getDatabase();
+      const atts = await db.get('grm_issue_attachments').query().fetch();
+      // Filter by grm_issue field
+      console.log('🔍 [WM] All attachments:', atts);
+      const filtered = atts.filter((a) => a._raw?.grm_issue === issueId);
+      // Return as plain objects
+      console.log('🔍 [WM] Filtered attachments:', filtered);
+      return filtered.map((a) => a._raw);
+    } catch (e) {
+      return [];
     }
   }
 }

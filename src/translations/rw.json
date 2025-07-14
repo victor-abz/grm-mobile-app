@@ -348,7 +348,7 @@
   "Please select a location before proceeding.": "Nyamuneka hitamo aho uri mbere yo gukomeza.",
   "GPS Location:": "Aho uri na GPS:",
   "Images": "Amafoto",
-  "Audio": "Amajwi",
+  "Audios": "Amajwi",
   "Try Again": "Ongera ugerageze",
   "select_project": "Hitamo umushinga",
   "file_belonging_to_issue": "Dosiye ijyanye n'ikibazo",
@@ -436,5 +436,10 @@
   "Logout": "Logout",
   "Working offline - some features are disabled": "Uri gukorera offline - ibintu bimwe ntibikora",
   "attachment_creation_error": "Habaye Ikosa mu kubika inyandiko",
-  "Invalid Image": "Ifoto ntabwo ari yo"
+  "Invalid Image": "Ifoto ntabwo ari yo",
+  "Doc": "Dosiye",
+  "Image": "Ifoto",
+  "Audio": "Ijwi",
+  "Documents": "Dosiye",
+  "attachments": "Inyandiko"
 }
