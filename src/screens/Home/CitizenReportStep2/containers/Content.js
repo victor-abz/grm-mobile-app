@@ -1,4 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -34,6 +35,7 @@ import {
 } from 'react-native-paper';
 import { withObservables } from '@nozbe/watermelondb/react';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
+import AttachmentList from '../../../../components/AttachmentList/AttachmentList';
 import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { formatDuration } from '../../../../utils/functions';
@@ -100,6 +102,8 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   const [selectedIssueSubComponent, setSelectedIssueSubComponent] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [isLoading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalImageUri, setModalImageUri] = useState(null);
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
@@ -167,12 +171,14 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     () =>
       sound
         ? () => {
-            // console.log("Unloading Sound");
             sound.unloadAsync();
           }
         : undefined,
     [sound]
   );
+
+  // Add for pulsating animation:
+  const [pulseAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
     (async () => {
@@ -227,20 +233,18 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   const startRecording = async () => {
     if (recordingURIs.length < 4) {
       try {
-        // console.log("Requesting permissions..");
         await Audio.requestPermissionsAsync();
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
         });
-        // console.log("Starting recording..");
         const recording = new Audio.Recording();
         await recording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
         await recording.startAsync();
         setRecording(recording);
-        // console.log("Recording started");
+        console.log('🎙️ Recording started');
       } catch (err) {
-        // console.error("Failed to start recording", err);
+        console.error('Failed to start recording:', err);
       }
     } else {
       ToastAndroid.show(`${t('error_message_for_limit_audio')}`, ToastAndroid.SHORT);
@@ -248,7 +252,6 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   };
 
   const stopRecording = async () => {
-    // console.log("Stopping recording..");
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     const d = await getAudioDuration(uri);
@@ -264,7 +267,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       },
     ]);
     setRecording(undefined);
-    // console.log("Recording stopped and stored at", uri);
+    console.log('🎙️ Recording stopped and saved');
   };
 
   /**
@@ -282,6 +285,9 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     const scnds = second > 0 ? (second < 10 ? `0${second}` : second) : '00';
     return `${hrs}${mins}${scnds}`;
   };
+
+  // Format recording duration for display
+  // Removed formatRecordingDuration function
 
   const onPlaybackStatusUpdate = (playbackStatus) => {
     if (playbackStatus.didJustFinish) {
@@ -592,9 +598,9 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   }, [sound]);
 
   const reomveARecordingURI = useCallback(
-    (uri) => {
-      setRecordingURIs(recordingURIs.filter((item) => item.uri !== uri));
-      if (soundUrl === uri) {
+    (localUrl) => {
+      setRecordingURIs(recordingURIs.filter((item) => item.local_url !== localUrl));
+      if (soundUrl === localUrl) {
         setSoundUrl(null);
         setSoundOnPause(false);
       }
@@ -864,34 +870,26 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
           >
             {t('step_2_share_photos')}
           </Text>
-          <View style={{ flexDirection: 'row' }}>
-            {attachments.length > 0 &&
-              attachments.map((attachment, index) => (
-                <ImageBackground
-                  key={attachment.id}
-                  source={{ uri: attachment.local_url }}
-                  style={{
-                    height: 80,
-                    width: 80,
-                    marginHorizontal: 1,
-                    alignSelf: 'center',
-                    justifyContent: 'flex-end',
-                    marginVertical: 20,
-                  }}
-                >
-                  <TouchableOpacity
-                    onPress={() => removeAttachment(index)}
-                    style={{
-                      alignItems: 'center',
-                      padding: 5,
-                      backgroundColor: 'rgba(255, 1, 1, 1)',
-                    }}
-                  >
-                    <Text style={{ color: 'white' }}>X</Text>
-                  </TouchableOpacity>
-                </ImageBackground>
-              ))}
-          </View>
+          {/* Combined Attachment and Recording List */}
+          <AttachmentList
+            attachments={[...attachments, ...recordingURIs]}
+            showTypeHeaders={false}
+            showRemoveButton={true}
+            onImagePress={(item) => {
+              setModalImageUri(item.local_url);
+              setModalVisible(true);
+            }}
+            onRemoveAttachment={(index) => {
+              if (index < attachments.length) {
+                removeAttachment(index);
+              } else {
+                const recordingIndex = index - attachments.length;
+                const recording = recordingURIs[recordingIndex];
+                reomveARecordingURI(recording.local_url);
+              }
+            }}
+            style={{ marginVertical: 10 }}
+          />
           <View
             style={{
               flexDirection: 'row',
@@ -909,103 +907,18 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
               {t('step_2_upload_attachment')}
             </Button>
             <View style={styles.iconButtonStyle}>
-              <IconButton icon="camera" color={colors.primary} size={24} onPress={takePhoto} />
+              <IconButton icon="camera" iconColor={colors.primary} size={24} onPress={takePhoto} />
             </View>
             <View style={styles.iconButtonStyle}>
               <IconButton
                 icon={recording ? 'record-circle-outline' : 'microphone'}
-                color={recording ? '#f80102' : colors.primary}
+                iconColor={recording ? '#f80102' : colors.primary}
                 size={24}
                 onPress={recording ? stopRecording : startRecording}
               />
             </View>
           </View>
         </View>
-        {recordingURIs &&
-          recordingURIs.map((recording_url, index) => (
-            <View
-              key={recording_url.id}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <IconButton
-                icon={!soundOnPause && soundUrl == recording_url.local_url ? 'pause' : 'play'}
-                color={colors.primary}
-                size={24}
-                onPress={() =>
-                  soundUrl == recording_url.local_url
-                    ? soundOnPause
-                      ? playASoundOnCurrentPause()
-                      : pauseASound()
-                    : playASound(recording_url.local_url)
-                }
-              />
-              <Text
-                style={{
-                  fontFamily: 'Poppins_400Regular',
-                  fontSize: 12,
-                  fontWeight: 'normal',
-                  fontStyle: 'normal',
-                  lineHeight: 18,
-                  letterSpacing: 0,
-                  textAlign: 'left',
-                  marginVertical: 13,
-                  marginLeft: 7,
-                }}
-              >
-                {recording_url.duration}
-              </Text>
-              <View style={styles_audio.container}>
-                <Animated.View
-                  style={[
-                    styles_audio.bar,
-                    { width: soundUrl == recording_url.local_url ? getProgress() ?? 0 : 0 },
-                  ]}
-                />
-              </View>
-              <Text
-                style={{
-                  fontFamily: 'Poppins_400Regular',
-                  fontSize: 12,
-                  fontWeight: 'normal',
-                  fontStyle: 'normal',
-                  lineHeight: 18,
-                  letterSpacing: 0,
-                  textAlign: 'left',
-                  color: '#707070',
-                  marginVertical: 13,
-                }}
-              >
-                {`(${index + 1})`}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: 'Poppins_400Regular',
-                  fontSize: 12,
-                  fontWeight: 'normal',
-                  fontStyle: 'normal',
-                  lineHeight: 18,
-                  letterSpacing: 0,
-                  textAlign: 'left',
-                  marginVertical: 13,
-                  marginLeft: 7,
-                }}
-              >
-                {parseInt(
-                  String(soundUrl == recording_url.local_url && position ? position / 1000 : 0)
-                )}
-              </Text>
-              <IconButton
-                icon="close"
-                color={colors.error}
-                size={24}
-                onPress={() => reomveARecordingURI(recording_url.local_url)}
-              />
-            </View>
-          ))}
 
         <View style={{ paddingHorizontal: 50 }}>
           <Button
@@ -1069,6 +982,34 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* Fullscreen Image Modal */}
+      {modalVisible && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.95)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+          }}
+        >
+          <TouchableOpacity
+            style={{ position: 'absolute', top: 40, right: 20, zIndex: 10000 }}
+            onPress={() => setModalVisible(false)}
+          >
+            <MaterialCommunityIcons name="close" size={36} color="#fff" />
+          </TouchableOpacity>
+          <Image
+            source={{ uri: modalImageUri }}
+            style={{ width: '90%', height: '70%', resizeMode: 'contain' }}
+          />
+        </View>
+      )}
     </ScrollView>
   );
 }

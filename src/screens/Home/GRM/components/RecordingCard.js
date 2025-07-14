@@ -39,11 +39,16 @@ function RecordingCard({
           )}
 
           {!recording && !playing && (
-            <IconButton size={35} color={colors.primary} icon="play" onPress={() => onPlay()} />
+            <IconButton size={35} iconColor={colors.primary} icon="play" onPress={() => onPlay()} />
           )}
 
           {!recording && playing && (
-            <IconButton size={35} color={colors.primary} icon="pause" onPress={() => onPause()} />
+            <IconButton
+              size={35}
+              iconColor={colors.primary}
+              icon="pause"
+              onPress={() => onPause()}
+            />
           )}
         </View>
 
@@ -63,7 +68,7 @@ function RecordingCard({
               },
             ]}
           >
-            <IconButton size={30} color="#f80102" onPress={() => onDelete()} icon="close" />
+            <IconButton size={30} iconColor="#f80102" onPress={() => onDelete()} icon="close" />
           </View>
         )}
 

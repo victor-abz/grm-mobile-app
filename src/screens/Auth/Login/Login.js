@@ -180,7 +180,7 @@ function Login() {
                   },
                 ]}
                 onPress={handleSubmit(onLoginPress)}
-                color="white"
+                textColor="white"
               >
                 {t('login')}
               </Button>

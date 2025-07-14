@@ -266,14 +266,14 @@ function Content({ issue, navigation, statuses = [], userContext }) {
                   {enrichedIssue.contact_information.type === 'phone' ? (
                     <IconButton
                       icon="phone"
-                      color={colors.primary}
+                      iconColor={colors.primary}
                       size={35}
                       onPress={() => phoneCall()}
                     />
                   ) : enrichedIssue.contact_information.type === 'whatsapp' ? (
                     <IconButton
                       icon="whatsapp"
-                      color={colors.primary}
+                      iconColor={colors.primary}
                       size={35}
                       onPress={() => whatsApp()}
                     />

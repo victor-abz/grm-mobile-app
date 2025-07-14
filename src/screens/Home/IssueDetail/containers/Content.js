@@ -25,6 +25,7 @@ import { useData } from '../../../../providers/DataProvider';
 import { useIssueDetail } from '../../../../hooks/useIssueDetail';
 import watermelonManager from '../../../../database/watermelonManager';
 import { getFileType, getDisplayFileName } from '../../../../utils/fileUtils';
+import AttachmentList from '../../../../components/AttachmentList/AttachmentList';
 
 const theme = {
   roundness: 12,
@@ -99,10 +100,6 @@ function Content({
 
   const [attachments, setAttachments] = useState([]);
   const [attachmentsCollapsed, setAttachmentsCollapsed] = useState(true);
-  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
-  const [audioPosition, setAudioPosition] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(0);
-  const [currentSound, setCurrentSound] = useState(null);
 
   // ========== FETCH ATTACHMENTS ==========
   useEffect(() => {
@@ -110,7 +107,7 @@ function Content({
       if (!enrichedIssue?.id) return;
       try {
         const atts = await watermelonManager.getAttachmentsForIssue(enrichedIssue.id);
-        console.log('🔍 [IssueHistory] Attachments:', atts.length, atts);
+        console.log('📎 Loaded attachments:', atts.length);
         setAttachments(atts || []);
       } catch (e) {
         setAttachments([]);
@@ -181,167 +178,16 @@ function Content({
   const [modalVisible, setModalVisible] = useState(false);
   const [modalImageUri, setModalImageUri] = useState(null);
 
-  // ========== AUDIO HANDLERS ==========
-  const formatTime = (timeMs) => {
-    if (!timeMs || isNaN(timeMs)) return '0:00';
-    const totalSeconds = Math.floor(timeMs / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleAudioPlayback = async (item) => {
-    try {
-      // If this item is currently playing, stop it
-      if (currentlyPlaying?.id === item.id) {
-        if (currentSound) {
-          await currentSound.stopAsync();
-          await currentSound.unloadAsync();
-        }
-        setCurrentlyPlaying(null);
-        setCurrentSound(null);
-        setAudioPosition(0);
-        setAudioDuration(0);
-        return;
-      }
-
-      // Stop any currently playing audio
-      if (currentSound) {
-        await currentSound.stopAsync();
-        await currentSound.unloadAsync();
-      }
-
-      // Load and play new audio
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: item.local_url || item.attachment },
-        { shouldPlay: true, progressUpdateIntervalMillis: 100 }
-      );
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setAudioPosition(status.positionMillis || 0);
-          setAudioDuration(status.durationMillis || 0);
-
-          if (status.didJustFinish) {
-            setCurrentlyPlaying(null);
-            setCurrentSound(null);
-            setAudioPosition(0);
-            setAudioDuration(0);
-          }
-        }
-      });
-
-      setCurrentSound(sound);
-      setCurrentlyPlaying(item);
-    } catch (error) {
-      console.error('Audio playback error:', error);
-    }
-  };
-
-  // Cleanup audio on unmount
-  useEffect(() => {
-    return () => {
-      if (currentSound) {
-        currentSound.unloadAsync();
-      }
-    };
-  }, [currentSound]);
 
   const handleViewImage = (attachment) => {
     setModalImageUri(attachment.local_url || attachment.attachment);
     setModalVisible(true);
   };
 
-  // ========== RENDER HELPERS ==========
-  const renderAttachmentItem = (item, index) => {
-    const fileType = getFileType(item.file_name);
-    const displayName = getDisplayFileName(item.file_name, 25);
-    const isCurrentlyPlaying = currentlyPlaying?.id === item.id;
-
-    return (
-      <View
-        key={index}
-        style={[styles.attachmentItem, isCurrentlyPlaying && styles.attachmentItemPlaying]}
-      >
-        <TouchableOpacity
-          style={styles.attachmentItemHeader}
-          onPress={() => {
-            if (fileType === 'audio') {
-              handleAudioPlayback(item);
-            } else if (fileType === 'image') {
-              handleViewImage(item);
-            }
-          }}
-        >
-          <MaterialCommunityIcons
-            name={
-              fileType === 'audio'
-                ? isCurrentlyPlaying
-                  ? 'stop'
-                  : 'play'
-                : fileType === 'image'
-                ? 'eye'
-                : 'file-document'
-            }
-            size={20}
-            color={
-              fileType === 'audio'
-                ? isCurrentlyPlaying
-                  ? '#dc3545'
-                  : colors.primary
-                : fileType === 'image'
-                ? '#28a745'
-                : '#6c757d'
-            }
-            style={styles.fileIcon}
-          />
-
-          <Text
-            style={[styles.fileName, isCurrentlyPlaying && styles.fileNamePlaying]}
-            numberOfLines={1}
-          >
-            {displayName}
-          </Text>
-
-          {fileType === 'audio' && isCurrentlyPlaying ? (
-            <View style={styles.audioControls}>
-              {/* Sound wave animation */}
-              <View style={styles.soundWaveContainer}>
-                <View style={[styles.soundWave, styles.soundWave1]} />
-                <View style={[styles.soundWave, styles.soundWave2]} />
-                <View style={[styles.soundWave, styles.soundWave3]} />
-                <View style={[styles.soundWave, styles.soundWave4]} />
-              </View>
-
-              {/* Timer */}
-              <Text style={styles.audioTimer}>
-                {formatTime(audioPosition)} / {formatTime(audioDuration)}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.fileTypeIndicator}>
-              <Text style={styles.fileTypeText}>
-                {fileType === 'audio' ? t('Audio') : fileType === 'image' ? t('Image') : t('Doc')}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
   const renderAttachments = () => {
     if (!attachments?.length) {
       return null;
     }
-
-    // Separate attachments by type
-    const audioAttachments = attachments.filter((item) => getFileType(item.file_name) === 'audio');
-    const imageAttachments = attachments.filter((item) => getFileType(item.file_name) === 'image');
-    const otherAttachments = attachments.filter((item) => {
-      const type = getFileType(item.file_name);
-      return type !== 'audio' && type !== 'image';
-    });
 
     return (
       <CollapsibleSection
@@ -350,55 +196,11 @@ function Content({
         onToggle={() => setAttachmentsCollapsed(!attachmentsCollapsed)}
         showContent={true}
       >
-        <View style={styles.attachmentsList}>
-          {/* Audio Section */}
-          {audioAttachments.length > 0 && (
-            <View>
-              <View style={styles.attachmentTypeHeader}>
-                <MaterialCommunityIcons name="music-note" size={16} color={colors.primary} />
-                <Text style={styles.attachmentTypeTitle}>
-                  {t('Audios')} ({audioAttachments.length})
-                </Text>
-              </View>
-              {audioAttachments.map((item) => {
-                const originalIndex = attachments.indexOf(item);
-                return renderAttachmentItem(item, originalIndex);
-              })}
-            </View>
-          )}
-
-          {/* Image Section */}
-          {imageAttachments.length > 0 && (
-            <View>
-              <View style={styles.attachmentTypeHeader}>
-                <MaterialCommunityIcons name="image" size={16} color="#28a745" />
-                <Text style={styles.attachmentTypeTitle}>
-                  {t('Images')} ({imageAttachments.length})
-                </Text>
-              </View>
-              {imageAttachments.map((item) => {
-                const originalIndex = attachments.indexOf(item);
-                return renderAttachmentItem(item, originalIndex);
-              })}
-            </View>
-          )}
-
-          {/* Documents Section */}
-          {otherAttachments.length > 0 && (
-            <View>
-              <View style={styles.attachmentTypeHeader}>
-                <MaterialCommunityIcons name="file-document" size={16} color="#6c757d" />
-                <Text style={styles.attachmentTypeTitle}>
-                  {t('Documents')} ({otherAttachments.length})
-                </Text>
-              </View>
-              {otherAttachments.map((item) => {
-                const originalIndex = attachments.indexOf(item);
-                return renderAttachmentItem(item, originalIndex);
-              })}
-            </View>
-          )}
-        </View>
+        <AttachmentList
+          attachments={attachments}
+          showTypeHeaders={true}
+          onImagePress={handleViewImage}
+        />
       </CollapsibleSection>
     );
   };

@@ -4,11 +4,13 @@ import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, ScrollView, Text, View, Alert } from 'react-native';
+import { Platform, ScrollView, Text, View, Alert, Image, TouchableOpacity } from 'react-native';
 import { Button, Dialog, Paragraph, Portal } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { withObservables } from '@nozbe/watermelondb/react';
 import watermelonManager from '../../../../database/watermelonManager';
 import dataManager from '../../../../services/DataManager'; // Import DataManager for proper API sync
+import AttachmentList from '../../../../components/AttachmentList/AttachmentList';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { createLookupMap } from '../../../../utils/issueDetailUtils';
@@ -35,6 +37,8 @@ function Content({
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalImageUri, setModalImageUri] = useState(null);
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
@@ -515,16 +519,21 @@ function Content({
         </View>
 
         <Text style={styles.stepSubtitle}>{t('step_3_attachments')}</Text>
-        {stepTwoParams.attachments && stepTwoParams.attachments.length > 0 && (
-          <Text style={styles.stepDescription}>
-            {t('Images')}: {stepTwoParams.attachments.length} {t('file(s)')}
-          </Text>
-        )}
-        {stepTwoParams.recordings && stepTwoParams.recordings.length > 0 && (
-          <Text style={styles.stepDescription}>
-            {t('Audio')}: {stepTwoParams.recordings.length} {t('recording(s)')}
-          </Text>
-        )}
+        
+        {/* Combined Attachment List */}
+        <AttachmentList
+          attachments={[
+            ...(stepTwoParams.attachments || []),
+            ...(stepTwoParams.recordings || [])
+          ]}
+          showTypeHeaders={true}
+          showRemoveButton={false}
+          onImagePress={(item) => {
+            setModalImageUri(item.local_url);
+            setModalVisible(true);
+          }}
+          style={{ marginVertical: 10 }}
+        />
       </View>
 
       <View style={{ paddingHorizontal: 50 }}>
@@ -577,6 +586,34 @@ function Content({
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* Fullscreen Image Modal */}
+      {modalVisible && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.95)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+          }}
+        >
+          <TouchableOpacity
+            style={{ position: 'absolute', top: 40, right: 20, zIndex: 10000 }}
+            onPress={() => setModalVisible(false)}
+          >
+            <MaterialCommunityIcons name="close" size={36} color="#fff" />
+          </TouchableOpacity>
+          <Image
+            source={{ uri: modalImageUri }}
+            style={{ width: '90%', height: '70%', resizeMode: 'contain' }}
+          />
+        </View>
+      )}
     </ScrollView>
   );
 }

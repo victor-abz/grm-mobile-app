@@ -620,6 +620,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
           </Text>
           <IconButton
             icon={showMap ? 'chevron-up' : 'chevron-down'}
+            iconColor="#333"
             onPress={() => setShowMap(!showMap)}
           />
         </View>
