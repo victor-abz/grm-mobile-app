@@ -23,7 +23,7 @@ const AttachmentList = ({
 
   // Format time in MM:SS format
   const formatTime = (timeMs) => {
-    if (!timeMs || isNaN(timeMs)) return '0:00';
+    if (!timeMs || Number.isNaN(timeMs)) return '0:00';
     const totalSeconds = Math.floor(timeMs / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -62,7 +62,7 @@ const AttachmentList = ({
         if (status.isLoaded) {
           setAudioPosition(status.positionMillis || 0);
           setAudioDuration(status.durationMillis || 0);
-          
+
           if (status.didJustFinish) {
             setCurrentlyPlaying(null);
             setCurrentSound(null);
@@ -80,13 +80,41 @@ const AttachmentList = ({
   };
 
   // Cleanup audio on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (currentSound) {
         currentSound.unloadAsync();
       }
-    };
-  }, [currentSound]);
+    },
+    [currentSound]
+  );
+
+  // Helper functions for icon rendering
+  const getIconName = (fileType, isCurrentlyPlaying) => {
+    if (fileType === 'audio') {
+      return isCurrentlyPlaying ? 'stop' : 'play';
+    }
+    if (fileType === 'image') {
+      return 'eye';
+    }
+    return 'file-document';
+  };
+
+  const getIconColor = (fileType, isCurrentlyPlaying) => {
+    if (fileType === 'audio') {
+      return isCurrentlyPlaying ? '#dc3545' : colors.primary;
+    }
+    if (fileType === 'image') {
+      return '#28a745';
+    }
+    return '#6c757d';
+  };
+
+  const getFileTypeText = (fileType) => {
+    if (fileType === 'audio') return t('Audio');
+    if (fileType === 'image') return t('Image');
+    return t('Doc');
+  };
 
   // Render individual attachment item
   const renderAttachmentItem = (item, index) => {
@@ -110,25 +138,9 @@ const AttachmentList = ({
           }}
         >
           <MaterialCommunityIcons
-            name={
-              fileType === 'audio'
-                ? isCurrentlyPlaying
-                  ? 'stop'
-                  : 'play'
-                : fileType === 'image'
-                ? 'eye'
-                : 'file-document'
-            }
+            name={getIconName(fileType, isCurrentlyPlaying)}
             size={20}
-            color={
-              fileType === 'audio'
-                ? isCurrentlyPlaying
-                  ? '#dc3545'
-                  : colors.primary
-                : fileType === 'image'
-                ? '#28a745'
-                : '#6c757d'
-            }
+            color={getIconColor(fileType, isCurrentlyPlaying)}
             style={styles.fileIcon}
           />
 
@@ -156,17 +168,12 @@ const AttachmentList = ({
             </View>
           ) : (
             <View style={styles.fileTypeIndicator}>
-              <Text style={styles.fileTypeText}>
-                {fileType === 'audio' ? t('Audio') : fileType === 'image' ? t('Image') : t('Doc')}
-              </Text>
+              <Text style={styles.fileTypeText}>{getFileTypeText(fileType)}</Text>
             </View>
           )}
 
           {showRemoveButton && onRemoveAttachment && (
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => onRemoveAttachment(index)}
-            >
+            <TouchableOpacity style={styles.removeButton} onPress={() => onRemoveAttachment(index)}>
               <MaterialCommunityIcons name="close" size={16} color="#dc3545" />
             </TouchableOpacity>
           )}
@@ -181,9 +188,13 @@ const AttachmentList = ({
 
   // Separate attachments by type if headers are needed
   if (showTypeHeaders) {
-    const audioAttachments = attachments.filter(item => getFileType(item.file_name || item.fileName) === 'audio');
-    const imageAttachments = attachments.filter(item => getFileType(item.file_name || item.fileName) === 'image');
-    const otherAttachments = attachments.filter(item => {
+    const audioAttachments = attachments.filter(
+      (item) => getFileType(item.file_name || item.fileName) === 'audio'
+    );
+    const imageAttachments = attachments.filter(
+      (item) => getFileType(item.file_name || item.fileName) === 'image'
+    );
+    const otherAttachments = attachments.filter((item) => {
       const type = getFileType(item.file_name || item.fileName);
       return type !== 'audio' && type !== 'image';
     });
@@ -199,7 +210,9 @@ const AttachmentList = ({
                 {t('Audio')} ({audioAttachments.length})
               </Text>
             </View>
-            {audioAttachments.map((item, index) => renderAttachmentItem(item, attachments.indexOf(item)))}
+            {audioAttachments.map((item, _index) =>
+              renderAttachmentItem(item, attachments.indexOf(item))
+            )}
           </View>
         )}
 
@@ -212,7 +225,9 @@ const AttachmentList = ({
                 {t('Images')} ({imageAttachments.length})
               </Text>
             </View>
-            {imageAttachments.map((item, index) => renderAttachmentItem(item, attachments.indexOf(item)))}
+            {imageAttachments.map((item, _index) =>
+              renderAttachmentItem(item, attachments.indexOf(item))
+            )}
           </View>
         )}
 
@@ -225,7 +240,9 @@ const AttachmentList = ({
                 {t('Documents')} ({otherAttachments.length})
               </Text>
             </View>
-            {otherAttachments.map((item, index) => renderAttachmentItem(item, attachments.indexOf(item)))}
+            {otherAttachments.map((item, _index) =>
+              renderAttachmentItem(item, attachments.indexOf(item))
+            )}
           </View>
         )}
       </View>
@@ -240,4 +257,5 @@ const AttachmentList = ({
   );
 };
 
+export { AttachmentList };
 export default AttachmentList;

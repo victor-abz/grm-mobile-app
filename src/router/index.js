@@ -17,12 +17,15 @@ import { AuthContext } from '../providers/AuthProvider';
 import PrivateRoutes from './privateRoutes';
 import PublicRoutes from './publicRoutes';
 
-function Router({ theme }) {
+// Import assets at the top to avoid global-require
+const logoSource = require('../../assets/egrm-logo.png');
+
+const Router = ({ theme: _theme }) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const { isAuthenticated, isLoading: authLoading } = useContext(AuthContext);
 
-  const { userPassword } = useSelector((state) => state.get('authentication').toObject());
+  const _userPassword = useSelector((state) => state.get('authentication').toObject());
 
   const getDBConfig = async () => {
     const password = await getEncryptedData('userPassword');
@@ -66,7 +69,7 @@ function Router({ theme }) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Image
-          source={require('../../assets/egrm-logo.png')}
+          source={logoSource}
           style={{ width: 180, height: 180, marginBottom: 24, resizeMode: 'contain' }}
         />
         <Text>Loading...</Text>
@@ -94,6 +97,6 @@ function Router({ theme }) {
       {isAuthenticated ? <PrivateRoutes /> : <PublicRoutes />}
     </NavigationContainer>
   );
-}
+};
 
 export default Router;

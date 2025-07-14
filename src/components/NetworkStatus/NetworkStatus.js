@@ -3,7 +3,7 @@ import { Animated, ToastAndroid } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import * as Network from 'expo-network';
 
-export function NetworkStatus({ message, checkTime = 10000 }) {
+export const NetworkStatus = ({ message, checkTime = 10000 }) => {
   const { t } = useTranslation();
   const defaultMessage = t('Internet connection has been lost!');
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -25,7 +25,7 @@ export function NetworkStatus({ message, checkTime = 10000 }) {
   }, [checkTime]);
 
   React.useEffect(() => {
-    if (true || (!isOnline && isOnline !== undefined)) {
+    if (!isOnline && isOnline !== undefined) {
       showToast();
     } else {
       Animated.timing(fadeAnim, {
@@ -35,5 +35,5 @@ export function NetworkStatus({ message, checkTime = 10000 }) {
       }).start();
     }
   }, [isOnline, fadeAnim]);
-  return <></>;
-}
+  return null;
+};

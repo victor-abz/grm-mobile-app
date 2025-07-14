@@ -6,7 +6,7 @@ import React from 'react';
 import { View } from 'react-native';
 import CustomDropDownPicker from '../components/CustomDropDownPicker/CustomDropDownPicker';
 
-function LanguageSelector() {
+const LanguageSelector = () => {
   const { i18n } = useTranslation(); // i18n instance
   const [locale, setLocale] = React.useState(i18n.language);
 
@@ -43,6 +43,6 @@ function LanguageSelector() {
       />
     </View>
   );
-}
+};
 
 export default LanguageSelector;

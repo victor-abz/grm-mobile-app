@@ -5,6 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import UserTypeSelector from '../../components/UserTypeSelector';
 
+const styles = StyleSheet.create({
+  content: {
+    flex: 1,
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+  },
+});
+
 const Content = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
@@ -43,7 +51,7 @@ const Content = () => {
           !userType
             ? {}
             : () => {
-                navigation.navigate('SignUp', { userType: userType });
+                navigation.navigate('SignUp', { userType });
               }
         }
       >
@@ -54,11 +62,3 @@ const Content = () => {
 };
 
 export default Content;
-
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-  },
-});

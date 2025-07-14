@@ -1,4 +1,4 @@
-const { StyleSheet } = require("react-native");
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
@@ -6,13 +6,13 @@ export const styles = StyleSheet.create({
     // paddingTop: 20,
   },
   item: {
-    width: "100%",
+    width: '100%',
     marginBottom: 20,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     borderRadius: 5,
     height: 80,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // listContent: { paddingTop: 20 },
 });

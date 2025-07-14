@@ -1,2 +1,3 @@
-import UpdatableList from "./UpdatableList";
+import UpdatableList from './UpdatableList';
+
 export default UpdatableList;

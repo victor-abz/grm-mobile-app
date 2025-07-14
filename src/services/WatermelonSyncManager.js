@@ -1,5 +1,4 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
-import Q from '@nozbe/watermelondb/QueryDescription';
 
 /**
  * WatermelonDB Sync Manager
@@ -91,7 +90,6 @@ class WatermelonSyncManager {
       this.lastSyncTimestamp = new Date().toISOString();
       console.log('🔄 [SYNC] Updated last sync timestamp:', this.lastSyncTimestamp);
 
-
       console.log('🔄 [SYNC] Notifying listeners - sync completed...');
       this.notifyListeners({
         phase: 'completed',
@@ -103,7 +101,7 @@ class WatermelonSyncManager {
       console.log('✅ [SYNC] Sync operation completed successfully');
     } catch (error) {
       const syncDuration = Date.now() - syncStartTime;
-      console.error('❌ [SYNC] Sync operation failed after', syncDuration + 'ms');
+      console.error('❌ [SYNC] Sync operation failed after', `${syncDuration}ms`);
       console.error('❌ [SYNC] Error details:', {
         message: error.message,
         name: error.name,
@@ -240,7 +238,7 @@ class WatermelonSyncManager {
 
         // Show sample record for debugging (without sensitive data)
         if (created > 0) {
-          const sampleRecord = tableChanges.created[0];
+          const [sampleRecord] = tableChanges.created;
           const sampleInfo = {
             id: sampleRecord?.id,
             fieldCount: sampleRecord ? Object.keys(sampleRecord).length : 0,
@@ -395,10 +393,10 @@ class WatermelonSyncManager {
       console.log('📤 [PUSH] Preparing push data...');
 
       // ------------------------------------------------------------------
-      // 🔄 1. Filter changes → Issue Actions sync: grm_issues (created/updated) and 
+      // 🔄 1. Filter changes → Issue Actions sync: grm_issues (created/updated) and
       //       child tables (grm_issue_logs, grm_issue_comments, grm_issue_attachments created only)
       // ------------------------------------------------------------------
-      let filteredChanges = {};
+      const filteredChanges = {};
       let hasChangesToPush = false;
 
       // Handle grm_issues table - accept both created and updated records
@@ -504,7 +502,7 @@ class WatermelonSyncManager {
       if (response) {
         try {
           const responseStr = JSON.stringify(response);
-          console.log('📤 [PUSH] Response preview:', responseStr.substring(0, 100) + '...');
+          console.log('📤 [PUSH] Response preview:', `${responseStr.substring(0, 100)}...`);
         } catch (stringifyError) {
           console.log('📤 [PUSH] Could not stringify response:', stringifyError.message);
         }
@@ -625,21 +623,46 @@ class WatermelonSyncManager {
 
     try {
       const { collections } = this.database;
-      for (const [tableName, collection] of Object.entries(collections)) {
-        try {
-          const created = await collection.query().where('_status', 'created').fetchCount();
-          const updated = await collection.query().where('_status', 'updated').fetchCount();
-          const deleted = await collection.query().where('_status', 'deleted').fetchCount();
 
-          if (created || updated || deleted) {
-            result[tableName] = { created, updated, deleted };
-            total += created + updated + deleted;
+      // Create concurrent queries for all collections
+      const collectionPromises = Object.entries(collections).map(
+        async ([tableName, collection]) => {
+          try {
+            const [created, updated, deleted] = await Promise.all([
+              collection.query().where('_status', 'created').fetchCount(),
+              collection.query().where('_status', 'updated').fetchCount(),
+              collection.query().where('_status', 'deleted').fetchCount(),
+            ]);
+
+            if (created || updated || deleted) {
+              return {
+                tableName,
+                counts: { created, updated, deleted },
+                total: created + updated + deleted,
+              };
+            }
+            return null;
+          } catch (tableErr) {
+            // Skip table if any error occurs, but log for debugging
+            console.warn(
+              `⚠️ [PENDING] Failed to inspect collection ${tableName}:`,
+              tableErr.message
+            );
+            return null;
           }
-        } catch (tableErr) {
-          // Skip table if any error occurs, but log for debugging
-          console.warn(`⚠️ [PENDING] Failed to inspect collection ${tableName}:`, tableErr.message);
         }
-      }
+      );
+
+      // Wait for all collection queries to complete
+      const collectionResults = await Promise.all(collectionPromises);
+
+      // Process results
+      collectionResults.forEach((collectionResult) => {
+        if (collectionResult) {
+          result[collectionResult.tableName] = collectionResult.counts;
+          total += collectionResult.total;
+        }
+      });
     } catch (err) {
       console.error('❌ [PENDING] Failed to calculate pending changes:', err);
     }

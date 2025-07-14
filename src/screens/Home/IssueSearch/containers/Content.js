@@ -1,14 +1,110 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import moment from 'moment';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 import ListHeader from '../components/ListHeader';
+import TabIcon from '../../../../components/TabIcon';
 
-function Content({
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    marginTop: StatusBar.currentHeight || 0,
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  item: {
+    flex: 1,
+    padding: 20,
+    paddingBottom: 5,
+    marginVertical: 8,
+    marginHorizontal: 5,
+    borderBottomWidth: 1,
+    borderColor: colors.lightgray,
+  },
+  title: {
+    fontFamily: 'Poppins_400Regular',
+    // fontSize: 12,
+    fontWeight: 'bold',
+    fontStyle: 'normal',
+    // lineHeight: 10,
+    letterSpacing: 0,
+    // textAlign: "left",
+    color: '#707070',
+  },
+  subTitle: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 12,
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+    letterSpacing: 0,
+    // textAlign: "left",
+    // color: '#707070',
+  },
+  statisticsText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 11,
+    fontWeight: 'bold',
+    fontStyle: 'normal',
+    letterSpacing: 0,
+    textAlign: 'left',
+    color: '#707070',
+  },
+});
+
+const Item = ({ item, onPress, t, _currentDate }) => {
+  const issueTypeLabel = item.typeLabel;
+  const trackingCode = item.tracking_code || item.name;
+  const citizen = item.citizen || item.citizen_name;
+  const intakeDate = item.intake_date || item.creation;
+  const { statusLabel } = item;
+  const { regionLabel } = item;
+
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.item]}>
+      <View style={styles.itemContainer}>
+        <View>
+          <Text style={[styles.title]}>
+            {issueTypeLabel} - {t('label_reference')} {trackingCode}
+          </Text>
+          <Text style={[styles.subTitle]} numberOfLines={1}>
+            {item.title || item.description || 'No description'}
+          </Text>
+          <Text style={[styles.subTitle]}>
+            {citizen || 'Anonymous'}, {intakeDate && moment(intakeDate).format('DD-MMM-YYYY')},{' '}
+            {intakeDate && _currentDate.diff(intakeDate, 'days')} {t('days_ago')}
+          </Text>
+          <Text style={styles.subTitle}>
+            {t('status_label')}:
+            <Text
+              style={{
+                color:
+                  item.status === 1 ||
+                  item.status === 2 ||
+                  item.status === '1' ||
+                  item.status === '2'
+                    ? colors.inProgress
+                    : colors.primary,
+              }}
+            >
+              {statusLabel}
+            </Text>
+            {regionLabel !== 'Unknown' && ` • ${regionLabel}`}
+          </Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const Content = ({
   issues,
   userContext,
   categories = [],
@@ -19,13 +115,13 @@ function Content({
   regions = [],
   projects = [],
   users = [],
-}) {
+}) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const [selectedId, setSelectedId] = useState(null);
-  const [status, setStatus] = useState('assigned');
+  const [_selectedId, _setSelectedId] = useState(null);
+  const [_status, setStatus] = useState('assigned');
   const [_issues, setIssues] = useState([]);
-  const [currentDate, setCurrentDate] = useState(moment());
+  const [_currentDate, _setCurrentDate] = useState(moment());
 
   // Get current user ID from context
   const currentUserId =
@@ -33,7 +129,7 @@ function Content({
 
   console.log('🔍 [IssueSearch] User context:', {
     user: userContext?.user,
-    currentUserId: currentUserId,
+    currentUserId,
   });
 
   // Create lookup helper functions for efficient ID-to-label resolution
@@ -107,14 +203,11 @@ function Content({
         typeLabel: lookupMaps.typeMap.get(issueData.issue_type) || issueData.issue_type,
         statusLabel: lookupMaps.statusMap.get(issueData.status) || issueData.status,
         ageGroupLabel:
-          lookupMaps.ageGroupMap.get(issueData.citizen_age_group) ||
-          issueData.citizen_age_group,
+          lookupMaps.ageGroupMap.get(issueData.citizen_age_group) || issueData.citizen_age_group,
         citizenGroup1Label:
-          lookupMaps.citizenGroupMap.get(issueData.citizen_group_1) ||
-          issueData.citizen_group_1,
+          lookupMaps.citizenGroupMap.get(issueData.citizen_group_1) || issueData.citizen_group_1,
         citizenGroup2Label:
-          lookupMaps.citizenGroupMap.get(issueData.citizen_group_2) ||
-          issueData.citizen_group_2,
+          lookupMaps.citizenGroupMap.get(issueData.citizen_group_2) || issueData.citizen_group_2,
         regionLabel:
           lookupMaps.regionMap.get(issueData.administrative_region) ||
           issueData.administrative_region,
@@ -174,7 +267,7 @@ function Content({
 
   useEffect(() => {
     console.log('🔍 [IssueSearch] Filtering useEffect triggered:');
-    console.log('  - Status:', status);
+    console.log('  - Status:', _status);
     console.log('  - EnrichedIssues count:', enrichIssuesWithLabels?.length || 0);
     console.log('  - Statuses count:', statuses?.length || 0);
     console.log('  - User ID:', currentUserId);
@@ -188,7 +281,7 @@ function Content({
     let filteredIssues = [];
     let foundStatus;
 
-    switch (status) {
+    switch (_status) {
       case 'assigned':
         console.log('🔍 [IssueSearch] Filtering for assigned issues');
         foundStatus = statuses.find((el) => el.finalStatus === true || el.final_status === true);
@@ -268,65 +361,15 @@ function Content({
     }
 
     console.log(
-      `✅ [IssueSearch] Filtered to ${filteredIssues.length} issues for status: ${status}`
+      `✅ [IssueSearch] Filtered to ${filteredIssues.length} issues for status: ${_status}`
     );
 
     filteredIssues = sortByCreationDateDesc(filteredIssues);
     setIssues(filteredIssues);
-  }, [status, enrichIssuesWithLabels, statuses, currentUserId]);
+  }, [_status, enrichIssuesWithLabels, statuses, currentUserId]);
 
-  function Item({ item, onPress, backgroundColor, textColor }) {
-    // Use the enriched data with resolved labels
-    const issueTypeLabel = item.typeLabel;
-    const trackingCode = item.tracking_code || item.name;
-    const citizen = item.citizen || item.citizen_name;
-    const intakeDate = item.intake_date || item.creation;
-    const statusLabel = item.statusLabel;
-    const regionLabel = item.regionLabel;
-
-    return (
-      <TouchableOpacity onPress={onPress} style={[styles.item]}>
-        <View style={styles.itemContainer}>
-          <View>
-            <Text style={[styles.title]}>
-              {issueTypeLabel} - {t('label_reference')} {trackingCode}
-            </Text>
-            <Text style={[styles.subTitle]} numberOfLines={1}>
-              {item.title || item.description || 'No description'}
-            </Text>
-            <Text style={[styles.subTitle]}>
-              {citizen || 'Anonymous'}, {intakeDate && moment(intakeDate).format('DD-MMM-YYYY')},{' '}
-              {intakeDate && currentDate.diff(intakeDate, 'days')} {t('days_ago')}
-            </Text>
-            <Text style={styles.subTitle}>
-              {t('status_label')}:{' '}
-              <Text
-                style={{
-                  color:
-                    item.status === 1 ||
-                    item.status === 2 ||
-                    item.status === '1' ||
-                    item.status === '2'
-                      ? colors.inProgress
-                      : colors.primary,
-                }}
-              >
-                {statusLabel}
-              </Text>
-              {regionLabel !== 'Unknown' && ` • ${regionLabel}`}
-            </Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />
-        </View>
-      </TouchableOpacity>
-    );
-  }
-
-  const renderItem = ({ item }) => {
-    const backgroundColor = item.name === selectedId ? '#6e3b6e' : '#f9c2ff';
-    const color = item.name === selectedId ? 'white' : 'black';
-
-    return (
+  const renderItem = useCallback(
+    ({ item }) => (
       <Item
         item={item}
         onPress={() =>
@@ -342,26 +385,35 @@ function Content({
             merge: true,
           })
         }
-        backgroundColor={{ backgroundColor }}
-        textColor={{ color }}
+        t={t}
+        _currentDate={_currentDate}
       />
-    );
-  };
+    ),
+    [navigation, t, _currentDate]
+  );
 
-  const renderHeader = () => <ListHeader status={status} />;
+  const renderHeader = useCallback(() => <ListHeader status={_status} />, [_status]);
 
-  // Show loading state while lookup data is being fetched
-  if (!statuses.length && !categories.length && !types.length) {
-    console.log('⚠️ [IssueSearch] Showing loading state - no lookup data yet');
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>{t('Loading lookup data...')}</Text>
-      </View>
-    );
-  }
+  // Create memoized icon renderers to avoid re-creating functions on each render
+  const renderOpenIcon = useCallback(
+    () => <TabIcon status="open" currentStatus={_status} label={t('open')} />,
+    [_status, t]
+  );
 
-  console.log('🔍 [IssueSearch] About to render with _issues length:', _issues?.length || 0);
-  console.log('🔍 [IssueSearch] _issues sample:', _issues?.[0]);
+  const renderAssignedIcon = useCallback(
+    () => <TabIcon status="assigned" currentStatus={_status} label={t('assigned')} />,
+    [_status, t]
+  );
+
+  const renderResolvedIcon = useCallback(
+    () => <TabIcon status="resolved" currentStatus={_status} label={t('resolved')} />,
+    [_status, t]
+  );
+
+  const renderAllIcon = useCallback(
+    () => <TabIcon status="all" currentStatus={_status} label={t('All (Debug)')} fontSize={12} />,
+    [_status, t]
+  );
 
   return (
     <>
@@ -372,91 +424,46 @@ function Content({
             setStatus(value);
           }
         }}
-        value={status}
+        value={_status}
       >
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: status === 'open' ? colors.disabled : colors.white,
-            borderBottomColor: status === 'open' ? colors.primary : colors.white,
+            backgroundColor: _status === 'open' ? colors.disabled : colors.white,
+            borderBottomColor: _status === 'open' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
-          icon={() => (
-            <View>
-              <Text
-                style={{
-                  color: status === 'open' ? colors.primary : colors.secondary,
-                  fontWeight: status === 'open' ? 'bold' : 'normal',
-                }}
-              >
-                {t('open')}
-              </Text>
-            </View>
-          )}
+          icon={renderOpenIcon}
           value="open"
         />
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: status === 'assigned' ? colors.disabled : colors.white,
-            borderBottomColor: status === 'assigned' ? colors.primary : colors.white,
+            backgroundColor: _status === 'assigned' ? colors.disabled : colors.white,
+            borderBottomColor: _status === 'assigned' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
-          icon={() => (
-            <View>
-              <Text
-                style={{
-                  color: status === 'assigned' ? colors.primary : colors.secondary,
-                  fontWeight: status === 'assigned' ? 'bold' : 'normal',
-                }}
-              >
-                {t('assigned')}
-              </Text>
-            </View>
-          )}
+          icon={renderAssignedIcon}
           value="assigned"
         />
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: status === 'resolved' ? colors.disabled : colors.white,
-            borderBottomColor: status === 'resolved' ? colors.primary : colors.white,
+            backgroundColor: _status === 'resolved' ? colors.disabled : colors.white,
+            borderBottomColor: _status === 'resolved' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
-          icon={() => (
-            <View>
-              <Text
-                style={{
-                  color: status === 'resolved' ? colors.primary : colors.secondary,
-                  fontWeight: status === 'resolved' ? 'bold' : 'normal',
-                }}
-              >
-                {t('resolved')}
-              </Text>
-            </View>
-          )}
+          icon={renderResolvedIcon}
           value="resolved"
         />
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: status === 'all' ? colors.disabled : colors.white,
-            borderBottomColor: status === 'all' ? colors.primary : colors.white,
+            backgroundColor: _status === 'all' ? colors.disabled : colors.white,
+            borderBottomColor: _status === 'all' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
-          icon={() => (
-            <View>
-              <Text
-                style={{
-                  color: status === 'all' ? colors.primary : colors.secondary,
-                  fontWeight: status === 'all' ? 'bold' : 'normal',
-                  fontSize: 12,
-                }}
-              >
-                {t('All (Debug)')}
-              </Text>
-            </View>
-          )}
+          icon={renderAllIcon}
           value="all"
         />
       </ToggleButton.Row>
@@ -466,59 +473,10 @@ function Content({
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
         keyExtractor={(item) => item._id || item.id || item.name}
-        extraData={selectedId}
+        extraData={_selectedId}
       />
     </>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginTop: StatusBar.currentHeight || 0,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  item: {
-    flex: 1,
-    padding: 20,
-    paddingBottom: 5,
-    marginVertical: 8,
-    marginHorizontal: 5,
-    borderBottomWidth: 1,
-    borderColor: colors.lightgray,
-  },
-  title: {
-    fontFamily: 'Poppins_400Regular',
-    // fontSize: 12,
-    fontWeight: 'bold',
-    fontStyle: 'normal',
-    // lineHeight: 10,
-    letterSpacing: 0,
-    // textAlign: "left",
-    color: '#707070',
-  },
-  subTitle: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 12,
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-    letterSpacing: 0,
-    // textAlign: "left",
-    // color: '#707070',
-  },
-  statisticsText: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 11,
-    fontWeight: 'bold',
-    fontStyle: 'normal',
-    letterSpacing: 0,
-    textAlign: 'left',
-    color: '#707070',
-  },
-});
+};
 
 export default Content;

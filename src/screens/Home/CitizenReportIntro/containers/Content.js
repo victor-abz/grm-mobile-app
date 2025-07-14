@@ -3,10 +3,10 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dimensions, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { Button } from 'react-native-paper';
+import { withObservables } from '@nozbe/watermelondb/react';
 import CrowdImage from '../../../../../assets/crowd.svg';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
-import { withObservables } from '@nozbe/watermelondb/react';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import watermelonManager from '../../../../database/watermelonManager';
 
@@ -22,16 +22,18 @@ const theme = {
   },
 };
 
-function Content({ projects = [] }) {
+const Content = ({ projects = [] }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
 
   // Prepare project items for dropdown
-  const projectItems = useMemo(() => {
-    return projects
-      .filter((p) => p && p.id)
-      .map((p) => ({ label: p.title || p.projectCode || p.id, value: p.id, _model: p }));
-  }, [projects]);
+  const projectItems = useMemo(
+    () =>
+      projects
+        .filter((p) => p && p.id)
+        .map((p) => ({ label: p.title || p.projectCode || p.id, value: p.id, _model: p })),
+    [projects]
+  );
 
   const [selectedProjectId, setSelectedProjectId] = useState(null);
 
@@ -106,7 +108,7 @@ function Content({ projects = [] }) {
       </KeyboardAvoidingView>
     </ScrollView>
   );
-}
+};
 
 // Enhance with observables for projects list
 const enhance = withObservables([], () => ({

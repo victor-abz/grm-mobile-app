@@ -77,9 +77,9 @@ const StackedBarChartGrm = ({ data, labels }) => {
           marginVertical: 8,
           borderRadius: 16,
         }}
-        withHorizontalLabels={true}
+        withHorizontalLabels
         showValuesOnTopOfBars={false}
-        hideLegend={true}
+        hideLegend
       />
 
       {/* Custom Legend */}

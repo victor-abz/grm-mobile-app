@@ -4,54 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Button, Keyboard, StyleSheet, TextInput, View } from 'react-native';
 import { colors } from '../../../../utils/colors';
 
-function SearchBar(props) {
-  const { t } = useTranslation();
-
-  return (
-    <View style={styles.container}>
-      <View style={!props.clicked ? styles.searchBar__unclicked : styles.searchBar__clicked}>
-        <Feather name="search" size={20} color={colors.primary} style={{ paddingLeft: 10 }} />
-        <TextInput
-          style={styles.input}
-          placeholder={t('search')}
-          placeholderTextColor={colors.placeholder}
-          value={props.searchPhrase}
-          onChangeText={props.setSearchPhrase}
-          onFocus={() => {
-            props.setClicked(true);
-          }}
-        />
-
-        {props.clicked && (
-          <Entypo
-            name="cross"
-            size={20}
-            color={colors.primary}
-            style={{ padding: 1, marginEnd: 5 }}
-            onPress={() => {
-              props.setSearchPhrase('');
-            }}
-          />
-        )}
-      </View>
-      {props.clicked && (
-        <View style={{ marginLeft: 3 }}>
-          <Button
-            color={colors.primary}
-            title={t('cancel')}
-            onPress={() => {
-              Keyboard.dismiss();
-              props.setClicked(false);
-            }}
-          />
-        </View>
-      )}
-    </View>
-  );
-}
-
-export default SearchBar;
-
 const styles = StyleSheet.create({
   container: {
     margin: 15,
@@ -88,3 +40,51 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
 });
+
+const SearchBar = ({ clicked, searchPhrase, setSearchPhrase, setClicked }) => {
+  const { t } = useTranslation();
+
+  return (
+    <View style={styles.container}>
+      <View style={!clicked ? styles.searchBar__unclicked : styles.searchBar__clicked}>
+        <Feather name="search" size={20} color={colors.primary} style={{ paddingLeft: 10 }} />
+        <TextInput
+          style={styles.input}
+          placeholder={t('search')}
+          placeholderTextColor={colors.placeholder}
+          value={searchPhrase}
+          onChangeText={setSearchPhrase}
+          onFocus={() => {
+            setClicked(true);
+          }}
+        />
+
+        {clicked && (
+          <Entypo
+            name="cross"
+            size={20}
+            color={colors.primary}
+            style={{ padding: 1, marginEnd: 5 }}
+            onPress={() => {
+              setSearchPhrase('');
+            }}
+          />
+        )}
+      </View>
+      {clicked && (
+        <View style={{ marginLeft: 3 }}>
+          <Button
+            color={colors.primary}
+            title={t('cancel')}
+            onPress={() => {
+              Keyboard.dismiss();
+              setClicked(false);
+            }}
+          />
+        </View>
+      )}
+    </View>
+  );
+};
+
+export default SearchBar;

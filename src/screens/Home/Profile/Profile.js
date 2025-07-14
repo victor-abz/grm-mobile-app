@@ -6,7 +6,7 @@ import dataManager from '../../../services/DataManager';
 import { useFrappe } from '../../../providers/FrappeProvider';
 import Content from './containers/Content';
 
-function Profile() {
+const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [profileData, setProfileData] = useState(null);
@@ -14,7 +14,7 @@ function Profile() {
   const [error, setError] = useState(null);
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
-  const { db, auth } = useFrappe();
+  const { db, auth: _auth } = useFrappe();
 
   const checkNetworkStatus = useCallback(() => {
     const hasValidCredentials = !!(
@@ -68,9 +68,9 @@ function Profile() {
         }
 
         setProfileData(userData);
-      } catch (error) {
-        console.error('Error loading Profile data:', error);
-        setError(error.message);
+      } catch (loadError) {
+        console.error('Error loading Profile data:', loadError);
+        setError(loadError.message);
         if (!isRefresh) {
           setProfileData({
             _id: username,
@@ -126,6 +126,6 @@ function Profile() {
       <Content profileData={profileData} isOnline={isOnline} error={error} />
     </ScrollView>
   );
-}
+};
 
 export default Profile;

@@ -58,6 +58,7 @@ export const isRecordResolutionEnabled = (statuses, enrichedIssue, isIssueAssign
  * Note: Removed user assignment restriction per user request
  */
 export const isRateAppealEnabled = (statuses, enrichedIssue, isIssueAssignedToMe) => {
+  console.log(isIssueAssignedToMe);
   if (!statuses || !enrichedIssue) {
     return false;
   }
@@ -78,12 +79,10 @@ export const isRateAppealEnabled = (statuses, enrichedIssue, isIssueAssignedToMe
  * 3. Escalation is not disabled
  */
 export const isEscalateEnabled = (
-  isRecordResolutionEnabled,
+  recordResolutionEnabled,
   enrichedIssue,
   disableEscalation = false
-) => {
-  return isRecordResolutionEnabled && !enrichedIssue?.escalate_flag && !disableEscalation;
-};
+) => recordResolutionEnabled && !enrichedIssue?.escalate_flag && !disableEscalation;
 
 /**
  * Check if current user is assigned to the issue

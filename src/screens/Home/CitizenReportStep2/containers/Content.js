@@ -9,9 +9,9 @@ import moment from 'moment';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   Animated,
   Image,
-  ImageBackground,
   KeyboardAvoidingView,
   TextInput as NativeTextInput,
   Platform,
@@ -34,13 +34,13 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { withObservables } from '@nozbe/watermelondb/react';
+import { useSelector } from 'react-redux';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
-import AttachmentList from '../../../../components/AttachmentList/AttachmentList';
+import { AttachmentList } from '../../../../components/AttachmentList/AttachmentList';
 import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { formatDuration } from '../../../../utils/functions';
 import { styles } from './Content.styles';
-import { useSelector } from 'react-redux';
 import {
   processCategories,
   processTypes,
@@ -57,7 +57,7 @@ const theme = {
   },
 };
 
-const styles_audio = StyleSheet.create({
+const _stylesAudio = StyleSheet.create({
   container: {
     height: 7,
     backgroundColor: '#ccc',
@@ -72,55 +72,54 @@ const styles_audio = StyleSheet.create({
   },
 });
 
-function Content({ stepOneParams, categories = [], types = [], projectLinks = [] }) {
+const Content = ({ stepOneParams, categories = [], types = [], projectLinks = [] }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
 
   // Form state
   const [pickerValue, setPickerValue] = useState(null);
   const [pickerValue2, setPickerValue2] = useState(null);
-  const [pickerValue3, setPickerValue3] = useState(null);
-  const [pickerComponent, setPickerComponent] = useState(null);
-  const [pickerSubComponent, setPickerSubComponent] = useState(null);
+  const [_pickerValue3, _setPickerValue3] = useState(null);
+  const [_pickerComponent, _setPickerComponent] = useState(null);
+  const [_pickerSubComponent, _setPickerSubComponent] = useState(null);
   const [checked, setChecked] = useState(false);
   const [additionalDetails, setAdditionalDetails] = useState(null);
   const [date, setDate] = useState(null);
-  const [attachment, setAttachment] = useState({});
+  const [_attachment, _setAttachment] = useState({});
   const [attachments, setAttachments] = useState([]);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [current, setCurrent] = useState(null);
-  const [recordingURI, setRecordingURI] = useState();
   const [recordingURIs, setRecordingURIs] = useState([]);
   const [sound, setSound] = React.useState();
-  const [soundOnPause, setSoundOnPause] = useState(false);
+  const [_soundOnPause, _setSoundOnPause] = useState(false);
   const [soundUrl, setSoundUrl] = React.useState();
   const [selectedIssueType, setSelectedIssueType] = useState(null);
-  const [selectedIssueSubType, setSelectedIssueSubType] = useState(null);
-  const [selectedIssueComponent, setSelectedIssueComponent] = useState(null);
-  const [selectedIssueSubComponent, setSelectedIssueSubComponent] = useState(null);
+  const [_selectedIssueSubType, _setSelectedIssueSubType] = useState(null);
+  const [_selectedIssueComponent, _setSelectedIssueComponent] = useState(null);
+  const [_selectedIssueSubComponent, _setSelectedIssueSubComponent] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [isLoading, setLoading] = useState(false);
+  const [_isLoading, _setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalImageUri, setModalImageUri] = useState(null);
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
 
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { username: _username } = useSelector((state) => state.get('authentication').toObject());
 
   const projectId = stepOneParams?.selectedProject?.id || null;
 
   // Process categories using shared utility with project filtering
-  const processedCategories = useMemo(() => {
-    return processCategories(categories, projectId, projectLinks);
-  }, [categories, projectId, projectLinks]);
+  const processedCategories = useMemo(
+    () => processCategories(categories, projectId, projectLinks),
+    [categories, projectId, projectLinks]
+  );
 
   // Process types using shared utility with project filtering
-  const processedTypes = useMemo(() => {
-    return processTypes(types, projectId, projectLinks);
-  }, [types, projectId, projectLinks]);
+  const processedTypes = useMemo(
+    () => processTypes(types, projectId, projectLinks),
+    [types, projectId, projectLinks]
+  );
 
   // Placeholder for sub-types (not implemented in current Frappe structure)
   const itemsSubTypes = useMemo(() => {
@@ -129,19 +128,19 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   }, []);
 
   // Placeholder for components (not implemented in current Frappe structure)
-  const components = useMemo(() => {
+  const _components = useMemo(() => {
     console.log('🔍 [STEP2] Components - returning empty array (not implemented)');
     return [];
   }, []);
 
   // Placeholder for sub-components (not implemented in current Frappe structure)
-  const subComponents = useMemo(() => {
+  const _subComponents = useMemo(() => {
     console.log('🔍 [STEP2] SubComponents - returning empty array (not implemented)');
     return [];
   }, []);
 
   // Filtering logic for sub-types (currently empty)
-  const filterSubType = useMemo(() => {
+  const _filterSubType = useMemo(() => {
     const result = selectedIssueType
       ? itemsSubTypes.filter((obj) => obj.parent_id === selectedIssueType.id)
       : [];
@@ -159,13 +158,13 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   }, [processedCategories]);
 
   // Filtering logic for sub-components (currently empty)
-  const filterSubComponent = useMemo(() => {
-    const result = selectedIssueComponent
-      ? subComponents.filter((obj) => obj.parent_id === selectedIssueComponent.id)
+  const _filterSubComponent = useMemo(() => {
+    const result = _selectedIssueComponent
+      ? _subComponents.filter((obj) => obj.parent_id === _selectedIssueComponent.id)
       : [];
     console.log('🔍 [STEP2] FilterSubComponent result:', result);
     return result;
-  }, [selectedIssueComponent, subComponents]);
+  }, [_selectedIssueComponent, _subComponents]);
 
   React.useEffect(
     () =>
@@ -178,15 +177,14 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   );
 
   // Add for pulsating animation:
-  const [pulseAnim] = useState(new Animated.Value(1));
+  const [_pulseAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          alert(t('Sorry, we need camera roll permissions to make this work!'));
-          return;
+          Alert.alert(t('Sorry, we need camera roll permissions to make this work!'));
         }
       }
     })();
@@ -205,8 +203,30 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     hideDatePicker();
   };
 
-  const onRecordingStatusUpdate = (recordingStatus) => {
-    setCurrent(milliSecondToHHMMSS(recordingStatus.durationMillis));
+  const getImageDimensions = async (imageUri) =>
+    new Promise((resolve, reject) => {
+      Image.getSize(
+        imageUri,
+        (width, height) => {
+          resolve({ width, height });
+        },
+        (error) => {
+          reject(error);
+        }
+      );
+    });
+
+  const getImageSize = async (imageUri) => {
+    let fileSizeInMB = 0;
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(imageUri);
+      const fileSizeInBytes = fileInfo.size;
+      fileSizeInMB = fileSizeInBytes ? fileSizeInBytes / (1024 * 1024) : 0; // Convert bytes to MB
+      console.log('Image size:', fileSizeInMB, 'MB');
+    } catch (error) {
+      console.error('Error getting image size:', error);
+    }
+    return fileSizeInMB;
   };
 
   const getAudioDuration = async (sound_url) => {
@@ -238,10 +258,10 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
         });
-        const recording = new Audio.Recording();
-        await recording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
-        await recording.startAsync();
-        setRecording(recording);
+        const recordingInstance = new Audio.Recording();
+        await recordingInstance.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
+        await recordingInstance.startAsync();
+        setRecording(recordingInstance);
         console.log('🎙️ Recording started');
       } catch (err) {
         console.error('Failed to start recording:', err);
@@ -255,7 +275,6 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     const d = await getAudioDuration(uri);
-    setRecordingURI(uri);
     setRecordingURIs([
       ...recordingURIs,
       {
@@ -270,85 +289,40 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     console.log('🎙️ Recording stopped and saved');
   };
 
-  /**
-   * Converts a milli second value to second, minute hour format : HH:mm:ss
-   * @param value the millisecond value to convert
-   */
-  const milliSecondToHHMMSS = (value) => {
-    const milliSecond = Number(value / 1000);
-    const hour = Math.floor(milliSecond / 3600);
-    const minute = Math.floor((milliSecond % 3600) / 60);
-    const second = Math.floor((milliSecond % 3600) % 60);
-
-    const hrs = hour > 0 ? (hour < 10 ? `0${hour}:` : `${hour}:`) : '';
-    const mins = minute > 0 ? (minute < 10 ? `0${minute}:` : `${minute}:`) : '00:';
-    const scnds = second > 0 ? (second < 10 ? `0${second}` : second) : '00';
-    return `${hrs}${mins}${scnds}`;
-  };
-
-  // Format recording duration for display
-  // Removed formatRecordingDuration function
-
-  const onPlaybackStatusUpdate = (playbackStatus) => {
-    if (playbackStatus.didJustFinish) {
-      setPlaying(false);
-      setCurrent(milliSecondToHHMMSS(0));
-    }
-    setCurrent(milliSecondToHHMMSS(playbackStatus.positionMillis));
-  };
-
-  const playSound = async () => {
-    // console.log("Loading Sound");
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: recordingURI },
-      null,
-      onPlaybackStatusUpdate
-    );
-    setSound(sound);
-
-    // console.log("Playing Sound");
-    await sound.playAsync();
-    setPlaying(true);
-    setCurrent(milliSecondToHHMMSS(0));
-  };
-
-  const stopSound = async () => {
-    await sound.stopAsync();
-    setPlaying(false);
-  };
-
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          alert(t('Sorry, we need camera roll permissions to make this work!'));
-          return;
+          Alert.alert(t('Sorry, we need camera roll permissions to make this work!'));
         }
       }
     })();
   }, []);
 
-  const get_image_manipulate = async (localUri, width, height) => {
+  const get_image_manipulate = async (localUri, imageWidth, imageHeight) => {
     let manipResult;
     const imageSize = await getImageSize(localUri);
 
-    if (!height || !width) {
+    let finalWidth = imageWidth;
+    let finalHeight = imageHeight;
+
+    if (!finalHeight || !finalWidth) {
       const dimensions = await getImageDimensions(localUri);
-      width = width ?? dimensions.width;
-      height = height ?? dimensions.height;
+      finalWidth = finalWidth || dimensions.width;
+      finalHeight = finalHeight || dimensions.height;
     }
 
     if (imageSize && imageSize > 1) {
       manipResult = await ImageManipulator.manipulateAsync(
         localUri,
-        [{ resize: { width: width, height: height } }],
-        { compress: 0.2 } //, format: ImageManipulator.SaveFormat.PNG },
+        [{ resize: { width: finalWidth, height: finalHeight } }],
+        { compress: 0.2 } // , format: ImageManipulator.SaveFormat.PNG },
       );
     } else {
       manipResult = await ImageManipulator.manipulateAsync(
         localUri,
-        [{ resize: { width: width, height: height } }],
+        [{ resize: { width: finalWidth, height: finalHeight } }],
         { compress: 1, format: ImageManipulator.SaveFormat.PNG }
       );
     }
@@ -361,17 +335,19 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       ToastAndroid.show(t('Invalid Image'), ToastAndroid.SHORT);
       return;
     }
-    setLoading(true);
-    let width = asset.width;
-    let height = asset.height;
-    if (!width || !height) {
+    _setLoading(true);
+    let assetWidth = asset.width;
+    let assetHeight = asset.height;
+    if (!assetWidth || !assetHeight) {
       try {
         const dimensions = await getImageDimensions(asset.uri);
-        width = width || dimensions.width;
-        height = height || dimensions.height;
-      } catch (e) {}
+        assetWidth = assetWidth || dimensions.width;
+        assetHeight = assetHeight || dimensions.height;
+      } catch (e) {
+        // Handle error silently as width/height are optional
+      }
     }
-    let manipResult = await get_image_manipulate(asset.uri, width, height);
+    const manipResult = await get_image_manipulate(asset.uri, assetWidth, assetHeight);
     setAttachments([
       ...attachments,
       {
@@ -381,10 +357,10 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
         type: 'image',
       },
     ]);
-    setLoading(false);
+    _setLoading(false);
   };
 
-  const openCamera = async () => {
+  const _openCamera = async () => {
     if (attachments.length < 3) {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -393,48 +369,23 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       });
 
       if (!result.cancelled) {
-        setLoading(true);
+        _setLoading(true);
 
-        let localUri = result.localUri || result.uri;
-        let manipResult = await get_image_manipulate(
+        const localUri = result.localUri || result.uri;
+        const manipResult = await get_image_manipulate(
           localUri,
           result.assets && result.assets.length > 0 ? result.assets[0].width : null,
           result.assets && result.assets.length > 0 ? result.assets[0].height : null
         );
 
         setAttachments([...attachments, { ...manipResult, id: new Date() }]);
-        setLoading(false);
+        _setLoading(false);
       }
     } else {
       ToastAndroid.show(`${t('step_2_only_three_files')}`, ToastAndroid.SHORT);
     }
   };
-  const getImageDimensions = async (imageUri) => {
-    return new Promise((resolve, reject) => {
-      Image.getSize(
-        imageUri,
-        (width, height) => {
-          resolve({ width, height });
-        },
-        (error) => {
-          reject(error);
-        }
-      );
-    });
-  };
 
-  const getImageSize = async (imageUri) => {
-    let fileSizeInMB = 0;
-    try {
-      const fileInfo = await FileSystem.getInfoAsync(imageUri);
-      const fileSizeInBytes = fileInfo.size;
-      fileSizeInMB = fileSizeInBytes ? fileSizeInBytes / (1024 * 1024) : 0; // Convert bytes to MB
-      console.log('Image size:', fileSizeInMB, 'MB');
-    } catch (error) {
-      console.error('Error getting image size:', error);
-    }
-    return fileSizeInMB;
-  };
   const pickImage = async () => {
     if (attachments.length < 3) {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -465,16 +416,16 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     }
   };
 
-  const pickAudio = async () => {
+  const _pickAudio = async () => {
     if (recordingURIs.length < 4) {
       try {
         const result = await DocumentPicker.getDocumentAsync({
           type: ['audio/*'],
           multiple: false,
         });
-        if (result.type != 'cancel') {
-          setLoading(true);
-          let localUri = result.uri;
+        if (result.type !== 'cancel') {
+          _setLoading(true);
+          const localUri = result.uri;
           setRecordingURIs([
             ...recordingURIs,
             {
@@ -485,7 +436,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
               duration: '',
             },
           ]);
-          setLoading(false);
+          _setLoading(false);
         }
       } catch (err) {
         console.warn(err);
@@ -496,12 +447,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   };
 
   // Use shared utility to get category (replaces inline getCategory function)
-  const getCategory = useCallback(
-    (value) => {
-      return getCategoryById(categories, value);
-    },
-    [categories]
-  );
+  const getCategory = useCallback((value) => getCategoryById(categories, value), [categories]);
 
   const showToast = (message) => {
     ToastAndroid.show(message, ToastAndroid.SHORT);
@@ -519,14 +465,14 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
               typeName: selectedIssueType.typeName,
             }
           : null,
-        issueSubType: selectedIssueSubType
-          ? { id: selectedIssueSubType.id, name: selectedIssueSubType.id }
+        issueSubType: _selectedIssueSubType
+          ? { id: _selectedIssueSubType.id, name: _selectedIssueSubType.id }
           : null,
-        issueComponent: selectedIssueComponent
-          ? { id: selectedIssueComponent.id, name: selectedIssueComponent.id }
+        issueComponent: _selectedIssueComponent
+          ? { id: _selectedIssueComponent.id, name: _selectedIssueComponent.id }
           : null,
-        issueSubComponent: selectedIssueSubComponent
-          ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.id }
+        issueSubComponent: _selectedIssueSubComponent
+          ? { id: _selectedIssueSubComponent.id, name: _selectedIssueSubComponent.id }
           : null,
         ongoingEvent: checked,
         attachments: attachments.length > 0 ? attachments : undefined,
@@ -540,9 +486,9 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     stepOneParams,
     date,
     selectedIssueType,
-    selectedIssueSubType,
-    selectedIssueComponent,
-    selectedIssueSubComponent,
+    _selectedIssueSubType,
+    _selectedIssueComponent,
+    _selectedIssueSubComponent,
     checked,
     attachments,
     recordingURIs,
@@ -558,16 +504,19 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
   };
 
   // Audio playback functions (referenced in the UI but missing)
-  const playASound = useCallback(
+  const _playASound = useCallback(
     async (uri) => {
       try {
         if (sound) {
           await sound.unloadAsync();
         }
-        const { sound: newSound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
-        setSound(newSound);
+        const { sound: newAudioSound } = await Audio.Sound.createAsync(
+          { uri },
+          { shouldPlay: true }
+        );
+        setSound(newAudioSound);
         setSoundUrl(uri);
-        setSoundOnPause(false);
+        _setSoundOnPause(false);
       } catch (error) {
         console.error('Error playing sound:', error);
       }
@@ -575,22 +524,22 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
     [sound]
   );
 
-  const pauseASound = useCallback(async () => {
+  const _pauseASound = useCallback(async () => {
     try {
       if (sound) {
         await sound.pauseAsync();
-        setSoundOnPause(true);
+        _setSoundOnPause(true);
       }
     } catch (error) {
       console.error('Error pausing sound:', error);
     }
   }, [sound]);
 
-  const playASoundOnCurrentPause = useCallback(async () => {
+  const _playASoundOnCurrentPause = useCallback(async () => {
     try {
       if (sound) {
         await sound.playAsync();
-        setSoundOnPause(false);
+        _setSoundOnPause(false);
       }
     } catch (error) {
       console.error('Error resuming sound:', error);
@@ -602,19 +551,21 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       setRecordingURIs(recordingURIs.filter((item) => item.local_url !== localUrl));
       if (soundUrl === localUrl) {
         setSoundUrl(null);
-        setSoundOnPause(false);
+        _setSoundOnPause(false);
       }
     },
     [recordingURIs, soundUrl]
   );
 
-  const getProgress = useCallback(() => {
-    // Simple progress calculation - could be enhanced
-    return '50%';
-  }, []);
+  const _getProgress = useCallback(
+    () =>
+      // Simple progress calculation - could be enhanced
+      '50%',
+    []
+  );
 
   // Mock position for audio playback
-  const [position, setPosition] = useState(0);
+  const [_position, _setPosition] = useState(0);
 
   // Debug logging for data structures
   useEffect(() => {
@@ -874,7 +825,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
           <AttachmentList
             attachments={[...attachments, ...recordingURIs]}
             showTypeHeaders={false}
-            showRemoveButton={true}
+            showRemoveButton
             onImagePress={(item) => {
               setModalImageUri(item.local_url);
               setModalVisible(true);
@@ -884,8 +835,8 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
                 removeAttachment(index);
               } else {
                 const recordingIndex = index - attachments.length;
-                const recording = recordingURIs[recordingIndex];
-                reomveARecordingURI(recording.local_url);
+                const recordingItem = recordingURIs[recordingIndex];
+                reomveARecordingURI(recordingItem.local_url);
               }
             }}
             style={{ marginVertical: 10 }}
@@ -1012,7 +963,7 @@ function Content({ stepOneParams, categories = [], types = [], projectLinks = []
       )}
     </ScrollView>
   );
-}
+};
 
 // Enhanced withObservables to provide reactive data from WatermelonDB
 const enhance = withObservables([], () => ({

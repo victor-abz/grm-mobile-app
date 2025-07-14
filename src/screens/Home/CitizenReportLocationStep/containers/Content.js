@@ -15,7 +15,6 @@ import {
 import { ActivityIndicator, Button, Card, Chip, IconButton, TextInput } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { Q } from '@nozbe/watermelondb';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { DataContext } from '../../../../providers/DataProvider';
 import watermelonManager from '../../../../database/watermelonManager';
@@ -33,7 +32,7 @@ const theme = {
   },
 };
 
-const { width, height } = Dimensions.get('window');
+const { width: _width, height: _height } = Dimensions.get('window');
 
 // Leaflet Map HTML Template
 const getMapHtml = (
@@ -221,7 +220,7 @@ const getMapHtml = (
 </body>
 </html>`;
 
-export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
+export const Content = ({ stepOneParams, stepTwoParams, regions = [] }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const {
@@ -235,9 +234,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
 
   const projectId = stepOneParams?.selectedProject?.id || null;
 
-  const processedRegions = useMemo(() => {
-    return processRegions(regions, projectId);
-  }, [regions, projectId]);
+  const processedRegions = useMemo(() => processRegions(regions, projectId), [regions, projectId]);
 
   // State for region selection with auto-selection logic
   const [selectedRegion, setSelectedRegion] = useState(null);
@@ -247,7 +244,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
   const [locationDescription, setLocationDescription] = useState('');
   const [currentLocation, setCurrentLocation] = useState(null);
   const [selectedMapLocation, setSelectedMapLocation] = useState(null);
-  const [nearestRegion, setNearestRegion] = useState(null);
+  const [nearestRegion, _setNearestRegion] = useState(null);
 
   // State for UI
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -289,9 +286,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
 
   // Get children regions for a specific parent using processed regions
   const getRegionChildren = useCallback(
-    (parentId) => {
-      return processedRegions.filter((region) => region.parentRegion?.id === parentId);
-    },
+    (parentId) => processedRegions.filter((region) => region.parentRegion?.id === parentId),
     [processedRegions]
   );
 
@@ -315,19 +310,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
   }, [regionHierarchy, getRegionsForLevel]);
 
   // Auto-hide region input if only one option available
-  const shouldHideRegionInput = useMemo(() => {
-    return availableRegions.length === 1;
-  }, [availableRegions]);
-
-  // Initialize component
-  useEffect(() => {
-    initializeLocationStep();
-  }, []);
-
-  // Update map when locations change
-  useEffect(() => {
-    updateMapDisplay();
-  }, [currentLocation, selectedMapLocation, showMap]);
+  const shouldHideRegionInput = useMemo(() => availableRegions.length === 1, [availableRegions]);
 
   const updateMapDisplay = () => {
     const initialLat = selectedMapLocation?.latitude || currentLocation?.latitude || -1.9441;
@@ -387,6 +370,16 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       });
     }
   };
+
+  // Initialize component
+  useEffect(() => {
+    initializeLocationStep();
+  }, []);
+
+  // Update map when locations change
+  useEffect(() => {
+    updateMapDisplay();
+  }, [currentLocation, selectedMapLocation, showMap]);
 
   const requestLocationPermission = async () => {
     setIsLoadingLocation(true);
@@ -512,11 +505,11 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
 
   const handleNearestRegionSelect = () => {
     if (nearestRegion) {
-      const region = nearestRegion.region;
+      const { region } = nearestRegion;
       setSelectedRegion(region);
 
       // Build hierarchy path to this region using processed region relationships
-      const hierarchy = [];
+      const _hierarchy = [];
       let currentRegion = region;
 
       // Build path from bottom to top
@@ -721,9 +714,9 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
                   }
                   true;
                 `}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                startInLoadingState={true}
+                javaScriptEnabled
+                domStorageEnabled
+                startInLoadingState
                 renderLoading={() => (
                   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" color="#24c38b" />
@@ -837,7 +830,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
               {t('Selected path:')}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {regionHierarchy.map((regionId, index) => {
+              {regionHierarchy.map((regionId, _index) => {
                 const region = processedRegions.find((r) => r.id === regionId);
                 return (
                   <Chip
@@ -987,7 +980,7 @@ export function Content({ stepOneParams, stepTwoParams, regions = [] }) {
       </KeyboardAvoidingView>
     </ScrollView>
   );
-}
+};
 
 // Enhanced withObservables to provide reactive data from WatermelonDB
 const enhance = withObservables([], () => ({

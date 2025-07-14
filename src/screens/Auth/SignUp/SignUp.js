@@ -35,6 +35,38 @@ import { colors } from '../../../utils/colors';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
 
+const modalStyles = StyleSheet.create({
+  title: {
+    marginTop: 30,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 19,
+    fontWeight: 'bold',
+    fontStyle: 'normal',
+    lineHeight: 23,
+    letterSpacing: 0,
+    textAlign: 'center',
+    color: '#707070',
+  },
+});
+
+const codeStyles = StyleSheet.create({
+  root: { flex: 1, padding: 20 },
+  title: { textAlign: 'center', fontSize: 30 },
+  codeFieldRoot: { marginTop: 20 },
+  cell: {
+    width: 40,
+    height: 40,
+    lineHeight: 38,
+    fontSize: 24,
+    borderWidth: 2,
+    borderColor: '#00000030',
+    textAlign: 'center',
+  },
+  focusCell: {
+    borderColor: '#000',
+  },
+});
+
 const CELL_COUNT = 6;
 const theme = {
   roundness: 12,
@@ -46,7 +78,7 @@ const theme = {
   },
 };
 
-function SignUp({ route }) {
+const SignUp = ({ route: _route }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const [codeModal, setCodeModal] = React.useState(false);
@@ -366,38 +398,6 @@ function SignUp({ route }) {
       </ScrollView>
     </Provider>
   );
-}
+};
 
 export default SignUp;
-
-const modalStyles = StyleSheet.create({
-  title: {
-    marginTop: 30,
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 19,
-    fontWeight: 'bold',
-    fontStyle: 'normal',
-    lineHeight: 23,
-    letterSpacing: 0,
-    textAlign: 'center',
-    color: '#707070',
-  },
-});
-
-const codeStyles = StyleSheet.create({
-  root: { flex: 1, padding: 20 },
-  title: { textAlign: 'center', fontSize: 30 },
-  codeFieldRoot: { marginTop: 20 },
-  cell: {
-    width: 40,
-    height: 40,
-    lineHeight: 38,
-    fontSize: 24,
-    borderWidth: 2,
-    borderColor: '#00000030',
-    textAlign: 'center',
-  },
-  focusCell: {
-    borderColor: '#000',
-  },
-});

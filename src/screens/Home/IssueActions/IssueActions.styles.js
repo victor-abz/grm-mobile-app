@@ -1,9 +1,9 @@
-const { StyleSheet } = require("react-native");
+const { StyleSheet } = require('react-native');
 
-export const styles = (colors) =>
+export const styles = (_colors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: "white",
+      backgroundColor: 'white',
     },
   });

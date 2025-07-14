@@ -3,18 +3,16 @@ import { SafeAreaView, ScrollView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import withObservables from '@nozbe/with-observables';
-import { Q } from '@nozbe/watermelondb';
 import watermelonManager from '../../../database/watermelonManager';
 import { DataContext } from '../../../providers/DataProvider';
 import { colors } from '../../../utils/colors';
 import { styles } from './SearchBarGrm.style';
 import Content from './containers';
 
-function SearchBarGrm({ issues = [], representative = null }) {
+const SearchBarGrm = ({ issues = [] }) => {
   const { dataManager } = useContext(DataContext);
   const [loading, setLoading] = useState(true);
   const [eadl, setEadl] = useState(null);
-  const [representativeData, setRepresentativeData] = useState(null);
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
@@ -35,7 +33,6 @@ function SearchBarGrm({ issues = [], representative = null }) {
               name: username,
               user_id: username,
             };
-            setRepresentativeData(mockRepresentative);
             setEadl([mockRepresentative]);
           } catch (error) {
             console.warn('Error loading representative data:', error);
@@ -45,7 +42,6 @@ function SearchBarGrm({ issues = [], representative = null }) {
               email: username,
               name: username,
             };
-            setRepresentativeData(fallbackRepresentative);
             setEadl([fallbackRepresentative]);
           }
         }
@@ -70,10 +66,10 @@ function SearchBarGrm({ issues = [], representative = null }) {
       </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
 // Enhanced component with reactive WatermelonDB queries
-const enhance = withObservables(['representative'], ({ representative }) => {
+const enhance = withObservables(['representative'], () => {
   try {
     return {
       issues: watermelonManager.observeIssues({}), // Get all issues reactively

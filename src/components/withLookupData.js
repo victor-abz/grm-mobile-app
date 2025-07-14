@@ -1,4 +1,3 @@
-import React from 'react';
 import { withObservables } from '@nozbe/watermelondb/react';
 import LookupDataManager from '../services/LookupDataManager';
 
@@ -11,9 +10,9 @@ import LookupDataManager from '../services/LookupDataManager';
 /**
  * HOC for categories - Returns raw Frappe data
  */
-export const withCategories = (Component, projectId = null) => {
-  const enhance = withObservables(['projectId'], ({ projectId }) => ({
-    categories: LookupDataManager.observeCategories(projectId),
+export const withCategories = (Component, _projectId = null) => {
+  const enhance = withObservables(['projectId'], ({ projectId: projectIdParam }) => ({
+    categories: LookupDataManager.observeCategories(projectIdParam),
   }));
 
   return enhance(Component);
@@ -22,9 +21,9 @@ export const withCategories = (Component, projectId = null) => {
 /**
  * HOC for issue types - Returns raw Frappe data
  */
-export const withTypes = (Component, projectId = null) => {
-  const enhance = withObservables(['projectId'], ({ projectId }) => ({
-    types: LookupDataManager.observeTypes(projectId),
+export const withTypes = (Component, _projectId = null) => {
+  const enhance = withObservables(['projectId'], ({ projectId: projectIdParam }) => ({
+    types: LookupDataManager.observeTypes(projectIdParam),
   }));
 
   return enhance(Component);
@@ -88,9 +87,9 @@ export const withProjects = (Component) => {
 /**
  * HOC for regions - Returns raw Frappe data
  */
-export const withRegions = (Component, filters = {}) => {
-  const enhance = withObservables(['filters'], ({ filters }) => ({
-    regions: LookupDataManager.observeRegions(filters || {}),
+export const withRegions = (Component, _filters = {}) => {
+  const enhance = withObservables(['filters'], ({ filters: filtersParam }) => ({
+    regions: LookupDataManager.observeRegions(filtersParam || {}),
   }));
 
   return enhance(Component);
@@ -99,16 +98,16 @@ export const withRegions = (Component, filters = {}) => {
 /**
  * HOC for all lookup data combined - Returns raw Frappe data
  */
-export const withAllLookupData = (Component, projectId = null) => {
-  const enhance = withObservables(['projectId'], ({ projectId }) => ({
-    categories: LookupDataManager.observeCategories(projectId),
-    types: LookupDataManager.observeTypes(projectId),
+export const withAllLookupData = (Component, _projectId = null) => {
+  const enhance = withObservables(['projectId'], ({ projectId: projectIdParam }) => ({
+    categories: LookupDataManager.observeCategories(projectIdParam),
+    types: LookupDataManager.observeTypes(projectIdParam),
     statuses: LookupDataManager.observeStatuses(),
     ageGroups: LookupDataManager.observeAgeGroups(),
     citizenGroups: LookupDataManager.observeCitizenGroups(),
     departments: LookupDataManager.observeDepartments(),
     projects: LookupDataManager.observeProjects(),
-    regions: LookupDataManager.observeRegions({ project: projectId }),
+    regions: LookupDataManager.observeRegions({ project: projectIdParam }),
   }));
 
   return enhance(Component);
@@ -121,9 +120,7 @@ export const LookupUtils = {
   /**
    * Find item by name (Frappe primary identifier)
    */
-  findByName: (items, name) => {
-    return items.find((item) => item.name === name);
-  },
+  findByName: (items, name) => items.find((item) => item.name === name),
 
   /**
    * Get display value for an item (fallback chain for display text)
@@ -147,23 +144,22 @@ export const LookupUtils = {
   /**
    * Filter active items (handle different ways Frappe stores active status)
    */
-  filterActive: (items) => {
-    return items.filter((item) => {
-      // Different ways Frappe stores active status
-      return item.is_active !== false && item.active !== false && item.disabled !== true;
-    });
-  },
+  filterActive: (items) =>
+    items.filter(
+      (item) =>
+        // Different ways Frappe stores active status
+        item.is_active !== false && item.active !== false && item.disabled !== true
+    ),
 
   /**
    * Sort items by display value
    */
-  sortByDisplay: (items) => {
-    return [...items].sort((a, b) => {
+  sortByDisplay: (items) =>
+    [...items].sort((a, b) => {
       const displayA = LookupUtils.getDisplayValue(a).toLowerCase();
       const displayB = LookupUtils.getDisplayValue(b).toLowerCase();
       return displayA.localeCompare(displayB);
-    });
-  },
+    }),
 };
 
 export default {

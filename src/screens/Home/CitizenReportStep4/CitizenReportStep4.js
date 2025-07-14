@@ -4,7 +4,6 @@ import Content from './containers/Content';
 import { styles } from './CitizenReportStep4.styles';
 
 const CitizenReportStep4 = ({ route, navigation }) => {
-  const { params } = route;
   const customStyles = styles();
 
   return (

@@ -1,18 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { of } from 'rxjs';
-import { switchMap, catchError } from 'rxjs/operators';
-import { Q } from '@nozbe/watermelondb';
-import WatermelonSyncManager from './WatermelonSyncManager';
 import watermelonManager from '../database/watermelonManager';
-
-// Storage keys for persistent lookup data
-const STORAGE_KEYS = {
-  SYNC_TIMESTAMP: 'lookup_sync_timestamp',
-  CACHE_VERSION: 'lookup_cache_version',
-};
-
-// Cache version for data invalidation
-const CACHE_VERSION = '1.0.2';
 
 /**
  * Lookup Data Manager - Pure Sync-First Approach
@@ -116,7 +102,7 @@ class LookupDataManager {
 
       // Log sample record for debugging
       if (records.length > 0) {
-        const sample = records[0];
+        const [sample] = records;
         console.log(`📱 [LOOKUP_LOCAL] Sample ${type} record:`, {
           id: sample.id,
           name: sample.name || sample.title || sample.label || 'N/A',
@@ -144,7 +130,7 @@ class LookupDataManager {
   /**
    * Get table name for data type
    */
-  getTableName(type) {
+  static getTableName(type) {
     const tableMap = {
       categories: 'grm_issue_categories',
       types: 'grm_issue_types',
@@ -218,61 +204,60 @@ class LookupDataManager {
     }
   }
 
-  // Individual data type getters (all use the same sync-first pattern)
-  async getIssueCategories() {
+  getIssueCategories() {
     console.log('📋 [LOOKUP] Getting issue categories...');
-    return await this.getData('categories');
+    return this.getData('categories');
   }
 
-  async getIssueTypes() {
+  getIssueTypes() {
     console.log('📋 [LOOKUP] Getting issue types...');
-    return await this.getData('types');
+    return this.getData('types');
   }
 
-  async getIssueStatuses() {
+  getIssueStatuses() {
     console.log('📋 [LOOKUP] Getting issue statuses...');
-    return await this.getData('statuses');
+    return this.getData('statuses');
   }
 
-  async getIssueDepartments() {
+  getIssueDepartments() {
     console.log('📋 [LOOKUP] Getting issue departments...');
-    return await this.getData('departments');
+    return this.getData('departments');
   }
 
-  async getIssueAgeGroups() {
+  getIssueAgeGroups() {
     console.log('📋 [LOOKUP] Getting issue age groups...');
-    return await this.getData('age_groups');
+    return this.getData('age_groups');
   }
 
-  async getIssueCitizenGroups() {
+  getIssueCitizenGroups() {
     console.log('📋 [LOOKUP] Getting issue citizen groups...');
-    return await this.getData('citizen_groups');
+    return this.getData('citizen_groups');
   }
 
-  async getIssueEscalationReasons() {
+  getIssueEscalationReasons() {
     console.log('📋 [LOOKUP] Getting issue escalation reasons...');
-    return await this.getData('escalation_reasons');
+    return this.getData('escalation_reasons');
   }
 
-  async getProjects() {
+  getProjects() {
     console.log('📋 [LOOKUP] Getting projects...');
-    return await this.getData('projects');
+    return this.getData('projects');
   }
 
-  async getAdministrativeRegions() {
+  getAdministrativeRegions() {
     console.log('📋 [LOOKUP] Getting administrative regions...');
-    return await this.getData('regions');
+    return this.getData('regions');
   }
 
-  async getAdministrativeLevelTypes() {
+  getAdministrativeLevelTypes() {
     console.log('📋 [LOOKUP] Getting administrative level types...');
-    return await this.getData('admin_levels');
+    return this.getData('admin_levels');
   }
 
   /**
    * Get local data counts for debugging
    */
-  async getDataCounts() {
+  getDataCounts() {
     console.log('📊 [LOOKUP] Getting data counts for debugging...');
 
     const types = [
@@ -292,7 +277,7 @@ class LookupDataManager {
 
     for (const type of types) {
       try {
-        const data = await this.getFromLocalDB(type);
+        const data = this.getFromLocalDB(type);
         counts[type] = data.length;
         console.log(`📊 [LOOKUP] ${type}: ${data.length} records`);
       } catch (error) {

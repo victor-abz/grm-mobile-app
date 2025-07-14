@@ -7,23 +7,19 @@
 import watermelonManager from '../database/watermelonManager';
 
 class NuclearDataManager {
-  constructor() {
-    // Removed deprecation warning from constructor
-  }
-
-  async analyzeDatabase() {
+  static async analyzeDatabase() {
     throw new Error(
       'TODO: analyzeDatabase not implemented with WatermelonDB - use DataManager instead'
     );
   }
 
-  async runDiagnostics() {
+  static async runDiagnostics() {
     throw new Error(
       'TODO: runDiagnostics not implemented with WatermelonDB - use DataManager instead'
     );
   }
 
-  async performMaintenance() {
+  static async performMaintenance() {
     try {
       // Basic maintenance - clear old data
       await watermelonManager.clearAllData();
@@ -34,7 +30,7 @@ class NuclearDataManager {
     }
   }
 
-  async emergencyCleanup() {
+  static async emergencyCleanup() {
     try {
       await watermelonManager.clearAllData();
       return { status: 'success', message: 'Emergency cleanup completed' };
@@ -44,7 +40,7 @@ class NuclearDataManager {
     }
   }
 
-  async forceFullReset() {
+  static async forceFullReset() {
     try {
       await watermelonManager.clearAllData();
       return { status: 'success', message: 'Full reset completed' };
@@ -55,29 +51,29 @@ class NuclearDataManager {
   }
 
   // All other methods deprecated
-  async getDatabaseStats() {
+  static async getDatabaseStats() {
     throw new Error('getDatabaseStats deprecated - use DataManager.getStatistics() instead');
   }
 
-  async testDatabaseOperations() {
+  static async testDatabaseOperations() {
     throw new Error('testDatabaseOperations deprecated - use DataManager instead');
   }
 
-  async removeOldDocuments() {
+  static async removeOldDocuments() {
     throw new Error(
       'removeOldDocuments deprecated - use DataManager.forceCleanupDatabases() instead'
     );
   }
 
-  async compactDatabase() {
+  static async compactDatabase() {
     throw new Error('compactDatabase deprecated - WatermelonDB handles this automatically');
   }
 
-  async removeNonEssentialDocuments() {
+  static async removeNonEssentialDocuments() {
     throw new Error('removeNonEssentialDocuments deprecated - use DataManager instead');
   }
 
-  async clearAllDocuments() {
+  static async clearAllDocuments() {
     throw new Error('clearAllDocuments deprecated - use DataManager.clearAllData() instead');
   }
 }

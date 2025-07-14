@@ -1,5 +1,4 @@
 import { useNavigation } from '@react-navigation/native';
-import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -10,11 +9,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { withObservables } from '@nozbe/watermelondb/react';
 import watermelonManager from '../../../../database/watermelonManager';
 import dataManager from '../../../../services/DataManager'; // Import DataManager for proper API sync
-import AttachmentList from '../../../../components/AttachmentList/AttachmentList';
+import { AttachmentList } from '../../../../components/AttachmentList/AttachmentList';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { createLookupMap } from '../../../../utils/issueDetailUtils';
 import { generateTrackingCode } from '../../../../utils/trackingCodeGenerator';
+
 const theme = {
   roundness: 12,
   colors: {
@@ -25,14 +25,12 @@ const theme = {
   },
 };
 
-function Content({
+const Content = ({
   stepOneParams,
   stepTwoParams,
   stepLocationParams,
-  categories = [], // From withObservables if needed for display
-  types = [], // From withObservables if needed for display
   statuses = [], // From withObservables - needed for initial status lookup
-}) {
+}) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
@@ -43,13 +41,8 @@ function Content({
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
 
-  const [sound, setSound] = useState();
-  const [playing, setPlaying] = useState(false);
-
   // Create status lookup map using shared utility for performance
-  const statusMap = useMemo(() => {
-    return createLookupMap(statuses, 'status_name');
-  }, [statuses]);
+  const statusMap = useMemo(() => createLookupMap(statuses, 'status_name'), [statuses]);
 
   // Debug logging for status processing
   useEffect(() => {
@@ -350,7 +343,7 @@ function Content({
         }
       } catch (verifyError) {
         console.error('❌ [STEP3] Error verifying saved issue:', verifyError);
-        throw new Error('Failed to verify issue was saved: ' + verifyError.message);
+        throw new Error(`Failed to verify issue was saved: ${verifyError.message}`);
       }
 
       // 1. After creating the issue, batch create grm_issue_attachments for all attachments and recordings
@@ -407,8 +400,8 @@ function Content({
       }
 
       navigation.navigate('CitizenReportStep4', {
-        issueId: issueId,
-        trackingCode: trackingCode,
+        issueId,
+        trackingCode,
       });
     } catch (error) {
       console.error('❌ [STEP3] Error creating issue:', error);
@@ -435,37 +428,11 @@ function Content({
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          alert(t('Sorry, we need camera roll permissions to make this work!'));
-          return;
+          Alert.alert(t('Sorry, we need camera roll permissions to make this work!'));
         }
       }
     })();
   }, []);
-
-  useEffect(
-    () =>
-      sound
-        ? () => {
-            sound.unloadAsync();
-          }
-        : undefined,
-    [sound]
-  );
-
-  const playSound = async (recordingUri) => {
-    if (!playing) {
-      setPlaying(true);
-      const { sound } = await Audio.Sound.createAsync({ uri: recordingUri });
-      setSound(sound);
-      await sound.playAsync();
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
-          setPlaying(false);
-        }
-      });
-    }
-  };
 
   return (
     <ScrollView>
@@ -519,14 +486,11 @@ function Content({
         </View>
 
         <Text style={styles.stepSubtitle}>{t('step_3_attachments')}</Text>
-        
+
         {/* Combined Attachment List */}
         <AttachmentList
-          attachments={[
-            ...(stepTwoParams.attachments || []),
-            ...(stepTwoParams.recordings || [])
-          ]}
-          showTypeHeaders={true}
+          attachments={[...(stepTwoParams.attachments || []), ...(stepTwoParams.recordings || [])]}
+          showTypeHeaders
           showRemoveButton={false}
           onImagePress={(item) => {
             setModalImageUri(item.local_url);
@@ -616,7 +580,7 @@ function Content({
       )}
     </ScrollView>
   );
-}
+};
 
 // ✅ Enhanced withObservables with proper status inclusion
 const enhance = withObservables([], () => ({

@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react";
-import { FlatList, View, ActivityIndicator } from "react-native";
-import { styles } from "./UpdatableList.style";
+import React, { useRef, useState } from 'react';
+import { FlatList, View, ActivityIndicator } from 'react-native';
+import { styles } from './UpdatableList.style';
 
 const UpdatableList = ({
   data,
@@ -18,6 +18,7 @@ const UpdatableList = ({
       setLoading(true);
       await onFetchMoreData();
     } catch (error) {
+      console.error('Error fetching more data:', error);
     } finally {
       setLoading(false);
     }
@@ -47,12 +48,10 @@ const UpdatableList = ({
   );
 };
 
-const FooterLoader = ({ loading, onLayout }) => {
-  return (
-    <View onLayout={onLayout} style={styles.footerLoader}>
-      {loading && <ActivityIndicator size="small" color="#24c38b" />}
-    </View>
-  );
-};
+const FooterLoader = ({ loading, onLayout }) => (
+  <View onLayout={onLayout} style={styles.footerLoader}>
+    {loading && <ActivityIndicator size="small" color="#24c38b" />}
+  </View>
+);
 
 export default UpdatableList;

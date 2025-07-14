@@ -6,6 +6,79 @@
 
 import { createLookupMap } from './issueDetailUtils';
 
+// Map WatermelonDB table names → Frappe DocType
+const TABLE_TO_DOCTYPE_MAP = {
+  grm_issues: 'GRM Issue',
+  grm_issue_categories: 'GRM Issue Category',
+  grm_issue_types: 'GRM Issue Type',
+  grm_issue_statuses: 'GRM Issue Status',
+  grm_administrative_regions: 'GRM Administrative Region',
+  grm_issue_age_groups: 'GRM Issue Age Group',
+  grm_issue_citizen_groups: 'GRM Issue Citizen Group',
+  grm_issue_departments: 'GRM Issue Department',
+  grm_projects: 'GRM Project',
+  users: 'User',
+  grm_project_links: 'GRM Project Link',
+};
+
+// Utility: filter data array by project ID (simple equality check)
+// Using a function declaration for hoisting
+export function filterByProject(records, projectId, projectLinks = []) {
+  console.log('projectLinks in filters', projectLinks);
+  if (!projectId) return records;
+  try {
+    console.log('🔍 [FILTER] Filtering records by projectId:', projectId);
+    console.log('🔍 [FILTER] Total incoming records:', records?.length || 0);
+
+    const filtered = records.filter((rec, index) => {
+      const raw = rec?._raw || rec;
+
+      // Try direct project field first (regions, etc.)
+      let belongs = raw?.project === projectId;
+
+      // Resolve Watermelon table name → DocType
+      if (!belongs) {
+        // Attempt to get table name from model/collection metadata
+        const wmTable = rec?.collection?.modelClass?.table || rec?.constructor?.table || raw?.table;
+        const parentType = TABLE_TO_DOCTYPE_MAP[wmTable];
+
+        console.log('parentType to filter', parentType);
+
+        // Only attempt child-table lookup if mapping exists
+        if (parentType && projectLinks.length) {
+          const linkMatch = projectLinks.find((linkItem) => {
+            const linkRaw = linkItem?._raw || linkItem;
+            console.log('linkRaw', linkRaw, 'raw', raw);
+            return (
+              linkRaw.parent === raw.id &&
+              linkRaw.parenttype === parentType &&
+              linkRaw.project === projectId
+            );
+          });
+
+          belongs = !!linkMatch;
+
+          if (linkMatch) {
+            console.log(
+              `      🔗 Matched via project link ${linkMatch.id} (parenttype=${parentType})`
+            );
+          }
+        }
+      }
+
+      console.log(`   ↪️ Record #${index + 1} id=${raw?.id} → ${belongs ? 'KEEP' : 'SKIP'}`, raw);
+      return belongs;
+    });
+
+    console.log('✅ [FILTER] Filtered records count:', filtered.length);
+    return filtered;
+  } catch (err) {
+    console.error('❌ [FILTER] Error during project filtering:', err);
+    // Fallback: return original records to avoid breaking flow
+    return records;
+  }
+}
+
 /**
  * Process age groups for dropdown display
  * Handles WatermelonDB model objects with proper field mapping
@@ -267,108 +340,33 @@ export const createCitizenReportLookupMaps = (lookupData) => {
  * Create navigation data with proper field extraction
  * Safely extracts primitive values to avoid circular references
  */
-export const createNavigationData = (stepOneParams, additionalData = {}) => {
-  return {
-    ...stepOneParams,
-    // Safely extract age group data
-    ageGroup: stepOneParams.selectedAge
-      ? {
-          name: stepOneParams.selectedAge.name,
-          label: stepOneParams.selectedAge.label,
-          ageGroup: stepOneParams.selectedAge.ageGroup,
-        }
-      : null,
-    // Safely extract citizen group data
-    citizen_group_1: stepOneParams.selectedCitizenGroupI
-      ? {
-          name: stepOneParams.selectedCitizenGroupI.name,
-          label: stepOneParams.selectedCitizenGroupI.label,
-          groupName: stepOneParams.selectedCitizenGroupI.groupName,
-          groupType: stepOneParams.selectedCitizenGroupI.groupType,
-        }
-      : null,
-    citizen_group_2: stepOneParams.selectedCitizenGroupII
-      ? {
-          name: stepOneParams.selectedCitizenGroupII.name,
-          label: stepOneParams.selectedCitizenGroupII.label,
-          groupName: stepOneParams.selectedCitizenGroupII.groupName,
-          groupType: stepOneParams.selectedCitizenGroupII.groupType,
-        }
-      : null,
-    // Include additional data
-    ...additionalData,
-  };
-};
-
-// Map WatermelonDB table names → Frappe DocType
-const TABLE_TO_DOCTYPE_MAP = {
-  grm_issues: 'GRM Issue',
-  grm_issue_categories: 'GRM Issue Category',
-  grm_issue_types: 'GRM Issue Type',
-  grm_issue_statuses: 'GRM Issue Status',
-  grm_administrative_regions: 'GRM Administrative Region',
-  grm_issue_age_groups: 'GRM Issue Age Group',
-  grm_issue_citizen_groups: 'GRM Issue Citizen Group',
-  grm_issue_departments: 'GRM Issue Department',
-  grm_projects: 'GRM Project',
-  users: 'User',
-  grm_project_links: 'GRM Project Link',
-};
-
-// Utility: filter data array by project ID (simple equality check)
-// Using a function declaration for hoisting
-export function filterByProject(records, projectId, projectLinks = []) {
-  console.log('projectLinks in filters', projectLinks);
-  if (!projectId) return records;
-  try {
-    console.log('�� [FILTER] Filtering records by projectId:', projectId);
-    console.log('🔍 [FILTER] Total incoming records:', records?.length || 0);
-
-    const filtered = records.filter((rec, index) => {
-      const raw = rec?._raw || rec;
-
-      // Try direct project field first (regions, etc.)
-      let belongs = raw?.project === projectId;
-
-      // Resolve Watermelon table name → DocType
-      if (!belongs) {
-        // Attempt to get table name from model/collection metadata
-        const wmTable = rec?.collection?.modelClass?.table || rec?.constructor?.table || raw?.table;
-        const parentType = TABLE_TO_DOCTYPE_MAP[wmTable];
-
-        console.log('parentType to filter', parentType);
-
-        // Only attempt child-table lookup if mapping exists
-        if (parentType && projectLinks.length) {
-          const linkMatch = projectLinks.find((linkItem) => {
-            const linkRaw = linkItem?._raw || linkItem;
-            console.log('linkRaw', linkRaw, 'raw', raw);
-            return (
-              linkRaw.parent === raw.id &&
-              linkRaw.parenttype === parentType &&
-              linkRaw.project === projectId
-            );
-          });
-
-          belongs = !!linkMatch;
-
-          if (linkMatch) {
-            console.log(
-              `      🔗 Matched via project link ${linkMatch.id} (parenttype=${parentType})`
-            );
-          }
-        }
+export const createNavigationData = (stepOneParams, additionalData = {}) => ({
+  ...stepOneParams,
+  // Safely extract age group data
+  ageGroup: stepOneParams.selectedAge
+    ? {
+        name: stepOneParams.selectedAge.name,
+        label: stepOneParams.selectedAge.label,
+        ageGroup: stepOneParams.selectedAge.ageGroup,
       }
-
-      console.log(`   ↪️ Record #${index + 1} id=${raw?.id} → ${belongs ? 'KEEP' : 'SKIP'}`, raw);
-      return belongs;
-    });
-
-    console.log('✅ [FILTER] Filtered records count:', filtered.length);
-    return filtered;
-  } catch (err) {
-    console.error('❌ [FILTER] Error during project filtering:', err);
-    // Fallback: return original records to avoid breaking flow
-    return records;
-  }
-}
+    : null,
+  // Safely extract citizen group data
+  citizen_group_1: stepOneParams.selectedCitizenGroupI
+    ? {
+        name: stepOneParams.selectedCitizenGroupI.name,
+        label: stepOneParams.selectedCitizenGroupI.label,
+        groupName: stepOneParams.selectedCitizenGroupI.groupName,
+        groupType: stepOneParams.selectedCitizenGroupI.groupType,
+      }
+    : null,
+  citizen_group_2: stepOneParams.selectedCitizenGroupII
+    ? {
+        name: stepOneParams.selectedCitizenGroupII.name,
+        label: stepOneParams.selectedCitizenGroupII.label,
+        groupName: stepOneParams.selectedCitizenGroupII.groupName,
+        groupType: stepOneParams.selectedCitizenGroupII.groupType,
+      }
+    : null,
+  // Include additional data
+  ...additionalData,
+});

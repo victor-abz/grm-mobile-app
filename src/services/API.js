@@ -1,15 +1,17 @@
+import { Alert } from 'react-native';
+
 const baseURL = 'http://197.243.25.128';
 export { baseURL };
 function handleErrors(response) {
   if (response.non_field_errors) {
-    setTimeout(() => alert(response.non_field_errors[0]), 1000);
+    setTimeout(() => Alert.alert('Error', response.non_field_errors[0]), 1000);
     throw Error(response.non_field_errors[0]);
   }
   return response;
 }
 
 class API {
-  async signUp(data) {
+  static async signUp(data) {
     const myHeaders = new Headers();
     myHeaders.append('Content-Type', 'application/json');
     const requestOptions = {
@@ -25,7 +27,7 @@ class API {
     return result;
   }
 
-  async login(data) {
+  static async login(data) {
     const myHeaders = new Headers();
     myHeaders.append('Content-Type', 'application/json');
     const requestOptions = {

@@ -27,8 +27,8 @@ export const createUserLookupMap = (users) => {
  */
 export const processActivityType = (rawComment, t) => {
   const activityType = rawComment.activity_type;
-  let displayText = rawComment.comment;
-  let fullText = rawComment.comment;
+  const displayText = rawComment.comment;
+  const fullText = rawComment.comment;
 
   const activityMappings = {
     [ACTION_TYPES.ACCEPT]: {

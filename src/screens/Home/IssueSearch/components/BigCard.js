@@ -1,69 +1,68 @@
-import React from "react";
-import { ImageBackground, Dimensions, View } from "react-native";
-import { Card, Headline } from "react-native-paper";
-import RightChevron from "../../../../../assets/right-chevron.svg";
-const screenWidth = Dimensions.get("window").width;
+import React from 'react';
+import { ImageBackground, Dimensions, View } from 'react-native';
+import { Card, Headline } from 'react-native-paper';
+import RightChevron from '../../../../../assets/right-chevron.svg';
 
-function BigCard({ onCardPress, image, title, icon, cardHeight = 123 }) {
-  return (
-    <Card
-      onPress={onCardPress}
+const screenWidth = Dimensions.get('window').width;
+
+const BigCard = ({ onCardPress, image, title, icon, cardHeight = 123 }) => (
+  <Card
+    onPress={onCardPress}
+    style={{
+      width: screenWidth * 0.888,
+      height: cardHeight,
+      alignSelf: 'center',
+      borderRadius: 15,
+    }}
+  >
+    <ImageBackground
+      source={image}
       style={{
-        width: screenWidth * 0.888,
-        height: cardHeight,
-        alignSelf: "center",
+        width: '100%',
+        height: '100%',
         borderRadius: 15,
+        overflow: 'hidden',
+        flexDirection: 'row',
       }}
     >
-      <ImageBackground
-        source={image}
+      <Headline
         style={{
-          width: "100%",
-          height: "100%",
-          borderRadius: 15,
-          overflow: "hidden",
-          flexDirection: "row",
+          fontSize: 20,
+          fontFamily: 'Poppins_700Bold',
+          fontWeight: 'bold',
+          fontStyle: 'normal',
+          lineHeight: 21,
+          letterSpacing: 0,
+          textAlign: 'left',
+          color: '#ffffff',
+          marginLeft: 14,
+          marginTop: 14,
+          flex: 1,
         }}
       >
-        <Headline
-          style={{
-            fontSize: 20,
-            fontFamily: "Poppins_700Bold",
-            fontWeight: "bold",
-            fontStyle: "normal",
-            lineHeight: 21,
-            letterSpacing: 0,
-            textAlign: "left",
-            color: "#ffffff",
-            marginLeft: 14,
-            marginTop: 14,
-            flex: 1,
-          }}
-        >
-          {title}
-        </Headline>
+        {title}
+      </Headline>
+      <View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          alignItems: 'flex-end',
+        }}
+      >
+        {icon}
         <View
           style={{
-            flex: 1,
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            alignItems: "flex-end",
+            marginRight: 15,
+            marginBottom: cardHeight !== 123 ? 0 : 15,
+            alignSelf: cardHeight !== 123 ? 'center' : null,
           }}
         >
-          {icon}
-          <View
-            style={{
-              marginRight: 15,
-              marginBottom: cardHeight !== 123 ? 0 : 15,
-              alignSelf: cardHeight !== 123 ? "center" : null,
-            }}
-          >
-            <RightChevron height={27} width={27} />
-          </View>
+          <RightChevron height={27} width={27} />
         </View>
-      </ImageBackground>
-    </Card>
-  );
-}
+      </View>
+    </ImageBackground>
+  </Card>
+);
 
 export default BigCard;

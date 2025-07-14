@@ -32,9 +32,7 @@ const StatCard = ({ title, value, icon, color, subtitle, trend, trendLabel }) =>
           </Text>
         </View>
 
-        <Text style={{ fontSize: 24, fontWeight: 'bold', color: color, marginBottom: 4 }}>
-          {value}
-        </Text>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', color, marginBottom: 4 }}>{value}</Text>
 
         <Text style={{ fontSize: 12, color: colors.secondary, marginBottom: trend ? 4 : 0 }}>
           {subtitle}

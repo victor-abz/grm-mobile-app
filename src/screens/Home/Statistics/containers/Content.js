@@ -6,10 +6,49 @@ import { colors } from '../../../../utils/colors';
 import BarChartGrm from '../components/BarChartGrm';
 import PieChartGrm from '../components/PieChartGrm';
 
-function Content({
+const styles = StyleSheet.create({
+  summaryContainer: {
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    shadowColor: 'rgba(0, 0, 0, 0.05)',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowRadius: 15,
+    shadowOpacity: 1,
+    margin: 10,
+    padding: 15,
+  },
+  container: {
+    flexDirection: 'row',
+    marginBottom: 1,
+  },
+  statisticsText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 15,
+    fontWeight: 'bold',
+    fontStyle: 'normal',
+    letterSpacing: 0,
+    textAlign: 'left',
+    color: colors.primary,
+    lineHeight: 18,
+    // width: '80%',
+  },
+  statisticsValueDanger: {
+    color: '#ef6a78',
+    width: '20%',
+    textAlign: 'center',
+  },
+  statisticsValuePrimary: {
+    color: colors.primary,
+    width: '20%',
+    textAlign: 'center',
+  },
+});
+
+const Content = ({
   issues,
-  eadl,
-  statuses,
   ageGroup,
   citizenGroup1,
   citizenGroup2,
@@ -17,7 +56,7 @@ function Content({
   issueCategory,
   issueComponent,
   issueSubComponent,
-}) {
+}) => {
   const { t } = useTranslation();
 
   const [_issues, setIssues] = useState([]);
@@ -284,47 +323,6 @@ function Content({
       </View>
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  summaryContainer: {
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
-    shadowColor: 'rgba(0, 0, 0, 0.05)',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowRadius: 15,
-    shadowOpacity: 1,
-    margin: 10,
-    padding: 15,
-  },
-  container: {
-    flexDirection: 'row',
-    marginBottom: 1,
-  },
-  statisticsText: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 15,
-    fontWeight: 'bold',
-    fontStyle: 'normal',
-    letterSpacing: 0,
-    textAlign: 'left',
-    color: colors.primary,
-    lineHeight: 18,
-    // width: '80%',
-  },
-  statisticsValueDanger: {
-    color: '#ef6a78',
-    width: '20%',
-    textAlign: 'center',
-  },
-  statisticsValuePrimary: {
-    color: colors.primary,
-    width: '20%',
-    textAlign: 'center',
-  },
-});
+};
 
 export default Content;

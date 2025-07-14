@@ -15,7 +15,6 @@ import CitizenReportLocationStep from './CitizenReportLocationStep/CitizenReport
 import CitizenReportStep2 from './CitizenReportStep2/CitizenReportStep2';
 import CitizenReportStep3 from './CitizenReportStep3/CitizenReportStep3';
 import CitizenReportStep4 from './CitizenReportStep4/CitizenReportStep4';
-import Diagnostics from './Diagnostics';
 import GRM from './GRM/GRM';
 import IssueActions from './IssueActions/IssueActions';
 import IssueDetail from './IssueDetail/IssueDetail';
@@ -26,7 +25,7 @@ import Profile from './Profile/Profile';
 import SearchBarGrm from './SearchBarGrm/SearchBarGrm';
 import Statistics from './Statistics/Statistics';
 import SyncAttachments from './SyncAttachments/SyncAttachments';
-import WorkInProgress from './WorkInProgress';
+import WorkInProgressComponent from './WorkInProgress';
 
 const iconConfig = {
   focused: {
@@ -53,6 +52,20 @@ const customHeaderOptions = (label) => ({
   },
 });
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  icon: {
+    paddingLeft: 10,
+  },
+  iconContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginRight: 25,
+  },
+});
+
 const customHeaderRightIcon = ({ navigation }) => ({
   headerRight: () => (
     <View style={styles.iconContainer}>
@@ -72,140 +85,65 @@ const customHeaderRightIcon = ({ navigation }) => ({
   ),
 });
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  icon: {
-    paddingLeft: 10,
-  },
-  iconContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginRight: 25,
-  },
-});
-
-const Tab = createBottomTabNavigator();
-const TopTab = createMaterialTopTabNavigator();
+// Animated icon components
 const AnimatedFeatherIcon = posed(Feather)(iconConfig);
 const AnimatedIonicons = posed(Ionicons)(iconConfig);
 
+// Tab bar icon components extracted to prevent recreation on every render
+const DashboardTabIcon = ({ focused, color, size }) => (
+  <AnimatedFeatherIcon
+    pose={focused ? 'focused' : 'unfocused'}
+    name="home"
+    size={size}
+    color={color}
+  />
+);
+
+const NotificationsTabIcon = ({ focused, color, size }) => (
+  <AnimatedIonicons
+    pose={focused ? 'focused' : 'unfocused'}
+    name="notifications-outline"
+    size={size}
+    color={color}
+  />
+);
+
+const ProfileTabIcon = ({ focused, color, size }) => (
+  <AnimatedFeatherIcon
+    pose={focused ? 'focused' : 'unfocused'}
+    name="user"
+    size={size}
+    color={color}
+  />
+);
+
+const Tab = createBottomTabNavigator();
+const TopTab = createMaterialTopTabNavigator();
+
 const HomeStack = createStackNavigator();
 const NotificationsStack = createStackNavigator();
-function DashboardStackScreen() {
-  const { t } = useTranslation();
-  return (
-    <HomeStack.Navigator>
-      {/* GRM Module */}
-      <HomeStack.Screen
-        name="GRM"
-        component={HomeRouter}
-        options={({ navigation, route }) => ({
-          ...customHeaderOptions(t('label_grm')),
-          ...customHeaderRightIcon({ navigation, route }),
-        })}
-      />
-      <HomeStack.Screen
-        name="CitizenReportIntro"
-        component={CitizenReportIntro}
-        options={({ navigation, route }) => customHeaderOptions(t('citizen_input_header'))}
-      />
-      <HomeStack.Screen
-        name="CitizenReport"
-        component={CitizenReport}
-        options={({ navigation, route }) => customHeaderOptions(t('citizen_input_header'))}
-      />
-      <HomeStack.Screen
-        name="CitizenReportContactInfo"
-        component={CitizenReportContactInfo}
-        options={({ navigation, route }) => customHeaderOptions(t('citizen_input_header'))}
-      />
-      <HomeStack.Screen
-        name="CitizenReportStep2"
-        component={CitizenReportStep2}
-        options={({ navigation, route }) => customHeaderOptions(t('citizen_input_header'))}
-      />
-      <HomeStack.Screen
-        name="CitizenReportLocationStep"
-        component={CitizenReportLocationStep}
-        options={({ navigation, route }) => customHeaderOptions(t('citizen_input_header'))}
-      />
-      <HomeStack.Screen
-        name="CitizenReportStep3"
-        component={CitizenReportStep3}
-        options={({ navigation, route }) => customHeaderOptions(t('citizen_input_header'))}
-      />
-      <HomeStack.Screen
-        name="CitizenReportStep4"
-        component={CitizenReportStep4}
-        options={({ navigation, route }) => ({
-          ...customHeaderOptions(t('citizen_input_header')),
-          headerLeft: () => null,
-        })}
-      />
 
-      <HomeStack.Screen
-        name="IssueSearch"
-        component={IssueSearch}
-        options={({ navigation, route }) => customHeaderOptions(t('summary_of_your_work'))}
-      />
-      <HomeStack.Screen
-        name="Statistics"
-        component={Statistics}
-        options={({ navigation, route }) => customHeaderOptions(t('diagnostics'))}
-      />
+const NotificationsStackScreen = () => (
+  <NotificationsStack.Navigator>
+    <NotificationsStack.Screen
+      options={{
+        headerShown: true,
+        headerTitleStyle: {
+          alignSelf: 'center',
+          fontFamily: 'Poppins_500Medium',
+        },
+      }}
+      name="Notifications"
+      component={Notifications}
+    />
+    <NotificationsStack.Screen name="WorkInProgress" component={WorkInProgressComponent} />
+  </NotificationsStack.Navigator>
+);
 
-      {/* <HomeStack.Screen */}
-      {/*  name="IssueDetail" */}
-      {/*  component={IssueDetail} */}
-      {/*  options={({ navigation, route }) => */}
-      {/*    customHeaderOptions(route.params.item?.title) */}
-      {/*  } */}
-      {/* /> */}
-      <HomeStack.Screen
-        name="IssueDetailTabs"
-        component={IssueDetailTabsStack}
-        options={({ navigation, route }) => customHeaderOptions(t('grm_management'))}
-      />
-      <HomeStack.Screen
-        name="SyncAttachments"
-        component={SyncAttachments}
-        options={({ navigation, route }) => customHeaderOptions(t('sync_files'))}
-      />
-      <HomeStack.Screen
-        name="SearchBarGrm"
-        component={SearchBarGrm}
-        options={({ navigation, route }) => customHeaderOptions(t('search'))}
-      />
-      {/* <HomeStack.Screen name="Details" component={WorkInProgress} /> */}
-    </HomeStack.Navigator>
-  );
-}
-
-function NotificationsStackScreen() {
-  return (
-    <NotificationsStack.Navigator>
-      <NotificationsStack.Screen
-        options={{
-          headerShown: true,
-          headerTitleStyle: {
-            alignSelf: 'center',
-            fontFamily: 'Poppins_500Medium',
-          },
-        }}
-        name="Notifications"
-        component={Notifications}
-      />
-      <NotificationsStack.Screen name="WorkInProgress" component={WorkInProgress} />
-    </NotificationsStack.Navigator>
-  );
-}
-
-function IssueDetailTabsStack(props) {
+const IssueDetailTabsStack = ({ route }) => {
   const { t } = useTranslation();
 
-  const temp = props.route.params.item;
+  const temp = route.params.item;
   return (
     <TopTab.Navigator
       screenOptions={{
@@ -234,78 +172,129 @@ function IssueDetailTabsStack(props) {
       />
     </TopTab.Navigator>
   );
-}
+};
 
-function HomeRouter() {
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: 'gray',
-        tabBarStyle: {
-          display: 'flex',
-        },
+const HomeRouter = () => (
+  <Tab.Navigator
+    screenOptions={{
+      tabBarActiveTintColor: colors.primary,
+      tabBarInactiveTintColor: 'gray',
+      tabBarStyle: {
+        display: 'flex',
+      },
+    }}
+  >
+    <Tab.Screen
+      name="Dashboard"
+      options={{
+        tabBarIcon: DashboardTabIcon,
       }}
-    >
-      <Tab.Screen
-        name="Dashboard"
-        options={{
-          tabBarIcon: ({ focused, color, size }) => (
-            <AnimatedFeatherIcon
-              pose={focused ? 'focused' : 'unfocused'}
-              name="home"
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-        component={GRM}
+      component={GRM}
+    />
+    <Tab.Screen
+      name="Notifications"
+      options={{
+        tabBarIcon: NotificationsTabIcon,
+      }}
+      component={NotificationsStackScreen}
+    />
+    <Tab.Screen
+      name="Profile"
+      options={{
+        tabBarIcon: ProfileTabIcon,
+      }}
+      component={Profile}
+    />
+  </Tab.Navigator>
+);
+const DashboardStackScreen = () => {
+  const { t } = useTranslation();
+  return (
+    <HomeStack.Navigator>
+      {/* GRM Module */}
+      <HomeStack.Screen
+        name="GRM"
+        component={HomeRouter}
+        options={({ navigation, route }) => ({
+          ...customHeaderOptions(t('label_grm')),
+          ...customHeaderRightIcon({ navigation, route }),
+        })}
       />
-      <Tab.Screen
-        name="Notifications"
-        options={{
-          tabBarIcon: ({ focused, color, size }) => (
-            <AnimatedIonicons
-              pose={focused ? 'focused' : 'unfocused'}
-              name="notifications-outline"
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-        component={NotificationsStackScreen}
+      <HomeStack.Screen
+        name="CitizenReportIntro"
+        component={CitizenReportIntro}
+        options={() => customHeaderOptions(t('citizen_input_header'))}
       />
-      {/* <Tab.Screen
-        name="Diagnostics"
-        options={{
-          header: true,
-          tabBarIcon: ({ focused, color, size }) => (
-            <AnimatedIonicons
-              pose={focused ? 'focused' : 'unfocused'}
-              name="analytics"
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-        component={Diagnostics}
-      /> */}
-      <Tab.Screen
-        name="Profile"
-        options={{
-          tabBarIcon: ({ focused, color, size }) => (
-            <AnimatedFeatherIcon
-              pose={focused ? 'focused' : 'unfocused'}
-              name="user"
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-        component={Profile}
+      <HomeStack.Screen
+        name="CitizenReport"
+        component={CitizenReport}
+        options={() => customHeaderOptions(t('citizen_input_header'))}
       />
-    </Tab.Navigator>
+      <HomeStack.Screen
+        name="CitizenReportContactInfo"
+        component={CitizenReportContactInfo}
+        options={() => customHeaderOptions(t('citizen_input_header'))}
+      />
+      <HomeStack.Screen
+        name="CitizenReportStep2"
+        component={CitizenReportStep2}
+        options={() => customHeaderOptions(t('citizen_input_header'))}
+      />
+      <HomeStack.Screen
+        name="CitizenReportLocationStep"
+        component={CitizenReportLocationStep}
+        options={() => customHeaderOptions(t('citizen_input_header'))}
+      />
+      <HomeStack.Screen
+        name="CitizenReportStep3"
+        component={CitizenReportStep3}
+        options={() => customHeaderOptions(t('citizen_input_header'))}
+      />
+      <HomeStack.Screen
+        name="CitizenReportStep4"
+        component={CitizenReportStep4}
+        options={() => ({
+          ...customHeaderOptions(t('citizen_input_header')),
+          headerLeft: () => null,
+        })}
+      />
+
+      <HomeStack.Screen
+        name="IssueSearch"
+        component={IssueSearch}
+        options={() => customHeaderOptions(t('summary_of_your_work'))}
+      />
+      <HomeStack.Screen
+        name="Statistics"
+        component={Statistics}
+        options={() => customHeaderOptions(t('diagnostics'))}
+      />
+
+      {/* <HomeStack.Screen */}
+      {/*  name="IssueDetail" */}
+      {/*  component={IssueDetail} */}
+      {/*  options={({ navigation, route }) => */}
+      {/*    customHeaderOptions(route.params.item?.title) */}
+      {/*  } */}
+      {/* /> */}
+      <HomeStack.Screen
+        name="IssueDetailTabs"
+        component={IssueDetailTabsStack}
+        options={() => customHeaderOptions(t('grm_management'))}
+      />
+      <HomeStack.Screen
+        name="SyncAttachments"
+        component={SyncAttachments}
+        options={() => customHeaderOptions(t('sync_files'))}
+      />
+      <HomeStack.Screen
+        name="SearchBarGrm"
+        component={SearchBarGrm}
+        options={() => customHeaderOptions(t('search'))}
+      />
+      {/* <HomeStack.Screen name="Details" component={WorkInProgress} /> */}
+    </HomeStack.Navigator>
   );
-}
+};
 
 export default DashboardStackScreen;

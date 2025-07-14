@@ -1,7 +1,8 @@
-import { createStore, compose } from "redux";
-import { composeWithDevTools } from "redux-devtools-extension";
-import reducers from "./ducks";
-import Reactotron from "../../ReactotronConfig";
+import { createStore, compose } from 'redux';
+import { composeWithDevTools } from 'redux-devtools-extension';
+import reducers from './ducks';
+import Reactotron from '../../ReactotronConfig';
+
 let enhancerCompose = compose;
 
 // eslint-disable-next-line no-undef

@@ -5,7 +5,7 @@ import { Button } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../../store/ducks/authentication.duck';
 
-export function WorkInProgress() {
+export const WorkInProgress = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   return (
@@ -16,6 +16,6 @@ export function WorkInProgress() {
       </Button>
     </SafeAreaView>
   );
-}
+};
 
 export default WorkInProgress;

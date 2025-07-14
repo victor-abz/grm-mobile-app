@@ -1,20 +1,24 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, relation } from '@nozbe/watermelondb/decorators';
+import { field, date } from '@nozbe/watermelondb/decorators';
 
 export default class UserContext extends Model {
   static table = 'user_context';
+
   static associations = {
     users: { type: 'belongs_to', key: 'user_id' },
   };
 
   @field('user_id') userId;
+
   @field('context_data') contextData;
 
   // Add Frappe sync timestamp fields
   @date('creation') creation;
+
   @date('modified') modified;
 
   @date('created_at') createdAt;
+
   @date('updated_at') updatedAt;
 
   // Helper methods to parse JSON data

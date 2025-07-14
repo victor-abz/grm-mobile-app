@@ -1,34 +1,30 @@
-import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Alert,
-  Dimensions,
-  Image,
-  ImageBackground,
-  Platform,
-  ScrollView,
-  View,
-} from 'react-native';
+import { Alert, Dimensions, Image, ImageBackground, ScrollView, View } from 'react-native';
 import { Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useData } from '../../../../providers/DataProvider';
-import { performNuclearReset } from '../../../../services/NuclearDataManager';
 import BigCard from '../components/BigCard';
 import SmallCard from '../components/SmallCard';
 import Chart from '../../../../../assets/chart_line_solid.svg';
 import FileIcon from '../../../../../assets/file_alt_regular.svg';
 import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
 import TeamWorkIcon from '../../../../../assets/team-work.svg';
+import group8043 from '../../../../../assets/drawable-xhdpi/group_8043.png';
+import group2 from '../../../../../assets/drawable-xhdpi/group_2.png';
+import BG1 from '../../../../../assets/BG_1.png';
+import BG2 from '../../../../../assets/BG_2.png';
+import BG9 from '../../../../../assets/BG_9.png';
+import smallRectangle from '../../../../../assets/small-rectangle.png';
 import lookupDataManager from '../../../../services/LookupDataManager';
 import dataManager from '../../../../services/DataManager';
 
 const screenWidth = Dimensions.get('window').width;
 
-function Content() {
+const Content = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { performNuclearReset, refreshLookupData } = useData();
+  const { performNuclearReset } = useData();
   const [isResetting, setIsResetting] = useState(false);
 
   // Trigger background sync when home page loads
@@ -125,14 +121,10 @@ function Content() {
           alignItems: 'flex-end',
           backgroundColor: 'white',
         }}
-        source={require('../../../../../assets/drawable-xhdpi/group_8043.png')}
+        source={group8043}
       >
         <View>
-          <Image
-            style={{ height: 70, width: 180 }}
-            resizeMode={'contain'}
-            source={require('../../../../../assets/drawable-xhdpi/group_2.png')}
-          />
+          <Image style={{ height: 70, width: 180 }} resizeMode="contain" source={group2} />
         </View>
       </ImageBackground>
       <View
@@ -144,27 +136,27 @@ function Content() {
         }}
       >
         <SmallCard
-          image={require('../../../../../assets/BG_1.png')}
-          onCardPress={() => alert(t('Upcoming feature'))}
+          image={BG1}
+          onCardPress={() => Alert.alert(t('Upcoming feature'))}
           title={t('PAI')}
           icon={<Chart />}
         />
         <SmallCard
-          image={require('../../../../../assets/BG_2.png')}
-          onCardPress={() => alert(t('Upcoming feature'))}
-          title={t('Apprendre \n' + 'et actualités')}
+          image={BG2}
+          onCardPress={() => Alert.alert(t('Upcoming feature'))}
+          title={t('Apprendre \net actualités')}
           icon={<FileIcon />}
         />
       </View>
       <BigCard
-        image={require('../../../../../assets/BG_9.png')}
+        image={BG9}
         onCardPress={() => navigation.navigate('CitizenEngagement')}
         title={t("Mécanisme d'engagement des citoyens")}
         icon={<TeamWorkIcon />}
       />
       <View style={{ marginVertical: 20 }}>
         <BigCard
-          image={require('../../../../../assets/small-rectangle.png')}
+          image={smallRectangle}
           onCardPress={() => navigation.navigate('SyncAttachments')}
           title={t('Sync Files')}
           icon={<SyncIcon />}
@@ -192,61 +184,61 @@ function Content() {
         </View>
       )}
 
-      {/*<ReactNativeSwipeableViewStack*/}
-      {/*  // onSwipe={(swipedIndex) => this.onCardSwipe(swipedIndex)}*/}
-      {/*  initialSelectedIndex={1}*/}
-      {/*  stackSpacing={Platform.OS === "ios" ? 30 : 20}*/}
-      {/*  onItemClicked={() => console.log("click")}*/}
-      {/*  pointerEvents="none"*/}
-      {/*  renderItem={(element) => (*/}
-      {/*    <Card*/}
-      {/*      pointerEvents="none"*/}
-      {/*      style={{*/}
-      {/*        width: screenWidth * 0.888,*/}
-      {/*        alignSelf: "center",*/}
-      {/*        borderRadius: 15,*/}
-      {/*        backgroundColor: "white",*/}
-      {/*        padding: 19,*/}
-      {/*      }}*/}
-      {/*    >*/}
-      {/*      <Headline*/}
-      {/*        style={{*/}
-      {/*          color: "#707070",*/}
-      {/*          fontWeight: "500",*/}
-      {/*        }}*/}
-      {/*      >*/}
-      {/*        Prochaine tâche*/}
-      {/*      </Headline>*/}
-      {/*      <Paragraph*/}
-      {/*        style={{*/}
-      {/*          color: "#707070",*/}
-      {/*        }}*/}
-      {/*      >*/}
-      {/*        Lorem Ipsum is simply dummy text of the printing and typesetting*/}
-      {/*        industry. Lorem Ipsum has been the industry's standard dummy text*/}
-      {/*        ever since the 1500s.*/}
-      {/*      </Paragraph>*/}
-      {/*      <Button*/}
-      {/*        onPress={() => alert("hey")}*/}
-      {/*        style={{*/}
-      {/*          alignSelf: "flex-end",*/}
-      {/*          backgroundColor: "#24c38b",*/}
-      {/*          width: 115,*/}
-      {/*          marginTop: 20,*/}
-      {/*          borderRadius: 7,*/}
-      {/*          padding: 5,*/}
-      {/*        }}*/}
-      {/*        labelStyle={{*/}
-      {/*          color: "white",*/}
+      {/* <ReactNativeSwipeableViewStack */}
+      {/*  // onSwipe={(swipedIndex) => this.onCardSwipe(swipedIndex)} */}
+      {/*  initialSelectedIndex={1} */}
+      {/*  stackSpacing={Platform.OS === "ios" ? 30 : 20} */}
+      {/*  onItemClicked={() => console.log("click")} */}
+      {/*  pointerEvents="none" */}
+      {/*  renderItem={(element) => ( */}
+      {/*    <Card */}
+      {/*      pointerEvents="none" */}
+      {/*      style={{ */}
+      {/*        width: screenWidth * 0.888, */}
+      {/*        alignSelf: "center", */}
+      {/*        borderRadius: 15, */}
+      {/*        backgroundColor: "white", */}
+      {/*        padding: 19, */}
+      {/*      }} */}
+      {/*    > */}
+      {/*      <Headline */}
+      {/*        style={{ */}
+      {/*          color: "#707070", */}
+      {/*          fontWeight: "500", */}
       {/*        }} */}
-      {/*      >*/}
-      {/*        Tâches*/}
-      {/*      </Button>*/}
-      {/*    </Card>*/}
-      {/*  )}*/}
-      {/*/>*/}
+      {/*      > */}
+      {/*        Prochaine tâche */}
+      {/*      </Headline> */}
+      {/*      <Paragraph */}
+      {/*        style={{ */}
+      {/*          color: "#707070", */}
+      {/*        }} */}
+      {/*      > */}
+      {/*        Lorem Ipsum is simply dummy text of the printing and typesetting */}
+      {/*        industry. Lorem Ipsum has been the industry's standard dummy text */}
+      {/*        ever since the 1500s. */}
+      {/*      </Paragraph> */}
+      {/*      <Button */}
+      {/*        onPress={() => alert("hey")} */}
+      {/*        style={{ */}
+      {/*          alignSelf: "flex-end", */}
+      {/*          backgroundColor: "#24c38b", */}
+      {/*          width: 115, */}
+      {/*          marginTop: 20, */}
+      {/*          borderRadius: 7, */}
+      {/*          padding: 5, */}
+      {/*        }} */}
+      {/*        labelStyle={{ */}
+      {/*          color: "white", */}
+      {/*        }} */}
+      {/*      > */}
+      {/*        Tâches */}
+      {/*      </Button> */}
+      {/*    </Card> */}
+      {/*  )} */}
+      {/* /> */}
     </ScrollView>
   );
-}
+};
 
 export default Content;

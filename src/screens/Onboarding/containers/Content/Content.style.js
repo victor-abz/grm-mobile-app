@@ -1,19 +1,19 @@
-const { StyleSheet } = require("react-native");
+import { StyleSheet } from 'react-native';
 
-export const styles = (colors) =>
+export const styles = () =>
   StyleSheet.create({
     content: {
       flex: 1,
-      alignItems: "center",
-      justifyContent: "space-around",
+      alignItems: 'center',
+      justifyContent: 'space-around',
       paddingBottom: 50,
     },
     imageView: {
       flex: 0.65,
-      width: "100%",
+      width: '100%',
       marginVertical: 30,
-      justifyContent: "center",
-      alignItems: "center",
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     arrowButton: {
       borderRadius: 40,
@@ -24,9 +24,9 @@ export const styles = (colors) =>
       left: 7,
     },
     buttonsView: {
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
       // flex: 1,
     },
     button: {
@@ -35,27 +35,27 @@ export const styles = (colors) =>
     upperTitle: {
       // color: `${colors.titles}`,
       fontSize: 12,
-      textAlign: "center",
-      textTransform: "uppercase",
+      textAlign: 'center',
+      textTransform: 'uppercase',
       paddingTop: 5,
       letterSpacing: 3,
       marginBottom: 40,
     },
     title: {
       marginBottom: 15,
-      fontFamily: "Poppins_400Regular",
+      fontFamily: 'Poppins_400Regular',
       fontSize: 19,
-      fontWeight: "bold",
-      fontStyle: "normal",
+      fontWeight: 'bold',
+      fontStyle: 'normal',
       lineHeight: 23,
       letterSpacing: 0,
-      textAlign: "center",
-      color: "#707070",
+      textAlign: 'center',
+      color: '#707070',
     },
     subtitle: {
-      width: "60%",
-      textAlign: "center",
-      alignSelf: "center",
+      width: '60%',
+      textAlign: 'center',
+      alignSelf: 'center',
       marginBottom: 20,
       lineHeight: 22,
       fontSize: 16,
@@ -63,12 +63,12 @@ export const styles = (colors) =>
     },
 
     skipButton: {
-      position: "absolute",
+      position: 'absolute',
       right: 0,
-      top: "35%",
+      top: '35%',
     },
     skipButtonLabel: {
-      color: "black",
+      color: 'black',
       letterSpacing: 3,
     },
   });

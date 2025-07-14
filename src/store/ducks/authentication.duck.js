@@ -1,27 +1,15 @@
 import { Map } from 'immutable';
 import { createActions, handleActions } from 'redux-actions';
-import {
-  clearEncryptedValues,
-  getEncryptedData,
-  removeEncryptedValue,
-  storeEncryptedData,
-} from '../../utils/storageManager';
+import { clearEncryptedValues, storeEncryptedData } from '../../utils/storageManager';
 
 const defaultState = Map({
   userPassword: null,
   username: null,
 });
 
-
-
 export const { init, login, signUp, logout } = createActions({
   INIT: async (dbCredentials, credentials) => {
     try {
-      // Set credentials for the new data manager
-      const authCredentials = {
-        username: credentials.email,
-        password: credentials.password,
-      };
       // await setDataManagerCredentials(authCredentials);
 
       return { password: credentials.password, username: credentials.email };
@@ -39,11 +27,6 @@ export const { init, login, signUp, logout } = createActions({
       storeEncryptedData(`userPassword`, credentials.password);
       storeEncryptedData(`username`, credentials.email);
 
-      // Set credentials for the new data manager
-      const authCredentials = {
-        username: credentials.email,
-        password: credentials.password,
-      };
       // await setDataManagerCredentials(authCredentials);
 
       return { password: credentials.password, username: credentials.email };
@@ -61,12 +44,7 @@ export const { init, login, signUp, logout } = createActions({
       storeEncryptedData(`userPassword`, credentials.password);
       storeEncryptedData(`username`, credentials.email);
 
-      // Set credentials for the new data manager
-      const authCredentials = {
-        username: credentials.email,
-        password: credentials.password,
-      };
-      await setDataManagerCredentials(authCredentials);
+      // await setDataManagerCredentials(authCredentials);
 
       return { password: credentials.password, username: credentials.email };
     } catch (error) {
@@ -82,30 +60,26 @@ export const { init, login, signUp, logout } = createActions({
 
 const authentication = handleActions(
   {
-    [init]: (draft, { payload: { password, username } }) => {
-      return draft.withMutations((state) => {
+    [init]: (draft, { payload: { password, username } }) =>
+      draft.withMutations((state) => {
         state.set('userPassword', password);
         state.set('username', username);
-      });
-    },
-    [login]: (draft, { payload: { password, username } }) => {
-      return draft.withMutations((state) => {
+      }),
+    [login]: (draft, { payload: { password, username } }) =>
+      draft.withMutations((state) => {
         state.set('userPassword', password);
         state.set('username', username);
-      });
-    },
-    [signUp]: (draft, { payload: { password, username } }) => {
-      return draft.withMutations((state) => {
+      }),
+    [signUp]: (draft, { payload: { password, username } }) =>
+      draft.withMutations((state) => {
         state.set('userPassword', password);
         state.set('username', username);
-      });
-    },
-    [logout]: (draft, { payload: { password, username } }) => {
-      return draft.withMutations((state) => {
+      }),
+    [logout]: (draft, { payload: { password, username } }) =>
+      draft.withMutations((state) => {
         state.set('userPassword', password);
         state.set('username', username);
-      });
-    },
+      }),
   },
   defaultState
 );

@@ -1,11 +1,9 @@
-import { AntDesign, Feather } from '@expo/vector-icons';
 import moment from 'moment';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Linking, Platform, ScrollView, Text, View } from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
 import StarRating from 'react-native-star-rating-widget';
-import { useData } from '../../../../providers/DataProvider';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { useIssueActions } from '../../../../hooks/useIssueActions';
@@ -26,12 +24,8 @@ const theme = {
 const WHATSAPP_LINK = 'http://api.whatsapp.com/send?phone=223';
 const PHONE_CALL_LINK = 'tel://+223';
 
-function Content({ issue, navigation, statuses = [], userContext }) {
+const Content = ({ issue, navigation, statuses = [], userContext }) => {
   const { t } = useTranslation();
-  const { dataManager } = useData();
-
-  // State for forcing issue data refresh
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Debug logging for IssueActions
   console.log('🔍 [IssueActions] Processing issue data:', {
@@ -61,8 +55,8 @@ function Content({ issue, navigation, statuses = [], userContext }) {
     userContext?.user?.id || userContext?.user?.name || userContext?.user?.email;
 
   // Create lookup helper function (memoized to prevent recreation)
-  const createLookupMap = useMemo(() => {
-    return (items, labelField) => {
+  const createLookupMap = useMemo(
+    () => (items, labelField) => {
       const map = new Map();
       if (!items || !Array.isArray(items)) return map;
 
@@ -74,8 +68,9 @@ function Content({ issue, navigation, statuses = [], userContext }) {
         }
       });
       return map;
-    };
-  }, []);
+    },
+    []
+  );
 
   // Create lookup maps for statuses (properly memoized with stable dependencies)
   const statusMap = useMemo(
@@ -92,7 +87,11 @@ function Content({ issue, navigation, statuses = [], userContext }) {
 
     const rawData = issueData._raw || issueData;
 
-    console.log('🔍 [IssueActions] Raw data rawData.matwi:', rawData.rating, isNaN(rawData.rating));
+    console.log(
+      '🔍 [IssueActions] Raw data rawData.matwi:',
+      rawData.rating,
+      Number.isNaN(rawData.rating)
+    );
 
     const enriched = {
       ...rawData,
@@ -153,31 +152,19 @@ function Content({ issue, navigation, statuses = [], userContext }) {
   const {
     dialogs,
     formInputs,
-    actionStates,
     buttonStates,
     citizenName,
     showDialog,
     hideDialog,
-    updateDialogState,
     updateFormInput,
     executeAction,
     goToDetails,
     goToHistory,
-    showToast,
   } = useIssueActions(enrichedIssue, statuses, currentUserId, navigation, t);
-
-  // ========== REFRESH MECHANISM ==========
-  useEffect(() => {
-    // When an action completes (not updating anymore), trigger refresh
-    if (!actionStates.isUpdating && actionStates.lastActionTimestamp > 0) {
-      console.log('🔄 [IssueActions] Action completed, refreshing issue data');
-      setRefreshTrigger((prev) => prev + 1);
-    }
-  }, [actionStates.isUpdating, actionStates.lastActionTimestamp]);
 
   // ========== LINKING FUNCTIONS ==========
   const whatsApp = () => {
-    Linking.openURL(WHATSAPP_LINK + enrichedIssue?.contact_information?.contact)
+    Linking.openURL(WHATSAPP_LINK + (enrichedIssue?.contact_information?.contact || ''))
       .then((value) => {
         console.log('whatsapp result: ', value);
       })
@@ -187,7 +174,7 @@ function Content({ issue, navigation, statuses = [], userContext }) {
   };
 
   const phoneCall = () => {
-    Linking.openURL(PHONE_CALL_LINK + enrichedIssue?.contact_information?.contact)
+    Linking.openURL(PHONE_CALL_LINK + (enrichedIssue?.contact_information?.contact || ''))
       .then((value) => {
         console.log('phone_call result: ', value);
       })
@@ -200,7 +187,6 @@ function Content({ issue, navigation, statuses = [], userContext }) {
   const handleAccept = () => executeAction(ACTION_TYPES.ACCEPT);
   const handleReject = () => executeAction(ACTION_TYPES.REJECT);
   const handleRecordSteps = () => executeAction(ACTION_TYPES.RECORD_STEPS);
-  const handleRecordResolution = () => executeAction(ACTION_TYPES.RECORD_RESOLUTION);
   const handleEscalate = () => executeAction(ACTION_TYPES.ESCALATE);
   const handleRate = () => executeAction(ACTION_TYPES.RATE);
   const handleAppeal = () => executeAction(ACTION_TYPES.APPEAL);
@@ -260,28 +246,34 @@ function Content({ issue, navigation, statuses = [], userContext }) {
             </Button>
 
             {/* CONTACT BUTTONS */}
-            {enrichedIssue.contact_information &&
-              enrichedIssue.contact_information.contact !== '*' && (
-                <>
-                  {enrichedIssue.contact_information.type === 'phone' ? (
+            {(() => {
+              if (
+                enrichedIssue.contact_information &&
+                enrichedIssue.contact_information.contact !== '*'
+              ) {
+                if (enrichedIssue.contact_information.type === 'phone') {
+                  return (
                     <IconButton
                       icon="phone"
                       iconColor={colors.primary}
                       size={35}
                       onPress={() => phoneCall()}
                     />
-                  ) : enrichedIssue.contact_information.type === 'whatsapp' ? (
+                  );
+                }
+                if (enrichedIssue.contact_information.type === 'whatsapp') {
+                  return (
                     <IconButton
                       icon="whatsapp"
                       iconColor={colors.primary}
                       size={35}
                       onPress={() => whatsApp()}
                     />
-                  ) : (
-                    <></>
-                  )}
-                </>
-              )}
+                  );
+                }
+              }
+              return null;
+            })()}
           </View>
 
           <View style={styles.ratingInfoSection}>
@@ -470,6 +462,6 @@ function Content({ issue, navigation, statuses = [], userContext }) {
       />
     </ScrollView>
   );
-}
+};
 
 export default Content;

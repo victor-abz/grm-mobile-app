@@ -1,12 +1,12 @@
-import React, { useContext, createContext, useState, useEffect } from 'react';
+import React, { useContext, createContext, useState, useEffect, useMemo } from 'react';
 import { FrappeApp } from 'frappe-js-sdk';
 import { AuthContext } from './AuthProvider';
 import { FRAPPE_BASE_URL } from '../utils/constants';
 
 const FrappeContext = createContext();
 
-function FrappeProvider({ children }) {
-  const { accessToken, isAuthenticated } = useContext(AuthContext);
+const FrappeProvider = ({ children }) => {
+  const { accessToken } = useContext(AuthContext);
   const [db, setDb] = useState(null);
   const [call, setCall] = useState(null);
   const [auth, setAuth] = useState(null);
@@ -27,18 +27,17 @@ function FrappeProvider({ children }) {
     setAuth(frappe.auth());
   }, [accessToken]);
 
-  return (
-    <FrappeContext.Provider
-      value={{
-        db,
-        auth,
-        call,
-      }}
-    >
-      {children}
-    </FrappeContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      db,
+      auth,
+      call,
+    }),
+    [db, auth, call]
   );
-}
+
+  return <FrappeContext.Provider value={contextValue}>{children}</FrappeContext.Provider>;
+};
 
 export const useFrappe = () => {
   const frappe = useContext(FrappeContext);

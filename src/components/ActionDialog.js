@@ -7,9 +7,8 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { Button, Dialog, Paragraph, Portal, RadioButton, TextInput } from 'react-native-paper';
-import StarRating from 'react-native-star-rating-widget';
 import { colors } from '../utils/colors';
-import { ACTION_TYPES, DIALOG_TYPES, DIALOG_STATES } from '../utils/issueActionTypes';
+import { DIALOG_TYPES, DIALOG_STATES } from '../utils/issueActionTypes';
 
 const theme = {
   roundness: 12,
@@ -37,7 +36,7 @@ const ActionDialog = ({
   const getDialogConfig = () => {
     const configs = {
       [DIALOG_TYPES.ACCEPT]: {
-        title: state === DIALOG_STATES.SUCCESS ? null : t('accept_issue') + '?',
+        title: state === DIALOG_STATES.SUCCESS ? null : `${t('accept_issue')}?`,
         content: state === DIALOG_STATES.SUCCESS ? t('you_have_accepted') : t('are_you_accepting'),
         primaryText: state === DIALOG_STATES.SUCCESS ? t('finished') : t('accept'),
         secondaryText: state === DIALOG_STATES.SUCCESS ? null : t('reject'),
@@ -98,7 +97,7 @@ const ActionDialog = ({
       },
 
       [DIALOG_TYPES.RATING]: {
-        title: t('rating') + '?',
+        title: `${t('rating')}?`,
         content: t('rate_issue'),
         primaryText: t('save_button_text'),
         secondaryText: t('cancel'),
@@ -108,7 +107,7 @@ const ActionDialog = ({
       },
 
       [DIALOG_TYPES.RATE_APPEAL]: {
-        title: t('confirmation') + '?',
+        title: `${t('confirmation')}?`,
         content: t('confirm_your_choice'),
         primaryText: t('yes'),
         secondaryText: t('no'),
@@ -149,7 +148,7 @@ const ActionDialog = ({
 
     return (
       <Text style={{ marginTop: 10 }}>
-        {'\n'}"{config.confirmationText}"
+        {'\n'}&quot;{config.confirmationText}&quot;
       </Text>
     );
   };

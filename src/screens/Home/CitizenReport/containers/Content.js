@@ -17,7 +17,7 @@ const theme = {
   },
 };
 
-function Content({ selectedProject = null }) {
+const Content = ({ selectedProject = null }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [contact_medium, setContactMedium] = React.useState('facilitator');
@@ -141,6 +141,6 @@ function Content({ selectedProject = null }) {
       </KeyboardAvoidingView>
     </ScrollView>
   );
-}
+};
 
 export default Content;

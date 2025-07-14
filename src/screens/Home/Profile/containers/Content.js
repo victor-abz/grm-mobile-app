@@ -19,19 +19,17 @@ const ProfileAvatar = ({
   name,
   backgroundColor = colors.primary,
   textColor = 'white',
-}) => {
-  return (
-    <UserAvatar
-      size={size}
-      src={src}
-      userName={name}
-      backgroundColor={backgroundColor}
-      textColor={textColor}
-    />
-  );
-};
+}) => (
+  <UserAvatar
+    size={size}
+    src={src}
+    userName={name}
+    backgroundColor={backgroundColor}
+    textColor={textColor}
+  />
+);
 
-function Content({ profileData, isOnline, error }) {
+const Content = ({ profileData, isOnline, error }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const { auth } = useFrappe();
@@ -80,8 +78,8 @@ function Content({ profileData, isOnline, error }) {
 
           await auth.uploadFile(formData);
           Alert.alert(t('success'), t('profile_image_updated'));
-        } catch (error) {
-          console.error('Error uploading image:', error);
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
           Alert.alert(t('error'), t('Failed to upload profile image. Please try again'), [
             { text: t('OK'), style: 'default' },
           ]);
@@ -89,8 +87,8 @@ function Content({ profileData, isOnline, error }) {
           setImageLoading(false);
         }
       }
-    } catch (error) {
-      console.error('Error picking image:', error);
+    } catch (pickError) {
+      console.error('Error picking image:', pickError);
       Alert.alert(t('error'), t('Failed to select image. Please try again'), [
         { text: t('OK'), style: 'default' },
       ]);
@@ -135,10 +133,10 @@ function Content({ profileData, isOnline, error }) {
       setConfirmPassword('');
       setPasswordError('');
       Alert.alert(t('success'), t('Password updated successfully'));
-    } catch (error) {
-      console.error('Error updating password:', error);
+    } catch (updateError) {
+      console.error('Error updating password:', updateError);
       setPasswordError(
-        error.message?.includes('old password is incorrect')
+        updateError.message?.includes('old password is incorrect')
           ? t('Current password is incorrect')
           : t('Failed to update password. Please try again')
       );
@@ -178,7 +176,7 @@ function Content({ profileData, isOnline, error }) {
   const getInitials = (name) => {
     if (!name) return '';
     // Get the first word (first name)
-    const firstName = name.split(' ')[0];
+    const [firstName] = name.split(' ');
     // Take first two characters of the first name
     return firstName.slice(0, 2).toUpperCase();
   };
@@ -238,7 +236,7 @@ function Content({ profileData, isOnline, error }) {
           <>
             {profileData.assignments.map((assignment, index) => (
               <ProfileItem
-                key={index}
+                key={assignment.region?.id || assignment.department?.id || `assignment-${index}`}
                 title={assignment.region?.name || t('region')}
                 description={assignment.department?.name || t('department')}
               />
@@ -359,6 +357,6 @@ function Content({ profileData, isOnline, error }) {
       {renderErrorMessage()}
     </View>
   );
-}
+};
 
 export default Content;

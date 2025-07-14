@@ -8,8 +8,10 @@ export default class GrmIssueAgeGroup extends Model {
 
   // Add Frappe sync timestamp fields
   @date('creation') creation;
+
   @date('modified') modified;
 
   @date('created_at') createdAt;
+
   @date('updated_at') updatedAt;
 }

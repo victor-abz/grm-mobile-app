@@ -1,6 +1,5 @@
-import { Database } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
-import { Q } from '@nozbe/watermelondb';
 
 import schema from './schema';
 import migrations from './migrations';
@@ -140,10 +139,9 @@ class WatermelonManager {
 
         console.log('✅ [WM] Returning found issue:', result);
         return result;
-      } else {
-        console.log('❌ [WM] Issue not found for ID:', issueId);
-        return null;
       }
+      console.log('❌ [WM] Issue not found for ID:', issueId);
+      return null;
     } catch (error) {
       console.error('❌ [WM] Error fetching issue from WatermelonDB:', error);
       return null;
@@ -156,48 +154,53 @@ class WatermelonManager {
 
       const db = this.getDatabase();
 
-      const issue = await db.write(async () => {
-        return await db.get('grm_issues').create((issue) => {
+      const issue = await db.write(async () =>
+        db.get('grm_issues').create((issueModel) => {
           // Basic fields using model decorators
-          if (issueData.description !== undefined) issue.description = issueData.description || '';
+          if (issueData.description !== undefined)
+            issueModel.description = issueData.description || '';
           if (issueData.tracking_code !== undefined)
-            issue.trackingCode = issueData.tracking_code || '';
-          if (issueData.citizen !== undefined) issue.citizen = issueData.citizen || '';
+            issueModel.trackingCode = issueData.tracking_code || '';
+          if (issueData.citizen !== undefined) issueModel.citizen = issueData.citizen || '';
           if (issueData.citizen_type !== undefined)
-            issue.citizenType = issueData.citizen_type || '';
-          if (issueData.gender !== undefined) issue.gender = issueData.gender;
+            issueModel.citizenType = issueData.citizen_type || '';
+          if (issueData.gender !== undefined) issueModel.gender = issueData.gender;
           if (issueData.contact_medium !== undefined)
-            issue.contactMedium = issueData.contact_medium || '';
+            issueModel.contactMedium = issueData.contact_medium || '';
           if (issueData.contact_info_type !== undefined)
-            issue.contactInfoType = issueData.contact_info_type;
+            issueModel.contactInfoType = issueData.contact_info_type;
           if (issueData.contact_information !== undefined)
-            issue.contactInformation = issueData.contact_information;
+            issueModel.contactInformation = issueData.contact_information;
           if (issueData.resolution_days !== undefined)
-            issue.resolutionDays = issueData.resolution_days;
+            issueModel.resolutionDays = issueData.resolution_days;
           if (issueData.resolution_accepted !== undefined)
-            issue.resolutionAccepted = issueData.resolution_accepted;
-          if (issueData.rating !== undefined) issue.rating = issueData.rating;
-          if (issueData.escalate_flag !== undefined) issue.escalateFlag = issueData.escalate_flag;
-          if (issueData.confirmed !== undefined) issue.confirmed = issueData.confirmed;
+            issueModel.resolutionAccepted = issueData.resolution_accepted;
+          if (issueData.rating !== undefined) issueModel.rating = issueData.rating;
+          if (issueData.escalate_flag !== undefined)
+            issueModel.escalateFlag = issueData.escalate_flag;
+          if (issueData.confirmed !== undefined) issueModel.confirmed = issueData.confirmed;
 
           // UPDATED: Foreign key fields using corrected field names (no _id suffix)
-          if (issueData.project !== undefined) issue._setRaw('project', issueData.project || '');
-          if (issueData.category !== undefined) issue._setRaw('category', issueData.category || '');
+          if (issueData.project !== undefined)
+            issueModel._setRaw('project', issueData.project || '');
+          if (issueData.category !== undefined)
+            issueModel._setRaw('category', issueData.category || '');
           if (issueData.issue_type !== undefined)
-            issue._setRaw('issue_type', issueData.issue_type || '');
-          if (issueData.status !== undefined) issue._setRaw('status', issueData.status || '');
+            issueModel._setRaw('issue_type', issueData.issue_type || '');
+          if (issueData.status !== undefined) issueModel._setRaw('status', issueData.status || '');
           if (issueData.citizen_age_group !== undefined)
-            issue._setRaw('citizen_age_group', issueData.citizen_age_group);
+            issueModel._setRaw('citizen_age_group', issueData.citizen_age_group);
           if (issueData.citizen_group_1 !== undefined)
-            issue._setRaw('citizen_group_1', issueData.citizen_group_1);
+            issueModel._setRaw('citizen_group_1', issueData.citizen_group_1);
           if (issueData.citizen_group_2 !== undefined)
-            issue._setRaw('citizen_group_2', issueData.citizen_group_2);
-          if (issueData.reporter !== undefined) issue._setRaw('reporter', issueData.reporter || '');
-          if (issueData.assignee !== undefined) issue._setRaw('assignee', issueData.assignee);
+            issueModel._setRaw('citizen_group_2', issueData.citizen_group_2);
+          if (issueData.reporter !== undefined)
+            issueModel._setRaw('reporter', issueData.reporter || '');
+          if (issueData.assignee !== undefined) issueModel._setRaw('assignee', issueData.assignee);
           if (issueData.administrative_region !== undefined)
-            issue._setRaw('administrative_region', issueData.administrative_region || '');
+            issueModel._setRaw('administrative_region', issueData.administrative_region || '');
           if (issueData.amended_from !== undefined)
-            issue._setRaw('amended_from', issueData.amended_from);
+            issueModel._setRaw('amended_from', issueData.amended_from);
 
           // Date fields - use decorator methods for dates
           if (issueData.issue_date !== undefined) {
@@ -205,7 +208,7 @@ class WatermelonManager {
               typeof issueData.issue_date === 'string'
                 ? new Date(issueData.issue_date)
                 : new Date(issueData.issue_date);
-            issue.issueDate = issueDate;
+            issueModel.issueDate = issueDate;
           }
 
           if (issueData.intake_date !== undefined) {
@@ -213,19 +216,19 @@ class WatermelonManager {
               typeof issueData.intake_date === 'string'
                 ? new Date(issueData.intake_date)
                 : new Date(issueData.intake_date);
-            issue.intakeDate = intakeDate;
+            issueModel.intakeDate = intakeDate;
           }
 
           // Set timestamps
           const now = new Date();
-          issue.createdAt = now;
-          issue.updatedAt = now;
+          issueModel.createdAt = now;
+          issueModel.updatedAt = now;
 
           // Add Frappe sync timestamps
-          issue.creation = now;
-          issue.modified = now;
-        });
-      });
+          issueModel.creation = now;
+          issueModel.modified = now;
+        })
+      );
 
       console.log('✅ [WM] Issue created successfully:', issue.id);
       return issue._raw;
@@ -241,16 +244,20 @@ class WatermelonManager {
   async createIssueAttachments(attachments) {
     if (!attachments || !attachments.length) return [];
     const db = this.getDatabase();
-    return await db.write(async () => {
-      const created = [];
-      for (const att of attachments) {
-        // Validate required fields - only need issue and attachment_url
+    return db.write(async () => {
+      // Filter valid attachments first
+      const validAttachments = attachments.filter((att) => {
         if (!att.issue || !att.attachment_url) {
           console.error('[WM] Attachment missing required fields:', att);
-          continue;
+          return false;
         }
+        return true;
+      });
+
+      // Create all attachments concurrently using Promise.all
+      const createPromises = validAttachments.map((att) => {
         console.log('🔍 [WM] Creating attachment:', att);
-        const record = await db.get('grm_issue_attachments').create((a) => {
+        return db.get('grm_issue_attachments').create((a) => {
           // Map to backend schema fields only
           a._setRaw('grm_issue', att.issue);
           a._setRaw('attachment', att.attachment_url);
@@ -260,7 +267,7 @@ class WatermelonManager {
           );
           a._setRaw('local_url', att.attachment_url);
           a._setRaw('uploaded', false);
-          
+
           // Set timestamps
           const now = new Date();
           a._setRaw('creation', now.getTime());
@@ -268,10 +275,12 @@ class WatermelonManager {
           a._setRaw('created_at', now.getTime());
           a._setRaw('updated_at', now.getTime());
         });
-        created.push(record._raw);
-      }
-      console.log('🔍 [WM] Created attachments:', created);
-      return created;
+      });
+
+      const created = await Promise.all(createPromises);
+      const createdRaws = created.map((record) => record._raw);
+      console.log('🔍 [WM] Created attachments:', createdRaws);
+      return createdRaws;
     });
   }
 
@@ -280,54 +289,60 @@ class WatermelonManager {
       const db = this.getDatabase();
       const issue = await db.get('grm_issues').find(issueId);
 
-      const updatedIssue = await db.write(async () => {
-        return await issue.update((issue) => {
+      const updatedIssue = await db.write(async () =>
+        issue.update((issueModel) => {
           // Basic fields
-          if (updateData.description !== undefined) issue.description = updateData.description;
-          if (updateData.tracking_code !== undefined) issue.trackingCode = updateData.tracking_code;
-          if (updateData.citizen !== undefined) issue.citizen = updateData.citizen;
-          if (updateData.citizen_type !== undefined) issue.citizenType = updateData.citizen_type;
-          if (updateData.gender !== undefined) issue.gender = updateData.gender;
+          if (updateData.description !== undefined) issueModel.description = updateData.description;
+          if (updateData.tracking_code !== undefined)
+            issueModel.trackingCode = updateData.tracking_code;
+          if (updateData.citizen !== undefined) issueModel.citizen = updateData.citizen;
+          if (updateData.citizen_type !== undefined)
+            issueModel.citizenType = updateData.citizen_type;
+          if (updateData.gender !== undefined) issueModel.gender = updateData.gender;
           if (updateData.contact_medium !== undefined)
-            issue.contactMedium = updateData.contact_medium;
+            issueModel.contactMedium = updateData.contact_medium;
           if (updateData.contact_info_type !== undefined)
-            issue.contactInfoType = updateData.contact_info_type;
+            issueModel.contactInfoType = updateData.contact_info_type;
           if (updateData.contact_information !== undefined)
-            issue.contactInformation = updateData.contact_information;
+            issueModel.contactInformation = updateData.contact_information;
           if (updateData.resolution_days !== undefined)
-            issue.resolutionDays = updateData.resolution_days;
+            issueModel.resolutionDays = updateData.resolution_days;
           if (updateData.resolution_accepted !== undefined)
-            issue.resolutionAccepted = updateData.resolution_accepted;
-          if (updateData.rating !== undefined) issue.rating = updateData.rating;
-          if (updateData.escalate_flag !== undefined) issue.escalateFlag = updateData.escalate_flag;
-          if (updateData.confirmed !== undefined) issue.confirmed = updateData.confirmed;
+            issueModel.resolutionAccepted = updateData.resolution_accepted;
+          if (updateData.rating !== undefined) issueModel.rating = updateData.rating;
+          if (updateData.escalate_flag !== undefined)
+            issueModel.escalateFlag = updateData.escalate_flag;
+          if (updateData.confirmed !== undefined) issueModel.confirmed = updateData.confirmed;
 
           // UPDATED: Foreign key fields using corrected field names (no _id suffix)
-          if (updateData.project !== undefined) issue._setRaw('project', updateData.project || '');
+          if (updateData.project !== undefined)
+            issueModel._setRaw('project', updateData.project || '');
           if (updateData.category !== undefined)
-            issue._setRaw('category', updateData.category || '');
+            issueModel._setRaw('category', updateData.category || '');
           if (updateData.issue_type !== undefined)
-            issue._setRaw('issue_type', updateData.issue_type || '');
-          if (updateData.status !== undefined) issue._setRaw('status', updateData.status || '');
+            issueModel._setRaw('issue_type', updateData.issue_type || '');
+          if (updateData.status !== undefined)
+            issueModel._setRaw('status', updateData.status || '');
           if (updateData.citizen_age_group !== undefined)
-            issue._setRaw('citizen_age_group', updateData.citizen_age_group);
+            issueModel._setRaw('citizen_age_group', updateData.citizen_age_group);
           if (updateData.citizen_group_1 !== undefined)
-            issue._setRaw('citizen_group_1', updateData.citizen_group_1);
+            issueModel._setRaw('citizen_group_1', updateData.citizen_group_1);
           if (updateData.citizen_group_2 !== undefined)
-            issue._setRaw('citizen_group_2', updateData.citizen_group_2);
+            issueModel._setRaw('citizen_group_2', updateData.citizen_group_2);
           if (updateData.reporter !== undefined)
-            issue._setRaw('reporter', updateData.reporter || '');
-          if (updateData.assignee !== undefined) issue._setRaw('assignee', updateData.assignee);
+            issueModel._setRaw('reporter', updateData.reporter || '');
+          if (updateData.assignee !== undefined)
+            issueModel._setRaw('assignee', updateData.assignee);
           if (updateData.administrative_region !== undefined)
-            issue._setRaw('administrative_region', updateData.administrative_region || '');
+            issueModel._setRaw('administrative_region', updateData.administrative_region || '');
           if (updateData.amended_from !== undefined)
-            issue._setRaw('amended_from', updateData.amended_from);
+            issueModel._setRaw('amended_from', updateData.amended_from);
 
           // Update timestamps
-          issue.updatedAt = new Date();
-          issue.modified = new Date();
-        });
-      });
+          issueModel.updatedAt = new Date();
+          issueModel.modified = new Date();
+        })
+      );
 
       return updatedIssue._raw;
     } catch (error) {
@@ -372,10 +387,10 @@ class WatermelonManager {
     }
   }
 
-  async getIssueCategories(projectId = null) {
+  async getIssueCategories(_projectId = null) {
     try {
       const db = this.getDatabase();
-      let query = db.get('grm_issue_categories').query();
+      const query = db.get('grm_issue_categories').query();
 
       const categories = await query.fetch();
       const result = categories
@@ -393,7 +408,7 @@ class WatermelonManager {
     }
   }
 
-  async getIssueTypes(projectId = null) {
+  async getIssueTypes(_projectId = null) {
     try {
       const db = this.getDatabase();
       const types = await db.get('grm_issue_types').query().fetch();

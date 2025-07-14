@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 import { Button, Title } from 'react-native-paper';
@@ -8,11 +8,9 @@ import { styles } from './Content.style';
 import ThinkingSVG from '../../../../../assets/think.svg';
 import LanguageSelector from '../../../../translations/TranslationComponent';
 
-function Content() {
+const Content = () => {
   const { t } = useTranslation();
 
-  // const { colors } = useTheme();
-  const [step, setStep] = useState(2);
   const customStyles = styles();
   const navigation = useNavigation();
 
@@ -65,6 +63,6 @@ function Content() {
       </View>
     </View>
   );
-}
+};
 
 export default Content;

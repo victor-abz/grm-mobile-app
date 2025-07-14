@@ -3,7 +3,7 @@ import 'regenerator-runtime/runtime';
 
 // Add polyfills for React Native JavaScript engine
 import 'intl';
-import 'intl/locale-data/jsonp/en.js';
+import 'intl/locale-data/jsonp/en';
 
 /* eslint-disable react/no-unknown-property */
 import React, { useEffect } from 'react';
@@ -15,7 +15,7 @@ import { AuthProvider } from './src/providers/AuthProvider';
 import { FrappeProvider } from './src/providers/FrappeProvider';
 import { DataProvider } from './src/providers/DataProvider';
 import Router from './src/router';
-import paperTheme from './src/theme';
+import { paperTheme } from './src/theme';
 import './src/translations/i18n';
 
 if (__DEV__) {

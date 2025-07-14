@@ -3,9 +3,10 @@ import { SafeAreaView, ScrollView, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { DataContext } from '../../../providers/DataProvider';
 import { styles } from './CitizenReportLocationStep.styles';
+// eslint-disable-next-line import/no-named-as-default
 import Content from './containers/Content';
 
-function CitizenReportLocationStep({ route }) {
+const CitizenReportLocationStep = ({ route }) => {
   const { params } = route;
   const { isDataInitialized, isLoading } = useContext(DataContext);
 
@@ -46,6 +47,6 @@ function CitizenReportLocationStep({ route }) {
       <Content stepOneParams={params.stepOneParams} stepTwoParams={params.stepTwoParams} />
     </SafeAreaView>
   );
-}
+};
 
 export default CitizenReportLocationStep;

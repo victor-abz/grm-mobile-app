@@ -10,7 +10,7 @@ import { useData } from '../../../providers/DataProvider';
 import { styles } from './IssueActions.styles';
 import Content from './containers/Content';
 
-function IssueActions({ route, navigation, issue, statuses = [] }) {
+const IssueActions = ({ route, navigation, issue, statuses = [] }) => {
   const { params } = route;
   const customStyles = styles();
   const { t } = useTranslation();
@@ -158,7 +158,7 @@ function IssueActions({ route, navigation, issue, statuses = [] }) {
       />
     </SafeAreaView>
   );
-}
+};
 
 // Enhanced withObservables to get specific issue and statuses
 const enhance = withObservables(['route'], ({ route }) => {

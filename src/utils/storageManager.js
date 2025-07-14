@@ -25,6 +25,7 @@ export const getData = async (key) => {
     return jsonValue != null ? JSON.parse(jsonValue) : null;
   } catch (e) {
     // error reading value
+    return null;
   }
 };
 
@@ -34,6 +35,7 @@ export const getEncryptedData = async (key) => {
     return jsonValue != null ? JSON.parse(jsonValue) : null;
   } catch (e) {
     // error reading value
+    return null;
   }
 };
 

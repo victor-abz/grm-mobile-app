@@ -6,80 +6,6 @@ import { colors } from '../../../../utils/colors';
 
 const { width } = Dimensions.get('screen');
 
-function RecordingCard({
-  onPlay,
-  onPause,
-  onDelete,
-  recording,
-  onStopRecording,
-  playing,
-  current,
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <View style={[styles.alignCenter, { marginTop: 15 }]}>
-      <View style={styles.post}>
-        <View
-          style={[
-            styles.play,
-            styles.alignCenter,
-            {
-              flexDirection: 'column',
-            },
-          ]}
-        >
-          {recording && (
-            <IconButton
-              size={35}
-              color="#f80102"
-              onPress={() => onStopRecording()}
-              icon="record-circle-outline"
-            />
-          )}
-
-          {!recording && !playing && (
-            <IconButton size={35} iconColor={colors.primary} icon="play" onPress={() => onPlay()} />
-          )}
-
-          {!recording && playing && (
-            <IconButton
-              size={35}
-              iconColor={colors.primary}
-              icon="pause"
-              onPress={() => onPause()}
-            />
-          )}
-        </View>
-
-        <View style={[styles.alignCenter, { flexDirection: 'column', width: '70%' }]}>
-          <Text style={styles.title}>{current}</Text>
-          {recording && <Text style={{ color: colors.primary }}>{t('recording_in_progress')}</Text>}
-          {playing && <Text style={{ color: colors.primary }}>{t('playing_in_progress')}</Text>}
-        </View>
-
-        {!recording && (
-          <View
-            style={[
-              styles.remove,
-              styles.alignCenter,
-              {
-                flexDirection: 'column',
-              },
-            ]}
-          >
-            <IconButton size={30} iconColor="#f80102" onPress={() => onDelete()} icon="close" />
-          </View>
-        )}
-
-        <View />
-      </View>
-    </View>
-  );
-}
-
-export default RecordingCard;
-
 const styles = StyleSheet.create({
   error: {
     backgroundColor: 'red',
@@ -149,3 +75,77 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
 });
+
+const RecordingCard = ({
+  onPlay,
+  onPause,
+  onDelete,
+  recording,
+  onStopRecording,
+  playing,
+  current,
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <View style={[styles.alignCenter, { marginTop: 15 }]}>
+      <View style={styles.post}>
+        <View
+          style={[
+            styles.play,
+            styles.alignCenter,
+            {
+              flexDirection: 'column',
+            },
+          ]}
+        >
+          {recording && (
+            <IconButton
+              size={35}
+              color="#f80102"
+              onPress={() => onStopRecording()}
+              icon="record-circle-outline"
+            />
+          )}
+
+          {!recording && !playing && (
+            <IconButton size={35} iconColor={colors.primary} icon="play" onPress={() => onPlay()} />
+          )}
+
+          {!recording && playing && (
+            <IconButton
+              size={35}
+              iconColor={colors.primary}
+              icon="pause"
+              onPress={() => onPause()}
+            />
+          )}
+        </View>
+
+        <View style={[styles.alignCenter, { flexDirection: 'column', width: '70%' }]}>
+          <Text style={styles.title}>{current}</Text>
+          {recording && <Text style={{ color: colors.primary }}>{t('recording_in_progress')}</Text>}
+          {playing && <Text style={{ color: colors.primary }}>{t('playing_in_progress')}</Text>}
+        </View>
+
+        {!recording && (
+          <View
+            style={[
+              styles.remove,
+              styles.alignCenter,
+              {
+                flexDirection: 'column',
+              },
+            ]}
+          >
+            <IconButton size={30} iconColor="#f80102" onPress={() => onDelete()} icon="close" />
+          </View>
+        )}
+
+        <View />
+      </View>
+    </View>
+  );
+};
+
+export default RecordingCard;

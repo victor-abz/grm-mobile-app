@@ -7,7 +7,16 @@ import { styles } from './CustomDropDownPicker.style';
 
 const screenHeight = Dimensions.get('window').height;
 
-function CustomDropDownPicker({
+// Arrow components defined outside to avoid re-creation on every render
+const ArrowUpIcon = () => (
+  <MaterialCommunityIcons name="chevron-up-circle" size={24} color={colors.primary} />
+);
+
+const ArrowDownIcon = () => (
+  <MaterialCommunityIcons name="chevron-down-circle" size={24} color={colors.primary} />
+);
+
+const CustomDropDownPicker = ({
   value,
   items,
   listMode = 'SCROLLVIEW',
@@ -27,7 +36,7 @@ function CustomDropDownPicker({
   onClose = () => null,
   onSelectItem = () => null,
   loading = false,
-}) {
+}) => {
   const [dropdownVisible, setDropdownVisible] = React.useState(false);
   const [open, setOpen] = useState(false);
   return (
@@ -55,12 +64,8 @@ function CustomDropDownPicker({
           onClose();
           setDropdownVisible(false);
         }}
-        ArrowUpIconComponent={({ style }) => (
-          <MaterialCommunityIcons name="chevron-up-circle" size={24} color={colors.primary} />
-        )}
-        ArrowDownIconComponent={({ style }) => (
-          <MaterialCommunityIcons name="chevron-down-circle" size={24} color={colors.primary} />
-        )}
+        ArrowUpIconComponent={ArrowUpIcon}
+        ArrowDownIconComponent={ArrowDownIcon}
         onSelectItem={(item) => onSelectItem(item)}
         style={styles.dropdownStyle}
         dropDownContainerStyle={styles.dropdownContainer}
@@ -83,6 +88,6 @@ function CustomDropDownPicker({
       />
     </View>
   );
-}
+};
 
 export default CustomDropDownPicker;

@@ -8,11 +8,7 @@ import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/Cu
 import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
-import {
-  processAgeGroups,
-  processCitizenGroupsByType,
-  createNavigationData,
-} from '../../../../utils/citizenReportUtils';
+import { processAgeGroups, processCitizenGroupsByType } from '../../../../utils/citizenReportUtils';
 
 const theme = {
   roundness: 12,
@@ -24,7 +20,7 @@ const theme = {
   },
 };
 
-function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLinks = [] }) {
+const Content = ({ stepOneParams, ageGroups = [], citizenGroups = [], projectLinks = [] }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
 
@@ -50,19 +46,22 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
   const projectId = stepOneParams?.selectedProject?.id || null;
 
   // Process age groups using shared utility (replaces inline processing)
-  const processedAgeGroups = useMemo(() => {
-    return processAgeGroups(ageGroups, projectId, projectLinks);
-  }, [ageGroups, projectId, projectLinks]);
+  const processedAgeGroups = useMemo(
+    () => processAgeGroups(ageGroups, projectId, projectLinks),
+    [ageGroups, projectId, projectLinks]
+  );
 
   // Process citizen groups for type 1 using shared utility (replaces inline processing)
-  const citizenGroupsI = useMemo(() => {
-    return processCitizenGroupsByType(citizenGroups, 1, projectId, projectLinks);
-  }, [citizenGroups, projectId, projectLinks]);
+  const citizenGroupsI = useMemo(
+    () => processCitizenGroupsByType(citizenGroups, 1, projectId, projectLinks),
+    [citizenGroups, projectId, projectLinks]
+  );
 
   // Process citizen groups for type 2 using shared utility (replaces inline processing)
-  const citizenGroupsII = useMemo(() => {
-    return processCitizenGroupsByType(citizenGroups, 2, projectId, projectLinks);
-  }, [citizenGroups, projectId, projectLinks]);
+  const citizenGroupsII = useMemo(
+    () => processCitizenGroupsByType(citizenGroups, 2, projectId, projectLinks),
+    [citizenGroups, projectId, projectLinks]
+  );
 
   // Event handlers
   const handleConfidentialValueChange = useCallback(
@@ -274,7 +273,7 @@ function Content({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
       </KeyboardAvoidingView>
     </ScrollView>
   );
-}
+};
 
 // Enhanced withObservables to provide reactive data from WatermelonDB
 const enhance = withObservables([], () => ({

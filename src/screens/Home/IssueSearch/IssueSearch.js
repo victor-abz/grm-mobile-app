@@ -9,7 +9,7 @@ import { colors } from '../../../utils/colors';
 import { styles } from './IssueSearch.style';
 import Content from './containers';
 
-function IssueSearch({
+const IssueSearch = ({
   issues = [],
   categories = [],
   types = [],
@@ -19,7 +19,7 @@ function IssueSearch({
   regions = [],
   projects = [],
   users = [],
-}) {
+}) => {
   console.log('🔍 [IssueSearch] Component props received:');
   console.log('  - Issues:', issues?.length || 0);
   console.log('  - Categories:', categories?.length || 0);
@@ -135,7 +135,7 @@ function IssueSearch({
       />
     </SafeAreaView>
   );
-}
+};
 
 // Enhanced withObservables for direct WatermelonDB integration
 // Provides all lookup data needed for issue display

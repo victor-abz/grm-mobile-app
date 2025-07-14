@@ -1,15 +1,14 @@
 import { useBackHandler } from '@react-native-community/hooks';
-import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dimensions, ScrollView, Text, View, ActivityIndicator } from 'react-native';
 import { Button } from 'react-native-paper';
 import { withObservables } from '@nozbe/watermelondb/react';
+import { Q } from '@nozbe/watermelondb';
 import watermelonManager from '../../../../database/watermelonManager';
 import LockImage from '../../../../../assets/lock.svg';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
-import { Q } from '@nozbe/watermelondb';
 import { enrichIssueData, createDetailLookupMaps } from '../../../../utils/issueDetailUtils';
 
 const screenWidth = Dimensions.get('window').width;
@@ -25,7 +24,7 @@ const theme = {
   },
 };
 
-function Content({
+const Content = ({
   route,
   navigation,
   issue,
@@ -38,11 +37,10 @@ function Content({
   regions = [],
   projects = [],
   users = [],
-}) {
+}) => {
   const { t } = useTranslation();
   const { issueId, trackingCode } = route?.params || {};
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Create lookup maps using shared utility for enriching issue data
   const lookupMaps = useMemo(() => {
@@ -103,15 +101,6 @@ function Content({
     if (issueId) {
       console.log('🔍 [STEP4] Setting up loading timeout for issue:', issueId);
 
-      // Set timeout to detect if issue is not loading
-      timeoutId = setTimeout(() => {
-        if (!actualIssue) {
-          console.error('❌ [STEP4] Issue not loaded after timeout');
-          setError('Issue could not be loaded. It may still be syncing.');
-        }
-        setIsLoading(false);
-      }, 3000); // 3 second timeout
-
       // If issue is found, clear timeout and stop loading
       if (actualIssue) {
         console.log('✅ [STEP4] Issue loaded and enriched successfully:', {
@@ -122,12 +111,10 @@ function Content({
         });
         clearTimeout(timeoutId);
         setIsLoading(false);
-        setError(null);
       }
     } else {
       console.log('🔍 [STEP4] No issueId provided in route params');
       setIsLoading(false);
-      setError('No issue ID provided');
     }
 
     return () => {
@@ -228,7 +215,7 @@ function Content({
       </View>
     </ScrollView>
   );
-}
+};
 
 // ✅ Enhanced withObservables with better error handling and proper route access
 // Includes all lookup data for issue enrichment
@@ -262,7 +249,7 @@ const enhance = withObservables(['route'], ({ route }) => {
 
   console.log('🔍 [STEP4] Route params:', route.params);
 
-  const issueId = route.params.issueId;
+  const { issueId } = route.params;
   console.log('🔍 [STEP4] withObservables called with issueId:', issueId);
 
   if (!issueId) {

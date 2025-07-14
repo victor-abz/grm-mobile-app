@@ -4,9 +4,8 @@
  * Follows DRY principle by consolidating all action-related logic
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ToastAndroid } from 'react-native';
-import moment from 'moment';
 import watermelonManager from '../database/watermelonManager';
 import { ACTION_TYPES, DIALOG_TYPES, DIALOG_STATES } from '../utils/issueActionTypes';
 import { getStatusForAction } from '../utils/issueStatusUtils';
@@ -75,14 +74,13 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
     actionStates.lastActionTimestamp,
   ]);
 
-  const citizenName = useMemo(() => {
+  const _citizenName = useMemo(() => {
     if (!enrichedIssue) return '';
 
     if (enrichedIssue.citizen_type !== 'Confidential') {
       return enrichedIssue.citizen;
-    } else {
-      return buttonStates.isIssueAssignedToMe ? enrichedIssue.citizen : 'Anonymous';
     }
+    return buttonStates.isIssueAssignedToMe ? enrichedIssue.citizen : 'Anonymous';
   }, [enrichedIssue?.citizen, enrichedIssue?.citizen_type, buttonStates.isIssueAssignedToMe]);
 
   // ========== DIALOG MANAGEMENT ==========
@@ -147,136 +145,7 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
     ToastAndroid.show(message, ToastAndroid.SHORT);
   }, []);
 
-  // ========== CORE ACTION PROCESSOR ==========
-  const executeAction = useCallback(
-    async (actionType, additionalData = {}) => {
-      if (!enrichedIssue) {
-        showToast(t('error_no_issue_data') || 'No issue data available');
-        return false;
-      }
-
-      // Validate input if required
-      if (!validateInput(actionType)) {
-        const errorMessages = {
-          [ACTION_TYPES.REJECT]: t('please_provide_rejection_reason'),
-          [ACTION_TYPES.ESCALATE]: t('please_provide_escalation_reason'),
-          [ACTION_TYPES.RECORD_STEPS]: t('please_provide_steps_taken'),
-          [ACTION_TYPES.RECORD_RESOLUTION]: t('please_provide_resolution_details'),
-          [ACTION_TYPES.RATE]: t('please_select_rating'),
-        };
-        showToast(errorMessages[actionType] || t('please_fill_required_fields'));
-        return false;
-      }
-
-      setActionStates((prev) => ({ ...prev, isUpdating: true }));
-
-      try {
-        const newStatus = getStatusForAction(actionType, statuses);
-
-        if (newStatus === undefined) {
-          console.error(`❌ [IssueActions] No appropriate status found for action: ${actionType}`);
-          showToast(t('error_no_appropriate_status_found'));
-          return false;
-        }
-
-        await saveIssueStatus(newStatus, actionType, additionalData);
-        handlePostActionUpdates(actionType);
-
-        // Force button state recalculation by updating a dependency
-        setActionStates((prev) => ({ ...prev, lastActionTimestamp: Date.now() }));
-
-        return true;
-      } catch (error) {
-        console.error('❌ [IssueActions] Error executing action:', error);
-        showToast(t('error_updating_issue_status') || 'Error updating issue. Please try again.');
-        return false;
-      } finally {
-        setActionStates((prev) => ({ ...prev, isUpdating: false }));
-      }
-    },
-    [enrichedIssue, formInputs, statuses, t, validateInput]
-  );
-
-  // ========== WATERMELON DB OPERATIONS ==========
-  const saveIssueStatus = useCallback(
-    async (newStatus, actionType, additionalData = {}) => {
-      const db = watermelonManager.getDatabase();
-
-      await db.write(async () => {
-        // Update issue record
-        const issueRecord = await db.get('grm_issues').find(enrichedIssue.id);
-
-        await issueRecord.update((issue) => {
-          // Handle status change
-          if (newStatus) {
-            const statusId = newStatus.id || newStatus._raw?.id;
-            issue._setRaw('status', statusId);
-          }
-
-          // Apply action-specific updates
-          const now = new Date();
-          const actionUpdates = {
-            [ACTION_TYPES.ACCEPT]: () => {
-              issue._setRaw('assignee', currentUserId);
-              issue.acceptedDate = now;
-            },
-            [ACTION_TYPES.REJECT]: () => {
-              issue.rejectReason = formInputs.reason;
-              issue.rejectedDate = now;
-              issue._setRaw('rejected_by', currentUserId);
-            },
-            [ACTION_TYPES.RECORD_RESOLUTION]: () => {
-              issue.resolutionText = formInputs.resolution;
-              issue.resolutionDate = now;
-              issue._setRaw('resolved_by', currentUserId);
-            },
-            [ACTION_TYPES.ESCALATE]: () => {
-              issue.escalateFlag = true;
-              issue.escalatedDate = now;
-              issue._setRaw('escalated_by', currentUserId);
-              issue.escalationReason = formInputs.escalateComment;
-            },
-            [ACTION_TYPES.RATE]: () => {
-              if (formInputs.rating > 0) {
-                issue.rating = formInputs.rating;
-                issue.ratedDate = now;
-              }
-            },
-            [ACTION_TYPES.APPEAL]: () => {
-              issue.appealSubmitted = true;
-              issue.appealDate = now;
-              // Store appeal reason from the rating dialog if provided
-              if (formInputs.reason && formInputs.reason.trim()) {
-                issue.appealReason = formInputs.reason;
-              }
-              // Keep rating if it was provided
-              if (formInputs.rating > 0) {
-                issue.rating = formInputs.rating;
-              }
-            },
-          };
-
-          const updateAction = actionUpdates[actionType];
-          if (updateAction) updateAction();
-
-          // Apply additional data
-          Object.keys(additionalData).forEach((key) => {
-            if (additionalData[key] !== undefined && issue[key] !== undefined) {
-              issue[key] = additionalData[key];
-            }
-          });
-
-          issue.updatedAt = now;
-        });
-
-        // Create comment and log entries
-        await createActionRecords(db, actionType);
-      });
-    },
-    [enrichedIssue, currentUserId, formInputs]
-  );
-
-  // ========== CREATE ACTION RECORDS ==========
+  // ========== HELPER FUNCTIONS ==========
   const createActionRecords = useCallback(
     async (db, actionType) => {
       const now = new Date();
@@ -362,7 +231,84 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
     [enrichedIssue, currentUserId, formInputs, t]
   );
 
-  // ========== POST-ACTION UPDATES ==========
+  const saveIssueStatus = useCallback(
+    async (newStatus, actionType, additionalData = {}) => {
+      const db = watermelonManager.getDatabase();
+
+      await db.write(async () => {
+        // Update issue record
+        const issueRecord = await db.get('grm_issues').find(enrichedIssue.id);
+
+        await issueRecord.update((issue) => {
+          // Handle status change
+          if (newStatus) {
+            const statusId = newStatus.id || newStatus._raw?.id;
+            issue._setRaw('status', statusId);
+          }
+
+          // Apply action-specific updates
+          const now = new Date();
+          const actionUpdates = {
+            [ACTION_TYPES.ACCEPT]: () => {
+              issue._setRaw('assignee', currentUserId);
+              issue.acceptedDate = now;
+            },
+            [ACTION_TYPES.REJECT]: () => {
+              issue.rejectReason = formInputs.reason;
+              issue.rejectedDate = now;
+              issue._setRaw('rejected_by', currentUserId);
+            },
+            [ACTION_TYPES.RECORD_RESOLUTION]: () => {
+              issue.resolutionText = formInputs.resolution;
+              issue.resolutionDate = now;
+              issue._setRaw('resolved_by', currentUserId);
+            },
+            [ACTION_TYPES.ESCALATE]: () => {
+              issue.escalateFlag = true;
+              issue.escalatedDate = now;
+              issue._setRaw('escalated_by', currentUserId);
+              issue.escalationReason = formInputs.escalateComment;
+            },
+            [ACTION_TYPES.RATE]: () => {
+              if (formInputs.rating > 0) {
+                issue.rating = formInputs.rating;
+                issue.ratedDate = now;
+              }
+            },
+            [ACTION_TYPES.APPEAL]: () => {
+              issue.appealSubmitted = true;
+              issue.appealDate = now;
+              // Store appeal reason from the rating dialog if provided
+              if (formInputs.reason && formInputs.reason.trim()) {
+                issue.appealReason = formInputs.reason;
+              }
+              // Keep rating if it was provided
+              if (formInputs.rating > 0) {
+                issue.rating = formInputs.rating;
+              }
+            },
+          };
+
+          const updateAction = actionUpdates[actionType];
+          if (updateAction) updateAction();
+
+          // Apply additional data
+          Object.keys(additionalData).forEach((key) => {
+            if (additionalData[key] !== undefined && issue[key] !== undefined) {
+              issue[key] = additionalData[key];
+            }
+          });
+
+          issue.updatedAt = now;
+        });
+
+        // Create comment and log entries
+        await createActionRecords(db, actionType);
+      });
+    },
+    [enrichedIssue, currentUserId, formInputs, createActionRecords]
+  );
+
   const handlePostActionUpdates = useCallback(
     (actionType) => {
       const postActionHandlers = {
@@ -409,44 +355,82 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
       const handler = postActionHandlers[actionType];
       if (handler) handler();
     },
-    [formInputs.rating, hideDialog, showDialog, updateDialogState, resetFormInputs]
+    [formInputs, resetFormInputs, updateDialogState, hideDialog, showDialog]
   );
 
-  // ========== NAVIGATION HANDLERS ==========
-  const goToDetails = useCallback(() => navigation.jumpTo('IssueDetail'), [navigation]);
-  const goToHistory = useCallback(() => {
-    hideDialog(DIALOG_TYPES.RECORD_STEPS);
-    navigation.jumpTo('History');
-  }, [navigation, hideDialog]);
+  // ========== CORE ACTION PROCESSOR ==========
+  const executeAction = useCallback(
+    async (actionType, additionalData = {}) => {
+      if (!enrichedIssue) {
+        showToast(t('error_no_issue_data') || 'No issue data available');
+        return false;
+      }
 
-  // ========== EFFECTS ==========
-  // Initialize rating from issue data
-  useEffect(() => {
-    if (enrichedIssue?.rating) {
-      setFormInputs((prev) => ({ ...prev, rating: enrichedIssue.rating }));
-    }
-  }, [enrichedIssue?.rating]);
+      // Validate input if required
+      if (!validateInput(actionType)) {
+        const errorMessages = {
+          [ACTION_TYPES.REJECT]: t('please_provide_rejection_reason'),
+          [ACTION_TYPES.ESCALATE]: t('please_provide_escalation_reason'),
+          [ACTION_TYPES.RECORD_STEPS]: t('please_provide_steps_taken'),
+          [ACTION_TYPES.RECORD_RESOLUTION]: t('please_provide_resolution_details'),
+          [ACTION_TYPES.RATE]: t('please_select_rating'),
+        };
+        showToast(errorMessages[actionType] || t('please_fill_required_fields'));
+        return false;
+      }
+
+      setActionStates((prev) => ({ ...prev, isUpdating: true }));
+
+      try {
+        const newStatus = getStatusForAction(actionType, statuses);
+
+        if (newStatus === undefined) {
+          console.error(`❌ [IssueActions] No appropriate status found for action: ${actionType}`);
+          showToast(t('error_no_appropriate_status_found'));
+          return false;
+        }
+
+        await saveIssueStatus(newStatus, actionType, additionalData);
+        handlePostActionUpdates(actionType);
+
+        // Force button state recalculation by updating a dependency
+        setActionStates((prev) => ({ ...prev, lastActionTimestamp: Date.now() }));
+
+        return true;
+      } catch (error) {
+        console.error('❌ [IssueActions] Error executing action:', error);
+        showToast(t('error_updating_issue_status') || 'Error updating issue. Please try again.');
+        return false;
+      } finally {
+        setActionStates((prev) => ({ ...prev, isUpdating: false }));
+      }
+    },
+    [enrichedIssue, formInputs, statuses, t, validateInput]
+  );
+
+  // ========== NAVIGATION HELPERS ==========
+  const goToDetails = useCallback(() => {
+    navigation.navigate('IssueDetail', { issueId: enrichedIssue.id });
+  }, [navigation, enrichedIssue]);
+
+  const goToHistory = useCallback(() => {
+    navigation.navigate('IssueHistory', { issueId: enrichedIssue.id });
+  }, [navigation, enrichedIssue]);
 
   // ========== RETURN API ==========
   return {
-    // State
+    // States
     dialogs,
     formInputs,
     actionStates,
     buttonStates,
-    citizenName,
 
-    // Dialog management
+    // Actions
+    executeAction,
     showDialog,
     hideDialog,
-    updateDialogState,
-
-    // Form management
     updateFormInput,
     resetFormInputs,
-
-    // Action execution
-    executeAction,
 
     // Navigation
     goToDetails,

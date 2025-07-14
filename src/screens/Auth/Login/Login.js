@@ -25,7 +25,7 @@ const theme = {
   },
 };
 
-function Login() {
+const Login = () => {
   const { t } = useTranslation();
   const { login } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
@@ -190,6 +190,6 @@ function Login() {
       </KeyboardAvoidingView>
     </ScrollView>
   );
-}
+};
 
 export default Login;

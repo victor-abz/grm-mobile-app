@@ -1,19 +1,17 @@
 // request.js
-import axios from "axios";
-import { getData } from "./storageManager";
+import axios from 'axios';
+import { getData } from './storageManager';
 
 // optionaly add base url
-const client = axios.create({ baseUrl: "http://someapi.com/api" });
+const client = axios.create({ baseUrl: 'http://someapi.com/api' });
 
 const request = ({ ...options }) => {
-  client.defaults.headers.common.Authorization = `Token ${getData("token")}`;
+  client.defaults.headers.common.Authorization = `Token ${getData('token')}`;
 
   const onSuccess = (response) => response;
-  const onError = (error) => {
+  const onError = (error) =>
     // optionaly catch errors and add some additional logging here
-    return error;
-  };
-
+    error;
   return client(options).then(onSuccess).catch(onError);
 };
 

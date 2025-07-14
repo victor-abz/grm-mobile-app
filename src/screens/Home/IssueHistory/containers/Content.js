@@ -21,7 +21,7 @@ const theme = {
   },
 };
 
-function Content({ issue, comments: commentsFromDB, users }) {
+const Content = ({ issue, comments: commentsFromDB, users }) => {
   const { t } = useTranslation();
 
   // Debug logging for IssueHistory
@@ -214,6 +214,6 @@ function Content({ issue, comments: commentsFromDB, users }) {
       </Portal>
     </View>
   );
-}
+};
 
 export default Content;

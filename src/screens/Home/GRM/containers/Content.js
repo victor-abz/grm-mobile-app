@@ -1,31 +1,31 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View, Dimensions, ImageBackground, Image } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import Chart from '../../../../../assets/chart_line_solid.svg';
-import FileIcon from '../../../../../assets/file_alt_regular.svg';
 import SearchIcon from '../../../../../assets/magnifying-glass-solid.svg';
 import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
 import TeamWorkIcon from '../../../../../assets/team-work.svg';
+import BG9 from '../../../../../assets/BG_9.png';
+import purpleBg from '../../../../../assets/purpleBg.png';
+import smallRectangle from '../../../../../assets/small-rectangle.png';
+import BG1 from '../../../../../assets/BG_1.png';
 import BigCard from '../components/BigCard';
-import SmallCard from '../components/SmallCard';
 
-const screenWidth = Dimensions.get('window').width;
-
-function Content() {
+const Content = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   return (
     <ScrollView contentContainerStyle={{ paddingTop: 20 }} style={{ backgroundColor: 'white' }}>
       <BigCard
-        image={require('../../../../../assets/BG_9.png')}
+        image={BG9}
         onCardPress={() => navigation.navigate('CitizenReportIntro')}
         title={t('collect_reports')}
         icon={<TeamWorkIcon />}
       />
       <View style={{ marginVertical: 20 }}>
         <BigCard
-          image={require('../../../../../assets/purpleBg.png')}
+          image={purpleBg}
           onCardPress={() => navigation.navigate('IssueSearch')}
           title={t('search_reports')}
           icon={
@@ -36,7 +36,7 @@ function Content() {
         />
       </View>
       <BigCard
-        image={require('../../../../../assets/small-rectangle.png')}
+        image={smallRectangle}
         onCardPress={() => navigation.navigate('SyncAttachments')}
         title={t('sync_files')}
         icon={<SyncIcon />}
@@ -51,7 +51,7 @@ function Content() {
         }}
       >
         <BigCard
-          image={require('../../../../../assets/BG_1.png')}
+          image={BG1}
           onCardPress={() => navigation.navigate('Statistics')}
           title={t('View Report')}
           icon={<Chart />}
@@ -116,6 +116,6 @@ function Content() {
       {/* /> */}
     </ScrollView>
   );
-}
+};
 
 export default Content;

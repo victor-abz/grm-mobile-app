@@ -491,10 +491,9 @@ class DataManager {
       if (context) {
         console.log('📱 [DATAMANAGER] Local user context found for user:', userId);
         return context;
-      } else {
-        console.log('📱 [DATAMANAGER] No local user context found for user:', userId);
-        return null;
       }
+      console.log('📱 [DATAMANAGER] No local user context found for user:', userId);
+      return null;
     } catch (error) {
       console.error('❌ [DATAMANAGER] Error loading local user context:', error);
       return null;
@@ -626,7 +625,7 @@ class DataManager {
   /**
    * Get single issue by ID
    */
-  async getIssue(issueId) {
+  static async getIssue(issueId) {
     try {
       console.log(`🔍 [DATAMANAGER] Getting issue: ${issueId}`);
       const issue = await watermelonManager.getIssue(issueId);
@@ -676,19 +675,19 @@ class DataManager {
 
       // Group by status
       issues.forEach((issue) => {
-        const status = issue.status;
+        const { status } = issue;
         stats.by_status[status] = (stats.by_status[status] || 0) + 1;
       });
 
       // Group by category
       issues.forEach((issue) => {
-        const category = issue.category;
+        const { category } = issue;
         stats.by_category[category] = (stats.by_category[category] || 0) + 1;
       });
 
       // Group by project
       issues.forEach((issue) => {
-        const project = issue.project;
+        const { project } = issue;
         stats.by_project[project] = (stats.by_project[project] || 0) + 1;
       });
 
@@ -783,28 +782,6 @@ class DataManager {
   }
 
   /**
-   * Get local issues
-   */
-  async getLocalIssues(userId) {
-    try {
-      const filters = {};
-      const userContext = this.getUserContext();
-
-      if (userContext?.accessible_projects) {
-        filters.project = userContext.accessible_projects[0]?.id;
-      }
-
-      const allIssues = await this.getIssues(filters);
-
-      // Filter by user
-      return allIssues.filter((issue) => issue.assignee === userId || issue.reporter === userId);
-    } catch (error) {
-      console.error('❌ Error getting local issues:', error);
-      return [];
-    }
-  }
-
-  /**
    * COMPATIBILITY METHODS - Delegate to LookupDataManager
    * These maintain compatibility with existing code that expects these methods on DataManager
    */
@@ -812,7 +789,7 @@ class DataManager {
   /**
    * Get administrative regions
    */
-  async getAdministrativeRegions(filters = {}) {
+  static async getAdministrativeRegions(filters = {}) {
     try {
       console.log('🔍 [DATAMANAGER] Getting administrative regions with filters:', filters);
       return await lookupDataManager.getAdministrativeRegions();
@@ -825,7 +802,7 @@ class DataManager {
   /**
    * Get issue categories
    */
-  async getIssueCategories(projectId = null) {
+  static async getIssueCategories(projectId = null) {
     try {
       console.log('🔍 [DATAMANAGER] Getting issue categories for project:', projectId);
       return await lookupDataManager.getIssueCategories();
@@ -838,7 +815,7 @@ class DataManager {
   /**
    * Get issue types
    */
-  async getIssueTypes(projectId = null) {
+  static async getIssueTypes(projectId = null) {
     try {
       console.log('🔍 [DATAMANAGER] Getting issue types for project:', projectId);
       return await lookupDataManager.getIssueTypes();
@@ -851,7 +828,7 @@ class DataManager {
   /**
    * Get issue statuses
    */
-  async getIssueStatuses() {
+  static async getIssueStatuses() {
     try {
       console.log('🔍 [DATAMANAGER] Getting issue statuses');
       return await lookupDataManager.getIssueStatuses();
@@ -864,7 +841,7 @@ class DataManager {
   /**
    * Get age groups
    */
-  async getAgeGroups() {
+  static async getAgeGroups() {
     try {
       console.log('🔍 [DATAMANAGER] Getting age groups');
       return await lookupDataManager.getIssueAgeGroups();
@@ -877,7 +854,7 @@ class DataManager {
   /**
    * Get citizen groups
    */
-  async getCitizenGroups() {
+  static async getCitizenGroups() {
     try {
       console.log('🔍 [DATAMANAGER] Getting citizen groups');
       return await lookupDataManager.getIssueCitizenGroups();
@@ -890,7 +867,7 @@ class DataManager {
   /**
    * Get departments
    */
-  async getDepartments() {
+  static async getDepartments() {
     try {
       console.log('🔍 [DATAMANAGER] Getting departments');
       return await lookupDataManager.getIssueDepartments();
@@ -903,7 +880,7 @@ class DataManager {
   /**
    * Get projects
    */
-  async getProjects() {
+  static async getProjects() {
     try {
       console.log('🔍 [DATAMANAGER] Getting projects');
       return await lookupDataManager.getProjects();
@@ -916,7 +893,7 @@ class DataManager {
   /**
    * Get issue attachments
    */
-  async getIssueAttachments(issueId) {
+  static async getIssueAttachments(issueId) {
     try {
       console.log(`🔍 [DATAMANAGER] Getting issue attachments for: ${issueId}`);
       // TODO: Implement attachments in WatermelonDB sync
@@ -1050,7 +1027,7 @@ class DataManager {
   /**
    * Update issue with sync-compatible data mapping
    */
-  async updateIssue(issueId, updateData) {
+  static async updateIssue(issueId, updateData) {
     try {
       console.log('🔧 [DATAMANAGER] Updating issue:', issueId, 'with data:', updateData);
 
@@ -1119,9 +1096,8 @@ class DataManager {
       if (apiResponse.status === 'success') {
         console.log('✅ [DATAMANAGER] Attachment uploaded successfully');
         return apiResponse.data;
-      } else {
-        throw new Error(apiResponse.message || 'Failed to upload attachment');
       }
+      throw new Error(apiResponse.message || 'Failed to upload attachment');
     } catch (error) {
       console.error('❌ [DATAMANAGER] Error uploading attachment:', error);
       throw error;
@@ -1141,7 +1117,8 @@ class DataManager {
       if (userContext?.accessible_projects) {
         const projectIds = userContext.accessible_projects.map((p) => p.id || p.name);
         if (projectIds.length > 0) {
-          filters.project = projectIds[0]; // Use first accessible project for now
+          const [firstProject] = projectIds;
+          filters.project = firstProject; // Use first accessible project for now
           console.log('🔍 [DATAMANAGER] Filtering by user accessible project:', filters.project);
         }
       }

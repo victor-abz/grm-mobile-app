@@ -13,19 +13,19 @@ export const getFileType = (fileName) => {
   }
 
   const ext = fileName.toLowerCase().split('.').pop();
-  
+
   // Image file extensions
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'tiff', 'ico'];
   if (imageExtensions.includes(ext)) {
     return 'image';
   }
-  
+
   // Audio file extensions
   const audioExtensions = ['mp3', 'm4a', '3gp', 'wav', 'aac', 'ogg', 'flac', 'wma'];
   if (audioExtensions.includes(ext)) {
     return 'audio';
   }
-  
+
   return 'unknown';
 };
 
@@ -34,18 +34,14 @@ export const getFileType = (fileName) => {
  * @param {string} fileName - The file name with extension
  * @returns {boolean}
  */
-export const isImageFile = (fileName) => {
-  return getFileType(fileName) === 'image';
-};
+export const isImageFile = (fileName) => getFileType(fileName) === 'image';
 
 /**
  * Check if a file is an audio file
  * @param {string} fileName - The file name with extension
  * @returns {boolean}
  */
-export const isAudioFile = (fileName) => {
-  return getFileType(fileName) === 'audio';
-};
+export const isAudioFile = (fileName) => getFileType(fileName) === 'audio';
 
 /**
  * Get file extension from file name
@@ -56,7 +52,7 @@ export const getFileExtension = (fileName) => {
   if (!fileName || typeof fileName !== 'string') {
     return '';
   }
-  
+
   const parts = fileName.split('.');
   return parts.length > 1 ? parts.pop().toLowerCase() : '';
 };
@@ -71,14 +67,14 @@ export const getDisplayFileName = (fileName, maxLength = 30) => {
   if (!fileName || typeof fileName !== 'string') {
     return 'Unknown file';
   }
-  
+
   if (fileName.length <= maxLength) {
     return fileName;
   }
-  
+
   const ext = getFileExtension(fileName);
   const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
-  const truncatedName = nameWithoutExt.substring(0, maxLength - ext.length - 4) + '...';
-  
+  const truncatedName = `${nameWithoutExt.substring(0, maxLength - ext.length - 4)}...`;
+
   return ext ? `${truncatedName}.${ext}` : truncatedName;
 };

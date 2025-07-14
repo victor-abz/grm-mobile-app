@@ -23,7 +23,6 @@ const generateMockData = (amount) => {
   const data = [];
   for (let i = 0; i < amount; i++) {
     const id = randomRange(0, 2000);
-    const logo = randomRange(0, 3);
     const isRead = randomRange(0, 2);
     data.push({
       author: {
@@ -42,12 +41,19 @@ const generateMockData = (amount) => {
   return [];
 };
 
-function Content() {
+const Content = () => {
   const { t } = useTranslation();
   const [data, setData] = useState(generateMockData(10));
   const [selected, setSelected] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const onRead = (item) => {
+    const foundIndex = data.findIndex((x) => x.id === item.id);
+    const updatedData = data.slice();
+    updatedData[foundIndex].isRead = true;
+    setData(updatedData);
+  };
 
   const _hideDialog = () => {
     onRead(selected);
@@ -75,39 +81,6 @@ function Content() {
     _hideConfirmDialog();
   };
 
-  const onRead = (item) => {
-    const foundIndex = data.findIndex((x) => x.id === item.id);
-    const updatedData = data.slice();
-    updatedData[foundIndex].isRead = true;
-    setData(updatedData);
-  };
-
-  const handleFetchMoreData = async () => {
-    try {
-      await new Promise((res, _rej) => {
-        const tout = setTimeout(() => {
-          clearTimeout(tout);
-          res();
-        }, 1000);
-      });
-      setData((d) => d.concat(generateMockData(10)));
-    } catch (error) {
-      console.error(error);
-    } finally {
-      // pass
-    }
-  };
-
-  /*  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
-        <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-          Upcoming feature.
-        </Text>
-      </View>
-    </SafeAreaView>
-  );
-*/
   return (
     <>
       {!data || data.length === 0 ? (
@@ -185,6 +158,6 @@ function Content() {
       </Portal>
     </>
   );
-}
+};
 
 export default Content;

@@ -71,9 +71,8 @@ export const checkUserAssignment = (enrichedIssue, currentUserId) => {
 /**
  * Check if content should be confidential
  */
-export const isContentConfidential = (enrichedIssue, isUserAssigned) => {
-  return enrichedIssue?.citizen_type === 1 && !isUserAssigned;
-};
+export const isContentConfidential = (enrichedIssue, isUserAssigned) =>
+  enrichedIssue?.citizen_type === 1 && !isUserAssigned;
 
 /**
  * Get display value with confidentiality check
@@ -96,7 +95,7 @@ export const getDisplayValue = (
 export const processSatisfactionData = (enrichedIssue, t) => {
   if (!enrichedIssue) return { hasData: false, content: '' };
 
-  const rating = enrichedIssue.rating;
+  const { rating } = enrichedIssue;
   const ratedDate = enrichedIssue.rated_date;
 
   if (!rating && !ratedDate) {

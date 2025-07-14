@@ -5,7 +5,7 @@ import { FRAPPE_BASE_URL, SECURE_AUTH_STATE_KEY } from '../utils/constants';
 
 const AuthContext = createContext({});
 
-function AuthProvider({ children }) {
+const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [credentials, setCredentials] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
@@ -133,6 +133,6 @@ function AuthProvider({ children }) {
   );
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
-}
+};
 
 export { AuthContext, AuthProvider };

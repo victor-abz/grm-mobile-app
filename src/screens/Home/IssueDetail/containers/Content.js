@@ -1,8 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useBackHandler } from '@react-native-community/hooks';
-import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
-import moment from 'moment';
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,19 +11,48 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
+  StyleSheet,
+  Alert,
 } from 'react-native';
-import { Button, IconButton, TextInput } from 'react-native-paper';
+import { Button } from 'react-native-paper';
 import CustomSeparator from '../../../../components/CustomSeparator/CustomSeparator';
 import CollapsibleSection from '../../../../components/CollapsibleSection';
-import { baseURL } from '../../../../services/API';
 import { colors } from '../../../../utils/colors';
 import { citizenTypes } from '../../../../utils/utils';
-import { styles } from './Content.styles';
-import { useData } from '../../../../providers/DataProvider';
 import { useIssueDetail } from '../../../../hooks/useIssueDetail';
 import watermelonManager from '../../../../database/watermelonManager';
-import { getFileType, getDisplayFileName } from '../../../../utils/fileUtils';
-import AttachmentList from '../../../../components/AttachmentList/AttachmentList';
+import { AttachmentList } from '../../../../components/AttachmentList/AttachmentList';
+
+const styles = StyleSheet.create({
+  infoContainer: {
+    width: '100%',
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  text: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 14,
+    color: '#333',
+  },
+  subtitle: {
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 12,
+    color: '#707070',
+    marginBottom: 5,
+  },
+  collapsibleTextArea: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+});
 
 const theme = {
   roundness: 12,
@@ -37,7 +64,7 @@ const theme = {
   },
 };
 
-function Content({
+const Content = ({
   issue,
   categories = [],
   types = [],
@@ -48,9 +75,8 @@ function Content({
   projects = [],
   users = [],
   userContext,
-}) {
+}) => {
   const { t } = useTranslation();
-  const { dataManager } = useData();
   const scrollViewRef = useRef();
 
   // Get current user ID from context
@@ -75,20 +101,11 @@ function Content({
   // ========== USE ISSUE DETAIL HOOK ==========
   const {
     enrichedIssue,
-    isUserAssigned,
     issueDaysAgo,
     collapsibleStates,
     collapsibleContent,
     toggleCollapsible,
     getSecureDisplayValue,
-    mediaStates,
-    setPlaying,
-    setSound,
-    setImageError,
-    commentStates,
-    updateNewComment,
-    addComment,
-    isContentConfidential,
   } = useIssueDetail(issue, lookupData, currentUserId, t);
 
   useBackHandler(
@@ -116,47 +133,13 @@ function Content({
     fetchAttachments();
   }, [enrichedIssue?.id]);
 
-  // ========== MEDIA FUNCTIONS ==========
-  const playSound = async (recordingUri, remoteUrl) => {
-    if (!mediaStates.playing) {
-      setPlaying(true);
-      try {
-        const { sound } = await Audio.Sound.createAsync({ uri: recordingUri });
-        setSound(sound);
-        await sound.playAsync();
-
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.didJustFinish) {
-            setPlaying(false);
-          }
-        });
-      } catch (e) {
-        console.log(e);
-        try {
-          const { sound } = await Audio.Sound.createAsync({ uri: `${baseURL}${remoteUrl}` });
-          setSound(sound);
-          await sound.playAsync();
-
-          sound.setOnPlaybackStatusUpdate((status) => {
-            if (status.didJustFinish) {
-              setPlaying(false);
-            }
-          });
-        } catch (_e) {
-          console.log(_e);
-        }
-      }
-    }
-  };
-
   // ========== PERMISSIONS SETUP ==========
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          alert(t('Sorry, we need camera roll permissions to make this work!'));
-          return;
+          Alert.alert(t('Sorry, we need camera roll permissions to make this work!'));
         }
       }
     })();
@@ -178,7 +161,6 @@ function Content({
   const [modalVisible, setModalVisible] = useState(false);
   const [modalImageUri, setModalImageUri] = useState(null);
 
-
   const handleViewImage = (attachment) => {
     setModalImageUri(attachment.local_url || attachment.attachment);
     setModalVisible(true);
@@ -194,13 +176,9 @@ function Content({
         title={`${t('attachments')} (${attachments.length})`}
         isCollapsed={attachmentsCollapsed}
         onToggle={() => setAttachmentsCollapsed(!attachmentsCollapsed)}
-        showContent={true}
+        showContent
       >
-        <AttachmentList
-          attachments={attachments}
-          showTypeHeaders={true}
-          onImagePress={handleViewImage}
-        />
+        <AttachmentList attachments={attachments} showTypeHeaders onImagePress={handleViewImage} />
       </CollapsibleSection>
     );
   };
@@ -394,6 +372,6 @@ function Content({
       )}
     </>
   );
-}
+};
 
 export default Content;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { Alert } from 'react-native';
 import lookupDataManager from '../services/LookupDataManager';
 import nuclearDataManager from '../services/NuclearDataManager';
@@ -20,11 +20,11 @@ export const useData = () => {
   return context;
 };
 
-function DataProvider({ children }) {
-  const { isAuthenticated, credentials, userInfo, logout } = useContext(AuthContext);
+const DataProvider = ({ children }) => {
+  const { isAuthenticated, credentials, userInfo: _userInfo, logout } = useContext(AuthContext);
   const [isDataInitialized, setIsDataInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [syncStatus, setSyncStatus] = useState(null);
+  const [syncStatus, _setSyncStatus] = useState(null);
   const [initializationError, setInitializationError] = useState(null);
   const [dataManager, setDataManager] = useState(null);
   const [regionError, setRegionError] = useState(null);
@@ -44,11 +44,11 @@ function DataProvider({ children }) {
     if (isAuthenticated && credentials && !isDataInitialized) {
       console.log('🔄 DataProvider: User authenticated, starting data services initialization');
       console.log('🔄 DataProvider: Credentials available:', credentials ? 'yes' : 'no');
-      initializeDataServices();
+      initializeDataServices(); // eslint-disable-line no-use-before-define
     } else if (!isAuthenticated && isDataInitialized) {
       // User logged out, reset data
       console.log('🔄 DataProvider: User logged out, resetting data services');
-      resetDataServices();
+      resetDataServices(); // eslint-disable-line no-use-before-define
     } else if (!isAuthenticated && !credentials) {
       console.log('🔄 DataProvider: No user authentication, data services not initialized');
     }
@@ -97,7 +97,7 @@ function DataProvider({ children }) {
           );
           // Set a flag to trigger logout after this function completes
           setTimeout(() => {
-            handleAuthenticationError(authError);
+            handleAuthenticationError(authError); // eslint-disable-line no-use-before-define
           }, 1000);
         } else {
           // For non-authentication errors, just set the error state
@@ -256,7 +256,7 @@ function DataProvider({ children }) {
     }
   };
 
-  const refreshLookupData = async () => {
+  const _refreshLookupData = async () => {
     setIsLoading(true);
     try {
       await loadLookupData();
@@ -312,9 +312,8 @@ function DataProvider({ children }) {
         // Reinitialize after cleanup
         await initializeDataServices();
         return { success: true, message: 'Emergency cleanup completed successfully' };
-      } else {
-        return { success: false, message: result.message };
       }
+      return { success: false, message: result.message };
     } catch (error) {
       console.error('❌ Emergency cleanup failed:', error);
       return { success: false, message: error.message };
@@ -416,38 +415,58 @@ function DataProvider({ children }) {
     return null; // This component doesn't render anything
   };
 
-  const contextValue = {
-    // Data services
-    dataManager,
-    lookupDataManager,
-    userRegionService,
-    nuclearDataManager,
+  const contextValue = useMemo(
+    () => ({
+      // Data services
+      dataManager,
+      lookupDataManager,
+      userRegionService,
+      nuclearDataManager,
 
-    // State
-    isDataInitialized,
-    isLoading,
-    lookupData,
-    syncStatus,
-    initializationError,
-    regionError,
+      // State
+      isDataInitialized,
+      isLoading,
+      lookupData,
+      syncStatus,
+      initializationError,
+      regionError,
 
-    // Actions
-    refreshRegionData,
-    performEmergencyCleanup,
-    getSystemStatus,
-    refreshContactData,
-    handleAuthenticationError,
+      // Actions
+      refreshRegionData,
+      performEmergencyCleanup,
+      getSystemStatus,
+      refreshContactData,
+      handleAuthenticationError,
 
-    // Convenience getters
-    getUserRegions: () => userRegionService.getAccessibleRegions(),
-    getAssignedRegions: () => userRegionService.getAssignedRegions(),
-    getTopLevelRegions: () => userRegionService.getTopLevelRegions(),
-    getRegionChildren: (parentId) => userRegionService.getRegionChildren(parentId),
-    hasAccessToRegion: (regionId) => userRegionService.hasAccessToRegion(regionId),
+      // Convenience getters
+      getUserRegions: () => userRegionService.getAccessibleRegions(),
+      getAssignedRegions: () => userRegionService.getAssignedRegions(),
+      getTopLevelRegions: () => userRegionService.getTopLevelRegions(),
+      getRegionChildren: (parentId) => userRegionService.getRegionChildren(parentId),
+      hasAccessToRegion: (regionId) => userRegionService.hasAccessToRegion(regionId),
 
-    // New logout functionality
-    logout,
-  };
+      // New logout functionality
+      logout,
+    }),
+    [
+      dataManager,
+      lookupDataManager,
+      userRegionService,
+      nuclearDataManager,
+      isDataInitialized,
+      isLoading,
+      lookupData,
+      syncStatus,
+      initializationError,
+      regionError,
+      refreshRegionData,
+      performEmergencyCleanup,
+      getSystemStatus,
+      refreshContactData,
+      handleAuthenticationError,
+      logout,
+    ]
+  );
 
   return (
     <DataContext.Provider value={contextValue}>
@@ -455,6 +474,6 @@ function DataProvider({ children }) {
       {children}
     </DataContext.Provider>
   );
-}
+};
 
 export { DataContext, DataProvider };

@@ -99,9 +99,8 @@ export const useIssueDetail = (issue, lookupData, currentUserId, t) => {
 
   // ========== DISPLAY VALUE HELPERS ==========
   const getSecureDisplayValue = useCallback(
-    (value, fallback = t('information_not_available')) => {
-      return getDisplayValue(value, enrichedIssue, isUserAssigned, fallback);
-    },
+    (value, fallback = t('information_not_available')) =>
+      getDisplayValue(value, enrichedIssue, isUserAssigned, fallback),
     [enrichedIssue, isUserAssigned, t]
   );
 
@@ -128,7 +127,9 @@ export const useIssueDetail = (issue, lookupData, currentUserId, t) => {
   }, []);
 
   const addComment = useCallback(async () => {
-    if (!commentStates.newComment || commentStates.isUpdating || !enrichedIssue) return;
+    if (!commentStates.newComment || commentStates.isUpdating || !enrichedIssue) {
+      return false;
+    }
 
     setIsUpdating(true);
 
@@ -173,13 +174,14 @@ export const useIssueDetail = (issue, lookupData, currentUserId, t) => {
   }, [enrichedIssue?.comments]);
 
   // Cleanup audio when component unmounts
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (mediaStates.sound) {
         mediaStates.sound.unloadAsync();
       }
-    };
-  }, [mediaStates.sound]);
+    },
+    [mediaStates.sound]
+  );
 
   // ========== RETURN API ==========
   return {

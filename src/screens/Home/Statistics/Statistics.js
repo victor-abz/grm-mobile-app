@@ -1,20 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ScrollView, View, Text, RefreshControl, Dimensions } from 'react-native';
+import { ScrollView, View, Text, RefreshControl } from 'react-native';
 import { ActivityIndicator, Card, Button } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { withObservables } from '@nozbe/watermelondb/react';
 import moment from 'moment';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Services and utilities
 import dataManager from '../../../services/DataManager';
 import watermelonManager from '../../../database/watermelonManager';
-import { createLookupMap } from '../../../utils/issueDetailUtils';
 import { colors } from '../../../utils/colors';
 
 // Chart components
-import BarChartGrm from './components/BarChartGrm';
 import PieChartGrm from './components/PieChartGrm';
 import LineChartGrm from './components/LineChartGrm';
 import StackedBarChartGrm from './components/StackedBarChartGrm';
@@ -22,50 +19,34 @@ import StackedBarChartGrm from './components/StackedBarChartGrm';
 // Card components for statistics display
 import StatCard from './components/StatCard';
 
-const screenWidth = Dimensions.get('window').width;
-
-const theme = {
-  roundness: 12,
-  colors: {
-    ...colors,
-    background: 'white',
-    placeholder: colors.placeholder,
-    text: '#707070',
-  },
-};
-
 // Helper function to calculate percentage change
 const calculatePercentageChange = (current, previous) => {
   if (previous === 0) return current > 0 ? 100 : 0;
   return ((current - previous) / previous) * 100;
 };
 
-// Helper function to get period label
-const getPeriodLabel = (period) => {
-  switch (period) {
-    case 'week':
-      return 'Last 7 days vs Previous 7 days';
-    case 'month':
-      return 'This month vs Last month';
-    case 'quarter':
-      return 'Last 3 months vs Previous 3 months';
-    default:
-      return '';
-  }
+const getChangeColor = (change) => {
+  if (change > 0) return '#2ecc71';
+  if (change < 0) return '#e74c3c';
+  return colors.secondary;
+};
+const getChangeSymbol = (change) => {
+  if (change > 0) return '▲';
+  if (change < 0) return '▼';
+  return '•';
 };
 
-function Statistics({
+const Statistics = ({
   issues = [],
   categories = [],
   types = [],
   statuses = [],
   regions = [],
   projects = [],
-}) {
+}) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [statistics, setStatistics] = useState(null);
   const [processedData, setProcessedData] = useState(null);
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
@@ -164,14 +145,11 @@ function Statistics({
 
     console.log('📊 [STATISTICS] Processing', issues.length, 'issues for statistics');
 
-    const now = moment();
-    const thirtyDaysAgo = moment().subtract(30, 'days');
-    const sevenDaysAgo = moment().subtract(7, 'days');
     const threeMonthsAgo = moment().subtract(3, 'months');
     const sixMonthsAgo = moment().subtract(6, 'months');
 
     // Process issues data
-    const processedIssues = issues.map((issue, index) => {
+    const processedIssues = issues.map((issue) => {
       const rawIssue = issue._raw || issue;
       const issueDate = moment(rawIssue.issue_date || rawIssue.intake_date);
 
@@ -310,7 +288,7 @@ function Statistics({
             }
 
             // Update type count
-            const typeLabel = issue.typeLabel;
+            const { typeLabel } = issue;
             if (typeLabel && typeData[typeLabel]) {
               typeData[typeLabel][monthIndex]++;
             }
@@ -492,22 +470,10 @@ function Statistics({
       console.log('📊 [STATISTICS] User context:', userContext?.user?.id);
 
       // Get comprehensive statistics from DataManager
-      const stats = await dataManager.getStatistics();
-      setStatistics(stats);
 
       console.log('✅ [STATISTICS] Statistics loaded successfully');
     } catch (error) {
       console.error('❌ [STATISTICS] Error loading statistics:', error);
-      // Set empty stats to prevent crashes
-      setStatistics({
-        total_issues: 0,
-        by_status: {},
-        by_category: {},
-        by_project: {},
-        by_region: {},
-        recent_issues: 0,
-        pending_issues: 0,
-      });
     }
   };
 
@@ -702,17 +668,11 @@ function Statistics({
                     <Text style={{ flex: 1, color: colors.secondary }}>{category}</Text>
                     <Text
                       style={{
-                        color:
-                          data.change > 0
-                            ? '#2ecc71'
-                            : data.change < 0
-                            ? '#e74c3c'
-                            : colors.secondary,
+                        color: getChangeColor(data.change),
                         marginLeft: 8,
                       }}
                     >
-                      {data.change > 0 ? '▲' : data.change < 0 ? '▼' : '•'}{' '}
-                      {Math.abs(data.change).toFixed(1)}%
+                      {getChangeSymbol(data.change)} {Math.abs(data.change).toFixed(1)}%
                     </Text>
                   </View>
                 ))}
@@ -752,17 +712,11 @@ function Statistics({
                     <Text style={{ flex: 1, color: colors.secondary }}>{type}</Text>
                     <Text
                       style={{
-                        color:
-                          data.change > 0
-                            ? '#2ecc71'
-                            : data.change < 0
-                            ? '#e74c3c'
-                            : colors.secondary,
+                        color: getChangeColor(data.change),
                         marginLeft: 8,
                       }}
                     >
-                      {data.change > 0 ? '▲' : data.change < 0 ? '▼' : '•'}{' '}
-                      {Math.abs(data.change).toFixed(1)}%
+                      {getChangeSymbol(data.change)} {Math.abs(data.change).toFixed(1)}%
                     </Text>
                   </View>
                 ))}
@@ -911,7 +865,7 @@ function Statistics({
       </Text>
     </ScrollView>
   );
-}
+};
 
 // Enhanced withObservables to provide reactive data from WatermelonDB
 const enhance = withObservables([], () => ({
