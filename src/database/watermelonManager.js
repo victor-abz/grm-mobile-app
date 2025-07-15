@@ -643,6 +643,189 @@ class WatermelonManager {
   }
 
   /**
+   * Paginated Issues Query for Tab-based Pagination
+   * Fetches issues with filtering and pagination based on tab requirements
+   */
+  async getPaginatedIssues(filters = {}, page = 1, pageSize = 20) {
+    try {
+      const db = this.getDatabase();
+      const issuesCollection = db.get('grm_issues');
+
+      // Build query filters
+      const queryFilters = [];
+
+      // Basic filters
+      if (filters.project) {
+        queryFilters.push(Q.where('project', filters.project));
+      }
+
+      if (filters.status) {
+        queryFilters.push(Q.where('status', filters.status));
+      }
+
+      if (filters.category) {
+        queryFilters.push(Q.where('category', filters.category));
+      }
+
+      if (filters.administrative_region) {
+        queryFilters.push(Q.where('administrative_region', filters.administrative_region));
+      }
+
+      // Status exclusion filter (for non-final status filtering)
+      if (filters.excludeStatusId) {
+        queryFilters.push(Q.where('status', Q.notEq(filters.excludeStatusId)));
+      }
+
+      // User involvement filters (OR condition for assignee or reporter)
+      if (filters.assignee || filters.reporter) {
+        if (filters.assignee && filters.reporter && filters.assignee === filters.reporter) {
+          // Same user for both assignee and reporter - use OR condition
+          queryFilters.push(
+            Q.or(Q.where('assignee', filters.assignee), Q.where('reporter', filters.reporter))
+          );
+        } else {
+          // Separate filters
+          if (filters.assignee) {
+            queryFilters.push(Q.where('assignee', filters.assignee));
+          }
+          if (filters.reporter) {
+            queryFilters.push(Q.where('reporter', filters.reporter));
+          }
+        }
+      }
+
+      // Date range filters
+      if (filters.from_date) {
+        queryFilters.push(Q.where('issue_date', Q.gte(new Date(filters.from_date).getTime())));
+      }
+
+      if (filters.to_date) {
+        queryFilters.push(Q.where('issue_date', Q.lte(new Date(filters.to_date).getTime())));
+      }
+
+      // Build base query for counting
+      const baseQuery =
+        queryFilters.length > 0
+          ? issuesCollection.query(...queryFilters)
+          : issuesCollection.query();
+
+      // Get total count
+      const totalCount = await baseQuery.fetchCount();
+
+      // Get paginated results with sorting
+      const offset = (page - 1) * pageSize;
+      const paginatedQuery =
+        queryFilters.length > 0
+          ? issuesCollection.query(
+              ...queryFilters,
+              Q.sortBy('issue_date', Q.desc),
+              Q.skip(offset),
+              Q.take(pageSize)
+            )
+          : issuesCollection.query(
+              Q.sortBy('issue_date', Q.desc),
+              Q.skip(offset),
+              Q.take(pageSize)
+            );
+
+      const issues = await paginatedQuery.fetch();
+
+      return {
+        issues: issues
+          .filter((issue) => issue && issue._raw)
+          .map((issue) => ({
+            ...issue._raw,
+            name: issue._raw.id || issue._raw.name,
+          })),
+        pagination: {
+          currentPage: page,
+          pageSize,
+          totalCount,
+          totalPages: Math.ceil(totalCount / pageSize),
+          hasNextPage: page < Math.ceil(totalCount / pageSize),
+          hasPreviousPage: page > 1,
+          startIndex: totalCount > 0 ? offset + 1 : 0,
+          endIndex: Math.min(offset + pageSize, totalCount),
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching paginated issues:', error);
+      return {
+        issues: [],
+        pagination: {
+          currentPage: 1,
+          pageSize,
+          totalCount: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+          startIndex: 0,
+          endIndex: 0,
+        },
+      };
+    }
+  }
+
+  /**
+   * Get filtered status-based issue counts for tab badges
+   */
+  async getIssueCountsByStatus(currentUserId) {
+    try {
+      const db = this.getDatabase();
+      const issuesCollection = db.get('grm_issues');
+      const statusesCollection = db.get('grm_issue_statuses');
+
+      // Get final status
+      const finalStatus = await statusesCollection
+        .query(Q.or(Q.where('final_status', true)))
+        .fetch();
+      const finalStatusId = finalStatus[0]?.id;
+
+      // Get counts for each tab
+      const [assignedCount, openCount, resolvedCount, allCount] = await Promise.all([
+        // Assigned: issues assigned to current user and not final status
+        issuesCollection
+          .query(Q.where('assignee', currentUserId), Q.where('status', Q.notEq(finalStatusId)))
+          .fetchCount(),
+
+        // Open: issues involving current user (assigned or reported) and not final status
+        issuesCollection
+          .query(
+            Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
+            Q.where('status', Q.notEq(finalStatusId))
+          )
+          .fetchCount(),
+
+        // Resolved: issues involving current user and final status
+        issuesCollection
+          .query(
+            Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
+            Q.where('status', finalStatusId)
+          )
+          .fetchCount(),
+
+        // All: total issues
+        issuesCollection.query().fetchCount(),
+      ]);
+
+      return {
+        assigned: assignedCount,
+        open: openCount,
+        resolved: resolvedCount,
+        all: allCount,
+      };
+    } catch (error) {
+      console.error('Error getting issue counts by status:', error);
+      return {
+        assigned: 0,
+        open: 0,
+        resolved: 0,
+        all: 0,
+      };
+    }
+  }
+
+  /**
    * Clear all data (for testing/development)
    */
   async clearAllData() {

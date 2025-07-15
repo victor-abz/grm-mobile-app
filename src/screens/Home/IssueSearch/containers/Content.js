@@ -1,13 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import moment from 'moment';
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 import ListHeader from '../components/ListHeader';
 import TabIcon from '../../../../components/TabIcon';
+import PaginationControls from '../../../../components/PaginationControls';
+import { useIssueSearchPagination } from '../../../../hooks/useIssueSearchPagination';
 
 const styles = StyleSheet.create({
   container: {
@@ -105,7 +107,6 @@ const Item = ({ item, onPress, t, _currentDate }) => {
 };
 
 const Content = ({
-  issues,
   userContext,
   categories = [],
   types = [],
@@ -119,13 +120,25 @@ const Content = ({
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [_selectedId, _setSelectedId] = useState(null);
-  const [_status, setStatus] = useState('assigned');
-  const [_issues, setIssues] = useState([]);
   const [_currentDate, _setCurrentDate] = useState(moment());
 
   // Get current user ID from context
   const currentUserId =
     userContext?.user?.id || userContext?.user?.name || userContext?.user?.email;
+
+  // Use the new pagination hook
+  const {
+    activeTab,
+    issues,
+    pagination,
+    loading,
+    issueCounts,
+    switchTab,
+    goToNextPage,
+    goToPreviousPage,
+    goToPage,
+    refreshCurrentTab,
+  } = useIssueSearchPagination(currentUserId, statuses);
 
   console.log('🔍 [IssueSearch] User context:', {
     user: userContext?.user,
@@ -161,10 +174,10 @@ const Content = ({
     [categories, types, statuses, ageGroups, citizenGroups, regions, projects, users]
   );
 
-  // Enrich issues with resolved labels for display
-  const enrichIssuesWithLabels = useMemo(() => {
-    console.log('🔍 [IssueSearch] enrichIssuesWithLabels - Raw issues:', issues?.length || 0);
-    console.log('🔍 [IssueSearch] enrichIssuesWithLabels - Issues sample:', issues?.slice(0, 2));
+  // Enrich paginated issues with resolved labels for display
+  const enrichedIssues = useMemo(() => {
+    console.log('🔍 [IssueSearch] enrichedIssues - Raw issues:', issues?.length || 0);
+    console.log('🔍 [IssueSearch] enrichedIssues - Issues sample:', issues?.slice(0, 2));
 
     if (!issues || issues.length === 0) {
       console.log('⚠️ [IssueSearch] No issues to enrich');
@@ -179,8 +192,8 @@ const Content = ({
     console.log('  - Regions:', lookupMaps.regionMap.size);
 
     const enrichedData = issues.map((issue, index) => {
-      // Handle both WatermelonDB model objects and raw data
-      const issueData = issue._raw || issue;
+      // Issues from pagination hook are already raw data
+      const issueData = issue;
 
       if (index < 2) {
         console.log(`🔍 [IssueSearch] Processing issue ${index}:`, {
@@ -250,123 +263,7 @@ const Content = ({
     return enrichedData;
   }, [issues, lookupMaps]);
 
-  const sortByCreationDateDesc = (data) =>
-    data.sort(
-      (a, b) =>
-        new Date(b.creation || b.created_date || b.issue_date) -
-        new Date(a.creation || a.created_date || a.issue_date)
-    );
-
-  useEffect(() => {
-    console.log(
-      '🔍 [IssueSearch] useEffect - Setting initial issues:',
-      enrichIssuesWithLabels?.length || 0
-    );
-    setIssues(enrichIssuesWithLabels || []);
-  }, [enrichIssuesWithLabels]);
-
-  useEffect(() => {
-    console.log('🔍 [IssueSearch] Filtering useEffect triggered:');
-    console.log('  - Status:', _status);
-    console.log('  - EnrichedIssues count:', enrichIssuesWithLabels?.length || 0);
-    console.log('  - Statuses count:', statuses?.length || 0);
-    console.log('  - User ID:', currentUserId);
-
-    if (!enrichIssuesWithLabels || !Array.isArray(enrichIssuesWithLabels)) {
-      console.log('⚠️ [IssueSearch] No enriched issues to filter');
-      setIssues([]);
-      return;
-    }
-
-    let filteredIssues = [];
-    let foundStatus;
-
-    switch (_status) {
-      case 'assigned':
-        console.log('🔍 [IssueSearch] Filtering for assigned issues');
-        foundStatus = statuses.find((el) => el.finalStatus === true || el.final_status === true);
-        console.log('  - Final status found:', foundStatus);
-
-        filteredIssues = enrichIssuesWithLabels.filter((issue) => {
-          // ✅ FIXED: Use corrected field names
-          // Check both _raw and model properties
-          const assigneeId = issue.assignee || issue.assigneeId || issue.assignee?.id;
-          const statusId = issue.status || issue.statusId || issue.status?.id;
-          const foundStatusId = foundStatus?.id || foundStatus?.name;
-          const isAssignedToUser = assigneeId && assigneeId === currentUserId;
-          const isNotFinalStatus = statusId !== foundStatusId;
-
-          console.log(
-            `    Issue ${issue.id}: assignee=${assigneeId}, status=${statusId}, user=${currentUserId}, assigned=${isAssignedToUser}, notFinal=${isNotFinalStatus}`
-          );
-
-          return isAssignedToUser && isNotFinalStatus;
-        });
-        break;
-
-      case 'open':
-        console.log('🔍 [IssueSearch] Filtering for open issues');
-        foundStatus = statuses.find((el) => el.finalStatus === true || el.final_status === true);
-        console.log('  - Final status found:', foundStatus);
-
-        filteredIssues = enrichIssuesWithLabels.filter((issue) => {
-          const assigneeId = issue.assignee || issue.assigneeId || issue.assignee?.id;
-          const reporterId = issue.reporter || issue.reporterId || issue.reporter?.id;
-          const statusId = issue.status || issue.statusId || issue.status?.id;
-          const foundStatusId = foundStatus?.id || foundStatus?.name;
-          const isUserInvolved =
-            (assigneeId && assigneeId === currentUserId) ||
-            (reporterId && reporterId === currentUserId);
-          const isNotFinalStatus = statusId !== foundStatusId;
-
-          console.log(
-            `    Issue ${issue.id}: assignee=${assigneeId}, reporter=${reporterId}, status=${statusId}, user=${currentUserId}, involved=${isUserInvolved}, notFinal=${isNotFinalStatus}`
-          );
-
-          return isUserInvolved && isNotFinalStatus;
-        });
-        break;
-
-      case 'resolved':
-        console.log('🔍 [IssueSearch] Filtering for resolved issues');
-        foundStatus = statuses.find((el) => el.finalStatus === true || el.final_status === true);
-        console.log('  - Final status found:', foundStatus);
-
-        filteredIssues = enrichIssuesWithLabels.filter((issue) => {
-          const assigneeId = issue.assignee || issue.assigneeId || issue.assignee?.id;
-          const reporterId = issue.reporter || issue.reporterId || issue.reporter?.id;
-          const statusId = issue.status || issue.statusId || issue.status?.id;
-          const foundStatusId = foundStatus?.id || foundStatus?.name;
-          const isUserInvolved =
-            (assigneeId && assigneeId === currentUserId) ||
-            (reporterId && reporterId === currentUserId);
-          const isFinalStatus = statusId === foundStatusId;
-
-          console.log(
-            `    Issue ${issue.id}: assignee=${assigneeId}, reporter=${reporterId}, status=${statusId}, user=${currentUserId}, involved=${isUserInvolved}, final=${isFinalStatus}`
-          );
-
-          return isUserInvolved && isFinalStatus;
-        });
-        break;
-
-      case 'all': // Debug option to show all issues
-        console.log('🔍 [IssueSearch] DEBUG: Showing all issues without filtering');
-        filteredIssues = enrichIssuesWithLabels.slice();
-        break;
-
-      default:
-        console.log('🔍 [IssueSearch] No filtering - showing all issues');
-        filteredIssues = enrichIssuesWithLabels.slice();
-    }
-
-    console.log(
-      `✅ [IssueSearch] Filtered to ${filteredIssues.length} issues for status: ${_status}`
-    );
-
-    filteredIssues = sortByCreationDateDesc(filteredIssues);
-    setIssues(filteredIssues);
-  }, [_status, enrichIssuesWithLabels, statuses, currentUserId]);
+  // Issues are already filtered and sorted by the pagination hook - no manual filtering needed
 
   const renderItem = useCallback(
     ({ item }) => (
@@ -392,27 +289,66 @@ const Content = ({
     [navigation, t, _currentDate]
   );
 
-  const renderHeader = useCallback(() => <ListHeader status={_status} />, [_status]);
+  const renderHeader = useCallback(() => <ListHeader status={activeTab} />, [activeTab]);
 
-  // Create memoized icon renderers to avoid re-creating functions on each render
+  const renderFooter = useCallback(
+    () => (
+      <PaginationControls
+        pagination={pagination}
+        onPreviousPage={goToPreviousPage}
+        onNextPage={goToNextPage}
+        onGoToPage={goToPage}
+        loading={loading}
+        t={t}
+      />
+    ),
+    [pagination, goToPreviousPage, goToNextPage, goToPage, loading, t]
+  );
+
+  // Create memoized icon renderers with counts
   const renderOpenIcon = useCallback(
-    () => <TabIcon status="open" currentStatus={_status} label={t('open')} />,
-    [_status, t]
+    () => (
+      <TabIcon
+        status="open"
+        currentStatus={activeTab}
+        label={`${t('open')}${issueCounts.open ? ` (${issueCounts.open})` : ''}`}
+      />
+    ),
+    [activeTab, t, issueCounts.open]
   );
 
   const renderAssignedIcon = useCallback(
-    () => <TabIcon status="assigned" currentStatus={_status} label={t('assigned')} />,
-    [_status, t]
+    () => (
+      <TabIcon
+        status="assigned"
+        currentStatus={activeTab}
+        label={`${t('assigned')}${issueCounts.assigned ? ` (${issueCounts.assigned})` : ''}`}
+      />
+    ),
+    [activeTab, t, issueCounts.assigned]
   );
 
   const renderResolvedIcon = useCallback(
-    () => <TabIcon status="resolved" currentStatus={_status} label={t('resolved')} />,
-    [_status, t]
+    () => (
+      <TabIcon
+        status="resolved"
+        currentStatus={activeTab}
+        label={`${t('resolved')}${issueCounts.resolved ? ` (${issueCounts.resolved})` : ''}`}
+      />
+    ),
+    [activeTab, t, issueCounts.resolved]
   );
 
   const renderAllIcon = useCallback(
-    () => <TabIcon status="all" currentStatus={_status} label={t('All (Debug)')} fontSize={12} />,
-    [_status, t]
+    () => (
+      <TabIcon
+        status="all"
+        currentStatus={activeTab}
+        label={`${t('All (Debug)')}${issueCounts.all ? ` (${issueCounts.all})` : ''}`}
+        fontSize={12}
+      />
+    ),
+    [activeTab, t, issueCounts.all]
   );
 
   return (
@@ -421,16 +357,16 @@ const Content = ({
         style={{ justifyContent: 'space-between', padding: 10 }}
         onValueChange={(value) => {
           if (value) {
-            setStatus(value);
+            switchTab(value);
           }
         }}
-        value={_status}
+        value={activeTab}
       >
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: _status === 'open' ? colors.disabled : colors.white,
-            borderBottomColor: _status === 'open' ? colors.primary : colors.white,
+            backgroundColor: activeTab === 'open' ? colors.disabled : colors.white,
+            borderBottomColor: activeTab === 'open' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
           icon={renderOpenIcon}
@@ -439,8 +375,8 @@ const Content = ({
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: _status === 'assigned' ? colors.disabled : colors.white,
-            borderBottomColor: _status === 'assigned' ? colors.primary : colors.white,
+            backgroundColor: activeTab === 'assigned' ? colors.disabled : colors.white,
+            borderBottomColor: activeTab === 'assigned' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
           icon={renderAssignedIcon}
@@ -449,8 +385,8 @@ const Content = ({
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: _status === 'resolved' ? colors.disabled : colors.white,
-            borderBottomColor: _status === 'resolved' ? colors.primary : colors.white,
+            backgroundColor: activeTab === 'resolved' ? colors.disabled : colors.white,
+            borderBottomColor: activeTab === 'resolved' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
           icon={renderResolvedIcon}
@@ -459,21 +395,25 @@ const Content = ({
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: _status === 'all' ? colors.disabled : colors.white,
-            borderBottomColor: _status === 'all' ? colors.primary : colors.white,
+            backgroundColor: activeTab === 'all' ? colors.disabled : colors.white,
+            borderBottomColor: activeTab === 'all' ? colors.primary : colors.white,
             borderBottomWidth: 3,
           }}
           icon={renderAllIcon}
           value="all"
         />
       </ToggleButton.Row>
+
       <FlatList
         style={{ flex: 1 }}
-        data={_issues}
+        data={enrichedIssues}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
         keyExtractor={(item) => item._id || item.id || item.name}
         extraData={_selectedId}
+        refreshing={loading}
+        onRefresh={refreshCurrentTab}
       />
     </>
   );
