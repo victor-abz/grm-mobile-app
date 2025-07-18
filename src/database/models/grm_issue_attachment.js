@@ -14,6 +14,8 @@ export default class GrmIssueAttachment extends Model {
 
   @field('local_url') localUrl;
 
+  @field('server_url') serverUrl;
+
   @field('uploaded') uploaded;
 
   // Add Frappe sync timestamp fields

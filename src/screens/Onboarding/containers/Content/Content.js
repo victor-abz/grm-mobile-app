@@ -47,8 +47,7 @@ const Content = () => {
           {t('yes')}
         </Button>
         <Button
-          style={customStyles.button}
-          buttonColor="white"
+          style={[customStyles.button, { backgroundColor: '#ff5722' }]}
           mode="contained"
           onPress={() => {
             navigation.navigate('AuthStack', { screen: 'SignUp' });

@@ -88,6 +88,7 @@ export default appSchema({
         { name: 'attachment', type: 'string' },
         { name: 'file_name', type: 'string', isOptional: true },
         { name: 'local_url', type: 'string', isOptional: true },
+        { name: 'server_url', type: 'string', isOptional: true },
         { name: 'uploaded', type: 'boolean' },
         { name: 'creation', type: 'number' },
         { name: 'modified', type: 'number' },

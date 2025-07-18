@@ -1,4 +1,5 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
+import * as FileSystem from 'expo-file-system';
 
 /**
  * WatermelonDB Sync Manager
@@ -316,6 +317,19 @@ class WatermelonSyncManager {
       }
 
       console.log('✅ [PULL] Pull changes completed successfully');
+
+      // Process attachments that have file data (both created and updated)
+      if (returnData.changes?.grm_issue_attachments) {
+        const allAttachments = [
+          ...(returnData.changes.grm_issue_attachments.created || []),
+          ...(returnData.changes.grm_issue_attachments.updated || []),
+        ];
+
+        if (allAttachments.length > 0) {
+          await this.processNewAttachmentsForDownload(allAttachments);
+        }
+      }
+
       return returnData;
     } catch (error) {
       const totalPullDuration = Date.now() - pullStartTime;
@@ -450,13 +464,17 @@ class WatermelonSyncManager {
         const attachmentsCreated = changes.grm_issue_attachments.created || [];
 
         if (attachmentsCreated.length > 0) {
+          // Process attachments with file data
+          const processedAttachments =
+            await this.processAttachmentsWithFileData(attachmentsCreated);
+
           filteredChanges.grm_issue_attachments = {
-            created: attachmentsCreated,
+            created: processedAttachments,
             updated: [],
             deleted: [],
           };
           hasChangesToPush = true;
-          console.log(`📤 [PUSH] grm_issue_attachments: +${attachmentsCreated.length}`);
+          console.log(`📤 [PUSH] grm_issue_attachments: +${processedAttachments.length}`);
         }
       }
 
@@ -510,6 +528,11 @@ class WatermelonSyncManager {
 
       console.log('✅ [PUSH] Push changes completed successfully');
 
+      // Process file URLs returned from backend for attachments
+      if (response?.file_urls?.grm_issue_attachments) {
+        await this.processFileUrlsResponse(response.file_urls.grm_issue_attachments);
+      }
+
       // WatermelonDB expects void return from pushChanges per spec
     } catch (error) {
       console.error('❌ [PUSH] Push changes failed:', error);
@@ -520,14 +543,33 @@ class WatermelonSyncManager {
         response: error.response?.data,
       });
 
-      // Log additional debugging info for HTTP errors
-      if (error.response) {
+      // Enhanced error handling for different types of failures
+      if (error.code === 'NETWORK_ERROR' || error.message.includes('network')) {
+        console.error('❌ [PUSH] Network error during push - changes will be retried on next sync');
+        throw new Error('Network error during push. Changes will be retried on next sync.');
+      } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        console.error(
+          '❌ [PUSH] Request timeout during push - changes will be retried on next sync'
+        );
+        throw new Error('Request timeout during push. Changes will be retried on next sync.');
+      } else if (error.response) {
         console.error('❌ [PUSH] HTTP Error Response:', {
           status: error.response.status,
           statusText: error.response.statusText,
           headers: error.response.headers,
           data: error.response.data,
         });
+
+        // Handle specific HTTP error codes
+        if (error.response.status === 413) {
+          throw new Error('File too large for upload. Please reduce file size and try again.');
+        } else if (error.response.status === 401) {
+          throw new Error('Authentication failed. Please log in again.');
+        } else if (error.response.status === 403) {
+          throw new Error('Permission denied. You do not have access to upload files.');
+        } else if (error.response.status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        }
       }
 
       throw new Error(`Push failed: ${error.message}`);
@@ -683,6 +725,232 @@ class WatermelonSyncManager {
 
     // Notify listeners of updated pending changes info
     this.notifyListeners({ pendingChangesCount: total, pendingChangesByTable: tables });
+  }
+
+  /**
+   * Process attachments with file data for upload
+   * @param {Array} attachments - Array of attachment records
+   * @returns {Promise<Array>} - Processed attachments with file data
+   */
+  async processAttachmentsWithFileData(attachments) {
+    console.log('📤 [PUSH] Processing attachments with file data...');
+
+    const processedAttachments = [];
+
+    for (const attachment of attachments) {
+      try {
+        // Check if attachment has local file that needs to be uploaded
+        // Look for local files (file://) that haven't been uploaded yet
+        const hasLocalFile = attachment.local_url && attachment.local_url.startsWith('file://');
+        const isNotUploaded = !attachment.uploaded;
+        const hasNoServerUrl = !attachment.server_url;
+
+        const isUnuploaded = hasLocalFile && isNotUploaded && hasNoServerUrl;
+
+        console.log(`📤 [PUSH] Checking attachment ${attachment.file_name}:`, {
+          hasLocalFile,
+          isNotUploaded,
+          hasNoServerUrl,
+          isUnuploaded,
+          local_url: attachment.local_url,
+          server_url: attachment.server_url,
+          uploaded: attachment.uploaded,
+        });
+
+        if (isUnuploaded) {
+          console.log(`📤 [PUSH] Processing unuploaded file: ${attachment.file_name}`);
+
+          // Read file data from local storage
+          const fileData = await FileSystem.readAsStringAsync(attachment.local_url, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          // Create enhanced attachment record with file data
+          const enhancedAttachment = {
+            ...attachment,
+            file_data: fileData,
+            needs_upload: true,
+          };
+
+          processedAttachments.push(enhancedAttachment);
+          console.log(`📤 [PUSH] Added file data for: ${attachment.file_name}`);
+        } else {
+          // Attachment already uploaded or no local file, pass through
+          processedAttachments.push(attachment);
+          console.log(
+            `📤 [PUSH] Attachment already uploaded or no local file: ${attachment.file_name}`
+          );
+        }
+      } catch (error) {
+        console.error(`📤 [PUSH] Error processing attachment ${attachment.file_name}:`, error);
+      }
+    }
+
+    console.log(`📤 [PUSH] Processed ${processedAttachments.length} attachments`);
+    return processedAttachments;
+  }
+
+  /**
+   * Process file URLs returned from backend and update local database
+   * @param {Object} fileUrls - Map of attachment IDs to file URLs
+   */
+  async processFileUrlsResponse(fileUrls) {
+    console.log('📤 [PUSH] Processing file URLs response from backend...');
+
+    try {
+      const db = this.database;
+
+      await db.write(async () => {
+        for (const [attachmentId, fileUrl] of Object.entries(fileUrls)) {
+          try {
+            const attachment = await db.get('grm_issue_attachments').find(attachmentId);
+
+            await attachment.update((record) => {
+              record.serverUrl = fileUrl;
+              record.uploaded = true;
+            });
+
+            console.log(`📤 [PUSH] Updated attachment ${attachmentId} with server URL: ${fileUrl}`);
+          } catch (error) {
+            console.error(`📤 [PUSH] Error updating attachment ${attachmentId}:`, error);
+          }
+        }
+      });
+
+      console.log(`📤 [PUSH] Successfully processed ${Object.keys(fileUrls).length} file URLs`);
+    } catch (error) {
+      console.error('📤 [PUSH] Error processing file URLs response:', error);
+    }
+  }
+
+  /**
+   * Process new attachments from backend that include file data
+   * @param {Array} attachments - Array of attachment records from backend
+   */
+  async processNewAttachmentsForDownload(attachments) {
+    console.log('📥 [PULL] Processing new attachments with file data...');
+    console.log(`📥 [PULL] Received ${attachments.length} total attachments`);
+
+    try {
+      const attachmentsWithData = attachments.filter(
+        (attachment) => attachment.file_data // Has base64 file data - remove local_url check to allow re-downloads
+      );
+
+      console.log(
+        `📥 [PULL] Found ${attachmentsWithData.length} attachments with file data to process`
+      );
+
+      if (attachmentsWithData.length === 0) {
+        console.log('📥 [PULL] No attachments have file data to save');
+        return;
+      }
+
+      // Process file saves concurrently
+      const savePromises = attachmentsWithData.map((attachment) =>
+        this.saveAttachmentFileData(attachment)
+      );
+
+      const results = await Promise.allSettled(savePromises);
+
+      const successful = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.filter((r) => r.status === 'rejected').length;
+
+      console.log(`📥 [PULL] File save results: ${successful} successful, ${failed} failed`);
+
+      // Log failed saves
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(
+            `📥 [PULL] Failed to save attachment ${attachmentsWithData[index].id}:`,
+            result.reason
+          );
+        }
+      });
+    } catch (error) {
+      console.error('📥 [PULL] Error processing attachments file data:', error);
+    }
+  }
+
+  /**
+   * Save base64 file data directly to local storage
+   * @param {Object} attachment - Attachment record with base64 file data
+   * @returns {Promise<boolean>} - Success status
+   */
+  async saveAttachmentFileData(attachment) {
+    console.log(`📥 [PULL] Saving file data for attachment: ${attachment.id}`);
+
+    try {
+      const fileData = attachment.file_data;
+      const fileName = attachment.file_name || `attachment_${attachment.id}`;
+
+      if (!fileData) {
+        throw new Error('No file data provided for attachment');
+      }
+
+      // Use the same directory structure as the app's camera/recording functionality
+      // This ensures consistency with how the app expects files to be stored
+      const documentsDir = FileSystem.documentDirectory;
+      const localPath = `${documentsDir}${attachment.id}_${fileName}`;
+
+      console.log(`📥 [PULL] Saving file data to: ${localPath}`);
+
+      // Save base64 data directly to file (no subdirectories to match app pattern)
+      await FileSystem.writeAsStringAsync(localPath, fileData, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Verify file was created successfully
+      const fileInfo = await FileSystem.getInfoAsync(localPath);
+      if (!fileInfo.exists) {
+        throw new Error(`File was not created successfully: ${localPath}`);
+      }
+
+      console.log(`📥 [PULL] File saved successfully: ${fileName} (${fileInfo.size} bytes)`);
+      console.log(`📥 [PULL] Local path for app: ${localPath}`);
+
+      // Update the attachment record with the correct local file URI
+      // Use the actual local path that the app can access
+      await this.updateAttachmentLocalPath(attachment.id, localPath);
+
+      return true;
+    } catch (error) {
+      console.error(`📥 [PULL] Error saving attachment file data ${attachment.id}:`, error);
+
+      // Enhanced error handling for save failures
+      if (error.code === 'EACCES') {
+        throw new Error(`Permission denied writing file ${attachment.file_name}.`);
+      } else if (error.code === 'ENOSPC') {
+        throw new Error(`Not enough storage space to save ${attachment.file_name}.`);
+      } else if (error.message.includes('Invalid base64')) {
+        throw new Error(`Invalid file data for ${attachment.file_name}.`);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Update attachment record with local file path
+   * @param {string} attachmentId - Attachment ID
+   * @param {string} localPath - Local file path
+   */
+  async updateAttachmentLocalPath(attachmentId, localPath) {
+    try {
+      const db = this.database;
+
+      await db.write(async () => {
+        const attachment = await db.get('grm_issue_attachments').find(attachmentId);
+
+        await attachment.update((record) => {
+          record.localUrl = localPath;
+        });
+      });
+
+      console.log(`📥 [PULL] Updated attachment ${attachmentId} with local path: ${localPath}`);
+    } catch (error) {
+      console.error(`📥 [PULL] Error updating attachment local path:`, error);
+      throw error;
+    }
   }
 }
 
