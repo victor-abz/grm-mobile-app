@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import moment from 'moment';
 import { Audio } from 'expo-av';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
@@ -281,9 +281,9 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
         issueComponent: selectedIssueComponent
           ? { id: selectedIssueComponent.id, name: selectedIssueComponent.name }
           : null,
-        issueSubComponent: selectedIssueSubComponent
-          ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.name }
-          : null,
+        // issueSubComponent: selectedIssueSubComponent
+        //   ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.name }
+        //   : null,
         ongoingEvent: checked,
         attachment: attachment.uri
           ? {
@@ -468,7 +468,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
             onSelectItem={(item) => setSelectedIssueComponent(item)}
           />
         </View>
-        <View>
+        {/* <View>
           <CustomDropDownPicker
             schema={{
               label: 'name',
@@ -482,7 +482,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
             setPickerValue={setPickerSubComponent}
             onSelectItem={(item) => setSelectedIssueSubComponent(item)}
           />
-        </View>
+        </View> */}
         <View style={{ paddingHorizontal: 50 }}>
           <TextInput
             multiline

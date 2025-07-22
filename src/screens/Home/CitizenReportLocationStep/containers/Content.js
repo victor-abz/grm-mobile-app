@@ -10,7 +10,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Button, TextInput } from 'react-native-paper';
 import { debounce } from 'lodash';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
@@ -85,7 +85,7 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
   const filterCommunes = (parent) => {
     let _communes = communes.slice();
     _communes = _communes.filter((commune) => commune.parent_id === parent);
-
+    console.log("filter communes : "+_communes.docs) 
     return _communes;
   };
   return (

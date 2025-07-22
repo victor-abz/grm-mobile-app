@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import * as PropTypes from 'prop-types';
 import React from 'react';
 import { colors } from '../../../../utils/colors';

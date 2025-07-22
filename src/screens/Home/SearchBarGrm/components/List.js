@@ -6,7 +6,7 @@ import {
   FlatList,
   SafeAreaView, TouchableOpacity, StatusBar,
 } from 'react-native';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import { colors } from '../../../../utils/colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import moment from 'moment';
@@ -48,11 +48,12 @@ const searchFilter = (issue, searchPhrase, eadl) => {
 // the filter
 const List = (props) => {
   const renderItem = ({ item }) => {
-    if (searchFilter(item, props.searchPhrase, props.eadl)) {
+    if (searchFilter(item, props.searchPhrase, props.eadl, props.updateIssue)) {
       return <Item item={item}
                    onPress={() =>
                      props.navigation.navigate('IssueDetailTabs', {
                        item,
+                       updateIssue: props.updateIssue,
                        merge: true,
                      })
                    }

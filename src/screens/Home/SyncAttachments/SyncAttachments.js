@@ -12,7 +12,7 @@ import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreen
 import SyncImage from '../../../../assets/sync-image.svg';
 import CheckCircle from '../../../../assets/check-circle.svg';
 import { baseURL } from '../../../services/API';
-import i18n from 'i18n-js';
+import { i18n } from "../../../translations/i18n";
 
 const FILE_READ_ERROR = 'Cannot read all the files.';
 

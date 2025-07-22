@@ -7,7 +7,7 @@ import Chart from "../../../../../assets/chart_line_solid.svg";
 import FileIcon from "../../../../../assets/file_alt_regular.svg";
 import TeamWorkIcon from "../../../../../assets/team-work.svg";
 import SyncIcon from "../../../../../assets/sync_alt_solid.svg";
-import i18n from "i18n-js";
+import { i18n } from "../../../../translations/i18n";
 
 function Content() {
   const navigation = useNavigation();

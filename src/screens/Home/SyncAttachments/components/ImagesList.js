@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, Text, View, StyleSheet } from 'react-native';
 import { ActivityIndicator, Card } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 
 function ImagesList({ attachments }) {
   const [_attachments, _setAttachments] = useState([]);

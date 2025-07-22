@@ -4,10 +4,9 @@ import PouchAuth from 'pouchdb-authentication';
 import PouchFind from 'pouchdb-find';
 import PouchAsyncStorage from 'pouchdb-adapter-asyncstorage';
 import { baseURL } from '../services/API';
-const BASE_URL = 'http://75.119.142.138:5984';
-// const BASE_URL = 'http://192.168.2.101:5984';
-const RESOURCE_URL = 'https://stoic-payne.75-119-142-138.plesk.page';
-// const RESOURCE_URL = 'http://192.168.2.101:8000';
+const BASE_URL = 'https://cdd.coso.gouv.bj/couchdb';
+// const BASE_URL = 'http://10.0.2.2:5984';
+const RESOURCE_URL = baseURL;
 PouchDB.plugin(PouchAuth);
 PouchDB.plugin(PouchFind);
 PouchDB.plugin(require('pouchdb-upsert'));
@@ -29,7 +28,7 @@ export const LocalCommunesDatabase = new PouchDB('commune', {
 export const ResourceUrl = RESOURCE_URL;
 
 export const SyncToRemoteDatabase = async ({ username, password }, userEmail) => {
-  const remoteDB = new PouchDB(`${BASE_URL}/db`, {
+  const remoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
     skip_setup: true,
   });
 
@@ -37,7 +36,7 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
     skip_setup: true,
   });
 
-  const communesRemoteDB = new PouchDB(`${BASE_URL}/db`, {
+  const communesRemoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
     skip_setup: true,
   });
 
@@ -80,7 +79,7 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
       console.log(`[Sync COMMUNES: ${JSON.stringify(currState)}]`)
     );
 
-    syncGRM.on(state, (currState) => console.log(`[Sync GRM: ${JSON.stringify(currState)}]`));
+    syncGRM.on(state, (currState) => console.log(`[Sync GRM: ${JSON.stringify(currState).tracking_code}]`));
   });
 };
 

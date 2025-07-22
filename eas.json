@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 3.13.3"
+    "version": ">= 3.13.3",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -14,7 +15,10 @@
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "NODE_OPTIONS": "--openssl-legacy-provider"
+      }
     },
     "production": {}
   },

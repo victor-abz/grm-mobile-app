@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import { useDispatch } from 'react-redux';
 import styles from './Content.style';
 import UserAvatar from '@muhzi/react-native-user-avatar';

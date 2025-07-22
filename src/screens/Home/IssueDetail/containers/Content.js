@@ -6,7 +6,7 @@ import moment from 'moment';
 import { colors } from '../../../../utils/colors';
 import { useBackHandler } from '@react-native-community/hooks';
 import CustomSeparator from '../../../../components/CustomSeparator/CustomSeparator';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import { Button } from 'react-native-paper';
 import { LocalGRMDatabase } from '../../../../utils/databaseManager';
 import { citizenTypes } from '../../../../utils/utils';
@@ -126,11 +126,11 @@ function Content({ issue }) {
                 {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.issue_type?.name ?? i18n.t('information_not_available')}
               </Text>
             </Text>
-            <Text style={styles.subtitle}>
+            {/* <Text style={styles.subtitle}>
               {i18n.t('lodged_by')}
               <Text
                 style={styles.text}> {citizenTypes[issue.citizen_type] ?? i18n.t('information_not_available')}</Text>
-            </Text>
+            </Text> */}
             <Text style={styles.subtitle}>
               {i18n.t('name')}
               <Text
@@ -141,7 +141,7 @@ function Content({ issue }) {
               <Text
                 style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_age_group?.name ?? i18n.t('information_not_available')}</Text>
             </Text>
-            <View>
+            {/* <View>
               <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('profession')}{' '}</Text>
               <Text style={[styles.text, {marginBottom: 5}]}>
                 {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_group_1?.name ?? i18n.t('information_not_available')}
@@ -152,7 +152,7 @@ function Content({ issue }) {
               <Text style={[styles.text, {marginBottom: 5}]}>
                 {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_group_2?.name ?? i18n.t('information_not_available')}
               </Text>
-            </View>
+            </View> */}
             <View>
               <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('sub_type')}{' '}</Text>
               <Text style={[styles.text, {marginBottom: 5}]}>
@@ -194,11 +194,11 @@ function Content({ issue }) {
               <Text
                 style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.component?.name ?? i18n.t('information_not_available')}</Text>
             </Text>
-            <Text style={styles.subtitle}>
+            {/* <Text style={styles.subtitle}>
               {i18n.t('sub_component')}{' '}
               <Text
                 style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.sub_component?.name ?? i18n.t('information_not_available')}</Text>
-            </Text>
+            </Text> */}
 
           </View>
         </Collapsible>

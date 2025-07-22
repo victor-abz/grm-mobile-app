@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import ListHeader from '../components/ListHeader';
 import moment from 'moment';
 
@@ -73,6 +73,14 @@ function Content({ issues, eadl, statuses }) {
   const renderItem = ({ item }) => {
     const backgroundColor = item.id === selectedId ? '#6e3b6e' : '#f9c2ff';
     const color = item.id === selectedId ? 'white' : 'black';
+    const updateIssue = (updatedIssue) => {
+      setIssues((prevIssues) => {
+        const newIssues = prevIssues.map((issue) =>
+          issue._id === updatedIssue._id ? updatedIssue : issue
+        );
+        return newIssues;
+      });
+    };
 
     return (
       <Item
@@ -80,6 +88,7 @@ function Content({ issues, eadl, statuses }) {
         onPress={() =>
           navigation.navigate('IssueDetailTabs', {
             item,
+            updateIssue,
             merge: true,
           })
         }

@@ -1,5 +1,5 @@
-// const baseURL = 'http://192.168.2.101:8000';
-const baseURL = 'https://stoic-payne.75-119-142-138.plesk.page';
+// const baseURL = 'http://10.0.2.2:8000';
+const baseURL = 'https://mgp.coso.gouv.bj';
 export { baseURL };
 function handleErrors(response) {
   if (response.non_field_errors) {
@@ -39,6 +39,8 @@ class API {
       .then(handleErrors)
       .then((a) => a)
       .catch((error) => ({ error }));
+    console.log ("api_login-funct_result : ", result)
+    console.log("baseURL : " + baseURL + "/authentication/obtain-auth-credentials/")
     return result;
   }
 }

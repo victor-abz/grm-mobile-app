@@ -22,7 +22,8 @@
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
-      }
+      },
+      "bundleIdentifier": "com.setcobj.grmapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -39,7 +40,7 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "package": "com.leonardogutierrezh.grmapp"
+      "package": "com.setcobj.grmapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,11 +48,14 @@
     "plugins": [
       "expo-location",
       "expo-image-picker",
-      "expo-av"
+      "expo-av",
+      "expo-font",
+      "expo-localization",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {
-        "projectId": "8a8b6694-4f32-4d91-87f4-5c9f4ee286cb"
+        "projectId": "c92cc584-53fe-4be4-9eeb-8f2034a73d5f"
       }
     }
   }
