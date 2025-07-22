@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, ScrollView, Text, Platform, TouchableOpacity } from 'react-native';
+import { View, ScrollView, Text, Platform, TouchableOpacity, ImageBackground } from "react-native";
 import { styles } from './Content.styles';
 import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
@@ -12,6 +12,7 @@ import { LocalGRMDatabase } from '../../../../utils/databaseManager';
 import { citizenTypes } from '../../../../utils/utils';
 import Collapsible from 'react-native-collapsible';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import RecordingCard from "../../GRM/components/RecordingCard";
 
 
 const theme = {
@@ -25,6 +26,7 @@ const theme = {
 };
 
 function Content({ issue }) {
+  console.log(issue)
   const [comments, setComments] = useState(issue.comments);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
@@ -34,7 +36,10 @@ function Content({ issue }) {
   const [isDecisionCollapsed, setIsDecisionCollapsed] = useState(true);
   const [isSatisfactionCollapsed, setIsSatisfactionCollapsed] = useState(true);
   const [isAppealCollapsed, setIsAppealCollapsed] = useState(true);
+  const [isAttachmentCollapsed, setIsAttachmentCollapsed] = useState(true);
   const scrollViewRef = useRef();
+  // Remove all recording-related state and logic
+  const [current, setCurrent] = useState(null);
 
   useBackHandler(() => {
     // navigation.navigate("GRM")
@@ -278,56 +283,46 @@ function Content({ issue }) {
             </Text>
           </View>
         </Collapsible>
-        {/*<CustomSeparator />*/}
-        {/*<Text style={styles.title}>{i18n.t("attachments_label")}</Text>*/}
-        {/*{issue?.attachments.map((item) => (*/}
-        {/*  <Text style={[styles.text, { marginBottom: 10 }]}>{item.uri}</Text>*/}
-        {/*))}*/}
-        {/*<CustomSeparator />*/}
-        {/*<Text style={styles.title}>Activity</Text>*/}
-        {/*{comments?.map((item) => (*/}
-        {/*  <View style={{ flex: 1 }}>*/}
-        {/*    <View style={{ flexDirection: "row", marginVertical: 10, flex: 1 }}>*/}
-        {/*      <View*/}
-        {/*        style={{*/}
-        {/*          width: 32,*/}
-        {/*          height: 32,*/}
-        {/*          backgroundColor: "#f5ba74",*/}
-        {/*          borderRadius: 16,*/}
-        {/*        }}*/}
-        {/*      />*/}
-        {/*      <View style={{ marginLeft: 10 }}>*/}
-        {/*        <Text style={styles.text}>{item.name}</Text>*/}
-        {/*        <Text style={styles.text}>*/}
-        {/*          {moment(item.due_at).format("DD-MMM-YYYY")}*/}
-        {/*        </Text>*/}
-        {/*      </View>*/}
-        {/*    </View>*/}
-        {/*    <Text style={styles.text}>{item.comment}</Text>*/}
-        {/*  </View>*/}
-        {/*))}*/}
+        <CustomSeparator/>
 
-        {/*<TextInput*/}
-        {/*  multiline*/}
-        {/*  numberOfLines={4}*/}
-        {/*  style={[styles.grmInput, { height: 80 }]}*/}
-        {/*  placeholder={i18n.t("comment_placeholder")}*/}
-        {/*  outlineColor={"#f6f6f6"}*/}
-        {/*  theme={theme}*/}
-        {/*  mode={"outlined"}*/}
-        {/*  value={newComment}*/}
-        {/*  onChangeText={(text) => setNewComment(text)}*/}
-        {/*/>*/}
+        <TouchableOpacity
+          onPress={() => setIsAttachmentCollapsed(!isAttachmentCollapsed)}
+          style={styles.collapsibleTrigger}>
+          <Text style={styles.subtitle}>{i18n.t('step_3_attachments')}</Text>
+          <MaterialCommunityIcons
+            name={isAttachmentCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
+            size={24}
+            color={colors.primary}
+          />
+        </TouchableOpacity>
+        <Collapsible collapsed={isAttachmentCollapsed}>
+          <View style={styles.collapsibleContent}>
+            { issue.attachments.map((attachment) => {
+                return (
+                  <View style={{ flexDirection: 'row', maxWidth: '100%' }}>
+                    {(!attachment.isAudio && attachment.uri) && (
+                      <ImageBackground
+                        source={{ uri: attachment.uri }}
+                        style={{
+                          height: 160,
+                          width: 160,
+                          alignSelf: 'center',
+                          justifyContent: 'flex-end',
+                          marginVertical: 20,
+                        }}
+                      ></ImageBackground>
+                    )}
+                    {(attachment.isAudio) && (
+                      <RecordingCard mode="playback" initialURI={attachment.local_url}/>
+                    )}
+                  </View>
+                )
+              })
+            }
+          </View>
+        </Collapsible>
 
-        {/*<Button*/}
-        {/*  theme={theme}*/}
-        {/*  style={{ alignSelf: "center", margin: 24 }}*/}
-        {/*  labelStyle={{ color: "white", fontFamily: "Poppins_500Medium" }}*/}
-        {/*  mode="contained"*/}
-        {/*  onPress={onAddComment}*/}
-        {/*>*/}
-        {/*  Add comment*/}
-        {/*</Button>*/}
+
         <CustomSeparator/>
         <Button
           theme={theme}

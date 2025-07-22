@@ -45,16 +45,14 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
   const [date, setDate] = useState(null);
   const [attachment, setAttachment] = useState({});
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [current, setCurrent] = useState(null);
   const [items, setItems] = useState(issueTypes ?? []);
   const [recordingURI, setRecordingURI] = useState();
+  const [showRecordingCard, setShowRecordingCard] = useState(false);
+
   const [items2, setItems2] = useState(issueCategories ?? []);
   const [itemsSubTypes, setItemsSubTypes] = useState(issueSubTypes ?? []);
   const [components, setComponents] = useState(issueComponents ?? []);
   const [subComponents, setSubComponents] = useState(issueSubComponents ?? []);
-  const [sound, setSound] = React.useState();
   const [selectedIssueType, setSelectedIssueType] = useState(null);
   const [selectedIssueSubType, setSelectedIssueSubType] = useState(null);
   const [selectedIssueComponent, setSelectedIssueComponent] = useState(null);
@@ -82,17 +80,6 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
     }
   }, [issueTypes, issueCategories, issueSubTypes, issueComponents, issueSubComponents]);
 
-  React.useEffect(
-    () =>
-      sound
-        ? () => {
-          // console.log("Unloading Sound");
-          sound.unloadAsync();
-        }
-        : undefined,
-    [sound],
-  );
-
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
@@ -118,127 +105,6 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
     hideDatePicker();
   };
 
-  const onRecordingStatusUpdate = ((recordingStatus) => {
-    setCurrent(milliSecondToHHMMSS(recordingStatus.durationMillis));
-  });
-
-  const startRecording = async () => {
-    try {
-      // console.log("Requesting permissions..");
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-      // console.log("Starting recording..");
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
-      await recording.startAsync().then(status => {
-        console.log('recording status: ', status);
-      });
-      setRecording(recording);
-      recording.setOnRecordingStatusUpdate(onRecordingStatusUpdate);
-      // console.log("Recording started");
-    } catch (err) {
-      // console.error("Failed to start recording", err);
-    }
-  };
-
-  const stopRecording = async () => {
-    // console.log("Stopping recording..");
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
-    setRecordingURI(uri);
-    setRecording(undefined);
-    // console.log("Recording stopped and stored at", uri);
-  };
-
-  /**
-   * Converts a milli second value to second, minute hour format : HH:mm:ss
-   * @param value the millisecond value to convert
-   */
-  const milliSecondToHHMMSS = (value) => {
-    const milliSecond = Number(value / 1000);
-    const hour = Math.floor(milliSecond / 3600);
-    const minute = Math.floor((milliSecond % 3600) / 60);
-    const second = Math.floor((milliSecond % 3600) % 60);
-
-    const hrs = hour > 0 ? (hour < 10 ? `0${hour}:` : `${hour}:`) : '';
-    const mins = minute > 0 ? (minute < 10 ? `0${minute}:` : `${minute}:`) : '00:';
-    const scnds = second > 0 ? (second < 10 ? `0${second}` : second) : '00';
-    return `${hrs}${mins}${scnds}`;
-  };
-
-  const onPlaybackStatusUpdate = ((playbackStatus) => {
-    if (playbackStatus.didJustFinish) {
-      setPlaying(false);
-      setCurrent(milliSecondToHHMMSS(0));
-    }
-    setCurrent(milliSecondToHHMMSS(playbackStatus.positionMillis));
-  });
-
-  const playSound = async () => {
-    // console.log("Loading Sound");
-    const { sound } = await Audio.Sound.createAsync({ uri: recordingURI }, null, onPlaybackStatusUpdate);
-    setSound(sound);
-
-    // console.log("Playing Sound");
-    await sound.playAsync();
-    setPlaying(true);
-    setCurrent(milliSecondToHHMMSS(0));
-  };
-
-  const stopSound = async () => {
-    await sound.stopAsync();
-    setPlaying(false);
-  };
-
-  useEffect(() => {
-    (async () => {
-      if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          alert('Sorry, we need camera roll permissions to make this work!');
-        }
-      }
-    })();
-  }, []);
-
-  const openCamera = async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.cancelled) {
-      const manipResult = await ImageManipulator.manipulateAsync(
-        result.localUri || result.uri,
-        [{ resize: { width: 1000, height: 1000 } }],
-        { compress: 1, format: ImageManipulator.SaveFormat.PNG },
-      );
-      setAttachment({ ...manipResult, id: new Date() });
-    }
-  };
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      // aspect: [4, 3],
-      quality: 1,
-    });
-    if (!result.cancelled) {
-      const manipResult = await ImageManipulator.manipulateAsync(
-        result.localUri || result.uri,
-        [{ resize: { width: 1000, height: 1000 } }],
-        { compress: 1, format: ImageManipulator.SaveFormat.PNG },
-      );
-      setAttachment({ ...manipResult, id: new Date() });
-    }
-  };
-
   const getCategory = (value) => {
     const result = issueCategories.filter((obj) => obj.name === value);
     const _category = {
@@ -258,7 +124,50 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
   const filterCategory = () => {
     return items2.filter((obj) => obj.parent_id === selectedIssueSubType.id);
   };
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      // aspect: [4, 3],
+      quality: 1,
+    });
+    if (!result.cancelled) {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        result.localUri || result.uri,
+        [{ resize: { width: 1000, height: 1000 } }],
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG },
+      );
+      setAttachment({ ...manipResult, id: new Date() });
+    }
+  };
+    const openCamera = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
 
+    if (!result.cancelled) {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        result.localUri || result.uri,
+        [{ resize: { width: 1000, height: 1000 } }],
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG },
+      );
+      setAttachment({ ...manipResult, id: new Date() });
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          alert('Sorry, we need camera roll permissions to make this work!');
+        }
+      }
+    })();
+  }, []);
   const filterSubComponent = () => {
     return subComponents.filter((obj) => obj.parent_id === selectedIssueComponent.id);
   };
@@ -577,25 +486,29 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
             <View style={styles.iconButtonStyle}>
               <IconButton icon="camera" color={colors.primary} size={24} onPress={openCamera}/>
             </View>
-            {!recording && !recordingURI && (<View style={styles.iconButtonStyle}>
-              <IconButton
-                icon={recording ? 'record-circle-outline' : 'microphone'}
-                color={recording ? '#f80102' : colors.primary}
-                size={24}
-                onPress={recording ? stopRecording : startRecording}
+            {!showRecordingCard && (
+              <View style={styles.iconButtonStyle}>
+                <IconButton
+                  icon="microphone"
+                  color={colors.primary}
+                  size={24}
+                  onPress={() => setShowRecordingCard(!showRecordingCard)}
+                />
+              </View>
+            )}
+            </View>
+            {(showRecordingCard || recordingURI) && (
+             <View style={{ flexDirection: 'row', maxWidth: '100%' }}>
+               <RecordingCard
+                mode="full"
+                onRecordingSaved={uri => {
+                  setRecordingURI(uri);
+                  setShowRecordingCard(false);
+                }}
               />
-            </View>)}
-          </View>
+              </View>
+            )}
         </View>
-        {(recordingURI || recording) && (
-          <RecordingCard recording={recording}
-                         onPlay={playSound}
-                         onPause={stopSound}
-                         playing={playing}
-                         current={current}
-                         onDelete={setRecordingURI}
-                         onStopRecording={stopRecording}/>)}
-
         <View style={{ paddingHorizontal: 50 }}>
           <Button
             theme={theme}
