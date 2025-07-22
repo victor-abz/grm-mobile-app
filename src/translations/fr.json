@@ -2,7 +2,7 @@
   //Headers
   "citizen_input_header": "Nouvel enregistrement",
   //Onboarding
-  "used_app_before": "Avez-vous déjà utilisé cette application ?",
+  "used_app_before": "Avez-vous vos identifiants de connexion ?",
   "yes": "OUI",
   "no": "NON",
   "welcome_login": "Bienvenue! Pour Accéder à votre compte, merci de vous identifier",
@@ -27,19 +27,19 @@
   //GRM-Intro
   "intro_text_0": "Communique avec le citoyen : ",
   "intro_text_1": "Nous avons inclus des points de discussion pour vous aider à guider les citoyens tout au long du processus. Pour commencer la session, veuillez envisager d’informer les gens de ce qui suit :  ",
-  "intro_text_2": "J’apprécie que vous soyez venu nous faire part de vos problèmes concernant le projet. Ce sera rapide - quelques minutes - et facile. Avant de commencer, vous devez savoir certaines choses.”",
+  "intro_text_2": "J’apprécie que vous soyez venu nous faire part de vos préoccupations concernant le projet. Ce sera rapide - quelques minutes - et facile. Avant de commencer, vous devez savoir certaines choses.”",
   "intro_text_3": "Tout peut être aussi privé et confidentiel que vous le souhaitez. Plus nous avons d’informations, mieux nous pouvons vous aider, mais vous ne devez nous dire que ce que vous êtes à l’aise de partager.",
-  "intro_text_4": "Tous les détails que vous avez qui peuvent nous aider à localiser et à résoudre le problème, ou à apporter des améliorations sont appréciés, mais ne vous inquiétez pas si vous ne vous souvenez pas de quelque chose.",
-  "intro_text_5": "Votre problème sera enregistré et attribué dans un jour ou deux à quelqu’un qui sera chargé de répondre à votre préoccupation.",
-  "intro_text_6": "Nous essayons de résoudre les problèmes dans les {x} jours suivant votre signalement, et nous vous aiderons à suivre et à suivre votre problème.",
+  "intro_text_4": "Tous les détails que vous avez qui peuvent nous aider à localiser et à résoudre la situation, ou à apporter des améliorations sont appréciés, mais ne vous inquiétez pas si vous ne vous souvenez pas de quelque chose.",
+  "intro_text_5": "Votre plainte sera enregistrée et attribuée au comité responsable.",
+  "intro_text_6": "Nous essayons de résoudre les problèmes dans les plus brefs délais, et nous vous aiderons à suivre votre problème.",
 
   //step 1
   "welcome_citizen_input": "Bienvenue sur le portail du MGP numérique!",
   "step_1": "Étape 1",
   "stay_touch_question": "Méthode préférée de contact",
-  "step_1_hint_1": "Communique avec le citoyen : “Si vous le souhaitez, nous pouvons vous informer de l’avancement par SMS ou par e-mail. Mais si vous voulez rester anonyme, nous pouvons vous donner un code, ou vous pouvez revenir vers moi pour faire le suivi. Lequel veux-tu?”",
+  "step_1_hint_1": "Communique avec le citoyen : “Si vous le souhaitez, nous pouvons vous informer de l’avancement en vous contactant directement. Mais si vous voulez rester anonyme, nous pouvons vous donner un code, ou vous pouvez revenir vers moi pour faire le suivi. Lequel voulez-vous ?”",
   "step_1_option_1": "Je ne souhaite pas être contacté(e)",
-  "step_1_option_2": "Recevoir des mises à jour via le facilitateur",
+  "step_1_option_2": "Recevoir des mises à jour via le facilitateur ou secrétaire du comité",
   "step_1_option_3": "Recevoir des alertes directement",
   "step_1_method_1": "Texte / SMS",
   "step_1_method_2": "WhatsApp",
@@ -50,7 +50,7 @@
   //contact step
   "contact_step_title": "Information de contact",
   "contact_step_subtitle": "Nom du Plaignant.",
-  "contact_step_explanation": "Communique avec le citoyen : “Il est facultatif de fournir votre nom. Si vous ne voulez pas que je l'enregistre, je le laisserai vide.”",
+  "contact_step_explanation": "Communique avec le citoyen : “Il est facultatif de fournir votre nom. Je peux laisser vide. Cela pourrait néanmoins être utile pour la résolution de la plainte. Nous vous encourageons donc à nous permettre de l'enregistrer. Il peut rester confidentiel et uniquement visible pour le comité de gestion de la plainte.”",
   "contact_step_placeholder_1": "Entrez le nom du plaignant ici",
   "contact_step_placeholder_2": "Entrez le groupe d’âge (facultatif)",
   "contact_step_placeholder_3": "Choisissez le sexe (facultatif)",
@@ -97,14 +97,14 @@
   //location step
   "step_4": "Étape 4",
   "step_location_description": "Où cela s’est-il produit ?",
-  "step_location_body": "Communique avec le citoyen : vous devez essayer d’obtenir un lieu aussi précis que nécessaire pour résoudre le problème. Les adresses, les coins de rue, les descriptions du quartier peuvent tous être utiles. S’il s’agit d’un problème confidentiel ou sensible, sélectionnez simplement les paramètres régionaux et ne collectez aucun autre détail.",
+  "step_location_body": "Ici, vous devez essayer d’obtenir un lieu aussi précis que nécessaire pour résoudre le problème. Les adresses, les coins de rue, les descriptions du quartier peuvent tous être utiles. S’il s’agit d’un problème confidentiel ou sensible, sélectionnez simplement les paramètres régionaux et ne collectez aucun autre détail.",
   "step_location_dropdown_placeholder": "Tapez pour sélectionner",
   "step_location_input_explanation": "Veuillez entrer des détails supplémentaires sur\nLe lieu qui pourraient aider à résoudre\nle problème (par exemple, adresse, coin de rue\nou description de l’emplacement).",
 
 
   //step 4
   "step_4_subtitle": "Vous avez terminé ! N’oubliez pas ce code!",
-  "step_4_description": "Communique avec le citoyen : “Le problème a été capturé et sera attribué à un représentant du gouvernement. Pour suivre les progrès sur ce problème, veuillez utiliser le code ci-dessous. (Facilitateurs : encouragez le citoyen à écrire ou à répéter le code ci-dessous.”\n\nRappelez au plaignant combien de temps il lui faudra pour obtenir une confirmation et une résolution.",
+  "step_4_description": "Communique avec le citoyen : “La préoccupation a été capturée et sera attribuée à un représentant compétent. Pour suivre les progrès sur cette reclamation, veuillez utiliser le code ci-dessous. (encouragez le citoyen à écrire ou à répéter le code ci-dessous.”\n\nRappelez au plaignant combien de temps il lui faudra pour obtenir une confirmation et une résolution. En général le délai est de trois jours",
   "step_4_issue_code": "Référence de la plainte:",
   "step_4_short_code": "SHORT CODE",
   "step_4_two_word_code": "2-WORD CODE",
@@ -153,7 +153,9 @@
   "issue_was_appealed": "Le plaignant n'est pas de la résolution, il a donc décidé de faire appel.",
   "issue_was_escalated": "La plainte a été escaladée/remontée",
   "issue_was_resolved": "La plainte a été résolue",
-  "issue_was_rated": "La plainte a été évaluée. Le plaignant a donné une note de: ",
+  "issue_was_rated": "La plainte a été évaluée. Le plaiissue_was_escalatedgnant a donné une note de: ",
+  "error_rejecting_issue": "Erreur lors du rejet de la plainte.",
+  "issue_rejected_successfully": "La plainte a été rejetée avec succès.",
 
   // issue detail
   "are_you_accepting": "Acceptez-vous qu'il s'agisse d'une plainte liée au projet ? Ou bien le rejetez-vous parce qu'il n'est pas pertinent ?",
@@ -164,7 +166,8 @@
   "history": "HISTORIQUE",
   "days_ago": "jours écoulés",
   "view_details": "VOIR LES DETAILS",
-  "accept_issue": "Accepter une plainte",
+  "accept_issue": "Accepter la plainte",
+  "reject_issue": "Rejeter la plainte",
   "record_steps_taken": "Enregistrer les étapes parcourues",
   "record_resolution": "Sauvegarder la résolution",
   "rate_appeal": "Evaluer & Faire Appel",
@@ -201,7 +204,7 @@
   "accept": "ACCEPTER",
   "reject": "REJETER",
   "you_are_rejecting": "Vous rejetez cette plainte pour examen. Veuillez indiquer la raison.",
-  "complaint_rejected": "Cette plainte a été rejetée. Les notification seront envoyées à la personne qui l'a enregistrée et au citoyen.",
+  "complaint_rejected": "Cette plainte a été rejetée.",
   "confirm_your_choice": "Êtes-vous sûr de vouloir faire appel ?",
   "confirm_deletion": "Êtes-vous sûr de vouloir supprimer ?",
   "rate_issue": "Dites-nous quelle est votre dégré de satisfaction ?",

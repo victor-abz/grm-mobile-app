@@ -141,6 +141,8 @@
   "issue_was_rejected": "The issue was rejected",
   "issue_was_escalated": "The issue was escalated",
   "issue_was_resolved": "The issue was resolved",
+  "error_rejecting_issue": "Error rejecting issue",
+  "issue_rejected_successfully": "Issue rejected successfully",
 
   // issue detail
   "are_you_accepting": "Are you accepting this is a grievance relevant to the project? Or are you rejecting\n because it is not relevant?",
@@ -152,6 +154,7 @@
   "days_ago": "days ago",
   "view_details": "VIEW DETAILS",
   "accept_issue": "Accept Issue",
+  "reject_issue": "Reject Issue",
   "record_steps_taken": "Record Steps Taken",
   "record_resolution": "Record Resolution",
   "rate_appeal": "Rate & Appeal",

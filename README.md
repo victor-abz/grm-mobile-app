@@ -35,8 +35,8 @@ Build the app for android (Make sure the project runs correctly)
 - `yarn install`
 - `npx expo prebuild --clean`
 - `cd android`
-- `.\gradlew clean`
-- `.\gradlew assembleRelease`, this command allow you to build the apk
+- `./gradlew clean`
+- `./gradlew assembleRelease`, this command allow you to build the apk
 
 You'll find the release app `app-release.apk` file on the `android\app\build\outputs\apk\release` folder
 
@@ -111,7 +111,7 @@ def downloadBoost = tasks.create('downloadBoost', Download) {
 You need to run `npx patch-package expo-modules-core` to create the patch which will be applied. This will generate a patch file in the `patches/` folder in your project.
 
 6. Add `postinstall` script to `package.json`
-You need to app the following script into your `package.json`
+You need to add the following script into your `package.json`
 ```
 "scripts": {
      "postinstall": "patch-package"

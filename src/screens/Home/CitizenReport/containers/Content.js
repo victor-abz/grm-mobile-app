@@ -94,7 +94,7 @@ function Content() {
               setItems={setItems}
             />
             <View style={{ paddingHorizontal: 50 }}>
-              <TextInput
+              {/* <TextInput
                 style={styles.grmInput}
                 placeholder={i18n.t("step_1_placeholder_2")}
                 outlineColor={"#dedede"}
@@ -105,6 +105,45 @@ function Content() {
                 onChangeText={(text) => {
                   setContactMethodError();
                   setContactInfo(text);
+                }}
+              /> */}
+              <TextInput
+                style={styles.grmInput}
+                placeholder={
+                  pickerValue === "email"
+                    ? i18n.t("step_1_placeholder_2")
+                    : "01XXXXXXXX"
+                }
+                outlineColor={"#dedede"}
+                theme={theme}
+                error={contactMethodError}
+                mode={"outlined"}
+                keyboardType={
+                  pickerValue === "email" ? "default" : "number-pad"
+                }
+                value={contactInfo}
+                maxLength={10}
+                onChangeText={(text) => {
+                  setContactMethodError();
+
+                  // Si c'est un numéro (SMS ou WhatsApp)
+                  if (pickerValue === "phone_number" || pickerValue === "whatsapp") {
+                    // Forcer le début à "01"
+                    if (!text.startsWith("01")) {
+                      text = "01" + text.replace(/^01+/, "");
+                    }
+
+                    // Ne garder que les chiffres
+                    const numericText = text.replace(/\D/g, "");
+
+                    // Limiter à 10 caractères
+                    if (numericText.length <= 10) {
+                      setContactInfo(numericText);
+                    }
+                  } else {
+                    // Pour l'email, aucune restriction
+                    setContactInfo(text);
+                  }
                 }}
               />
             </View>

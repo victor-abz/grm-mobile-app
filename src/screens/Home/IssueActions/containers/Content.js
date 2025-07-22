@@ -58,6 +58,8 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [rating, setRating] = useState(0);
   const [status, setStatus] = useState(null);
+  const [hasActions, setHasActions] = useState(false);
+
 
   const goToDetails = () => navigation.jumpTo('IssueDetail');
   const goToHistory = () => {
@@ -115,6 +117,13 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
       setIsRecordResolutionEnabled(statuses.some(_isRecordResolutionEnabled));
       setIsRateAppealEnabled(statuses.some(_isRateAppealEnabled));
     }
+
+    // check if can reject
+    const hasComments = issue.comments && issue.comments.length > 0;
+    const hasEscalated = issue.escalate_flag;
+    const hasRejected = issue.reject_flag;
+
+    setHasActions(hasComments || hasEscalated || hasRejected);
   };
 
   const whatsApp = () => {
@@ -161,17 +170,53 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
     });
   };
 
+  // const rejectIssue = () => {
+  //   const newStatus = statuses.find((x) => x.rejected_status === true);
+  //   setIssue((prevIssue) => {
+  //     const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
+  //       name: prevIssue.reporter.name,
+  //       id: eadl._id,
+  //       comment: i18n.t('issue_was_rejected'),
+  //       due_at: moment(),
+  //     });
+  //     return updatedIssue;
+  //   });
+  // };
+
   const rejectIssue = () => {
     const newStatus = statuses.find((x) => x.rejected_status === true);
+    if (!newStatus) {
+      console.error('No rejected status found');
+      showToast(i18n.t('error_rejecting_issue'));
+      return;
+    }
+  
     setIssue((prevIssue) => {
-      const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
-        name: prevIssue.reporter.name,
-        id: eadl._id,
-        comment: i18n.t('issue_was_rejected'),
-        due_at: moment(),
-      });
+      const updatedIssue = {
+        ...prevIssue,
+        status: newStatus,
+        reject_flag: true,
+        comments: [
+          ...prevIssue.comments,
+          {
+            name: prevIssue.reporter.name,
+            id: eadl._id,
+            comment: reason,
+            due_at: moment(),
+          },
+        ],
+      };
       return updatedIssue;
     });
+  
+    setRejectedDialog(true);
+    setDisableEscalation(true);
+    setIsAcceptEnabled(false);
+    setIsRecordResolutionEnabled(false);
+    setIsRateAppealEnabled(false);
+  
+    showToast(i18n.t('issue_rejected_successfully'));
+    saveIssueStatus(newStatus, 'reject');
   };
 
   const rateIssue = () => {
@@ -227,7 +272,8 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 {
                     name: prevIssue.reporter.name,
                     id: eadl._id,
-                    comment: i18n.t('issue_was_escalated'),
+                    comment: escalateComment,
+                    // comment: i18n.t('issue_was_escalated'),
                     due_at: moment(),
                 },
             ],
@@ -237,6 +283,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
     });
     setDisableEscalation(true);
     setEscalatedDialog(true);
+    setHasActions(true);
   };
 
   const recordStep = () => {
@@ -252,12 +299,12 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
     });
 
     setRecordedSteps(true);
+    setHasActions(true);
   };
 
   useEffect(() => {
-    if (recordedSteps || recordResolutionConfirmation || escalateIssue ) {
-        // console.log("Issue has been updated, saving status... : ", issue.comments);
-        saveIssueStatus();
+    if (recordedSteps || recordResolutionConfirmation || escalateIssue || rejectedDialog) {
+      saveIssueStatus();
     }
   }, [issue]);
 
@@ -285,6 +332,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
         return updatedIssue;
     });
     _hideRecordResolutionDialog();
+    setHasActions(true);
   };
 
   const saveIssueStatus = (newStatus, type = 'none') => {
@@ -412,7 +460,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
 
           {/* ACTION BUTTONS */}
           <View style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => _showDialog()}
               disabled={!isAcceptEnabled}
               style={{
@@ -432,10 +480,33 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 />
                 <Feather name="help-circle" size={24} color="gray"/>
               </View>
+            </TouchableOpacity> */}
+
+            <TouchableOpacity
+              onPress={_showRejectDialog}
+              disabled={rejectedDialog || hasActions}
+              style={{
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginVertical: 10,
+              }}
+            >
+              <Text style={styles.subtitle}>{i18n.t('reject_issue')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AntDesign
+                  style={{ marginRight: 5 }}
+                  name="rightsquare"
+                  size={35}
+                  color={!rejectedDialog && !hasActions ? colors.primary : colors.disabled}
+                />
+                <Feather name="help-circle" size={24} color="gray"/>
+              </View>
             </TouchableOpacity>
+            
             <TouchableOpacity
               onPress={_showRecordStepsDialog}
-              disabled={!isRecordResolutionEnabled}
+              disabled={!isRecordResolutionEnabled }
               style={{
                 alignItems: 'center',
                 flexDirection: 'row',
@@ -454,6 +525,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 <Feather name="help-circle" size={24} color="gray"/>
               </View>
             </TouchableOpacity>
+
             <TouchableOpacity
               onPress={_showRecordResolutionDialog}
               disabled={!isRecordResolutionEnabled}
@@ -475,7 +547,8 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 <Feather name="help-circle" size={24} color="gray"/>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity
+
+            {/* <TouchableOpacity
               onPress={_showRatingDialog}
               disabled={!isRateAppealEnabled}
               style={{
@@ -495,7 +568,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 />
                 <Feather name="help-circle" size={24} color="gray"/>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
             <TouchableOpacity
               onPress={_showEscalateDialog}
@@ -660,6 +733,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 mode="outlined"
                 theme={theme}
                 onChangeText={onChangeReason}
+                value={reason}
               />
             )}
           </Dialog.Content>
@@ -876,7 +950,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
               >
                 {i18n.t('finished')}
               </Button>
-              <Button
+              {/* <Button
                 theme={theme}
                 style={{ alignSelf: 'center', margin: 24 }}
                 labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
@@ -884,7 +958,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 onPress={goToHistory}
               >
                 {i18n.t('view_history')}
-              </Button>
+              </Button> */}
             </Dialog.Actions>
           )}
         </Dialog>
