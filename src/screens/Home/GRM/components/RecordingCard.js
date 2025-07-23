@@ -161,6 +161,7 @@ const RecordingCard = ({ onRecordingSaved, mode = "full", initialURI }) => {
     setRecordingURI(null);
     setCurrent('00:00');
     setDuration('00:00');
+    onRecordingSaved(null);
   };
 
   return (

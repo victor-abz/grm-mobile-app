@@ -286,7 +286,7 @@ function Content({ issue }) {
         <TouchableOpacity
           onPress={() => setIsAttachmentCollapsed(!isAttachmentCollapsed)}
           style={styles.collapsibleTrigger}>
-          <Text style={styles.subtitle}>{i18n.t('step_3_attachments')}</Text>
+          <Text style={styles.subtitle}>{i18n.t('attachments_label')}</Text>
           <MaterialCommunityIcons
             name={isAttachmentCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
             size={24}
