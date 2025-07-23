@@ -22,6 +22,7 @@ import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/Cu
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import RecordingCard from '../../GRM/components/RecordingCard';
+import ImagePreviewCard from './ImagePreviewCard';
 
 const theme = {
   roundness: 12,
@@ -488,29 +489,11 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
             )}
             <View style={{ flexDirection: 'row', justifyContent: 'center'}}>
             {attachment.uri && (
-              <ImageBackground
-                key={attachment.id}
-                source={{ uri: attachment.uri }}
-                style={{
-                  height: 100,
-                  width: 100,
-                  margin: 5,
-                  marginTop: 20,
-                  alignSelf: 'center',
-                  justifyContent: 'flex-end',
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => setAttachment({})}
-                  style={{
-                    alignItems: 'center',
-                    padding: 5,
-                    backgroundColor: 'rgba(36, 195, 139, 1)',
-                  }}
-                >
-                  <Text style={{ color: 'white' }}>X</Text>
-                </TouchableOpacity>
-              </ImageBackground>
+              <ImagePreviewCard
+                uri={attachment.uri}
+                id={attachment.id}
+                onRemove={() => setAttachment({})}
+              />
             )}
           </View>
         </View>

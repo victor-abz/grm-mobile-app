@@ -13,6 +13,7 @@ import { citizenTypes } from '../../../../utils/utils';
 import Collapsible from 'react-native-collapsible';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import RecordingCard from "../../GRM/components/RecordingCard";
+import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
 
 
 const theme = {
@@ -298,16 +299,11 @@ function Content({ issue }) {
                 return (
                   <View style={{ flexDirection: 'row', maxWidth: '100%' , justifyContent: 'center'}}>
                     {(!attachment.isAudio && attachment.local_url) && (
-                      <ImageBackground
-                        source={{ uri: attachment.local_url }}
-                        style={{
-                          height: 120,
-                          width: 120,
-                          alignSelf: 'center',
-                          justifyContent: 'flex-end',
-                          marginVertical: 20,
-                        }}
-                      ></ImageBackground>
+                      <ImagePreviewCard
+                        uri={attachment.local_url}
+                        id={attachment.id}
+                        showRemove={false}
+                      />
                     )}
                     {(attachment.isAudio) && (
                       <RecordingCard mode="playback" initialURI={attachment.local_url}/>
