@@ -26,7 +26,6 @@ const theme = {
 };
 
 function Content({ issue }) {
-  console.log(issue)
   const [comments, setComments] = useState(issue.comments);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
@@ -38,8 +37,6 @@ function Content({ issue }) {
   const [isAppealCollapsed, setIsAppealCollapsed] = useState(true);
   const [isAttachmentCollapsed, setIsAttachmentCollapsed] = useState(true);
   const scrollViewRef = useRef();
-  // Remove all recording-related state and logic
-  const [current, setCurrent] = useState(null);
 
   useBackHandler(() => {
     // navigation.navigate("GRM")
@@ -299,13 +296,13 @@ function Content({ issue }) {
           <View style={styles.collapsibleContent}>
             { issue.attachments.map((attachment) => {
                 return (
-                  <View style={{ flexDirection: 'row', maxWidth: '100%' }}>
-                    {(!attachment.isAudio && attachment.uri) && (
+                  <View style={{ flexDirection: 'row', maxWidth: '100%' , justifyContent: 'center'}}>
+                    {(!attachment.isAudio && attachment.local_url) && (
                       <ImageBackground
-                        source={{ uri: attachment.uri }}
+                        source={{ uri: attachment.local_url }}
                         style={{
-                          height: 160,
-                          width: 160,
+                          height: 120,
+                          width: 120,
                           alignSelf: 'center',
                           justifyContent: 'flex-end',
                           marginVertical: 20,

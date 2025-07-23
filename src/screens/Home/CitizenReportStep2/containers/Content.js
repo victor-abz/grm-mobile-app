@@ -131,12 +131,14 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
       // aspect: [4, 3],
       quality: 1,
     });
-    if (!result.cancelled) {
+    
+    if (!result.canceled && (result.localUri || (result.assets.length > 0 && result.assets[0].uri))) {
+
       const manipResult = await ImageManipulator.manipulateAsync(
-        result.localUri || result.uri,
+        result.localUri || result.assets[0].uri,
         [{ resize: { width: 1000, height: 1000 } }],
         { compress: 1, format: ImageManipulator.SaveFormat.PNG },
-      );
+      );      
       setAttachment({ ...manipResult, id: new Date() });
     }
   };
@@ -148,13 +150,14 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
       quality: 1,
     });
 
-    if (!result.cancelled) {
+    if (!result.canceled && (result.localUri || (result.assets.length > 0 && result.assets[0].uri))) {
       const manipResult = await ImageManipulator.manipulateAsync(
-        result.localUri || result.uri,
+        result.localUri || result.assets[0].uri,
         [{ resize: { width: 1000, height: 1000 } }],
         { compress: 1, format: ImageManipulator.SaveFormat.PNG },
       );
       setAttachment({ ...manipResult, id: new Date() });
+
     }
   };
 
@@ -441,32 +444,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
             }}
           >
             {i18n.t('step_2_share_photos')}
-          </Text>
-          <View>
-            {attachment.uri && (
-              <ImageBackground
-                source={{ uri: attachment.uri }}
-                style={{
-                  height: 160,
-                  width: 160,
-                  alignSelf: 'center',
-                  justifyContent: 'flex-end',
-                  marginVertical: 20,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => setAttachment({})}
-                  style={{
-                    alignItems: 'center',
-                    padding: 5,
-                    backgroundColor: 'rgba(36, 195, 139, 1)',
-                  }}
-                >
-                  <Text style={{ color: 'white' }}>X</Text>
-                </TouchableOpacity>
-              </ImageBackground>
-            )}
-          </View>
+          </Text>      
           <View
             style={{
               flexDirection: 'row',
@@ -508,6 +486,33 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
               />
               </View>
             )}
+            <View style={{ flexDirection: 'row', justifyContent: 'center'}}>
+            {attachment.uri && (
+              <ImageBackground
+                key={attachment.id}
+                source={{ uri: attachment.uri }}
+                style={{
+                  height: 100,
+                  width: 100,
+                  margin: 5,
+                  marginTop: 20,
+                  alignSelf: 'center',
+                  justifyContent: 'flex-end',
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => setAttachment({})}
+                  style={{
+                    alignItems: 'center',
+                    padding: 5,
+                    backgroundColor: 'rgba(36, 195, 139, 1)',
+                  }}
+                >
+                  <Text style={{ color: 'white' }}>X</Text>
+                </TouchableOpacity>
+              </ImageBackground>
+            )}
+          </View>
         </View>
         <View style={{ paddingHorizontal: 50 }}>
           <Button
