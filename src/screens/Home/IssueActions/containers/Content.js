@@ -17,6 +17,7 @@ import { styles } from './Content.styles';
 import { LocalGRMDatabase } from '../../../../utils/databaseManager';
 import { i18n } from "../../../../translations/i18n";
 import StarRating from 'react-native-star-rating-widget';
+import AddAttachmentCard from "../../GRM/components/AddAttachmentCard";
 
 const theme = {
   roundness: 12,
@@ -59,7 +60,8 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
   const [rating, setRating] = useState(0);
   const [status, setStatus] = useState(null);
   const [hasActions, setHasActions] = useState(false);
-
+  const [attachment, setAttachment] = useState({});
+  const [recordingURI, setRecordingURI] = useState();
 
   const goToDetails = () => navigation.jumpTo('IssueDetail');
   const goToHistory = () => {
@@ -203,6 +205,25 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
             id: eadl._id,
             comment: reason,
             due_at: moment(),
+            attachment: attachment.uri
+              ? {
+                url: '',
+                id: attachment?.id,
+                uploaded: false,
+                local_url: attachment?.uri,
+                name: attachment?.uri.split('/').pop(),
+              }
+              : undefined,
+            recording: recordingURI
+              ? {
+                url: '',
+                id: recordingURI.split('/').pop(),
+                uploaded: false,
+                local_url: recordingURI,
+                isAudio: true,
+                name: recordingURI.split('/').pop(),
+              }
+              : undefined,
           },
         ],
       };
@@ -275,6 +296,25 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                     comment: escalateComment,
                     // comment: i18n.t('issue_was_escalated'),
                     due_at: moment(),
+                    attachment: attachment.uri
+                      ? {
+                        url: '',
+                        id: attachment?.id,
+                        uploaded: false,
+                        local_url: attachment?.uri,
+                        name: attachment?.uri.split('/').pop(),
+                      }
+                      : undefined,
+                    recording: recordingURI
+                      ? {
+                        url: '',
+                        id: recordingURI.split('/').pop(),
+                        uploaded: false,
+                        local_url: recordingURI,
+                        isAudio: true,
+                        name: recordingURI.split('/').pop(),
+                      }
+                      : undefined,
                 },
             ],
         };
@@ -293,6 +333,25 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
             id: eadl._id,
             comment,
             due_at: moment(),
+            attachment: attachment.uri
+              ? {
+                url: '',
+                id: attachment?.id,
+                uploaded: false,
+                local_url: attachment?.uri,
+                name: attachment?.uri.split('/').pop(),
+              }
+              : undefined,
+            recording: recordingURI
+              ? {
+                url: '',
+                id: recordingURI.split('/').pop(),
+                uploaded: false,
+                local_url: recordingURI,
+                isAudio: true,
+                name: recordingURI.split('/').pop(),
+              }
+              : undefined,
         });
                 
         return updatedIssue;
@@ -326,6 +385,25 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                     id: eadl._id,
                     comment: i18n.t('issue_was_resolved'),
                     due_at: moment(),
+                    attachment: attachment.uri
+                      ? {
+                        url: '',
+                        id: attachment?.id,
+                        uploaded: false,
+                        local_url: attachment?.uri,
+                        name: attachment?.uri.split('/').pop(),
+                      }
+                      : undefined,
+                    recording: recordingURI
+                      ? {
+                        url: '',
+                        id: recordingURI.split('/').pop(),
+                        uploaded: false,
+                        local_url: recordingURI,
+                        isAudio: true,
+                        name: recordingURI.split('/').pop(),
+                      }
+                      : undefined,
                 },
             ],
         };
@@ -344,10 +422,10 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
     //     reject_reason: reason,
     //   };
     // }
-    // console.log("toSaveIssue.comments : ", issue.comments);
+    console.log("toSaveIssue.comments : ", issue.comments);
     LocalGRMDatabase.upsert(issue._id, (doc) => {
       doc = issue;
-      console.log("saving issue +++");
+      console.log("saving issue +++", issue);
       return doc;
     }).then(() => {
         updateActionButtons();
@@ -727,14 +805,24 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
               </Paragraph>
             )}
             {!rejectedDialog && (
-              <TextInput
-                multiline
-                style={{ marginTop: 10 }}
-                mode="outlined"
-                theme={theme}
-                onChangeText={onChangeReason}
-                value={reason}
-              />
+              <View>
+                <TextInput
+                  multiline
+                  style={{ marginTop: 10 }}
+                  mode="outlined"
+                  theme={theme}
+                  onChangeText={onChangeReason}
+                  value={reason}
+                />
+                <AddAttachmentCard 
+                  theme={theme}
+                  onAttachmentChange={(a, r) => {
+                    setAttachment(a);
+                    setRecordingURI(r);
+                  }}
+                />
+              </View>
+
             )}
           </Dialog.Content>
           {!rejectedDialog ? (
@@ -849,6 +937,13 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 onChangeText={onChangeEscalateComment}
               />
             )}
+            <AddAttachmentCard 
+              theme={theme}
+              onAttachmentChange={(a, r) => {
+              setAttachment(a);
+              setRecordingURI(r);
+              }}
+            />
           </Dialog.Content>
           {!escalatedDialog ? (
             <Dialog.Actions>
@@ -913,6 +1008,13 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 onChangeText={onChangeComment}
               />
             )}
+            <AddAttachmentCard 
+              theme={theme}
+              onAttachmentChange={(a, r) => {
+              setAttachment(a);
+              setRecordingURI(r);
+              }}
+            />
           </Dialog.Content>
           {!recordedSteps ? (
             <Dialog.Actions>
@@ -985,6 +1087,13 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
                 {'\n'}"{resolution}"
               </Text>
             )}
+            <AddAttachmentCard 
+              theme={theme}
+              onAttachmentChange={(a, r) => {
+              setAttachment(a);
+              setRecordingURI(r);
+              }}
+            />
           </Dialog.Content>
           {!recordedResolution ? (
             <Dialog.Actions>

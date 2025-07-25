@@ -5,24 +5,19 @@ import {
   Text,
   Platform,
   KeyboardAvoidingView,
-  ImageBackground,
-  TouchableOpacity,
   TextInput as NativeTextInput,
   ToastAndroid,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { Button, Checkbox, Dialog, IconButton, Paragraph, Portal, TextInput } from 'react-native-paper';
+import { Button, Checkbox, Dialog, Paragraph, Portal, TextInput } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import moment from 'moment';
-import { Audio } from 'expo-av';
 import { i18n } from "../../../../translations/i18n";
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
-import RecordingCard from '../../GRM/components/RecordingCard';
-import ImagePreviewCard from './ImagePreviewCard';
 import AddAttachmentCard from "../../GRM/components/AddAttachmentCard";
 
 const theme = {
