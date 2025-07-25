@@ -425,7 +425,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
     console.log("toSaveIssue.comments : ", issue.comments);
     LocalGRMDatabase.upsert(issue._id, (doc) => {
       doc = issue;
-      console.log("saving issue +++", issue);
+      console.log("saving issue +++");
       return doc;
     }).then(() => {
         updateActionButtons();
