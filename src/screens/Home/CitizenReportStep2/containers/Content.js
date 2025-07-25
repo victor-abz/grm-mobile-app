@@ -23,6 +23,7 @@ import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import RecordingCard from '../../GRM/components/RecordingCard';
 import ImagePreviewCard from './ImagePreviewCard';
+import AddAttachmentCard from "../../GRM/components/AddAttachmentCard";
 
 const theme = {
   roundness: 12,
@@ -45,9 +46,9 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
   const [additionalDetails, setAdditionalDetails] = useState(null);
   const [date, setDate] = useState(null);
   const [attachment, setAttachment] = useState({});
+  const [recordingURI, setRecordingURI] = useState();
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [items, setItems] = useState(issueTypes ?? []);
-  const [recordingURI, setRecordingURI] = useState();
   const [showRecordingCard, setShowRecordingCard] = useState(false);
 
   const [items2, setItems2] = useState(issueCategories ?? []);
@@ -446,56 +447,13 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
           >
             {i18n.t('step_2_share_photos')}
           </Text>      
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
+          <AddAttachmentCard
+            theme={theme}
+            onAttachmentChange={(a, r) => {
+              setAttachment(a);
+              setRecordingURI(r);
             }}
-          >
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center' }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={pickImage}
-              uppercase={false}
-            >
-              {i18n.t('step_2_upload_attachment')}
-            </Button>
-            <View style={styles.iconButtonStyle}>
-              <IconButton icon="camera" color={colors.primary} size={24} onPress={openCamera}/>
-            </View>
-            {!showRecordingCard && (
-              <View style={styles.iconButtonStyle}>
-                <IconButton
-                  icon="microphone"
-                  color={colors.primary}
-                  size={24}
-                  onPress={() => setShowRecordingCard(!showRecordingCard)}
-                />
-              </View>
-            )}
-            </View>
-            {(showRecordingCard || recordingURI) && (
-             <View style={{ flexDirection: 'row', maxWidth: '100%' }}>
-               <RecordingCard
-                mode="full"
-                onRecordingSaved={uri => {
-                  setRecordingURI(uri);
-                  setShowRecordingCard(false);
-                }}
-              />
-              </View>
-            )}
-            <View style={{ flexDirection: 'row', justifyContent: 'center'}}>
-            {attachment.uri && (
-              <ImagePreviewCard
-                uri={attachment.uri}
-                id={attachment.id}
-                onRemove={() => setAttachment({})}
-              />
-            )}
-          </View>
+          />
         </View>
         <View style={{ paddingHorizontal: 50 }}>
           <Button
