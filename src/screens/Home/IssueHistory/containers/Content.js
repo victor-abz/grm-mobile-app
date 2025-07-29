@@ -5,6 +5,8 @@ import { styles } from './Content.styles';
 import { i18n } from "../../../../translations/i18n";
 import { Button, Dialog, Paragraph, Portal, Divider } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
+import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
+import RecordingCard from '../../GRM/components/RecordingCard';
 
 const theme = {
   roundness: 12,
@@ -18,7 +20,6 @@ const theme = {
 
 function Content({ issue }) {
   const [comments, setComments] = useState([]);
-
   useEffect(() => {
     if (issue?.comments) {
       // console.log("History-updated comments :", issue.comments);
@@ -67,6 +68,23 @@ function Content({ issue }) {
           <Dialog.Title>{selected?.name}</Dialog.Title>
           <Dialog.Content>
             <Paragraph>{selected?.comment}</Paragraph>
+            <View style={styles.collapsibleContent}>
+            { (selected?.attachment || selected?.recording) && (
+                  <View style={{ flexDirection: 'row', maxWidth: '100%' , justifyContent: 'center'}}>
+                    {(selected?.attachment && selected?.attachment.local_url) && (
+                      <ImagePreviewCard
+                        uri={selected.attachment.local_url}
+                        id={selected.attachment.id}
+                        showRemove={false}
+                      />
+                    )}
+                    {(selected?.recording) && (
+                      <RecordingCard mode="playback" initialURI={selected.recording.local_url}/>
+                    )}
+                  </View>
+                )
+             }
+          </View>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
