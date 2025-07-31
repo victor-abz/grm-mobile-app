@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ActivityIndicator, Snackbar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { getInfoAsync } from 'expo-file-system';
-import LocalDatabase, { LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
 import { colors } from '../../../utils/colors';
 import ImagesList from './components/ImagesList';
 import { getEncryptedData } from '../../../utils/storageManager';
@@ -85,7 +85,7 @@ function SyncAttachments({ navigation }) {
   };
 
   async function fetchContentRouting() {
-    LocalDatabase.find({
+    LocalAdminLevelsDatabase.find({
       selector: { 'representative.email': username },
       // fields: ["_id", "phases"],
     })
@@ -113,7 +113,7 @@ function SyncAttachments({ navigation }) {
 
         // fetch EADL
         const issuesAttachments = [];
-        LocalDatabase.find({
+        LocalAdminLevelsDatabase.find({
           selector: { 'representative.email': username },
           // fields: ["_id", "commune", "phases"],
         })

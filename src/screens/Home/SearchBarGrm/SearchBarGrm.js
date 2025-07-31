@@ -3,7 +3,7 @@ import { SafeAreaView, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './SearchBarGrm.style';
-import LocalDatabase, { LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
 
 function SearchBarGrm() {
   const [eadl, setEadl] = useState(false);
@@ -12,7 +12,7 @@ function SearchBarGrm() {
 
   useEffect(() => {
     if (username) {
-      LocalDatabase.find({
+      LocalAdminLevelsDatabase.find({
         selector: { 'representative.email': username },
       })
         .then((result) => {

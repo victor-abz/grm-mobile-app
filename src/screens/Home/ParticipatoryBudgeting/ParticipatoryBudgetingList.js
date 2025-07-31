@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { SafeAreaView, ActivityIndicator } from "react-native";
 import Content from "./containers/Content";
 import { styles } from "./ParticipatoryBudgetingList.styles";
-import LocalDatabase from "../../../utils/databaseManager";
+import { LocalAdminLevelsDatabase } from "../../../utils/databaseManager";
 import { useSelector } from "react-redux";
 import { colors } from "../../../utils/colors";
 
@@ -15,7 +15,7 @@ const ParticipatoryBudgetingList = () => {
   });
   useEffect(() => {
     if (username) {
-      LocalDatabase.find({
+      LocalAdminLevelsDatabase.find({
         selector: { "representative.email": username },
         // fields: ["_id", "commune", "phases"],
       })
