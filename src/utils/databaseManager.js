@@ -212,6 +212,19 @@ export function resumeSyncs() {
   }
 }
 
+export const logoutRemoteDBs = async () => {
+  removeAllSyncListeners();
+  cancelSyncs();
+
+  try {
+    await logoutRemoteDB(adminLevelsRemoteDB, "EADL");
+    await logoutRemoteDB(grmRemoteDB, "GRM");
+    await logoutRemoteDB(communesRemoteDB, "COMMUNES");
+  } catch (error) {
+    console.error("Error during logout from remote databases:", error);
+  }
+}
+
 
 async function logoutRemoteDB(db, label) {
 try {
