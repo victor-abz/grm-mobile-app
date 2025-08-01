@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import { Platform, View, StyleSheet, Pressable } from 'react-native';
+import React from "react";
+
+import { version } from '../../../package.json';
+import { Platform, View, StyleSheet, Pressable, Text } from "react-native";
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import posed from 'react-native-pose';
@@ -47,7 +49,14 @@ const iconConfig = {
 const customHeaderOptions = (label) => ({
   headerBackTitle: () => null,
   headerTintColor: '#00bc82',
-  headerTitle: label,
+  headerTitle: () => { return (<View>
+          <View>
+            <Text>{label}</Text>
+            <Text style={{ color: colors.secondary, fontSize: 12, textAlign: "center" }}>
+               v {version}
+            </Text>
+      </View>
+  </View>)},
   headerTitleAllowFontScaling: true,
   headerTitleAlign: 'center',
   headerTitleStyle: {

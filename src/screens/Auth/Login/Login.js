@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { version } from '../../../../package.json';
 
 import {
   Keyboard,
@@ -101,8 +102,8 @@ function Login() {
               color: '#707070',
             }}
           >
-          {i18n.t('welcome_login')}
-        </Text>
+            {i18n.t('welcome_login')}
+          </Text>
         </View>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.loginScreenContainer}>
@@ -211,7 +212,13 @@ function Login() {
             )}
           </View>
         </TouchableWithoutFeedback>
+
       </KeyboardAvoidingView>
+      <View style={{ marginTop: "auto" }}>
+           <Text style={{ color: colors.secondary, fontSize: 12, textAlign: "center" }}>
+              v {version}
+           </Text>
+      </View>
     </ScrollView>
   );
 }
