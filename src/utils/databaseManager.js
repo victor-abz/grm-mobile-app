@@ -1,155 +1,247 @@
-import PouchDB from 'pouchdb-react-native';
 import PouchAuth from 'pouchdb-authentication';
 import PouchFind from 'pouchdb-find';
-import PouchAsyncStorage from 'pouchdb-adapter-asyncstorage';
+
 import { baseURL } from '../services/API';
+
+import HttpPouch from 'pouchdb-adapter-http';
+import sqliteAdapter from 'pouchdb-adapter-react-native-sqlite';
+import PouchDB from 'pouchdb-core';
+import mapreduce from 'pouchdb-mapreduce';
+import replication from 'pouchdb-replication';
+
+export default PouchDB.plugin(HttpPouch)
+  .plugin(replication)
+  .plugin(mapreduce)
+  .plugin(sqliteAdapter)
+  .plugin(PouchAuth)
+  .plugin(PouchFind)
+  .plugin(require('pouchdb-upsert'));
+
 const BASE_URL = 'https://cdd.coso.gouv.bj/couchdb';
 // const BASE_URL = 'http://10.0.2.2:5984';
 const RESOURCE_URL = baseURL;
-PouchDB.plugin(PouchAuth);
-PouchDB.plugin(PouchFind);
-PouchDB.plugin(require('pouchdb-upsert'));
-
-PouchDB.plugin(PouchAsyncStorage);
 
 const LocalAdminLevelsDatabase = new PouchDB('eadl', {
-  adapter: 'asyncstorage',
+  adapter: 'react-native-sqlite',
 });
 
 const LocalGRMDatabase = new PouchDB('grm', {
-  adapter: 'asyncstorage',
+  adapter: 'react-native-sqlite',
 });
 
 const LocalCommunesDatabase = new PouchDB('commune', {
-  adapter: 'asyncstorage',
+  adapter: 'react-native-sqlite',
+});
+
+const adminLevelsRemoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
+  skip_setup: true,
+});
+
+const grmRemoteDB = new PouchDB(`${BASE_URL}/grm`, {
+  skip_setup: true,
+});
+
+const communesRemoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
+  skip_setup: true,
 });
 
 export const ResourceUrl = RESOURCE_URL;
 
+// Track active syncs
+const activeSyncs = {
+  adminLevels: null,
+  grm: null,
+  communes: null,
+};
+
 export const SyncToRemoteDatabase = async ({ username, password }, userEmail) => {
-  const adminLevelsRemoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
-    skip_setup: true,
-  });
 
-  const grmRemoteDB = new PouchDB(`${BASE_URL}/grm`, {
-    skip_setup: true,
-  });
-
-  const communesRemoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
-    skip_setup: true,
-  });
-
-  const result = {levels: []};
-  if (result.levels.length === 0) {
+  const levelsResult = { levels: [] };
+  
+  if (levelsResult.levels.length === 0) {
     await fetch(`${RESOURCE_URL}/authentication/get-adl-administrative-region?${new URLSearchParams({email: userEmail})}`)
       .then((response) => response.json())
-      .then((a) => {result.levels = a?.levels})
+      .then((a) => {levelsResult.levels = a?.levels})
       .catch((error) => ({ error }));
   }
-
-  async function loginRemoteDB(db, username, password, label) {
-    try {
-      await db.logIn(username, password);
-      console.log(`Logged in to ${label} remote database`);
-    } catch (error) {
-      console.error(`Error logging in to ${label} remote database:`, error);
-    }
-  }
-
-  async function logoutRemoteDB(db, label) {
-    try {
-      await db.logOut();
-      console.log(`Logged out from ${label} remote database`);
-    } catch (error) {
-      console.error(`Error logging out from ${label} remote database:`, error);
-    }
-  }
-
-  await loginRemoteDB(adminLevelsRemoteDB, username, password, 'EADL');
-  await loginRemoteDB(grmRemoteDB, username, password, 'GRM');
-  await loginRemoteDB(communesRemoteDB, username, password, 'COMMUNES');
   
-  const syncAdminLevelsDB = LocalAdminLevelsDatabase.sync(adminLevelsRemoteDB, {
+  // if sync exists, do not create a new one
+  // Prevent multiple syncs
+  if (
+    activeSyncs.adminLevels ||
+    activeSyncs.grm ||
+    activeSyncs.communes
+  ) {
+    console.warn("A sync is already running. Skipping new sync initialization.");
+    return;
+  }
+
+  // start syncing the databases
+  await loginRemoteDB(adminLevelsRemoteDB, username, password, "EADL");
+  await loginRemoteDB(grmRemoteDB, username, password, "GRM");
+  await loginRemoteDB(communesRemoteDB, username, password, "COMMUNES");
+
+  // start syncing the databases
+  console.log("Starting syncs for user: ", userEmail);
+
+  // Sync the local databases with the remote ones
+  activeSyncs.adminLevels = LocalAdminLevelsDatabase.sync(adminLevelsRemoteDB, {
     live: true,
     retry: true,
-    filter: 'eadl/by_user_email',
+    filter: "eadl/by_user_email",
     query_params: { email: userEmail },
   });
 
-  const syncCommunes = LocalCommunesDatabase.sync(communesRemoteDB, {
+  activeSyncs.communes = LocalCommunesDatabase.sync(communesRemoteDB, {
     live: true,
     retry: true,
     filter: "eadl/by_user_administrative_region",
-    query_params: { ids: result?.levels },
+    query_params: { ids: levelsResult?.levels },
   });
-  
-  let syncGRM;
+
+ 
   const opts = { live: true, retry: true };
   // do one way, one-off sync from the server until completion
-  LocalGRMDatabase.replicate.from(grmRemoteDB).on('complete', function (info)
-  {
-
-    console.log("Initial replication from grm remote db into local grm db completed: ", info);  
+  LocalGRMDatabase.replicate.from(grmRemoteDB).on("complete", function (info) {
     // then two-way, continuous, retriable sync
-    // moved syncing listening events here to avoid defining it without the db being ready
-    syncGRM = LocalGRMDatabase.sync(grmRemoteDB, opts)
-    const syncStates = ['change', 'paused', 'active', 'denied', 'complete', 'error'];
+    activeSyncs.grm = LocalGRMDatabase.sync(grmRemoteDB, opts);
+    const syncStates = [
+      "change",
+      "paused",
+      "active",
+      "denied",
+      "complete",
+      "error",
+    ];
+    
     syncStates.forEach((state) =>
     {
-      syncGRM.on(state, async (currState) =>
-      {
+      activeSyncs.grm.on(state, async (currState) => {
         if (currState && currState.status === 401) {
-          console.warn('SyncGRM unauthorized, attempting re-login...');
-          await loginRemoteDB(grmRemoteDB, username, password, 'GRM');
-          syncGRM.resume();
+          console.warn("SyncGRM unauthorized, attempting re-login...");
+          await loginRemoteDB(grmRemoteDB, username, password, "GRM");
+          activeSyncs.grm.resume();
         }
         console.log(`[Sync GRM ${state}: ${JSON.stringify(currState)}]`);
       });
-       
-    }
+    });
+  }).on("error", (error) => {
+    console.log(
+      "Error on initial replication from grm remote db into local grm db: ",
+      error
     );
-  }).on('error', (error) =>
-  { 
-    console.log("Error on initial replication from grm remote db into local grm db: ", err);
   });
 
-  
   // Log sync states for debugging
-  const syncStates = ['change', 'paused', 'active', 'denied', 'complete', 'error'];
+  const syncStates = [
+    "change",
+    "paused",
+    "active",
+    "denied",
+    "complete",
+    "error",
+  ];
   syncStates.forEach((state) => {
-    syncAdminLevelsDB.on(state, async (currState) =>
-    { 
-        if (currState && currState.status === 401) {
-          console.warn(state);
-          console.warn('SyncAdminLevels unauthorized, attempting re-login...');
-          await loginRemoteDB(adminLevelsRemoteDB, username, password, 'EADL');
-          syncAdminLevelsDB.resume();
-        }
-      
-        console.log(`[Sync EADL ${state}: ${JSON.stringify(currState)}]`)
-      }
-    );
-    
-    syncCommunes.on(state, async (currState) =>
-    { 
+    activeSyncs.adminLevels.on(state, async (currState) => {
       if (currState && currState.status === 401) {
-        console.warn('SyncCommunes unauthorized, attempting re-login...');
-        await loginRemoteDB(communesRemoteDB, username, password, 'COMMUNES');
-        syncCommunes.resume();
+        console.warn(state);
+        console.warn(
+          "SyncAdminLevels unauthorized, attempting re-login..."
+        );
+        await loginRemoteDB(
+          adminLevelsRemoteDB,
+          username,
+          password,
+          "EADL"
+        );
+        activeSyncs.adminLevels.resume();
       }
-      console.log(`[Sync COMMUNES ${state}: ${JSON.stringify(currState)}]`)
-    }
-    );
 
+      console.log(`[Sync EADL ${state}: ${JSON.stringify(currState)}]`);
+    });
+
+    activeSyncs.communes.on(state, async (currState) => {
+      if (currState && currState.status === 401) {
+        console.warn("SyncCommunes unauthorized, attempting re-login...");
+        await loginRemoteDB(
+          communesRemoteDB,
+          username,
+          password,
+          "COMMUNES"
+        );
+        activeSyncs.communes.resume();
+      }
+      console.log(`[Sync COMMUNES ${state}: ${JSON.stringify(currState)}]`);
+    });
   });
 };
 
+const removeAllSyncListeners = () => {
+  LocalAdminLevelsDatabase.removeAllListeners();
+  LocalGRMDatabase.removeAllListeners();
+  LocalCommunesDatabase.removeAllListeners();
+};
+
+async function loginRemoteDB(db, username, password, label, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await db.logIn(username, password);
+      console.log(`Logged in to ${label} remote database`);
+      return;
+    } catch (error) {
+      if (error.message && error.message.includes('ETIMEDOUT') && i < retries - 1) {
+        console.warn(`Timeout logging in to ${label}, retrying... (${i + 1})`);
+        await new Promise(res => setTimeout(res, 2000));
+      } else {
+        console.error(`Error logging in to ${label} remote database:`, error);
+        break;
+      }
+    }
+  }
+}
+
+export function resumeSyncs() {
+  if (LocalAdminLevelsDatabase && typeof LocalAdminLevelsDatabase.resume === "function") {
+    LocalAdminLevelsDatabase.resume();
+  }
+  if (LocalGRMDatabase && typeof LocalGRMDatabase.resume === "function") {
+    LocalGRMDatabase.resume();
+  }
+  if (LocalCommunesDatabase && typeof LocalCommunesDatabase.resume === "function") {
+    LocalCommunesDatabase.resume();
+  }
+}
+
+
+async function logoutRemoteDB(db, label) {
+try {
+  await db.logOut();
+  console.log(`Logged out from ${label} remote database`);
+} catch (error) {
+  console.error(`Error logging out from ${label} remote database:`, error);
+}
+}
+
 // cancel sync
 export const cancelSyncs = () => {
+  if (activeSyncs.adminLevels) {
+    activeSyncs.adminLevels.cancel();
+    activeSyncs.adminLevels = null;
+  }
+  if (activeSyncs.grm) {
+    activeSyncs.grm.cancel();
+    activeSyncs.grm = null;
+  }
+  if (activeSyncs.communes) {
+    activeSyncs.communes.cancel();
+    activeSyncs.communes = null;
+  }
   LocalAdminLevelsDatabase.cancel();
   LocalGRMDatabase.cancel();
   LocalCommunesDatabase.cancel();
 };
 
+
 // export the databases
-export { LocalAdminLevelsDatabase, LocalGRMDatabase, LocalCommunesDatabase };
+export { LocalAdminLevelsDatabase, LocalCommunesDatabase, LocalGRMDatabase };
+
