@@ -177,9 +177,13 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
 };
 
 const removeAllSyncListeners = () => {
-  LocalAdminLevelsDatabase.removeAllListeners();
-  LocalGRMDatabase.removeAllListeners();
-  LocalCommunesDatabase.removeAllListeners();
+  try {
+    LocalAdminLevelsDatabase.removeAllListeners();
+    LocalGRMDatabase.removeAllListeners();
+    LocalCommunesDatabase.removeAllListeners();
+  } catch (error) {
+    console.error("Error removing all sync listeners:", error);
+  }
 };
 
 async function loginRemoteDB(db, username, password, label, retries = 3) {
@@ -236,22 +240,28 @@ try {
 }
 
 // cancel sync
-export const cancelSyncs = () => {
-  if (activeSyncs.adminLevels) {
-    activeSyncs.adminLevels.cancel();
-    activeSyncs.adminLevels = null;
+export const cancelSyncs = () =>
+{
+  try {
+    if (activeSyncs.adminLevels) {
+      activeSyncs.adminLevels.cancel();
+      activeSyncs.adminLevels = null;
+    }
+    if (activeSyncs.grm) {
+      activeSyncs.grm.cancel();
+      activeSyncs.grm = null;
+    }
+    if (activeSyncs.communes) {
+      activeSyncs.communes.cancel();
+      activeSyncs.communes = null;
+    }
+      LocalAdminLevelsDatabase.cancel();
+      LocalGRMDatabase.cancel();
+      LocalCommunesDatabase.cancel();
+  } catch (error) {
+    console.error("Error canceling syncs:", error);
   }
-  if (activeSyncs.grm) {
-    activeSyncs.grm.cancel();
-    activeSyncs.grm = null;
-  }
-  if (activeSyncs.communes) {
-    activeSyncs.communes.cancel();
-    activeSyncs.communes = null;
-  }
-  LocalAdminLevelsDatabase.cancel();
-  LocalGRMDatabase.cancel();
-  LocalCommunesDatabase.cancel();
+  
 };
 
 
