@@ -102,7 +102,7 @@ function Content({ issue }) {
 
   return (
     <ScrollView ref={scrollViewRef} contentContainerStyle={{ alignItems: 'center', padding: 20 }}>
-      <View style={styles.infoContainer}>
+      <View key={"content"} style={styles.infoContainer}>
         <View style={{ flexDirection: 'row' }}>
           <View style={{ marginBottom: 10, justifyContent: 'flex-end', flex: 1, flexDirection: 'row' }}>
             <Text style={[styles.text, { fontSize: 12, color: colors.primary }]}>

@@ -1,6 +1,6 @@
 import { Map } from "immutable";
 import { createActions, handleActions } from "redux-actions";
-import { SyncToRemoteDatabase } from "../../utils/databaseManager";
+import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../utils/databaseManager";
 import {
   getEncryptedData,
   removeEncryptedValue,
@@ -52,6 +52,7 @@ export const { init, login, signUp, logout } = createActions({
   LOGOUT: () => {
     removeEncryptedValue("userPassword");
     removeEncryptedValue("username");
+    logoutRemoteDBs();
     return { password: null, username: null };
   },
 });

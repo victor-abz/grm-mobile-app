@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './IssueActions.styles';
-import LocalDatabase, { LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;
@@ -26,7 +26,7 @@ function IssueActions({ route, navigation }) {
 
   useEffect(() => {
     if (username) {
-      LocalDatabase.find({
+      LocalAdminLevelsDatabase.find({
         selector: { 'representative.email': username },
         // fields: ["_id", "commune", "phases"],
       })

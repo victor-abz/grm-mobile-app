@@ -19,7 +19,7 @@ import { Feather } from "@expo/vector-icons";
 import CustomGreenButton from "../../../../components/CustomGreenButton/CustomGreenButton";
 import moment from "moment";
 import "moment/locale/fr";
-import LocalDatabase from "../../../../utils/databaseManager";
+import { LocalAdminLevelsDatabase } from "../../../../utils/databaseManager";
 import * as Location from "expo-location";
 import { colors } from "../../../../utils/colors";
 import { baseURL } from "../../../../services/API";
@@ -98,7 +98,7 @@ function Content({ task, phase, eadl, updatePhase }) {
     const _location = await getLocation();
     task.attachments = attachments;
     task.location = _location;
-    LocalDatabase.upsert(eadl._id, function (doc) {
+    LocalAdminLevelsDatabase.upsert(eadl._id, function (doc) {
       doc.phases = eadl.phases;
       return doc;
     })

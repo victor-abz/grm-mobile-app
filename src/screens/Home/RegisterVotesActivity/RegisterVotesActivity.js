@@ -18,7 +18,7 @@ import moment from "moment";
 import "moment/locale/fr";
 import CustomGreenButton from "../../../components/CustomGreenButton/CustomGreenButton";
 import { colors } from "../../../utils/colors";
-import LocalDatabase from "../../../utils/databaseManager";
+import { LocalAdminLevelsDatabase } from "../../../utils/databaseManager";
 import { useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -42,7 +42,7 @@ function RegisterVotesActivity() {
   };
 
   const upsertTasks = () => {
-    LocalDatabase.upsert(eadl._id, function (doc) {
+    LocalAdminLevelsDatabase.upsert(eadl._id, function (doc) {
       doc = eadl;
       return doc;
     })

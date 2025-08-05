@@ -17,7 +17,7 @@ import moment from "moment";
 import "moment/locale/fr";
 import CustomGreenButton from "../../../components/CustomGreenButton/CustomGreenButton";
 import { colors } from "../../../utils/colors";
-import LocalDatabase from "../../../utils/databaseManager";
+import { LocalAdminLevelsDatabase } from "../../../utils/databaseManager";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 moment.locale("fr");
@@ -47,7 +47,7 @@ function RegisterSubprojects() {
     setCreateProjectModal(false);
   };
   const upsertTasks = () => {
-    LocalDatabase.upsert(eadl._id, function (doc) {
+    LocalAdminLevelsDatabase.upsert(eadl._id, function (doc) {
       doc = eadl;
       return doc;
     })

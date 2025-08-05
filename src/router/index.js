@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import PrivateRoutes from "./privateRoutes";
 import PublicRoutes from "./publicRoutes";
 import { useDispatch, useSelector } from "react-redux";
-import { View } from "react-native";
+import { AppState, View } from "react-native";
 import { getEncryptedData } from "../utils/storageManager";
 import { init } from "../store/ducks/authentication.duck";
 import {
@@ -17,6 +17,8 @@ import {
 const Router = ({ theme }) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
+
+  const appState = useRef(AppState.currentState);
 
   const { userPassword } = useSelector((state) => {
     return state.get("authentication").toObject();
@@ -38,6 +40,29 @@ const Router = ({ theme }) => {
 
   useEffect(() => {
     getDBConfig();
+
+    const handleAppStateChange = (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App has come to the foreground, resume syncs
+        try {
+          getDBConfig();
+          console.log('Resumed all syncs after foreground');
+        } catch (err) {
+          console.warn('Error resuming syncs:', err);
+        }
+      }
+      appState.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  
   }, []);
 
   let [fontsLoaded] = useFonts({

@@ -3,7 +3,7 @@ import { SafeAreaView, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './Profile.style';
-import LocalDatabase, { LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
 
 function Profile() {
   const [eadl, setEadl] = useState(false);
@@ -26,7 +26,7 @@ function Profile() {
 
   useEffect(() => {
     if (username) {
-      LocalDatabase.find({
+      LocalAdminLevelsDatabase.find({
         selector: { 'representative.email': username },
       })
         .then((result) => {

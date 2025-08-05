@@ -8,7 +8,7 @@ import moment from "moment";
 import "moment/locale/fr";
 import { ImageBackground } from "react-native";
 import TagIcon from "../../../../../assets/tag_solid.svg";
-import LocalDatabase from "../../../../utils/databaseManager";
+import { LocalAdminLevelsDatabase } from "../../../../utils/databaseManager";
 
 moment.locale("fr");
 
@@ -58,7 +58,7 @@ function Content({ eadl, phase }) {
     } else {
       phase.closed_at = null;
     }
-    LocalDatabase.upsert(eadl._id, function (doc) {
+    LocalAdminLevelsDatabase.upsert(eadl._id, function (doc) {
       doc.phases = eadl.phases;
       return doc;
     });

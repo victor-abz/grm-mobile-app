@@ -14,7 +14,7 @@ URL for Web App
 `src/services/API.js`
 
 
-# Development (see SDK version details for specific instuctions)
+# Development (see SDK version details for specific instructions)
 <!-- - `export NODE_OPTIONS=--openssl-legacy-provider` -->
 <!-- - `expo start` -->
 - `rm -rf package-lock.json`

@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './CitizenReportLocationStep.styles';
-import LocalDatabase, { LocalCommunesDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalCommunesDatabase } from '../../../utils/databaseManager';
 
 function CitizenReportLocationStep({ route }) {
   const { params } = route;
@@ -14,7 +14,7 @@ function CitizenReportLocationStep({ route }) {
 
   useEffect(() => {
     if (username) {
-      LocalDatabase.find({
+      LocalAdminLevelsDatabase.find({
         selector: { 'representative.email': username },
         // fields: ["_id", "commune", "phases"],
       })
