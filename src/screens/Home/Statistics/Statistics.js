@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { ActivityIndicator } from 'react-native-paper';
 import Content from './containers';
 import { styles } from './Statistics.style';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
 
 function Statistics() {

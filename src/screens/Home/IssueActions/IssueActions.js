@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './IssueActions.styles';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;

@@ -24,12 +24,14 @@ const Router = ({ theme }) => {
     return state.get("authentication").toObject();
   });
 
-  const getDBConfig = async () => {
-    const password = await getEncryptedData("userPassword");
+  const getDBConfig = async () =>
+  {
+    //TODO: use new token based authentication
+    const password = await getEncryptedData(process.env.DB_USER_PW_KEY);
     let dbCredentials;
     let username;
     if (password) {
-      username = await getEncryptedData(`username`);
+      username = await getEncryptedData(process.env.DB_USER_KEY);
       dbCredentials = await getEncryptedData(
         `dbCredentials_${password}_${username.replace("@", "")}`
       );

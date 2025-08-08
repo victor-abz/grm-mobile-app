@@ -8,7 +8,7 @@ import { useBackHandler } from '@react-native-community/hooks';
 import CustomSeparator from '../../../../components/CustomSeparator/CustomSeparator';
 import { i18n } from "../../../../translations/i18n";
 import { Button } from 'react-native-paper';
-import { LocalGRMDatabase } from '../../../../utils/databaseManager';
+import { LocalGRMDatabase } from '../../../../db/databaseManager';
 import { citizenTypes } from '../../../../utils/utils';
 import Collapsible from 'react-native-collapsible';
 import { MaterialCommunityIcons } from '@expo/vector-icons';

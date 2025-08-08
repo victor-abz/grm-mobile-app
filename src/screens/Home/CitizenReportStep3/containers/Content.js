@@ -5,7 +5,7 @@ import { Button, Dialog, IconButton, Paragraph, Portal } from 'react-native-pape
 import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
 import { i18n } from "../../../../translations/i18n";
-import { LocalGRMDatabase } from '../../../../utils/databaseManager';
+import { LocalGRMDatabase } from '../../../../db/databaseManager';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 

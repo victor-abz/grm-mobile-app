@@ -45,7 +45,8 @@ function Login() {
     if (dbConfig) {
       dispatch(login(dbConfig, { email: data?.email, password: data?.password }));
     } else {
-      new API()
+      // TODO: Handle new sessions implementation
+      new API()  
         .login({ email: data?.email, password: data?.password })
         .then((response) => {
           setLoading(false);

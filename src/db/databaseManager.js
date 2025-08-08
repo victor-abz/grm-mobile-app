@@ -17,8 +17,8 @@ export default PouchDB.plugin(HttpPouch)
   .plugin(PouchFind)
   .plugin(require('pouchdb-upsert'));
 
-const BASE_URL = 'https://cdd.coso.gouv.bj/couchdb';
-// const BASE_URL = 'http://10.0.2.2:5984';
+// const BASE_URL = 'https://cdd.coso.gouv.bj/couchdb';
+const BASE_URL = process.env.BASE_URL;
 const RESOURCE_URL = baseURL;
 
 const LocalAdminLevelsDatabase = new PouchDB('eadl', {
@@ -51,7 +51,7 @@ export const ResourceUrl = RESOURCE_URL;
 const activeSyncs = {
   adminLevels: null,
   grm: null,
-  communes: null,
+  communes: null
 };
 
 export const SyncToRemoteDatabase = async ({ username, password }, userEmail) => {

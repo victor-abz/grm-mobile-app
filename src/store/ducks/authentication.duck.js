@@ -1,6 +1,6 @@
 import { Map } from "immutable";
 import { createActions, handleActions } from "redux-actions";
-import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../utils/databaseManager";
+import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../db/databaseManager";
 import {
   getEncryptedData,
   removeEncryptedValue,
@@ -10,6 +10,7 @@ import {
 const defaultState = Map({
   userPassword: null,
   username: null,
+  session: null
 });
 
 function getRemoteDbConfig() {
@@ -31,8 +32,8 @@ export const { init, login, signUp, logout } = createActions({
       )}`,
       dbCredentials
     );
-    storeEncryptedData(`userPassword`, credentials.password);
-    storeEncryptedData(`username`, credentials.email);
+    storeEncryptedData(process.env.DB_USER_PW_KEY, credentials.password);
+    storeEncryptedData(process.env.DB_USER_KEY, credentials.email);
     SyncToRemoteDatabase(dbCredentials, credentials.email);
     return { password: credentials.password, username: credentials.email };
   },
@@ -44,14 +45,14 @@ export const { init, login, signUp, logout } = createActions({
       )}`,
       dbCredentials
     );
-    storeEncryptedData(`userPassword`, credentials.password);
-    storeEncryptedData(`username`, credentials.email);
+    storeEncryptedData(process.env.DB_USER_PW_KEY, credentials.password);
+    storeEncryptedData(process.env.DB_USER_KEY, credentials.email);
     SyncToRemoteDatabase(dbCredentials, credentials.email);
     return { password: credentials.password, username: credentials.email };
   },
   LOGOUT: () => {
-    removeEncryptedValue("userPassword");
-    removeEncryptedValue("username");
+    removeEncryptedValue(process.env.DB_USER_PW_KEY);
+    removeEncryptedValue(process.env.DB_USER_KEY);
     logoutRemoteDBs();
     return { password: null, username: null };
   },

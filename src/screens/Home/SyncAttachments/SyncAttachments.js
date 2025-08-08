@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ActivityIndicator, Snackbar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { getInfoAsync } from 'expo-file-system';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
 import ImagesList from './components/ImagesList';
 import { getEncryptedData } from '../../../utils/storageManager';
