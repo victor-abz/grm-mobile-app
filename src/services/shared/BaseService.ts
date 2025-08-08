@@ -26,12 +26,16 @@ export class BaseService<T> {
     return this.localRepository.getAll();
   }
 
+  async softDelete(id: string | number): Promise<void> {
+    await this.localRepository.softDelete(id);
+  }
+
   async sync(): Promise<void> {
     const unsyncedItems = await this.localRepository.getUnsynced();
-  
+
     for (const item of unsyncedItems) {
       const row = item as any;
-  
+
       try {
         if (row.deleted_at) {
           await this.remoteRepository.delete(row.id);

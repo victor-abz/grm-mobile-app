@@ -18,7 +18,6 @@ export class BaseLocalRepository<T> {
 
   async hardDelete(id: string | number): Promise<void> {
     const sql = `DELETE FROM ${this.tableName} WHERE ${this.idColumn} = ?`;
-  
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
@@ -33,7 +32,7 @@ export class BaseLocalRepository<T> {
       });
     });
   }
-  
+
   async getAll(): Promise<T[]> {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
@@ -64,7 +63,7 @@ export class BaseLocalRepository<T> {
           OR ${this.syncAtKey} IS NULL
           OR deleted_at IS NOT NULL AND (${this.syncAtKey} IS NULL OR deleted_at != ${this.syncAtKey})
       `;
-  
+
       db.transaction(tx => {
         tx.executeSql(
           sql,
@@ -84,7 +83,7 @@ export class BaseLocalRepository<T> {
       });
     });
   }
-    
+
   async markSynced(item: T): Promise<void> {
     const row = this.mapper.toRow(item);
     const id = row[this.idColumn];
@@ -115,6 +114,7 @@ export class BaseLocalRepository<T> {
       WHERE ${this.idColumn} = ?
     `;
   
+
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
@@ -152,6 +152,4 @@ export class BaseLocalRepository<T> {
       });
     });
   }
-
-  
 }

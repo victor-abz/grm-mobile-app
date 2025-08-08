@@ -1,24 +1,21 @@
+
 export class SyncService {
   constructor(
-    // private issueLocal = new IssueLocalRepository(),
-    // private issueRemote = new IssueRemoteRepository(),
+    private syncables: {
+      sync(): Promise<void>;
+    }[] = []
   ) {}
 
-  async syncAll(): Promise<void> {
-    // await this.syncRepo(this.issueLocal, this.issueRemote);
+  register(syncable: { sync(): Promise<void> }) {
+    this.syncables.push(syncable);
   }
 
-  private async syncRepo<T>(
-    localRepo: { getUnsynced(): Promise<T[]>; markSynced(item: T): Promise<void> },
-    remoteRepo: { create(item: T): Promise<T> }
-  ) {
-    const unsynced = await localRepo.getUnsynced();
-    for (const item of unsynced) {
+  async syncAll(): Promise<void> {
+    for (const syncable of this.syncables) {
       try {
-        const synced = await remoteRepo.create(item);
-        await localRepo.markSynced(synced);
+        await syncable.sync();
       } catch (err) {
-        console.warn('Sync failed for item', item, err);
+        console.warn('[SyncService] Failed to sync a repository', err);
       }
     }
   }
