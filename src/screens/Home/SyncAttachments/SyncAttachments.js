@@ -11,7 +11,7 @@ import { getEncryptedData } from '../../../utils/storageManager';
 import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreenButton';
 import SyncImage from '../../../../assets/sync-image.svg';
 import CheckCircle from '../../../../assets/check-circle.svg';
-import { baseURL } from '../../../services/API';
+import { baseURL } from '../../../services/authService';
 import { i18n } from "../../../translations/i18n";
 
 const FILE_READ_ERROR = 'Cannot read all the files.';

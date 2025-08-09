@@ -1,12 +1,13 @@
 // request.js
 import axios from "axios";
 import { getData } from "./storageManager";
+import { getSessionData } from "../store/ducks/authentication.duck";
 
 // optionaly add base url
 const client = axios.create({ baseUrl: "http://someapi.com/api" });
 
 const request = ({ ...options }) => {
-  client.defaults.headers.common.Authorization = `Token ${getData("token")}`;
+  client.defaults.headers.common.Authorization = `Token ${getSessionData().token}`;
 
   const onSuccess = (response) => response;
   const onError = (error) => {

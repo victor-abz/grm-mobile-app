@@ -111,3 +111,5 @@ eas.json
 android/gradle.properties
 .env.local
 .nvmrc
+config.prod
+config.dev

@@ -6,53 +6,45 @@ import {
   removeEncryptedValue,
   storeEncryptedData,
 } from "../../utils/storageManager";
+import config from "../../../config";
 
 const defaultState = Map({
-  userPassword: null,
-  username: null,
-  session: null
+  session: null,
+  profile: null,
 });
 
-function getRemoteDbConfig() {
 
-  const credentials = getEncryptedData("dbCredentials");
-  return credentials;
+function storeSessionData(sessionObject) {
+  storeEncryptedData(config.DB_USER_SESSION_KEY, JSON.stringify(sessionObject));
+}
+
+function removeSessionData() {
+  removeEncryptedValue(config.DB_USER_SESSION_KEY);
+}
+
+export async function getSessionData() {
+  const sessionData = await getEncryptedData(config.DB_USER_SESSION_KEY);
+  return sessionData ? JSON.parse(sessionData) : null;
 }
 
 export const { init, login, signUp, logout } = createActions({
-  INIT: (dbCredentials, credentials) => {
-    SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { password: credentials.password, username: credentials.email };
+  INIT: (session) =>
+  {
+    SyncToRemoteDatabase(session);
+    return { session };
   },
-  LOGIN: (dbCredentials, credentials) => {
-    storeEncryptedData(
-      `dbCredentials_${credentials.password}_${credentials.email.replace(
-        "@",
-        ""
-      )}`,
-      dbCredentials
-    );
-    storeEncryptedData(process.env.DB_USER_PW_KEY, credentials.password);
-    storeEncryptedData(process.env.DB_USER_KEY, credentials.email);
+  LOGIN: (sessionObject, credentials) => {
+    storeSessionData(sessionObject);
     SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { password: credentials.password, username: credentials.email };
+    return { session: sessionObject, password: credentials.password, username: credentials.email };
   },
-  SIGN_UP: (dbCredentials, credentials) => {
-    storeEncryptedData(
-      `dbCredentials_${credentials.password}_${credentials.email.replace(
-        "@",
-        ""
-      )}`,
-      dbCredentials
-    );
-    storeEncryptedData(process.env.DB_USER_PW_KEY, credentials.password);
-    storeEncryptedData(process.env.DB_USER_KEY, credentials.email);
+  SIGN_UP: (sessionObject, credentials) => {
+    storeSessionData(sessionObject);
     SyncToRemoteDatabase(dbCredentials, credentials.email);
     return { password: credentials.password, username: credentials.email };
   },
   LOGOUT: () => {
-    removeEncryptedValue(process.env.DB_USER_PW_KEY);
-    removeEncryptedValue(process.env.DB_USER_KEY);
+    removeSessionData();
     logoutRemoteDBs();
     return { password: null, username: null };
   },
@@ -60,22 +52,20 @@ export const { init, login, signUp, logout } = createActions({
 
 const authentication = handleActions(
   {
-    [init]: (draft, { payload: { password, username } }) => {
+    [init]: (draft, { payload: { session } }) => {
       return draft.withMutations((state) => {
-        state.set("userPassword", password);
+        state.set("session", session);
         state.set("username", username);
       });
     },
-    [login]: (draft, { payload: { password, username } }) => {
-      return draft.withMutations((state) => {
-        state.set("userPassword", password);
-        state.set("username", username);
+    [login]: (draft, { payload: { session } }) => {
+      return draft.withMutations((state) => {        
+        state.set("session", session);
       });
     },
-    [signUp]: (draft, { payload: { password, username } }) => {
+    [signUp]: (draft, { payload: { session } }) => {
       return draft.withMutations((state) => {
-        state.set("userPassword", password);
-        state.set("username", username);
+        state.set("session", session);
       });
     },
     [logout]: (draft, { payload: { password, username } }) => {

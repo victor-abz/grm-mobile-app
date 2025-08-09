@@ -27,7 +27,7 @@ import { signUp } from '../../../store/ducks/authentication.duck';
 import BigCheck from '../../../../assets/big-check.svg';
 import CodeLogo from '../../../../assets/code_logo.svg';
 import SuccessLogo from '../../../../assets/success_logo.svg';
-import API from '../../../services/API';
+import { register } from '../../../services/authService';
 import { colors } from '../../../utils/colors';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
@@ -56,25 +56,26 @@ function SignUp({ route }) {
     setSuccessModal(false);
     dispatch(signUp(response, credentials));
   };
-  const onSignUp = (code) => {
+  const onSignUp = async (code) => {
     setLoading(true);
     // handle code with backend, check if valid
-    new API().signUp({ ...credentials, validation_code: code }).then((response) => {
-      if (response.error) {
-        setLoading(false);
+    const response = await register({ ...credentials, validation_code: code });
+      setLoading(false);
+    
+    if (response.error) {
         Alert.alert('Sign Up Error', response?.non_field_errors[0], [{ text: 'OK' }], {
           cancelable: false,
         });
         return;
-      }
-      setLoading(false);
-      setSuccessModal(true);
-      setTimeout(() => {
-        hideSuccessModal(response);
-      }, 3000);
-    });
+    }
+    setSuccessModal(true);
+    setTimeout(() => {
+      hideSuccessModal(response);
+    }, 3000);
+    
     hideModal();
   };
+  
   const onPressSignUp = (data) => {
     setCredentials(data);
     setCodeModal(true);

@@ -1,13 +1,14 @@
 import PouchAuth from 'pouchdb-authentication';
 import PouchFind from 'pouchdb-find';
 
-import { baseURL } from '../services/API';
+import { baseURL } from '../services/authService';
 
 import HttpPouch from 'pouchdb-adapter-http';
 import sqliteAdapter from 'pouchdb-adapter-react-native-sqlite';
 import PouchDB from 'pouchdb-core';
 import mapreduce from 'pouchdb-mapreduce';
 import replication from 'pouchdb-replication';
+import config from '../../config';
 
 export default PouchDB.plugin(HttpPouch)
   .plugin(replication)
@@ -18,21 +19,39 @@ export default PouchDB.plugin(HttpPouch)
   .plugin(require('pouchdb-upsert'));
 
 // const BASE_URL = 'https://cdd.coso.gouv.bj/couchdb';
-const BASE_URL = process.env.BASE_URL;
+const BASE_URL = config.BASE_URL;
 const RESOURCE_URL = baseURL;
 
-const LocalAdminLevelsDatabase = new PouchDB('eadl', {
-  adapter: 'react-native-sqlite',
-});
-
-const LocalGRMDatabase = new PouchDB('grm', {
-  adapter: 'react-native-sqlite',
-});
-
-const LocalCommunesDatabase = new PouchDB('commune', {
-  adapter: 'react-native-sqlite',
-});
-
+  
+let LocalAdminLevelsDatabase = {}
+  try { 
+    LocalAdminLevelsDatabase = new PouchDB('eadl', {
+      adapter: 'react-native-sqlite',
+    });
+  } catch (error) {
+    console.log(error)
+  }
+  
+  
+  let LocalGRMDatabase = {}
+  try { 
+    LocalGRMDatabase = new PouchDB('grm', {
+      adapter: 'react-native-sqlite',
+    });
+  } catch (error) {
+    console.log(error)
+  }
+  
+  
+  let LocalCommunesDatabase = {}
+  try { 
+    LocalCommunesDatabase = new PouchDB('commune', {
+      adapter: 'react-native-sqlite',
+    });
+  } catch (error) {
+    console.log(error)
+  }
+  
 const adminLevelsRemoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
   skip_setup: true,
 });
@@ -77,9 +96,9 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
   }
 
   // start syncing the databases
-  await loginRemoteDB(adminLevelsRemoteDB, username, password, "EADL");
-  await loginRemoteDB(grmRemoteDB, username, password, "GRM");
-  await loginRemoteDB(communesRemoteDB, username, password, "COMMUNES");
+  await loginRemoteDB(adminLevelsRemoteDB, "admin", "admin12345", "EADL");
+  await loginRemoteDB(grmRemoteDB, "admin", "admin12345", "GRM");
+  await loginRemoteDB(communesRemoteDB, "admin", "admin12345", "COMMUNES");
 
   // start syncing the databases
   console.log("Starting syncs for user: ", userEmail);
@@ -119,7 +138,7 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
       activeSyncs.grm.on(state, async (currState) => {
         if (currState && currState.status === 401) {
           console.warn("SyncGRM unauthorized, attempting re-login...");
-          await loginRemoteDB(grmRemoteDB, username, password, "GRM");
+          await loginRemoteDB(grmRemoteDB, "admin", "admin12345", "GRM");
           activeSyncs.grm.resume();
         }
         console.log(`[Sync GRM ${state}: ${JSON.stringify(currState)}]`);
@@ -150,8 +169,8 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
         );
         await loginRemoteDB(
           adminLevelsRemoteDB,
-          username,
-          password,
+          "admin",
+          "admin12345",
           "EADL"
         );
         activeSyncs.adminLevels.resume();
@@ -165,8 +184,8 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
         console.warn("SyncCommunes unauthorized, attempting re-login...");
         await loginRemoteDB(
           communesRemoteDB,
-          username,
-          password,
+          "admin",
+          "admin12345",
           "COMMUNES"
         );
         activeSyncs.communes.resume();
