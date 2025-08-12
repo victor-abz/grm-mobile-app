@@ -1,6 +1,6 @@
 import { openDatabase, ResultSet } from 'react-native-sqlite-storage';
 
-const db = openDatabase({ name: 'mydb.db' });
+const db = openDatabase({ name: 'grm-db.db' });
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
