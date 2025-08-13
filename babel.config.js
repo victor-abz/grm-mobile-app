@@ -1,4 +1,7 @@
-module.exports = function(api) {
+const plugin = require("pouchdb-authentication");
+
+module.exports = function (api)
+{
   api.cache(true);
   return {
     presets: ['babel-preset-expo'],

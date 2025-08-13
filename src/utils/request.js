@@ -1,17 +1,16 @@
-// request.js
+// authenticated request.js sample - maybe besides /login if we want a token in requests
 import axios from "axios";
-import { getData } from "./storageManager";
 import { getSessionData } from "../store/ducks/authentication.duck";
+import config from "../../config";
 
-// optionaly add base url
-const client = axios.create({ baseUrl: "http://someapi.com/api" });
+const client = axios.create({ baseUrl: config.API_AUTH_BASE_URL });
 
-const request = ({ ...options }) => {
-  client.defaults.headers.common.Authorization = `Token ${getSessionData().token}`;
+const request = async ({ ...options }) => {
+  const token = await getSessionData().token;
+  client.defaults.headers.common.Authorization = `Token ${token}`;
 
   const onSuccess = (response) => response;
   const onError = (error) => {
-    // optionaly catch errors and add some additional logging here
     return error;
   };
 
@@ -19,17 +18,3 @@ const request = ({ ...options }) => {
 };
 
 export default request;
-
-// then you could wrap request (maybe besides /login if you don't want token there):
-//
-// const getTodos = () => request({
-//     url: '/todos',
-// });
-// Having this you can use react-query as usual:
-//
-//     const { data } = useQuery('todos', async () => {
-//         const response = await getTodos();
-//         return response;
-//     })
-
-// otherwise just as normal axios.get('http://someapi.com/api/todos', { headers: { Authorization: `Bearer ${token}`})
