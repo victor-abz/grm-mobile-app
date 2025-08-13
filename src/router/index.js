@@ -25,9 +25,9 @@ const Router = ({ theme }) => {
 
   const getDBConfig = async () =>
   {
-    const session = await getSessionData(); 
-    if (session) {
-      dispatch(init(session));
+    const _session = await getSessionData(); 
+    if (_session) {
+      dispatch(init(_session));
     }
     setLoading(false);
   };

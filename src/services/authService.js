@@ -1,4 +1,3 @@
-// const baseURL = 'http://10.0.2.2:8000';
 import config from "../../config";
 
 const baseURL = config.API_AUTH_BASE_URL || '';
@@ -35,7 +34,7 @@ export async function fetchAuthCredentials(data) {
       body: JSON.stringify(data),
     };
     try {
-      const response = await fetch(`${baseURL}/authentication/obtain-auth-credentials/`, requestOptions)
+      const response = await fetch(`${baseURL}/authentication/login/`, requestOptions)
       const result = handleErrors(response)      
       return await result.json();
     } catch (error) {

@@ -2,9 +2,9 @@
 let config;
 
 if (__DEV__) {
-  config = require('./config.dev/index.js').default; // Development config
+  config = require('./config.dev'); // Development config
 } else {
-  config = require('./config.prod/index.js').default; // Production config
+  config = require('./config.prod'); // Production config
 }
 
 export default config;

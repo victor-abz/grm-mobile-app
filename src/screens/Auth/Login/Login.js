@@ -35,15 +35,17 @@ function Login()
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [isPasswordSecure, setIsPasswordSecure] = useState(true);
+  const [responseError, setResponseError] = useState();
 
   const onLoginPress = async (data) =>
   {
+    setResponseError(null);
     setLoading(true);
-    const response = await fetchAuthCredentials({ email: data?.email, password: data?.password })
+    const response = await fetchAuthCredentials({ username: data?.email, password: data?.password })
     setLoading(false);
     
     if (response.error) {
-      console.log("Login_page_error : ", response.error)
+      setResponseError(response.error);
       return;
     }
     dispatch(login(response, data));
@@ -179,6 +181,7 @@ function Login()
                 {/*  <Text style={styles.textHint}>Forgo?</Text> */}
                 {/* </TouchableOpacity> */}
               </View>
+              {responseError && <Text style={styles.errorText}>{responseError}</Text>}
             </KeyboardAvoidingView>
             {loading ? (
               <ActivityIndicator size="large" color="#24c38b" />
