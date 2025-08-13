@@ -46,7 +46,12 @@ function Login()
     
     if (response.error) {
       setResponseError(response.error);
+    if (response.error) {
+      setResponseError(response.error);
+      setLoading(false);
       return;
+    }
+    setLoading(false);
     }
     dispatch(login(response, data));
   };
