@@ -77,6 +77,6 @@ export async function refreshToken()
 
 
 export async function logout() {
-  // Besides removing session from storage. Implement if a logout endpoint is available.
+  // Besides removing session from storage. Implement it, if a logout endpoint is available.
 }
 

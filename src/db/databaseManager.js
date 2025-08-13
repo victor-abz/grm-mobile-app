@@ -93,9 +93,9 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
   }
 
   // start syncing the databases
-  await loginRemoteDB(adminLevelsRemoteDB, "admin", "admin12345", "EADL");
-  await loginRemoteDB(grmRemoteDB, "admin", "admin12345", "GRM");
-  await loginRemoteDB(communesRemoteDB, "admin", "admin12345", "COMMUNES");
+  await loginRemoteDB(adminLevelsRemoteDB, username, password, "EADL");
+  await loginRemoteDB(grmRemoteDB, username, password, "GRM");
+  await loginRemoteDB(communesRemoteDB, username, password, "COMMUNES");
 
   // start syncing the databases
   console.log("Starting syncs for user: ", userEmail);
@@ -135,7 +135,7 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
       activeSyncs.grm.on(state, async (currState) => {
         if (currState && currState.status === 401) {
           console.warn("SyncGRM unauthorized, attempting re-login...");
-          await loginRemoteDB(grmRemoteDB, "admin", "admin12345", "GRM");
+          await loginRemoteDB(grmRemoteDB, username, password, "GRM");
           activeSyncs.grm.resume();
         }
         console.log(`[Sync GRM ${state}: ${JSON.stringify(currState)}]`);
@@ -166,8 +166,8 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
         );
         await loginRemoteDB(
           adminLevelsRemoteDB,
-          "admin",
-          "admin12345",
+          username,
+          password,
           "EADL"
         );
         activeSyncs.adminLevels.resume();
@@ -181,8 +181,8 @@ export const SyncToRemoteDatabase = async ({ username, password }, userEmail) =>
         console.warn("SyncCommunes unauthorized, attempting re-login...");
         await loginRemoteDB(
           communesRemoteDB,
-          "admin",
-          "admin12345",
+          username,
+          password,
           "COMMUNES"
         );
         activeSyncs.communes.resume();
