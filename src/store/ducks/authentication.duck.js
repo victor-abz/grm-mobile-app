@@ -6,6 +6,7 @@ import {
   removeEncryptedValue,
   storeEncryptedData,
 } from "../../utils/storageManager";
+import request, { client } from "../../utils/request";
 
 const defaultState = Map({
   userPassword: null,
@@ -18,12 +19,22 @@ function getRemoteDbConfig() {
   return credentials;
 }
 
+function setUpAuthClient(params) {
+  client.defaults.headers.common["Authorization"] = `Bearer ${"uyoipuoiuopiu"}`
+}
+
+function removeAuthHeader(params) {
+  delete client.defaults.headers.common.Authorization;
+}
+
 export const { init, login, signUp, logout } = createActions({
   INIT: (dbCredentials, credentials) => {
+    setUpAuthClient()
     SyncToRemoteDatabase(dbCredentials, credentials.email);
     return { password: credentials.password, username: credentials.email };
   },
   LOGIN: (dbCredentials, credentials) => {
+    setUpAuthClient()
     storeEncryptedData(
       `dbCredentials_${credentials.password}_${credentials.email.replace(
         "@",
@@ -37,6 +48,7 @@ export const { init, login, signUp, logout } = createActions({
     return { password: credentials.password, username: credentials.email };
   },
   SIGN_UP: (dbCredentials, credentials) => {
+    setUpAuthClient()
     storeEncryptedData(
       `dbCredentials_${credentials.password}_${credentials.email.replace(
         "@",
@@ -50,6 +62,7 @@ export const { init, login, signUp, logout } = createActions({
     return { password: credentials.password, username: credentials.email };
   },
   LOGOUT: () => {
+    removeAuthHeader();
     removeEncryptedValue("userPassword");
     removeEncryptedValue("username");
     logoutRemoteDBs();
