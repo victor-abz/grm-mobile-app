@@ -42,17 +42,13 @@ function Login()
     setResponseError(null);
     setLoading(true);
     const response = await fetchAuthCredentials({ username: data?.email, password: data?.password })
-    setLoading(false);
     
-    if (response.error) {
-      setResponseError(response.error);
     if (response.error) {
       setResponseError(response.error);
       setLoading(false);
       return;
     }
-    setLoading(false);
-    }
+    
     dispatch(login(response, data));
   };
 

@@ -60,9 +60,9 @@ function SignUp({ route }) {
     setLoading(true);
     // handle code with backend, check if valid
     const response = await register({ ...credentials, validation_code: code });
-      setLoading(false);
     
     if (response.error) {
+        setLoading(false);
         Alert.alert('Sign Up Error', response?.non_field_errors[0], [{ text: 'OK' }], {
           cancelable: false,
         });
