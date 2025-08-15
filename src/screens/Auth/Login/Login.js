@@ -48,7 +48,7 @@ function Login()
       setLoading(false);
       return;
     }
-    
+    setLoading(false);
     dispatch(login(response, data));
   };
 

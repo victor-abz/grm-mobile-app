@@ -68,6 +68,7 @@ function SignUp({ route }) {
         });
         return;
     }
+    setLoading(false);
     setSuccessModal(true);
     setTimeout(() => {
       hideSuccessModal(response);
