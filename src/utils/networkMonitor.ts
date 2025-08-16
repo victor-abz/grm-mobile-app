@@ -1,10 +1,19 @@
 import NetInfo from '@react-native-community/netinfo';
 import { SyncService } from "../services/shared/SyncService";
+import { IssueService } from "../services/IssueService";
 
 let stableConnectionStart: number | null = null;
 const syncService = new SyncService();
 
+export function registerServices(): void {
+    const syncService = new SyncService();
+    const issueService = new IssueService();
+    syncService.register(issueService);
+}
+
 export function setupConnectionWatcher(): void {
+  this.registerServices();
+
   NetInfo.addEventListener(async (state) => {
     if (state.isConnected) {
       if (stableConnectionStart === null) {
