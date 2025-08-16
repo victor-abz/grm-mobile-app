@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './CitizenReportStep3.styles';
-import { LocalAdminLevelsDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase } from '../../../db/databaseManager';
 
 function CitizenReportStep3({ route }) {
   const { params } = route;

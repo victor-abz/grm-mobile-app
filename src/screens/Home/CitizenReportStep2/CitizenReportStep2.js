@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native';
 import Content from './containers/Content';
 import { styles } from './CitizenReportStep2.styles';
-import { LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalGRMDatabase } from '../../../db/databaseManager';
 
 const CitizenReportStep2 = ({ route }) => {
   const { params } = route;

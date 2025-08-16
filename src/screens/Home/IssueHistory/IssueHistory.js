@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator } from 'react-native-paper';
 import Content from './containers/Content';
 import { styles } from './IssueHistory.styles';
-import { LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalGRMDatabase } from '../../../db/databaseManager';
 
 function IssueHistory({ route }) {
   const customStyles = styles();

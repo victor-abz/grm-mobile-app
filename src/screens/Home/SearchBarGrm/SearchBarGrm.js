@@ -3,7 +3,7 @@ import { SafeAreaView, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './SearchBarGrm.style';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 
 function SearchBarGrm() {
   const [eadl, setEadl] = useState(false);

@@ -14,7 +14,7 @@ import moment from 'moment';
 import { AntDesign, Feather } from '@expo/vector-icons';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
-import { LocalGRMDatabase } from '../../../../utils/databaseManager';
+import { LocalGRMDatabase } from '../../../../db/databaseManager';
 import { i18n } from "../../../../translations/i18n";
 import StarRating from 'react-native-star-rating-widget';
 import AddAttachmentCard from "../../GRM/components/AddAttachmentCard";

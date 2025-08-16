@@ -3,7 +3,7 @@ import { SafeAreaView, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './Profile.style';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 
 function Profile() {
   const [eadl, setEadl] = useState(false);
