@@ -15,8 +15,11 @@ const defaultState = Map({
 });
 
 function storeSessionData(sessionObject) {
-  client.defaults.headers.common["Authorization"] = `Bearer ${sessionObject.token}`
   storeEncryptedData(config.USER_SESSION_KEY, JSON.stringify(sessionObject));
+}
+
+function addTokenToHttpClient(sessionObject) {
+  client.defaults.headers.common["Authorization"] = `Bearer ${sessionObject.token}`;
 }
 
 function removeSessionData()
@@ -33,14 +36,17 @@ export async function getSessionData() {
 export const { init, login, signUp, logout } = createActions({
   INIT: (session) =>
   {
+    addTokenToHttpClient(session);
     return { session };
   },
   LOGIN: (session, credentials) =>
   {
+    addTokenToHttpClient(session)
     storeSessionData(session);
     return { session };
   },
   SIGN_UP: (session, credentials) => {
+    addTokenToHttpClient(session)
     storeSessionData(session);
     return { session };
   },
