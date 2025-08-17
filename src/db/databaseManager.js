@@ -1,13 +1,14 @@
 import PouchAuth from 'pouchdb-authentication';
 import PouchFind from 'pouchdb-find';
 
-import { baseURL } from '../services/API';
+import { baseURL } from '../services/authService';
 
 import HttpPouch from 'pouchdb-adapter-http';
 import sqliteAdapter from 'pouchdb-adapter-react-native-sqlite';
 import PouchDB from 'pouchdb-core';
 import mapreduce from 'pouchdb-mapreduce';
 import replication from 'pouchdb-replication';
+import config from '../../config';
 
 export default PouchDB.plugin(HttpPouch)
   .plugin(replication)
@@ -17,31 +18,46 @@ export default PouchDB.plugin(HttpPouch)
   .plugin(PouchFind)
   .plugin(require('pouchdb-upsert'));
 
-const BASE_URL = 'https://cdd.coso.gouv.bj/couchdb';
-// const BASE_URL = 'http://10.0.2.2:5984';
 const RESOURCE_URL = baseURL;
+ 
+let LocalAdminLevelsDatabase = {}
+try { 
+  LocalAdminLevelsDatabase = new PouchDB('eadl', {
+    adapter: 'react-native-sqlite',
+  });
+} catch (error) {
+  console.log(error)
+}
 
-const LocalAdminLevelsDatabase = new PouchDB('eadl', {
-  adapter: 'react-native-sqlite',
-});
 
-const LocalGRMDatabase = new PouchDB('grm', {
-  adapter: 'react-native-sqlite',
-});
+let LocalGRMDatabase = {}
+try { 
+  LocalGRMDatabase = new PouchDB('grm', {
+    adapter: 'react-native-sqlite',
+  });
+} catch (error) {
+  console.log(error)
+}
 
-const LocalCommunesDatabase = new PouchDB('commune', {
-  adapter: 'react-native-sqlite',
-});
 
-const adminLevelsRemoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
+let LocalCommunesDatabase = {}
+try { 
+  LocalCommunesDatabase = new PouchDB('commune', {
+    adapter: 'react-native-sqlite',
+  });
+} catch (error) {
+  console.log(error)
+}
+  
+const adminLevelsRemoteDB = new PouchDB(`${config.COUCHDB_BASE_URL}/administrative_levels`, {
   skip_setup: true,
 });
 
-const grmRemoteDB = new PouchDB(`${BASE_URL}/grm`, {
+const grmRemoteDB = new PouchDB(`${config.COUCHDB_BASE_URL}/grm`, {
   skip_setup: true,
 });
 
-const communesRemoteDB = new PouchDB(`${BASE_URL}/administrative_levels`, {
+const communesRemoteDB = new PouchDB(`${config.COUCHDB_BASE_URL}/administrative_levels`, {
   skip_setup: true,
 });
 
@@ -51,7 +67,7 @@ export const ResourceUrl = RESOURCE_URL;
 const activeSyncs = {
   adminLevels: null,
   grm: null,
-  communes: null,
+  communes: null
 };
 
 export const SyncToRemoteDatabase = async ({ username, password }, userEmail) => {

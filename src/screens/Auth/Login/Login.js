@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { version } from '../../../../package.json';
-
 import {
   Keyboard,
   Text,
@@ -17,8 +16,7 @@ import EADLLogo from '../../../../assets/eadl-logo.svg';
 import styles from './Login.style';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
-import API from '../../../services/API';
-import { getEncryptedData } from '../../../utils/storageManager';
+import { fetchAuthCredentials } from '../../../services/authService';
 import { i18n } from "../../../translations/i18n";
 import { colors } from '../../../utils/colors';
 
@@ -32,34 +30,26 @@ const theme = {
   },
 };
 
-function Login() {
+function Login()
+{
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [isPasswordSecure, setIsPasswordSecure] = useState(true);
+  const [responseError, setResponseError] = useState();
 
-  const onLoginPress = async (data) => {
+  const onLoginPress = async (data) =>
+  {
+    setResponseError(null);
     setLoading(true);
-    const dbConfig = await getEncryptedData(
-      `dbCredentials_${data?.password}_${data?.email.replace('@', '')}`
-    );
-    if (dbConfig) {
-      dispatch(login(dbConfig, { email: data?.email, password: data?.password }));
-    } else {
-      new API()
-        .login({ email: data?.email, password: data?.password })
-        .then((response) => {
-          setLoading(false);
-          if (response.error) {
-            console.log ("Login_page_error : ", response.error)
-            return;
-          }
-          dispatch(login(response, data));
-        })
-        .catch((error) => {
-          setLoading(false);
-          console.error(error);
-        });
+    const response = await fetchAuthCredentials({ username: data?.email, password: data?.password })
+    
+    if (response.error) {
+      setResponseError(response.error);
+      setLoading(false);
+      return;
     }
+    setLoading(false);
+    dispatch(login(response, data));
   };
 
   const { control, handleSubmit, errors } = useForm({
@@ -192,6 +182,7 @@ function Login() {
                 {/*  <Text style={styles.textHint}>Forgo?</Text> */}
                 {/* </TouchableOpacity> */}
               </View>
+              {responseError && <Text style={styles.errorText}>{responseError}</Text>}
             </KeyboardAvoidingView>
             {loading ? (
               <ActivityIndicator size="large" color="#24c38b" />

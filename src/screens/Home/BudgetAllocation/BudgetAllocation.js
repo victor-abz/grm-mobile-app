@@ -17,7 +17,7 @@ import moment from "moment";
 import "moment/locale/fr";
 import CustomGreenButton from "../../../components/CustomGreenButton/CustomGreenButton";
 import { colors } from "../../../utils/colors";
-import { LocalAdminLevelsDatabase } from "../../../utils/databaseManager";
+import { LocalAdminLevelsDatabase } from "../../../db/databaseManager";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import "intl";
 import "intl/locale-data/jsonp/en";

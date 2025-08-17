@@ -4,14 +4,14 @@ import axios from 'axios';
 import { ActivityIndicator, Snackbar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { getInfoAsync } from 'expo-file-system';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
 import ImagesList from './components/ImagesList';
 import { getEncryptedData } from '../../../utils/storageManager';
 import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreenButton';
 import SyncImage from '../../../../assets/sync-image.svg';
 import CheckCircle from '../../../../assets/check-circle.svg';
-import { baseURL } from '../../../services/API';
+import { baseURL } from '../../../services/authService';
 import { i18n } from "../../../translations/i18n";
 
 const FILE_READ_ERROR = 'Cannot read all the files.';

@@ -8,7 +8,7 @@ import moment from "moment";
 import "moment/locale/fr";
 import { ImageBackground } from "react-native";
 import TagIcon from "../../../../../assets/tag_solid.svg";
-import { LocalAdminLevelsDatabase } from "../../../../utils/databaseManager";
+import { LocalAdminLevelsDatabase } from "../../../../db/databaseManager";
 
 moment.locale("fr");
 

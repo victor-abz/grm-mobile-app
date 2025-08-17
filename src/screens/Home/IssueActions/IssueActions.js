@@ -3,9 +3,8 @@ import { SafeAreaView, Text } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './IssueActions.styles';
-import { LocalAdminLevelsDatabase } from '../../../utils/databaseManager';
+import { LocalAdminLevelsDatabase } from '../../../db/databaseManager';
 import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
-
 
 function IssueActions({ route, navigation }) {
   const { params } = route;

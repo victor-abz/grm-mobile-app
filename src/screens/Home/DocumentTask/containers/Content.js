@@ -19,10 +19,10 @@ import { Feather } from "@expo/vector-icons";
 import CustomGreenButton from "../../../../components/CustomGreenButton/CustomGreenButton";
 import moment from "moment";
 import "moment/locale/fr";
-import { LocalAdminLevelsDatabase } from "../../../../utils/databaseManager";
+import { LocalAdminLevelsDatabase } from "../../../../db/databaseManager";
 import * as Location from "expo-location";
 import { colors } from "../../../../utils/colors";
-import { baseURL } from "../../../../services/API";
+import { baseURL } from "../../../../services/authService";
 import CustomDropDownPicker from "../../../../components/CustomDropDownPicker/CustomDropDownPicker";
 import * as ImageManipulator from "expo-image-manipulator";
 

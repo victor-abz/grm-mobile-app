@@ -4,8 +4,7 @@ import PrivateRoutes from "./privateRoutes";
 import PublicRoutes from "./publicRoutes";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState, View } from "react-native";
-import { getEncryptedData } from "../utils/storageManager";
-import { init } from "../store/ducks/authentication.duck";
+import { init, getSessionData } from "../store/ducks/authentication.duck";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -23,20 +22,15 @@ const Router = ({ theme }) => {
 
   const appState = useRef(AppState.currentState);
 
-  const { userPassword } = useSelector((state) => {
+  const { session } = useSelector((state) => {
     return state.get("authentication").toObject();
   });
 
-  const getDBConfig = async () => {
-    const password = await getEncryptedData("userPassword");
-    let dbCredentials;
-    let username;
-    if (password) {
-      username = await getEncryptedData(`username`);
-      dbCredentials = await getEncryptedData(
-        `dbCredentials_${password}_${username.replace("@", "")}`
-      );
-      dispatch(init(dbCredentials, { password, email: username }));
+  const getDBConfig = async () =>
+  {
+    const _session = await getSessionData(); 
+    if (_session) {
+      dispatch(init(_session));
     }
     setLoading(false);
   };
@@ -89,7 +83,7 @@ const Router = ({ theme }) => {
 
   return (
     <NavigationContainer theme={theme || DefaultTheme}>
-      {userPassword ? <PrivateRoutes /> : <PublicRoutes />}
+      { session ? <PrivateRoutes /> : <PublicRoutes /> }
     </NavigationContainer>
   );
 };

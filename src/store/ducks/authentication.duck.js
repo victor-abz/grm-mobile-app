@@ -1,94 +1,76 @@
 import { Map } from "immutable";
 import { createActions, handleActions } from "redux-actions";
-import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../utils/databaseManager";
+import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../db/databaseManager";
 import {
   removeEncryptedValue,
   storeEncryptedData,
+  getEncryptedData
 } from "../../utils/storageManager";
 import { client } from "../../utils/request";
+import config from "../../../config";
 
 const defaultState = Map({
-  userPassword: null,
-  username: null,
+  session: null,
+  profile: null,
 });
 
 function storeSessionData(sessionObject) {
-  client.defaults.headers.common["Authorization"] = `Bearer ${"user-token"}`
+  client.defaults.headers.common["Authorization"] = `Bearer ${sessionObject.token}`
   storeEncryptedData(config.USER_SESSION_KEY, JSON.stringify(sessionObject));
 }
 
-function removeSessionData() {
+function removeSessionData()
+{
   delete client.defaults.headers.common.Authorization;
   removeEncryptedValue(config.USER_SESSION_KEY);
 }
 
+export async function getSessionData() {
+  const sessionData = await getEncryptedData(config.USER_SESSION_KEY);
+  return sessionData ? JSON.parse(sessionData) : null;
+}
+
 export const { init, login, signUp, logout } = createActions({
-  INIT: (dbCredentials, credentials) => {
-    // setUpAuthClient()
-    SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { password: credentials.password, username: credentials.email };
+  INIT: (session) =>
+  {
+    return { session };
   },
-  LOGIN: (dbCredentials, credentials) => {
-    // setUpAuthClient()
-    storeEncryptedData(
-      `dbCredentials_${credentials.password}_${credentials.email.replace(
-        "@",
-        ""
-      )}`,
-      dbCredentials
-    );
-    storeEncryptedData(`userPassword`, credentials.password);
-    storeEncryptedData(`username`, credentials.email);
-    SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { password: credentials.password, username: credentials.email };
+  LOGIN: (sessionObject, credentials) =>
+  {
+    storeSessionData(sessionObject);
+    return { session: sessionObject };
   },
-  SIGN_UP: (dbCredentials, credentials) => {
-    // setUpAuthClient()
-    storeEncryptedData(
-      `dbCredentials_${credentials.password}_${credentials.email.replace(
-        "@",
-        ""
-      )}`,
-      dbCredentials
-    );
-    storeEncryptedData(`userPassword`, credentials.password);
-    storeEncryptedData(`username`, credentials.email);
-    SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { password: credentials.password, username: credentials.email };
+  SIGN_UP: (sessionObject, credentials) => {
+    storeSessionData(sessionObject);
+    return { session: sessionObject };
   },
   LOGOUT: () => {
-    removeAuthHeader();
-    removeEncryptedValue("userPassword");
-    removeEncryptedValue("username");
+    removeSessionData();
     logoutRemoteDBs();
-    return { password: null, username: null };
+    return { sessio: null, profile: null };
   },
 });
 
 const authentication = handleActions(
   {
-    [init]: (draft, { payload: { password, username } }) => {
+    [init]: (draft, { payload: { session } }) => {
       return draft.withMutations((state) => {
-        state.set("userPassword", password);
-        state.set("username", username);
+        state.set("session", session);
       });
     },
-    [login]: (draft, { payload: { password, username } }) => {
-      return draft.withMutations((state) => {
-        state.set("userPassword", password);
-        state.set("username", username);
+    [login]: (draft, { payload: { session } }) => {
+      return draft.withMutations((state) => {        
+        state.set("session", session);
       });
     },
-    [signUp]: (draft, { payload: { password, username } }) => {
+    [signUp]: (draft, { payload: { session } }) => {
       return draft.withMutations((state) => {
-        state.set("userPassword", password);
-        state.set("username", username);
+        state.set("session", session);
       });
     },
-    [logout]: (draft, { payload: { password, username } }) => {
+    [logout]: (draft, { payload: { session } }) => {
       return draft.withMutations((state) => {
-        state.set("userPassword", password);
-        state.set("username", username);
+        state.set("session", session);
       });
     },
   },

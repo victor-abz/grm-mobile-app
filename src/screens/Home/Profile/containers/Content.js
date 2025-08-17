@@ -8,7 +8,7 @@ import UserAvatar from '@muhzi/react-native-user-avatar';
 import ProfileItem from '../components/ProfileItem';
 import { logout } from '../../../../store/ducks/authentication.duck';
 import { Button } from 'react-native-paper';
-import { ResourceUrl } from '../../../../utils/databaseManager';
+import { ResourceUrl } from '../../../../db/databaseManager';
 import SmallCard from '../components/SmallCard';
 import { colors } from '../../../../utils/colors';
 

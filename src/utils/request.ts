@@ -1,8 +1,7 @@
 import axios from "axios";
-import { config } from "../../config";
+import config from "../../config";
 
-
-export const client = axios.create({ baseURL: config.BASE_URL });
+export const client = axios.create({ baseURL: config.API_AUTH_BASE_URL });
 
 const request =  ({ ...options }) => {
   
