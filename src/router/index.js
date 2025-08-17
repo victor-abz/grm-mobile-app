@@ -30,19 +30,11 @@ const Router = ({ theme }) => {
   {
     const _session = await getSessionData(); 
     if (_session) {
+      prepareSyncables();
       dispatch(init(_session));
     }
     setLoading(false);
   };
-
-  useEffect(() =>
-  {
-    if (!loading) { 
-      // TODO: enable syncables when authenticated
-      // TODO: register and deregister syncables when going background, or maybe listen if they exist to avoid creating many
-      prepareSyncables();
-    }
-  }, [loading])
 
   useEffect(() => {
     getDBConfig();
@@ -90,6 +82,7 @@ const Router = ({ theme }) => {
 
 function prepareSyncables()
 {
+  syncServiceInstance.removeAll();
   const combinedSyncables = [...issueStatusSyncables]
   
   combinedSyncables.forEach(element => {
