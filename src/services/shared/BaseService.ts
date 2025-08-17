@@ -31,7 +31,7 @@ export class BaseService<T> {
   }
 
   async sync(): Promise<void> {
-    try {
+    try { 
       const unsyncedItems = await this.localRepository.getUnsynced();
   
       // Update direction ["push"]: Local -> Remote
@@ -52,8 +52,8 @@ export class BaseService<T> {
       }
 
       // Update direction ["pull"]: Remote -> local
+      // TODO: define merge priorities      
       const results = await this.remoteRepository.fetchAll();
- 
       for (let index = 0; index < results.length; index++) {
         const element = results[index];
         await this.localRepository.upsert(element);

@@ -19,7 +19,7 @@ const App = () =>
   useEffect(() => {
     async function prepare() {
       try {
-        await initDB()
+        await initDB();
         setDbReady(true);
       } catch (e) {
         console.error('DB init error', e);

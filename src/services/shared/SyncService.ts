@@ -10,6 +10,10 @@ export class SyncService {
     this.syncables.push(syncable);
   }
 
+  removeAll() {
+    this.syncables = [];
+  }
+
   async syncAll(): Promise<void> {
     for (const syncable of this.syncables) {
       try {
@@ -20,3 +24,5 @@ export class SyncService {
     }
   }
 }
+
+export const syncServiceInstance = new SyncService();

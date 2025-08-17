@@ -23,12 +23,15 @@ async function syncIssueStatusList () {
 export async function fetchIssueStatusList(): Promise<IssueStatusModel[] | null> {
     try {
         //try sync with remote
-        await syncIssueStatusList()     
+        await syncIssueStatusList()
         //proceed getting data from the local source origin
-        const response = await issueStatusService.getAll()  
-        
+        const response = await issueStatusService.getAll();
         return response
     } catch(error) {
           console.error("Error syncing issue statuses:", error);    
     } 
 }
+
+export const issueStatusSyncables = [
+    { sync: () => issueStatusService.sync()}
+];

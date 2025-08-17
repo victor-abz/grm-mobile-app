@@ -13,8 +13,6 @@ function IssueActions({ route, navigation }) {
   const [eadl, setEadl] = useState();
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());
-
-  console.log("ISSUE ACTIONS COMPONENT:", issueStatusList);
   
   useEffect(() => {
     if (username) {

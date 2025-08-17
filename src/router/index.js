@@ -13,6 +13,9 @@ import {
   Poppins_400Regular_Italic,
   useFonts,
 } from "@expo-google-fonts/poppins";
+import { syncServiceInstance } from "../services/shared/SyncService";
+import { setupConnectionWatcher } from "../utils/networkMonitor";
+import { issueStatusSyncables } from "../services/shared/IssueStatusService";
 
 const Router = ({ theme }) => {
   const dispatch = useDispatch();
@@ -38,9 +41,17 @@ const Router = ({ theme }) => {
     setLoading(false);
   };
 
+  useEffect(() =>
+  {
+    if (!loading) { 
+      // TODO: enable syncables when authenticated
+      // TODO: register and deregister syncables when going background, or maybe listen if they exist to avoid creating many
+      prepareSyncables();
+    }
+  }, [loading])
+
   useEffect(() => {
     getDBConfig();
-
     const handleAppStateChange = (nextAppState) => {
       if (
         appState.current.match(/inactive|background/) &&
@@ -48,8 +59,9 @@ const Router = ({ theme }) => {
       ) {
         // App has come to the foreground, resume syncs
         try {
-          getDBConfig();
+          getDBConfig();              
           console.log('Resumed all syncs after foreground');
+          
         } catch (err) {
           console.warn('Error resuming syncs:', err);
         }
@@ -61,6 +73,7 @@ const Router = ({ theme }) => {
 
     return () => {
       subscription.remove();
+      syncServiceInstance.removeAll()
     };
   
   }, []);
@@ -80,5 +93,16 @@ const Router = ({ theme }) => {
     </NavigationContainer>
   );
 };
+
+function prepareSyncables()
+{
+  const combinedSyncables = [...issueStatusSyncables]
+  
+  combinedSyncables.forEach(element => {
+    syncServiceInstance.register(element)
+  });
+
+  setupConnectionWatcher();
+}
 
 export default Router;
