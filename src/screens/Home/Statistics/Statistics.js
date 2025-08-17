@@ -19,8 +19,9 @@ function Statistics() {
   const [issueComponent, setIssueComponent] = useState();
   const [issueSubComponent, setIssueSubComponent] = useState();
   const [eadl, setEadl] = useState(false);
-  const { username } = useSelector((state) => state.get('authentication').toObject());
-
+  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const username = session?.username ?? ''
+  
   useEffect(() => {
     LocalGRMDatabase.find({
       selector: { type: 'issue_status' },

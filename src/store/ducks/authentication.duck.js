@@ -35,19 +35,19 @@ export const { init, login, signUp, logout } = createActions({
   {
     return { session };
   },
-  LOGIN: (sessionObject, credentials) =>
+  LOGIN: (session, credentials) =>
   {
-    storeSessionData(sessionObject);
-    return { session: sessionObject };
+    storeSessionData(session);
+    return { session };
   },
-  SIGN_UP: (sessionObject, credentials) => {
-    storeSessionData(sessionObject);
-    return { session: sessionObject };
+  SIGN_UP: (session, credentials) => {
+    storeSessionData(session);
+    return { session };
   },
   LOGOUT: () => {
     removeSessionData();
     logoutRemoteDBs();
-    return { sessio: null, profile: null };
+    return { session: null, profile: null };
   },
 });
 

@@ -12,7 +12,8 @@ function IssueSearch() {
   const [issues, setIssues] = useState();
   const [statuses, setStatuses] = useState();
   const [eadl, setEadl] = useState(false);
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const username = session?.username ?? ''
 
   useEffect(() => {
     LocalGRMDatabase.find({

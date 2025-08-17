@@ -8,8 +8,9 @@ import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/database
 function SearchBarGrm() {
   const [eadl, setEadl] = useState(false);
   const [issues, setIssues] = useState();
-  const { username } = useSelector((state) => state.get('authentication').toObject());
-
+  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const username = session?.username ?? ''
+  
   useEffect(() => {
     if (username) {
       LocalAdminLevelsDatabase.find({

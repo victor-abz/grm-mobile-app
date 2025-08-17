@@ -11,9 +11,12 @@ function IssueActions({ route, navigation }) {
   const [issueStatusList, loading] = useIssueStatus();
   const [eadl, setEadl] = useState();
   const customStyles = styles();
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const username = session?.username ?? ''
   
-  useEffect(() => {
+  useEffect(() =>
+  {
+    
     if (username) {
       LocalAdminLevelsDatabase.find({
         selector: { 'representative.email': username },

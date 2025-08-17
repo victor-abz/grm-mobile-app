@@ -10,7 +10,9 @@ function Profile() {
   const [issues, setIssues] = useState();
   const [statuses, setStatuses] = useState();
   const [department, setDepartment] = useState(false);
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const username = session?.username ?? ''
+  
 
   useEffect(() => {
     LocalGRMDatabase.find({

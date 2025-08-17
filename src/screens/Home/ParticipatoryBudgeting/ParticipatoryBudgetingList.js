@@ -10,9 +10,9 @@ const ParticipatoryBudgetingList = () => {
   const customStyles = styles();
   const [loading, setLoading] = useState(true);
   const [eadl, setEadl] = useState();
-  const { username } = useSelector((state) => {
-    return state.get("authentication").toObject();
-  });
+  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const username = session?.username ?? ''
+  
   useEffect(() => {
     if (username) {
       LocalAdminLevelsDatabase.find({

@@ -8,7 +8,7 @@
 # Configuration URL
 
 URLs for CouchDB Database
-`src/utils/databaseManager.js`
+`src/db/databaseManager.js`
 
 URL for Web App
 `src/services/API.js`
