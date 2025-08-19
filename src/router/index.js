@@ -4,7 +4,7 @@ import PrivateRoutes from "./privateRoutes";
 import PublicRoutes from "./publicRoutes";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState, View } from "react-native";
-import { init, getSessionData } from "../store/ducks/authentication.duck";
+import { init, getSessionData, logout } from "../store/ducks/authentication.duck";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -15,6 +15,7 @@ import {
 import { syncServiceInstance } from "../services/shared/SyncService";
 import { setupConnectionWatcher } from "../utils/networkMonitor";
 import { issueStatusSyncables } from "../services/shared/IssueStatusService";
+import { getEncryptedData } from "../utils/storageManager";
 
 const Router = ({ theme }) => {
   const dispatch = useDispatch();
@@ -30,8 +31,32 @@ const Router = ({ theme }) => {
   {
     const _session = await getSessionData(); 
     if (_session) {
+      // 
+      //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+      let dbCredentials;
+      let username;    
+      try {
+        username = await getEncryptedData(`username`);
+        dbCredentials = await getEncryptedData(
+          `dbCredentials_${username.replace("@", "")}`
+        );    
+      } catch (error) {
+        console.error(error);
+        
+        dispatch(logout());
+        setLoading(false);
+        console.warn("Proceeding fetch credentials from remote - locally not available (user credentials used in combination with pouchdb)");  
+        return;
+      }
+      //
+      // 
+      
       prepareSyncables();
-      dispatch(init(_session));
+      
+      dispatch(init(
+        _session,
+        { email: username }, dbCredentials  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+      ));
     }
     setLoading(false);
   };
