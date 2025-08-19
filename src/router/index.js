@@ -45,9 +45,7 @@ const Router = ({ theme }) => {
       ) {
         // App has come to the foreground, resume syncs
         try {
-          getDBConfig();              
-          console.log('Resumed all syncs after foreground');
-          
+          getDBConfig();                        
         } catch (err) {
           console.warn('Error resuming syncs:', err);
         }

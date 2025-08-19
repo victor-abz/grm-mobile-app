@@ -1,4 +1,3 @@
-import { config } from "../../../config";
 import request from "../../utils/request";
 import { BaseRemoteRepository } from "./BaseRemoteRepository";
 

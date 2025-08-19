@@ -14,8 +14,6 @@ export function useIssueStatus() {
       setLoading(true)
       if (!issueStatusList) {
         const issuesList = await IssueStatusService.fetchIssueStatusList()
-        console.log("HOOK DATA:", issuesList);
-        
         setIssueStatusList(issuesList);
       }
       setLoading(false);
