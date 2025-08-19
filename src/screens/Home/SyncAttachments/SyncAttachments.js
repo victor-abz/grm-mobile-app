@@ -68,7 +68,7 @@ function SyncAttachments({ navigation }) {
 
   const syncImages = async () => {
     const dbConfig = await getEncryptedData(
-      `dbCredentials_${userPassword}_${username.replace('@', '')}`
+      `dbCredentials_${username.replace('@', '')}`
     );
     setLoading(true);
     let isError = false;

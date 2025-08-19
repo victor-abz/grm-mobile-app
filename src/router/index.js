@@ -13,7 +13,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/poppins";
 import { syncServiceInstance } from "../services/shared/SyncService";
-import { initialSync, setupConnectionWatcher } from "../utils/networkMonitor";
+import { initialSync } from "../utils/networkMonitor";
 import { getEncryptedData } from "../utils/storageManager";
 
 const Router = ({ theme }) => {
@@ -30,6 +30,7 @@ const Router = ({ theme }) => {
   {
     const _session = await getSessionData();
     if (_session) {
+
       //
       //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       let dbCredentials;
@@ -44,7 +45,7 @@ const Router = ({ theme }) => {
 
         dispatch(logout());
         setLoading(false);
-        console.warn("Proceeding fetch credentials from remote - locally not available (user credentials used in combination with pouchdb)");
+        console.warn("Proceeding fetch Couchdb credentials from remote - locally not available");
         return;
       }
       //

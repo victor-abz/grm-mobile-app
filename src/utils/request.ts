@@ -1,30 +1,36 @@
-// authenticated request.js sample
 import axios from "axios";
-import { getSessionData } from "../store/ducks/authentication.duck";
 import config from "../../config";
 
-const client = axios.create({ baseUrl: config.API_AUTH_BASE_URL });
+export const client = axios.create({ baseURL: config.API_AUTH_BASE_URL });
 
-const request = async ({ ...options }) => {
-  const sessionData = await getSessionData();
-  const token = sessionData?.token; // Use optional chaining to safely access token
-
-  if (token) {
-    client.defaults.headers.common.Authorization = `Token ${token}`;
-  } else {
-    // Handle the case when the token is null or undefined
-    console.warn("No token found. Authorization header will not be set.");
-    delete client.defaults.headers.common.Authorization; // Remove the header if no token
-  }
-
+const request =  ({ ...options }) => {
+  
   const onSuccess = (response) => response;
   const onError = (error) => {
     // You might want to handle specific error cases here
-    console.error("Request error:", error);
-    return Promise.reject(error); // Reject the promise to handle it in the calling code
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.log(error.response.data);
+      console.log(error.response.status);
+      console.log(error.response.headers);
+      return Promise.reject({message: `${error.status} Error - ${error.response.data}`});
+      // Reject the promise to handle it in the calling code
+    } else if (error.request) {
+      // The request was made but no response was received
+      // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+      // http.ClientRequest in node.js
+      console.log(error.request);
+      return Promise.reject({ message: JSON.stringify(error.request) });
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.log('Error', error.message);
+      return Promise.reject({ message: error.message });
+    }
   };
-
   return client(options).then(onSuccess).catch(onError);
 };
+
+
 
 export default request;
