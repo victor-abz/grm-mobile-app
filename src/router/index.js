@@ -4,7 +4,7 @@ import PrivateRoutes from "./privateRoutes";
 import PublicRoutes from "./publicRoutes";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState, View } from "react-native";
-import { init, getSessionData } from "../store/ducks/authentication.duck";
+import { init, getSessionData, logout } from "../store/ducks/authentication.duck";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -12,6 +12,9 @@ import {
   Poppins_400Regular_Italic,
   useFonts,
 } from "@expo-google-fonts/poppins";
+import { syncServiceInstance } from "../services/shared/SyncService";
+import { initialSync, setupConnectionWatcher } from "../utils/networkMonitor";
+import { getEncryptedData } from "../utils/storageManager";
 
 const Router = ({ theme }) => {
   const dispatch = useDispatch();
@@ -25,16 +28,41 @@ const Router = ({ theme }) => {
 
   const getDBConfig = async () =>
   {
-    const _session = await getSessionData(); 
+    const _session = await getSessionData();
     if (_session) {
-      dispatch(init(_session));
+      //
+      //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+      let dbCredentials;
+      let username;
+      try {
+        username = await getEncryptedData(`username`);
+        dbCredentials = await getEncryptedData(
+          `dbCredentials_${username.replace("@", "")}`
+        );
+      } catch (error) {
+        console.error(error);
+
+        dispatch(logout());
+        setLoading(false);
+        console.warn("Proceeding fetch credentials from remote - locally not available (user credentials used in combination with pouchdb)");
+        return;
+      }
+      //
+      //
+
+      await initialSync();
+
+
+      dispatch(init(
+        _session,
+        { email: username }, dbCredentials  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+      ));
     }
     setLoading(false);
   };
 
   useEffect(() => {
     getDBConfig();
-
     const handleAppStateChange = (nextAppState) => {
       if (
         appState.current.match(/inactive|background/) &&
@@ -43,7 +71,6 @@ const Router = ({ theme }) => {
         // App has come to the foreground, resume syncs
         try {
           getDBConfig();
-          console.log('Resumed all syncs after foreground');
         } catch (err) {
           console.warn('Error resuming syncs:', err);
         }
@@ -55,8 +82,9 @@ const Router = ({ theme }) => {
 
     return () => {
       subscription.remove();
+      syncServiceInstance.removeAll()
     };
-  
+
   }, []);
 
   let [fontsLoaded] = useFonts({
@@ -74,5 +102,6 @@ const Router = ({ theme }) => {
     </NavigationContainer>
   );
 };
+
 
 export default Router;

@@ -1,12 +1,13 @@
 import { Map } from "immutable";
 import { createActions, handleActions } from "redux-actions";
-import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../db/databaseManager";
+import { logoutRemoteDBs } from "../../db/databaseManager";
 import {
-  getEncryptedData,
   removeEncryptedValue,
   storeEncryptedData,
+  getEncryptedData
 } from "../../utils/storageManager";
 import config from "../../../config";
+import client  from "../../utils/request";
 
 const defaultState = Map({
   session: null,
@@ -17,7 +18,12 @@ function storeSessionData(sessionObject) {
   storeEncryptedData(config.USER_SESSION_KEY, JSON.stringify(sessionObject));
 }
 
+function addTokenToHttpClient(sessionObject) {
+  client.defaults.headers.common["Authorization"] = `Token ${sessionObject.token}`;
+}
+
 function removeSessionData() {
+  delete client.defaults.headers.common.Authorization;
   removeEncryptedValue(config.USER_SESSION_KEY);
 }
 
@@ -27,26 +33,24 @@ export async function getSessionData() {
 }
 
 export const { init, login, signUp, logout } = createActions({
-  INIT: (session) =>
-  {
-    // SyncToRemoteDatabase(session);
+  INIT: (session) => {
+    addTokenToHttpClient(session);
     return { session };
   },
-  LOGIN: (sessionObject, credentials) =>
-  {
-    storeSessionData(sessionObject);
-    // SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { session: sessionObject, password: credentials.password, username: credentials.email };
+  LOGIN: (session, credentials) => {
+    addTokenToHttpClient(session)
+    storeSessionData(session);
+    return { session };
   },
-  SIGN_UP: (sessionObject, credentials) => {
-    storeSessionData(sessionObject);
-    // SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { password: credentials.password, username: credentials.email };
+  SIGN_UP: (session, credentials) => {
+    addTokenToHttpClient(session)
+    storeSessionData(session);
+    return { session };
   },
   LOGOUT: () => {
     removeSessionData();
     logoutRemoteDBs();
-    return { password: null, username: null };
+    return { session: null, profile: null };
   },
 });
 
@@ -58,7 +62,7 @@ const authentication = handleActions(
       });
     },
     [login]: (draft, { payload: { session } }) => {
-      return draft.withMutations((state) => {        
+      return draft.withMutations((state) => {
         state.set("session", session);
       });
     },
