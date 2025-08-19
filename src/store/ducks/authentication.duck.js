@@ -19,11 +19,10 @@ function storeSessionData(sessionObject) {
 }
 
 function addTokenToHttpClient(sessionObject) {
-  client.defaults.headers.common["Authorization"] = `Bearer ${sessionObject.token}`;
+  client.defaults.headers.common["Authorization"] = `Token ${sessionObject.token}`;
 }
 
-function removeSessionData()
-{
+function removeSessionData() {
   delete client.defaults.headers.common.Authorization;
   removeEncryptedValue(config.USER_SESSION_KEY);
 }
@@ -34,13 +33,11 @@ export async function getSessionData() {
 }
 
 export const { init, login, signUp, logout } = createActions({
-  INIT: (session) =>
-  {
+  INIT: (session) => {
     addTokenToHttpClient(session);
     return { session };
   },
-  LOGIN: (session, credentials) =>
-  {
+  LOGIN: (session, credentials) => {
     addTokenToHttpClient(session)
     storeSessionData(session);
     return { session };
@@ -65,7 +62,7 @@ const authentication = handleActions(
       });
     },
     [login]: (draft, { payload: { session } }) => {
-      return draft.withMutations((state) => {        
+      return draft.withMutations((state) => {
         state.set("session", session);
       });
     },
