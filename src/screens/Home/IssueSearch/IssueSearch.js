@@ -6,26 +6,15 @@ import Content from './containers';
 import { styles } from './IssueSearch.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
+import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
 
 function IssueSearch() {
   const customStyles = styles();
   const [issues, setIssues] = useState();
-  const [statuses, setStatuses] = useState();
+  const [issueStatusList, loading] = useIssueStatus();
   const [eadl, setEadl] = useState(false);
   const { session } = useSelector((state) => state.get('authentication').toObject());
   const username = session?.username ?? ''
-
-  useEffect(() => {
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_status' },
-    })
-      .then((result) => {
-        setStatuses(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve statuses. ${JSON.stringify(err)}`);
-      });
-  }, []);
 
   useEffect(() => {
     if (username) {
@@ -73,7 +62,7 @@ function IssueSearch() {
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content issues={issues} eadl={eadl} statuses={statuses} />
+      <Content issues={issues} eadl={eadl} statuses={issueStatusList} />
     </SafeAreaView>
   );
 }

@@ -6,15 +6,16 @@ import Content from './containers';
 import { styles } from './Statistics.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
+import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
 
 function Statistics() {
   const customStyles = styles();
   const [issues, setIssues] = useState();
   const [issueType, setIssueType] = useState();
-  const [statuses, setStatuses] = useState();
   const [ageGroup, setAgeGroup] = useState();
   const [citizenGroup1, setCitizenGroup1] = useState();
   const [citizenGroup2, setCitizenGroup2] = useState();
+  const [issueStatusList, loading] = useIssueStatus();
   const [issueCategory, setIssueCategory] = useState();
   const [issueComponent, setIssueComponent] = useState();
   const [issueSubComponent, setIssueSubComponent] = useState();
@@ -23,16 +24,7 @@ function Statistics() {
   const username = session?.username ?? ''
   
   useEffect(() => {
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_status' },
-    })
-      .then((result) => {
-        setStatuses(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve statuses. ${JSON.stringify(err)}`);
-      });
-
+   
     // Getting issue_age_group
     LocalGRMDatabase.find({
       selector: { type: 'issue_age_group' },
@@ -153,7 +145,7 @@ function Statistics() {
     <SafeAreaView style={customStyles.container}>
       <ScrollView>
         <Content issues={issues} eadl={eadl}
-                 statuses={statuses}
+                 statuses={issueStatusList}
                  ageGroup={ageGroup}
                  citizenGroup1={citizenGroup1}
                  citizenGroup2={citizenGroup2}

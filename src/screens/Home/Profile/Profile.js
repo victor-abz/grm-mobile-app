@@ -4,27 +4,17 @@ import { useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './Profile.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
+import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
 
 function Profile() {
   const [eadl, setEadl] = useState(false);
   const [issues, setIssues] = useState();
-  const [statuses, setStatuses] = useState();
+  const [issueStatusList, loading] = useIssueStatus();
   const [department, setDepartment] = useState(false);
   const { session } = useSelector((state) => state.get('authentication').toObject());
   const username = session?.username ?? ''
   
 
-  useEffect(() => {
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_status' },
-    })
-      .then((result) => {
-        setStatuses(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve statuses. ${JSON.stringify(err)}`);
-      });
-  }, []);
 
   useEffect(() => {
     if (username) {
@@ -78,7 +68,7 @@ function Profile() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        <Content issues={issues} eadl={eadl} department={department} statuses={statuses} />
+        <Content issues={issues} eadl={eadl} department={department} statuses={issueStatusList} />
       </ScrollView>
     </SafeAreaView>
   );
