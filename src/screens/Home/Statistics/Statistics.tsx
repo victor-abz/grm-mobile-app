@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
-import { useSelector } from 'react-redux';
+import { RootStateOrAny, useSelector } from 'react-redux';
 import { ActivityIndicator } from 'react-native-paper';
 import Content from './containers';
 import { styles } from './Statistics.style';
@@ -16,11 +16,11 @@ function Statistics() {
   const [citizenGroup1, setCitizenGroup1] = useState();
   const [citizenGroup2, setCitizenGroup2] = useState();
   const [issueStatusList, loading] = useIssueStatus();
-  const [issueCategory, setIssueCategory] = useState();
+  const [issueCategories, setIssueCategories] = useIssueCategories();
   const [issueComponent, setIssueComponent] = useState();
   const [issueSubComponent, setIssueSubComponent] = useState();
   const [eadl, setEadl] = useState(false);
-  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const { session } = useSelector((state: RootStateOrAny) => state.get('authentication').toObject());
   const username = session?.username ?? ''
   
   useEffect(() => {
@@ -67,17 +67,6 @@ function Statistics() {
       })
       .catch((err) => {
         alert(`Unable to retrieve issue type. ${JSON.stringify(err)}`);
-      });
-
-    // Getting issue_category
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_category' },
-    })
-      .then((result) => {
-        setIssueCategory(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue category. ${JSON.stringify(err)}`);
       });
 
     // Getting issue_component
@@ -150,7 +139,7 @@ function Statistics() {
                  citizenGroup1={citizenGroup1}
                  citizenGroup2={citizenGroup2}
                  issueType={issueType}
-                 issueCategory={issueCategory}
+                 issueCategory={issueCategories}
                  issueComponent={issueComponent}
                  issueSubComponent={issueSubComponent}
         />

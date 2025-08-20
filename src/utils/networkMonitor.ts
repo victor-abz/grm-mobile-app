@@ -1,5 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import { syncServiceInstance } from "../services/shared/SyncService";
+import { issueCategoryService } from '../services/shared/IssueCategoryService';
 
 let stableConnectionStart: number | null = null;
 

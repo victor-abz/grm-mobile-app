@@ -3,27 +3,17 @@ import { SafeAreaView } from 'react-native';
 import Content from './containers/Content';
 import { styles } from './CitizenReportStep2.styles';
 import { LocalGRMDatabase } from '../../../db/databaseManager';
+import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
 
 const CitizenReportStep2 = ({ route }) => {
   const { params } = route;
-  const [issueCategories, setIssueCategories] = useState();
+  const [issueCategories, loading] = useIssueCategories()
   const [issueTypes, setIssueTypes] = useState();
   const [issueSubTypes, setIssueSubTypes] = useState();
   const [issueComponents, setIssueComponents] = useState();
   const [issueSubComponents, setIssueSubComponents] = useState();
 
   useEffect(() => {
-    // FETCH ISSUE CATEGORY
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_category' },
-    })
-      .then((result) => {
-        setIssueCategories(result?.docs);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-
     // FETCH ISSUE TYPE
     LocalGRMDatabase.find({
       selector: { type: 'issue_type' },
