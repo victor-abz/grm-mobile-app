@@ -1,25 +1,59 @@
-import NetInfo from '@react-native-community/netinfo';
+import NetInfo, { NetInfoSubscription } from '@react-native-community/netinfo';
 import { syncServiceInstance } from "../services/shared/SyncService";
+import { issueStatusSyncable } from "../services/shared/IssueStatusService";
 
-let stableConnectionStart: number | null = null;
+let stableConnectionTimer: NodeJS.Timeout | null = null;
+let initialSyncListener: NetInfoSubscription | null = null;
+let watcherListener: NetInfoSubscription | null = null;
+const stableConnectionTimmer = 15 * 60 * 1000;
 
-export function setupConnectionWatcher() {
-  NetInfo.addEventListener(async (state) => {
+export function registerServices(): void {
+  syncServiceInstance.removeAll();
+  syncServiceInstance.register(issueStatusSyncable)
+}
+
+function setupConnectionWatcher(): void {
+  if (watcherListener) return;
+
+  watcherListener = NetInfo.addEventListener((state) => {
     if (state.isConnected) {
-      if (stableConnectionStart === null) {
-        stableConnectionStart = Date.now();
-      } else {
-        const now = Date.now();
-        const duration = now - stableConnectionStart;
-        const fifteenMinutes = 15 * 60 * 1000;
-        if (duration >= fifteenMinutes) {
-          console.log('[Sync] Triggering sync after stable connection');
-          await syncServiceInstance.syncAll();
-          stableConnectionStart = null;
-        }
-      }
+      if (stableConnectionTimer !== null) return;
+
+      console.log('[Sync] Starting stable connection timer.');
+      stableConnectionTimer = setTimeout(() => {
+        console.log('[Sync] Triggering sync after stable connection.');
+        syncServiceInstance.syncAll();
+        clearTimeout(stableConnectionTimer!);
+        stableConnectionTimer = null;
+      }, stableConnectionTimmer);
+
     } else {
-      stableConnectionStart = null;
+      if (stableConnectionTimer !== null) {
+        console.log('[Sync] Connection lost, cancelling stable connection timer.');
+        clearTimeout(stableConnectionTimer);
+        stableConnectionTimer = null;
+      }
+    }
+  });
+}
+
+export async function initialSync(): Promise<void> {
+  this.registerServices();
+
+  await syncServiceInstance.initDB();
+  if (initialSyncListener) return;
+
+  initialSyncListener = NetInfo.addEventListener(async (state) => {
+    if (state.isConnected) {
+      console.log('[Sync] Performing initial sync on first connection.');
+      await syncServiceInstance.syncAll();
+
+      if (initialSyncListener) {
+        initialSyncListener();
+        initialSyncListener = null;
+      }
+
+      setupConnectionWatcher();
     }
   });
 }

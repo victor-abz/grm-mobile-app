@@ -1,95 +1,7 @@
-import { openDatabase, ResultSet, enablePromise } from 'react-native-sqlite-storage';
+import { ResultSet } from 'react-native-sqlite-storage';
+import { getDBConnection } from "../../services/shared/SyncService";
 
-const DB_NAME = "grm-db.db";
-const DB_VERSION = 1; //
-let dbInstance = null;
-
-enablePromise(true);
-
-async function getDBConnection() {
-  if (dbInstance) return dbInstance;
-
-  dbInstance = await openDatabase({ name: DB_NAME, location: 'default' });
-  return dbInstance;
-}
-
-export async function initDB() {
-  const db = await getDBConnection();
-  // await db.executeSql(`DROP TABLE issue_statuses`);
-  // await db.executeSql(`DROP TABLE meta`);
-  // Check if schema version table exists
-  await db.executeSql(`
-    CREATE TABLE IF NOT EXISTS meta (
-      key TEXT PRIMARY KEY NOT NULL,
-      value TEXT
-    )
-  `);
-
-  // Get current DB version
-  const [results] = await db.executeSql(`SELECT value FROM meta WHERE key = 'db_version'`);
-      
-  const currentVersion = results?.rows?.length ? parseInt(results.rows.item(0).value, 10) : 0;
-
-  if (currentVersion === 0) {
-    // First run — create tables
-    await createTables(db);
-
-    // Save version
-    await db.executeSql(`INSERT OR REPLACE INTO meta (key, value) VALUES ('db_version', ?)`, [
-      DB_VERSION.toString(),
-    ]);
-  } else if (currentVersion < DB_VERSION) {
-    // Migration path
-    await runMigrations(db, currentVersion, DB_VERSION);
-
-    await db.executeSql(`UPDATE meta SET value = ? WHERE key = 'db_version'`, [
-      DB_VERSION.toString(),
-    ]);
-  }
-
-  console.log("Finish migrations");
-
-  return db;
-}
-  
-async function createTables(db) {
-  await db.executeSql(`
-    CREATE TABLE IF NOT EXISTS issue_statuses (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      final_status BOOLEAN,
-      initial_status BOOLEAN,
-      rejected_status BOOLEAN,
-      open_status BOOLEAN,
-      updated_at DATETIME NULL,
-      sync_at DATETIME NULL,
-      deleted_at DATETIME NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-//   await db.executeSql(`
-//     CREATE TABLE IF NOT EXISTS posts (
-//       id INTEGER PRIMARY KEY AUTOINCREMENT,
-//       user_id INTEGER,
-//       title TEXT,
-//       body TEXT,
-//       FOREIGN KEY(user_id) REFERENCES users(id)
-//     )
-//   `);
-}
-
-async function runMigrations(db, fromVersion, toVersion) {
-  console.log(`Migrating DB from v${fromVersion} to v${toVersion}`);
-
-  // Example migration steps
-  if (fromVersion < 2) {
-    await db.executeSql(`ALTER TABLE users ADD COLUMN phone TEXT`);
-  }
-
-  // Add more migrations here for future versions
-}
-
+export type Schema = Array<{ [key: string]: string }>
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
@@ -100,13 +12,34 @@ export class BaseLocalRepository<T> {
   constructor(
     private tableName: string,
     private idColumn: string,
-    private updatedAtKey: string,
-    private syncAtKey: string,
-    private mapper: Mapper<T>
-  ) { }
-  
+    private updatedDateKey: string,
+    private syncDateKey: string,
+    private mapper: Mapper<T>,
+    private schema: Schema
+  ) {}
+
+  async createTable(): Promise<void> {
+    const sql = `CREATE TABLE IF NOT EXISTS ${this.tableName} (${this.schema.join(',')}))`;
+    const dbInstance = await getDBConnection();
+
+    return new Promise((resolve, reject) => {
+      dbInstance.transaction(tx => {
+        tx.executeSql(
+          sql,
+          () => resolve(),
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
   async hardDelete(id: string | number): Promise<void> {
     const sql = `DELETE FROM ${this.tableName} WHERE ${this.idColumn} = ?`;
+    const dbInstance = await getDBConnection();
+
     return new Promise((resolve, reject) => {
       dbInstance.transaction(tx => {
         tx.executeSql(
@@ -123,6 +56,8 @@ export class BaseLocalRepository<T> {
   }
 
   async getAll(): Promise<T[]> {
+    const dbInstance = await getDBConnection();
+
     return new Promise((resolve, reject) => {
       dbInstance.transaction(tx => {
         tx.executeSql(
@@ -145,12 +80,14 @@ export class BaseLocalRepository<T> {
   }
 
   async getUnsynced(): Promise<T[]> {
+    const dbInstance = await getDBConnection();
+
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT * FROM ${this.tableName}
-        WHERE ${this.updatedAtKey} != ${this.syncAtKey}
-          OR ${this.syncAtKey} IS NULL
-          OR deleted_at IS NOT NULL AND (${this.syncAtKey} IS NULL OR deleted_at != ${this.syncAtKey})
+        WHERE ${this.updatedDateKey} != ${this.syncDateKey}
+          OR ${this.syncDateKey} IS NULL
+          OR deleted_at IS NOT NULL AND (${this.syncDateKey} IS NULL OR deleted_at != ${this.syncDateKey})
       `;
 
       dbInstance.transaction(tx => {
@@ -174,11 +111,13 @@ export class BaseLocalRepository<T> {
   }
 
   async markSynced(item: T): Promise<void> {
+    const dbInstance = await getDBConnection();
     const row = this.mapper.toRow(item);
-    const id = row[this.idColumn];
-    const updatedAt = row[this.updatedAtKey];
 
-    const sql = `UPDATE ${this.tableName} SET ${this.syncAtKey} = ? WHERE ${this.idColumn} = ?`;
+    const id = row[this.idColumn];
+    const updatedAt = row[this.updatedDateKey];
+
+    const sql = `UPDATE ${this.tableName} SET ${this.syncDateKey} = ? WHERE ${this.idColumn} = ?`;
 
     return new Promise((resolve, reject) => {
       dbInstance.transaction(tx => {
@@ -196,13 +135,14 @@ export class BaseLocalRepository<T> {
   }
 
   async softDelete(id: string | number): Promise<void> {
+    const dbInstance = await getDBConnection();
     const deletedAt = new Date().toISOString();
     const sql = `
       UPDATE ${this.tableName}
-      SET deleted_at = ?, ${this.updatedAtKey} = ?
+      SET deleted_at = ?, ${this.updatedDateKey} = ?
       WHERE ${this.idColumn} = ?
     `;
-  
+
 
     return new Promise((resolve, reject) => {
       dbInstance.transaction(tx => {
@@ -221,6 +161,7 @@ export class BaseLocalRepository<T> {
 
   async upsert(item: T): Promise<void> {
     try {
+      const dbInstance = await getDBConnection();
       const row = this.mapper.toRow(item);
       const keys = Object.keys(row);
       const values = keys.map(k => row[k]);

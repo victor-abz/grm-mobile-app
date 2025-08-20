@@ -1,26 +1,19 @@
 import request from "../../utils/request";
 import { BaseRemoteRepository } from "./BaseRemoteRepository";
+import { IssueStatus } from "../../models/issue_status";
 
-export type IssueStatusModel = {
-    id: number,
-    name: string,
-    final_status: boolean,
-    initial_status: boolean,
-    rejected_status: boolean,
-    open_status: boolean,
-}
 
-class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatusModel> {
-  
-    create(item: IssueStatusModel): Promise<IssueStatusModel> {
+class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {
+
+    create(item: IssueStatus): Promise<IssueStatus> {
         throw new Error('Method not implemented.');
     }
-    
+
     delete(id: string): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    
-    async fetchAll(): Promise<IssueStatusModel[]> {
+
+    async fetchAll(): Promise<IssueStatus[]> {
         const url = `/issues/issue-statuses/`;
         const requestOptions = {
             url,
@@ -31,21 +24,21 @@ class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatusModel>
             const response = await request({
                 ...requestOptions,
             })
-            
+
             const jsonData: any = response.data;
-            const results: IssueStatusModel[] = jsonData.results
-            
+            const results: IssueStatus[] = jsonData.results
+
             return results;
         } catch (error) {
             console.error(error.message);
         }
     }
 
-    fetchById(id: string): Promise<IssueStatusModel> {
+    fetchById(id: string): Promise<IssueStatus> {
         throw new Error('Method not implemented.');
     }
 
-    update(id: string, item: IssueStatusModel): Promise<IssueStatusModel> {
+    update(id: string, item: IssueStatus): Promise<IssueStatus> {
         throw new Error('Method not implemented.');
     }
 }

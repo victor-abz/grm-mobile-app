@@ -13,8 +13,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/poppins";
 import { syncServiceInstance } from "../services/shared/SyncService";
-import { setupConnectionWatcher } from "../utils/networkMonitor";
-import { issueStatusSyncables } from "../services/shared/IssueStatusService";
+import { initialSync } from "../utils/networkMonitor";
 import { getEncryptedData } from "../utils/storageManager";
 
 const Router = ({ theme }) => {
@@ -29,30 +28,32 @@ const Router = ({ theme }) => {
 
   const getDBConfig = async () =>
   {
-    const _session = await getSessionData(); 
+    const _session = await getSessionData();
     if (_session) {
-      // 
+
+      //
       //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       let dbCredentials;
-      let username;    
+      let username;
       try {
         username = await getEncryptedData(`username`);
         dbCredentials = await getEncryptedData(
           `dbCredentials_${username.replace("@", "")}`
-        );    
+        );
       } catch (error) {
         console.error(error);
-        
+
         dispatch(logout());
         setLoading(false);
-        console.warn("Proceeding fetch credentials from remote - locally not available (user credentials used in combination with pouchdb)");  
+        console.warn("Proceeding fetch Couchdb credentials from remote - locally not available");
         return;
       }
       //
-      // 
-      
-      prepareSyncables();
-      
+      //
+
+      await initialSync();
+
+
       dispatch(init(
         _session,
         { email: username }, dbCredentials  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
@@ -70,7 +71,7 @@ const Router = ({ theme }) => {
       ) {
         // App has come to the foreground, resume syncs
         try {
-          getDBConfig();                        
+          getDBConfig();
         } catch (err) {
           console.warn('Error resuming syncs:', err);
         }
@@ -84,7 +85,7 @@ const Router = ({ theme }) => {
       subscription.remove();
       syncServiceInstance.removeAll()
     };
-  
+
   }, []);
 
   let [fontsLoaded] = useFonts({
@@ -103,16 +104,5 @@ const Router = ({ theme }) => {
   );
 };
 
-function prepareSyncables()
-{
-  syncServiceInstance.removeAll();
-  const combinedSyncables = [...issueStatusSyncables]
-  
-  combinedSyncables.forEach(element => {
-    syncServiceInstance.register(element)
-  });
-
-  setupConnectionWatcher();
-}
 
 export default Router;
