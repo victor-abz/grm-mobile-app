@@ -1,6 +1,7 @@
-import { openDatabase, ResultSet } from 'react-native-sqlite-storage';
+import { ResultSet } from 'react-native-sqlite-storage';
+import { getDBConnection } from "../../services/shared/SyncService";
 
-const db = openDatabase({ name: 'grm-db.db' });
+export type Schema<T> = Array<{ [key: string]: string }>
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
@@ -11,15 +12,36 @@ export class BaseLocalRepository<T> {
   constructor(
     private tableName: string,
     private idColumn: string,
-    private updatedAtKey: string,
-    private syncAtKey: string,
-    private mapper: Mapper<T>
+    private updatedDateKey: string,
+    private syncDateKey: string,
+    private mapper: Mapper<T>,
+    private schema: Schema<T>
   ) {}
+
+  async createTable(): Promise<void> {
+    const sql = `CREATE TABLE IF NOT EXISTS ${this.tableName} (${this.schema.join(',')}))`;
+    const dbInstance = await getDBConnection();
+
+    return new Promise((resolve, reject) => {
+      dbInstance.transaction(tx => {
+        tx.executeSql(
+          sql,
+          () => resolve(),
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
 
   async hardDelete(id: string | number): Promise<void> {
     const sql = `DELETE FROM ${this.tableName} WHERE ${this.idColumn} = ?`;
+    const dbInstance = await getDBConnection();
+
     return new Promise((resolve, reject) => {
-      db.transaction(tx => {
+      dbInstance.transaction(tx => {
         tx.executeSql(
           sql,
           [id],
@@ -34,8 +56,10 @@ export class BaseLocalRepository<T> {
   }
 
   async getAll(): Promise<T[]> {
+    const dbInstance = await getDBConnection();
+
     return new Promise((resolve, reject) => {
-      db.transaction(tx => {
+      dbInstance.transaction(tx => {
         tx.executeSql(
           `SELECT * FROM ${this.tableName}`,
           [],
@@ -56,15 +80,17 @@ export class BaseLocalRepository<T> {
   }
 
   async getUnsynced(): Promise<T[]> {
+    const dbInstance = await getDBConnection();
+
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT * FROM ${this.tableName}
-        WHERE ${this.updatedAtKey} != ${this.syncAtKey}
-          OR ${this.syncAtKey} IS NULL
-          OR deleted_at IS NOT NULL AND (${this.syncAtKey} IS NULL OR deleted_at != ${this.syncAtKey})
+        WHERE ${this.updatedDateKey} != ${this.syncDateKey}
+          OR ${this.syncDateKey} IS NULL
+          OR deleted_at IS NOT NULL AND (${this.syncDateKey} IS NULL OR deleted_at != ${this.syncDateKey})
       `;
 
-      db.transaction(tx => {
+      dbInstance.transaction(tx => {
         tx.executeSql(
           sql,
           [],
@@ -85,14 +111,16 @@ export class BaseLocalRepository<T> {
   }
 
   async markSynced(item: T): Promise<void> {
+    const dbInstance = await getDBConnection();
     const row = this.mapper.toRow(item);
-    const id = row[this.idColumn];
-    const updatedAt = row[this.updatedAtKey];
 
-    const sql = `UPDATE ${this.tableName} SET ${this.syncAtKey} = ? WHERE ${this.idColumn} = ?`;
+    const id = row[this.idColumn];
+    const updatedAt = row[this.updatedDateKey];
+
+    const sql = `UPDATE ${this.tableName} SET ${this.syncDateKey} = ? WHERE ${this.idColumn} = ?`;
 
     return new Promise((resolve, reject) => {
-      db.transaction(tx => {
+      dbInstance.transaction(tx => {
         tx.executeSql(
           sql,
           [updatedAt, id],
@@ -107,16 +135,17 @@ export class BaseLocalRepository<T> {
   }
 
   async softDelete(id: string | number): Promise<void> {
+    const dbInstance = await getDBConnection();
     const deletedAt = new Date().toISOString();
     const sql = `
       UPDATE ${this.tableName}
-      SET deleted_at = ?, ${this.updatedAtKey} = ?
+      SET deleted_at = ?, ${this.updatedDateKey} = ?
       WHERE ${this.idColumn} = ?
     `;
-  
+
 
     return new Promise((resolve, reject) => {
-      db.transaction(tx => {
+      dbInstance.transaction(tx => {
         tx.executeSql(
           sql,
           [deletedAt, deletedAt, id],
@@ -131,7 +160,9 @@ export class BaseLocalRepository<T> {
   }
 
   async upsert(item: T): Promise<void> {
+    const dbInstance = await getDBConnection();
     const row = this.mapper.toRow(item);
+
     const keys = Object.keys(row);
     const values = keys.map(k => row[k]);
     const placeholders = keys.map(() => '?').join(',');
@@ -139,7 +170,7 @@ export class BaseLocalRepository<T> {
     const sql = `REPLACE INTO ${this.tableName} (${keys.join(',')}) VALUES (${placeholders})`;
 
     return new Promise((resolve, reject) => {
-      db.transaction(tx => {
+      dbInstance.transaction(tx => {
         tx.executeSql(
           sql,
           values,
