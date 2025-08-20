@@ -69,7 +69,7 @@ src/
 │   └── v1/
 │       └── <schema_name>.ts # Define schemas here (e.g., export interface schema { ... })
 ├── repositories/        # Data access layer
-│   ├── local/           # Local repositories for PouchDB
+│   ├── local/           # Local repositories for SQLite
 │   │   ├── BaseLocalRepository.js
 │   │   └── ...
 │   └── remote/          # Remote repositories for API calls
