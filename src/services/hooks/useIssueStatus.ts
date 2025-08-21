@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import * as IssueStatusService from '../shared/IssueStatusService';
-import { IssueStatusModel } from '../../repositories/remote/IssueStatusRemoteRepository';
+import { IssueStatus } from "../../models/issue_status";
 
 export function useIssueStatus() {
-  const [issueStatusList, setIssueStatusList] = useState<IssueStatusModel[]>()
+  const [issueStatusList, setIssueStatusList] = useState<IssueStatus[]>()
   const [loading, setLoading] = useState(false);
     
   useEffect(() => {

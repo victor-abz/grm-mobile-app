@@ -13,9 +13,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/poppins";
 import { syncServiceInstance } from "../services/shared/SyncService";
-
 import { initialSync } from "../utils/networkMonitor";
-
 import { getEncryptedData } from "../utils/storageManager";
 
 const Router = ({ theme }) => {
@@ -32,6 +30,7 @@ const Router = ({ theme }) => {
   {
     const _session = await getSessionData();
     if (_session) {
+
       //
       //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       let dbCredentials;
@@ -40,7 +39,6 @@ const Router = ({ theme }) => {
         username = await getEncryptedData(`username`);
         dbCredentials = await getEncryptedData(
           `dbCredentials_${username.replace("@", "")}`
-
         );
       } catch (error) {
         console.error(error);

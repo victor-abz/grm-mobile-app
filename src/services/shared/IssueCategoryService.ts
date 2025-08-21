@@ -32,7 +32,7 @@ export async function fetchIssueCategoriesList(): Promise<IssueCategory[] | null
     } 
 }
 
-export const issueCategorySyncables = {
+export const issueCategorySyncable = {
     sync: () => issueCategoryService.sync(),
     createTable: () => issueCategoryService.createTable()
 };

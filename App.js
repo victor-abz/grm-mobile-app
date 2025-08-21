@@ -1,10 +1,9 @@
 import React from "react";
 import { Provider as PaperProvider } from 'react-native-paper';
 import { Provider as ReduxProvider } from "react-redux";
-
-import Router from "./src/router/";
 import store from "./src/store";
 import "./src/translations/i18n";
+import Router from "./src/router";
 
 if (__DEV__) {
   // eslint-disable-next-line no-console

@@ -60,6 +60,8 @@ When adding new features or functionalities, follow these best practices for a c
 
   * **Scaffolding:** Use the following consistent folder structure to maintain a clear and organized project architecture.
 
+URLs for CouchDB Database
+`src/db/databaseManager.js`
 
 ```
 src/

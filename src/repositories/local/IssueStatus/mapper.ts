@@ -1,7 +1,7 @@
 import { Mapper } from "../BaseLocalRepository";
-import { IssueStatusModel } from "../../remote/IssueStatusRemoteRepository";
+import { IssueStatus } from "../../../models/issue_status";
 
-export const mapper: Mapper<IssueStatusModel> = {
+export const mapper: Mapper<IssueStatus> = {
     toModel: (row) => {return ({
         _id: row._id,
         _rev: row._rev,
@@ -12,7 +12,7 @@ export const mapper: Mapper<IssueStatusModel> = {
         rejected_status: row.rejected_status,
         open_status: row.open_status, 
     })},
-    toRow: (model: IssueStatusModel) => ({ 
+    toRow: (model: IssueStatus) => ({
         id: model.id,
         name: model.name,
         final_status: model.final_status,

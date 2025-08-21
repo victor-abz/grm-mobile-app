@@ -1,12 +1,21 @@
 import { BaseLocalRepository } from "../../repositories/local/BaseLocalRepository";
 import { mapper } from "../../repositories/local/IssueStatus/mapper";
-import IssueStatusRemoteRepository, { IssueStatusModel } from "../../repositories/remote/IssueStatusRemoteRepository";
+import IssueStatusRemoteRepository from "../../repositories/remote/IssueStatusRemoteRepository";
 import { BaseService } from "./BaseService";
+import { issue_status } from "../../migrations/v1/issue_status";
+import { IssueStatus } from "../../models/issue_status";
 
-const localRepository = new BaseLocalRepository<IssueStatusModel>('issue_statuses', 'id', "updated_at", "sync_at", mapper)
+const localRepository = new BaseLocalRepository<IssueStatus>(
+  'issue_statuses',
+  'id',
+  "updated_at",
+  "sync_at",
+  mapper,
+  issue_status
+)
 const remoteRepository = new IssueStatusRemoteRepository();
 
-const issueStatusService = new BaseService<IssueStatusModel>(
+const issueStatusService = new BaseService<IssueStatus>(
     localRepository,
     remoteRepository
 );
@@ -20,7 +29,7 @@ async function syncIssueStatusList () {
     }
 }
 
-export async function fetchIssueStatusList(): Promise<IssueStatusModel[] | null> {
+export async function fetchIssueStatusList(): Promise<IssueStatus[] | null> {
     try {
         //try sync with remote
         await syncIssueStatusList()
@@ -32,6 +41,7 @@ export async function fetchIssueStatusList(): Promise<IssueStatusModel[] | null>
     } 
 }
 
-export const issueStatusSyncables = [
-    { sync: () => issueStatusService.sync()}
-];
+export const issueStatusSyncable = {
+        sync: () => issueStatusService.sync(),
+        createTable: () => issueStatusService.createTable()
+    };
