@@ -1,5 +1,6 @@
 import { BaseLocalRepository, Mapper } from "../BaseLocalRepository";
 import { IssueCategory } from "../../../models/IssueCategory";
+import { issueCategoryTable } from "../../../migrations/v1/issue_category";
 
 export const mapper: Mapper<IssueCategory> = {
     toModel: (row: any): IssueCategory => ({
@@ -37,6 +38,6 @@ export const mapper: Mapper<IssueCategory> = {
 
 export class CategoryLocalRepository extends BaseLocalRepository<IssueCategory> {
   constructor() {
-    super('issue_category', 'id', 'updated_at', 'sync_at', mapper);
+    super('issue_category', 'id', 'updated_at', 'sync_at', mapper, issueCategoryTable);
   }
 }

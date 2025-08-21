@@ -30,7 +30,7 @@ export class SyncService {
   async  initDB() {
     const db = await getDBConnection();
 
-    // await db.executeSql(`DROP TABLE issue_statuses`);
+    // await db.executeSql(`DROP TABLE issue_categories`);
     // await db.executeSql(`DROP TABLE meta`);
 
     // Check if schema version table exists
@@ -57,7 +57,6 @@ export class SyncService {
         }
       }
 
-
       // Save version
       await db.executeSql(`INSERT OR REPLACE INTO meta (key, value) VALUES ('db_version', ?)`, [
         DB_VERSION.toString(),
@@ -83,10 +82,16 @@ export class SyncService {
 
   async runMigrations(db, fromVersion, toVersion) {
     console.log(`Migrating DB from v${fromVersion} to v${toVersion}`);
-
+    
     // Example migration steps
     if (fromVersion < 2) {
-      await db.executeSql(`ALTER TABLE users ADD COLUMN phone TEXT`);
+      const migrations = []
+      for (let index = 0; index < migrations.length; index++) {
+        const element = migrations[index];
+        await db.executeSql(element);
+        
+      }
+      // await db.executeSql(`ALTER TABLE users ADD COLUMN phone TEXT`);
     }
 
     // Add more migrations here for future versions
