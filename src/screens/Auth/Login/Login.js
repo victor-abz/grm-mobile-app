@@ -70,7 +70,7 @@ function Login()
       
     } catch (error) {
       dispatch(logout());
-      console.warn("Proceeding fetch CouchDB credentials from remote - locally not available");  
+      console.warn("Proceeding fetch credentials from remote - locally not available (user credentials used in combination with pouchdb)");  
     }
     removeEncryptedValue(
         `dbCredentials_${data?.password}_${data?.email.replace('@', '')}`

@@ -1,7 +1,5 @@
 import { openDatabase, enablePromise } from 'react-native-sqlite-storage';
 
-const db = openDatabase({ name: 'grm-db.db' });
-
 export const DB_VERSION = 1; //
 const DB_NAME = "grm-db.db";
 let dbInstance = null;
@@ -106,4 +104,3 @@ export class SyncService {
 }
 
 export const syncServiceInstance = new SyncService();
-

@@ -9,9 +9,11 @@ function CitizenReportStep3({ route }) {
   const { params } = route;
   const customStyles = styles();
   const [eadl, setEadl] = useState(false);
-  const { username } = useSelector((state) => state.get('authentication').toObject());
-
-  useEffect(() => {
+  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const username = session?.username ?? ''
+  
+  useEffect(() =>
+  {
     if (username) {
       LocalAdminLevelsDatabase.find({
         selector: { 'representative.email': username },

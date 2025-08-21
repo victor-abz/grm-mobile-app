@@ -1,30 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView, Text } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './IssueActions.styles';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
+import { LocalAdminLevelsDatabase } from '../../../db/databaseManager';
+import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;
-  const [statuses, setStatuses] = useState();
+  const [issueStatusList, loading] = useIssueStatus();
   const [eadl, setEadl] = useState();
   const customStyles = styles();
-  const { username } = useSelector((state) => state.get('authentication').toObject());
-
-  useEffect(() => {
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_status' },
-    })
-      .then((result) => {
-        setStatuses(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve statuses. ${JSON.stringify(err)}`);
-      });
-  });
-
-  useEffect(() => {
+  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const username = session?.username ?? ''
+  
+  useEffect(() =>
+  {
+    
     if (username) {
       LocalAdminLevelsDatabase.find({
         selector: { 'representative.email': username },
@@ -41,9 +33,14 @@ function IssueActions({ route, navigation }) {
     }
   }, [username]);
 
+  if (loading) return (
+    <SafeAreaView style={customStyles.container}>
+      <Text>loading...</Text>
+    </SafeAreaView>
+  )
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content eadl={eadl} item={params.item} navigation={navigation} statuses={statuses} updateIssue={params.updateIssue}/>
+      <Content loading={loading} eadl={eadl} item={params.item} navigation={navigation} statuses={issueStatusList} updateIssue={params.updateIssue}/>
     </SafeAreaView>
   );
 }
