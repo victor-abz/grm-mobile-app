@@ -8,7 +8,11 @@ export class BaseService<T> {
     private remoteRepository: BaseRemoteRepository<T>
   ) {}
 
-  async create(item: T): Promise<void> {
+  async createTable(): Promise<void> {
+    await this.localRepository.createTable();
+  }
+
+  async insert(item: T): Promise<void> {
     await this.localRepository.upsert(item);
 
     const state = await NetInfo.fetch();
@@ -31,13 +35,12 @@ export class BaseService<T> {
   }
 
   async sync(): Promise<void> {
-    try { 
+
+    try {
       const unsyncedItems = await this.localRepository.getUnsynced();
-  
       // Update direction ["push"]: Local -> Remote
       for (const item of unsyncedItems) {
         const row = item as any;
-  
         try {
           if (row.deleted_at) {
             await this.remoteRepository.delete(row.id);
@@ -51,14 +54,12 @@ export class BaseService<T> {
         }
       }
 
-      // Update direction ["pull"]: Remote -> local
-      // TODO: define merge priorities      
+      // TODO: define merge priorities
       const results = await this.remoteRepository.fetchAll();
       for (let index = 0; index < results.length; index++) {
         const element = results[index];
         await this.localRepository.upsert(element);
       }
-      
     } catch (error) {
       console.warn("Sync failed: ", error)
     }

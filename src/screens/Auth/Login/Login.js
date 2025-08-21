@@ -19,6 +19,7 @@ import { emailRegex, passwordRegex } from '../../../utils/formUtils';
 import { fetchAuthCredentials, getCouchDBCredentials } from '../../../services/authService';
 import { i18n } from "../../../translations/i18n";
 import { colors } from '../../../utils/colors';
+import { DB_VERSION } from "../../../services/shared/SyncService";
 import { removeEncryptedValue } from '../../../utils/storageManager';
 
 const theme = {
@@ -69,7 +70,7 @@ function Login()
       
     } catch (error) {
       dispatch(logout());
-      console.warn("Proceeding fetch credentials from remote - locally not available (user credentials used in combination with pouchdb)");  
+      console.warn("Proceeding fetch CouchDB credentials from remote - locally not available"); 
     }
     removeEncryptedValue(
         `dbCredentials_${data?.password}_${data?.email.replace('@', '')}`
@@ -251,7 +252,7 @@ function Login()
       </KeyboardAvoidingView>
       <View style={{ marginTop: "auto" }}>
            <Text style={{ color: colors.secondary, fontSize: 12, textAlign: "center" }}>
-              v {version}
+              v {version} - {DB_VERSION}
            </Text>
       </View>
     </ScrollView>
