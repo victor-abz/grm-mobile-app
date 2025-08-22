@@ -1,7 +1,7 @@
 import NetInfo, { NetInfoSubscription } from '@react-native-community/netinfo';
 import { issueCategorySyncable } from '../services/shared/IssueCategoryService';
-import { syncServiceInstance } from "../services/shared/SyncService";
 import { issueStatusSyncable } from "../services/shared/IssueStatusService";
+import { syncServiceInstance } from "../services/shared/SyncService";
 
 let stableConnectionTimer: NodeJS.Timeout | null = null;
 let initialSyncListener: NetInfoSubscription | null = null;
@@ -40,10 +40,7 @@ function setupConnectionWatcher(): void {
 }
 
 export async function initialSync(): Promise<void> {
-  // Register services here ...
-  //
-  registerServices();
-  
+  registerServices();  
   await syncServiceInstance.initDB();
   if (initialSyncListener) return;
 

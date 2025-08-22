@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as IssueStatusService from '../shared/IssueStatusService';
-import { IssueStatus } from "../../models/issue_status";
+import { IssueStatus } from "../../models/IssueStatus";
 
 export function useIssueStatus() {
   const [issueStatusList, setIssueStatusList] = useState<IssueStatus[]>()
@@ -19,5 +19,5 @@ export function useIssueStatus() {
       setLoading(false);
     }
     
-    return [issueStatusList, loading]
+  return { issueStatusList, loading }
 }

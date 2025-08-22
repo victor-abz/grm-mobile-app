@@ -1,6 +1,6 @@
 import request from "../../utils/request";
 import { BaseRemoteRepository } from "./BaseRemoteRepository";
-import { IssueStatus } from "../../models/issue_status";
+import { IssueStatus } from "../../models/IssueStatus";
 
 
 class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {

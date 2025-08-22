@@ -1,6 +1,6 @@
-export interface IssueStatus {
-    id: number,
-    name: string,
+import { Base } from "./Base"; 
+
+export interface IssueStatus extends Base {
     final_status: boolean,
     initial_status: boolean,
     rejected_status: boolean,

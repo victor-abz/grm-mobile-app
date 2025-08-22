@@ -1,11 +1,5 @@
-interface Base {
-  created_date: Date,
-  deleted_date?: Date | null,
-  id: string,
-  name: string,
-  sync_date?: Date | null,
-  updated_date?: Date | null
-}
+import { Base } from "./Base"
+
 
 interface AssignedDepartment extends Base {
     administrative_level: string
@@ -22,8 +16,8 @@ interface AssignedAppealDepartment extends Base {
 export interface IssueCategory extends Base {
     abbreviation: string,
     assigned_department: AssignedDepartment,
-    assigned_appeal_department: AssignedEscalationDepartment,
-    assigned_escalation_department: AssignedAppealDepartment,
+    assigned_appeal_department: AssignedAppealDepartment,
+    assigned_escalation_department: AssignedEscalationDepartment,
     confidentiality_level: string,
     redirection_protocol: number,
     label: string,

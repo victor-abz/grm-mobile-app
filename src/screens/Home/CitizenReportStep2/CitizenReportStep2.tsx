@@ -7,7 +7,7 @@ import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
 
 const CitizenReportStep2 = ({ route }) => {
   const { params } = route;
-  const [issueCategories, loading] = useIssueCategories()
+  const { issueCategoriesList, loading } = useIssueCategories()
   const [issueTypes, setIssueTypes] = useState();
   const [issueSubTypes, setIssueSubTypes] = useState();
   const [issueComponents, setIssueComponents] = useState();
@@ -65,7 +65,7 @@ const CitizenReportStep2 = ({ route }) => {
     <SafeAreaView style={customStyles.container}>
       <Content
         stepOneParams={params.stepOneParams}
-        issueCategories={issueCategories}
+        issueCategories={issueCategoriesList}
         issueTypes={issueTypes}
         issueSubTypes={issueSubTypes}
         issueComponents={issueComponents}

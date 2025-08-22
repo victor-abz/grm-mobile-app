@@ -1,18 +1,9 @@
-import { BaseLocalRepository } from "../../repositories/local/BaseLocalRepository";
-import { mapper } from "../../repositories/local/IssueStatus/mapper";
 import IssueStatusRemoteRepository from "../../repositories/remote/IssueStatusRemoteRepository";
 import { BaseService } from "./BaseService";
-import { issue_status } from "../../migrations/v1/issue_status";
-import { IssueStatus } from "../../models/issue_status";
+import { IssueStatus } from "../../models/IssueStatus";
+import { IssueStatusLocalRepository } from "../../repositories/local/issueStatus/IssueStatusLocalRepository";
 
-const localRepository = new BaseLocalRepository<IssueStatus>(
-  'issue_statuses',
-  'id',
-  "updated_at",
-  "sync_at",
-  mapper,
-  issue_status
-)
+const localRepository = new IssueStatusLocalRepository();
 const remoteRepository = new IssueStatusRemoteRepository();
 
 const issueStatusService = new BaseService<IssueStatus>(

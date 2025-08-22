@@ -1,9 +1,9 @@
 import IssueCategoryRemoteRepository from "../../repositories/remote/IssueCategoryRemoteRepository";
 import { BaseService } from "./BaseService";
-import { CategoryLocalRepository } from "../../repositories/local/issueCategory/IssueCategoryLocalRepository";
+import { IssueCategoryLocalRepository } from "../../repositories/local/issueCategory/IssueCategoryLocalRepository";
 import { IssueCategory } from "../../models/IssueCategory";
 
-const localRepository = new CategoryLocalRepository();
+const localRepository = new IssueCategoryLocalRepository();
 const remoteRepository = new IssueCategoryRemoteRepository();
 
 export const issueCategoryService = new BaseService<IssueCategory>(

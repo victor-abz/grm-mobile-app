@@ -19,5 +19,5 @@ export function useIssueCategories() {
       setLoading(false);
     }
     
-    return [issueCategoriesList, loading]
+    return { issueCategoriesList, loading }
 }

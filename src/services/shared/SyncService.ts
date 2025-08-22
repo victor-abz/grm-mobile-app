@@ -30,10 +30,7 @@ export class SyncService {
   async  initDB() {
     const db = await getDBConnection();
 
-    // await db.executeSql(`DROP TABLE issue_categories`);
-    // await db.executeSql(`DROP TABLE meta`);
-
-    // Check if schema version table exists
+    // // Check if schema version table exists
       await db.executeSql(`
       CREATE TABLE IF NOT EXISTS meta (
         key TEXT PRIMARY KEY NOT NULL,
@@ -56,6 +53,7 @@ export class SyncService {
           console.warn('[SyncService] Failed to sync a repository', err);
         }
       }
+
 
       // Save version
       await db.executeSql(`INSERT OR REPLACE INTO meta (key, value) VALUES ('db_version', ?)`, [
@@ -82,16 +80,10 @@ export class SyncService {
 
   async runMigrations(db, fromVersion, toVersion) {
     console.log(`Migrating DB from v${fromVersion} to v${toVersion}`);
-    
+
     // Example migration steps
     if (fromVersion < 2) {
-      const migrations = []
-      for (let index = 0; index < migrations.length; index++) {
-        const element = migrations[index];
-        await db.executeSql(element);
-        
-      }
-      // await db.executeSql(`ALTER TABLE users ADD COLUMN phone TEXT`);
+      await db.executeSql(`ALTER TABLE users ADD COLUMN phone TEXT`);
     }
 
     // Add more migrations here for future versions

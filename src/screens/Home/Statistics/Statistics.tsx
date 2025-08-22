@@ -7,6 +7,7 @@ import { styles } from './Statistics.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
 import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
+import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
 
 function Statistics() {
   const customStyles = styles();
@@ -15,8 +16,8 @@ function Statistics() {
   const [ageGroup, setAgeGroup] = useState();
   const [citizenGroup1, setCitizenGroup1] = useState();
   const [citizenGroup2, setCitizenGroup2] = useState();
-  const [issueStatusList, loading] = useIssueStatus();
-  const [issueCategories, setIssueCategories] = useIssueCategories();
+  const {issueStatusList, loading: issueStatusLoading} = useIssueStatus();
+  const {issueCategoriesList, loading: issueCategoriesLoading} = useIssueCategories();
   const [issueComponent, setIssueComponent] = useState();
   const [issueSubComponent, setIssueSubComponent] = useState();
   const [eadl, setEadl] = useState(false);
@@ -139,7 +140,7 @@ function Statistics() {
                  citizenGroup1={citizenGroup1}
                  citizenGroup2={citizenGroup2}
                  issueType={issueType}
-                 issueCategory={issueCategories}
+                 issueCategory={issueCategoriesList}
                  issueComponent={issueComponent}
                  issueSubComponent={issueSubComponent}
         />
