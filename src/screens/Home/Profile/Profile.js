@@ -6,10 +6,11 @@ import { styles } from './Profile.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
 
-function Profile() {
+function Profile()
+{
   const [eadl, setEadl] = useState(false);
   const [issues, setIssues] = useState();
-  const [issueStatusList, loading] = useIssueStatus();
+  const {issueStatusList, loading} = useIssueStatus();
   const [department, setDepartment] = useState(false);
   const { session } = useSelector((state) => state.get('authentication').toObject());
   const username = session?.username ?? ''
