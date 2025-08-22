@@ -1,29 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native';
-import Content from './containers/Content';
-import { styles } from './CitizenReportStep2.styles';
 import { LocalGRMDatabase } from '../../../db/databaseManager';
 import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
+import { styles } from './CitizenReportStep2.styles';
+import Content from './containers/Content';
 
 const CitizenReportStep2 = ({ route }) => {
   const { params } = route;
   const { issueCategoriesList, loading } = useIssueCategories()
-  const [issueTypes, setIssueTypes] = useState();
+  const { issueTypesList } = useIssueTypes();
   const [issueSubTypes, setIssueSubTypes] = useState();
   const [issueComponents, setIssueComponents] = useState();
   const [issueSubComponents, setIssueSubComponents] = useState();
 
   useEffect(() => {
-    // FETCH ISSUE TYPE
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_type' },
-    })
-      .then((result) => {
-        setIssueTypes(result?.docs);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
 
     // FETCH ISSUE SUB TYPE
     LocalGRMDatabase.find({
@@ -66,7 +56,7 @@ const CitizenReportStep2 = ({ route }) => {
       <Content
         stepOneParams={params.stepOneParams}
         issueCategories={issueCategoriesList}
-        issueTypes={issueTypes}
+        issueTypes={issueTypesList}
         issueSubTypes={issueSubTypes}
         issueComponents={issueComponents}
         issueSubComponents={issueSubComponents}

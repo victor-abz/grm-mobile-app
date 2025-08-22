@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
-import Content from './containers';
-import { styles } from './Profile.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
+import Content from './containers';
+import { styles } from './Profile.style';
 
 function Profile()
 {
@@ -14,8 +14,6 @@ function Profile()
   const [department, setDepartment] = useState(false);
   const { session } = useSelector((state) => state.get('authentication').toObject());
   const username = session?.username ?? ''
-  
-
 
   useEffect(() => {
     if (username) {

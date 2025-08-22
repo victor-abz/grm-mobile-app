@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
-import { RootStateOrAny, useSelector } from 'react-redux';
 import { ActivityIndicator } from 'react-native-paper';
+import { RootStateOrAny, useSelector } from 'react-redux';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
+import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
+import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
+import { colors } from '../../../utils/colors';
 import Content from './containers';
 import { styles } from './Statistics.style';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
-import { colors } from '../../../utils/colors';
-import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
-import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
 
 function Statistics() {
   const customStyles = styles();
   const [issues, setIssues] = useState();
-  const [issueType, setIssueType] = useState();
+  const { issueTypesList } = useIssueTypes();
   const [ageGroup, setAgeGroup] = useState();
   const [citizenGroup1, setCitizenGroup1] = useState();
   const [citizenGroup2, setCitizenGroup2] = useState();
@@ -57,17 +57,6 @@ function Statistics() {
       })
       .catch((err) => {
         alert(`Unable to retrieve issue citizen group 2. ${JSON.stringify(err)}`);
-      });
-
-    // Getting issue_type
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_type' },
-    })
-      .then((result) => {
-        setIssueType(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue type. ${JSON.stringify(err)}`);
       });
 
     // Getting issue_component
@@ -139,7 +128,7 @@ function Statistics() {
                  ageGroup={ageGroup}
                  citizenGroup1={citizenGroup1}
                  citizenGroup2={citizenGroup2}
-                 issueType={issueType}
+                 issueType={issueTypesList}
                  issueCategory={issueCategoriesList}
                  issueComponent={issueComponent}
                  issueSubComponent={issueSubComponent}
