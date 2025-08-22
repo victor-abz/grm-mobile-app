@@ -8,6 +8,7 @@ import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
 import { colors } from '../../../utils/colors';
 import Content from './containers';
 import { styles } from './Statistics.style';
+import { useIssueTypes } from '../../../services/hooks/useIssueTypes';
 
 function Statistics() {
   const customStyles = styles();

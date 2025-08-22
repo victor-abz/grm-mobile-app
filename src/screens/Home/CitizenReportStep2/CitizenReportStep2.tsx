@@ -4,6 +4,7 @@ import { LocalGRMDatabase } from '../../../db/databaseManager';
 import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
 import { styles } from './CitizenReportStep2.styles';
 import Content from './containers/Content';
+import { useIssueTypes } from '../../../services/hooks/useIssueTypes';
 
 const CitizenReportStep2 = ({ route }) => {
   const { params } = route;

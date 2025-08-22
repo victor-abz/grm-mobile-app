@@ -11,7 +11,7 @@ export const issueTypeService = new BaseService<IssueType>(
     remoteRepository
 );
 
-async function syncIssueTypeList () {
+async function syncIssueTypesList () {
     try {
         const response = await issueTypeService.sync()   
         return response;
@@ -20,10 +20,10 @@ async function syncIssueTypeList () {
     }
 }
 
-export async function fetchIssueTypeList(): Promise<IssueType[] | null> {
+export async function fetchIssueTypesList(): Promise<IssueType[] | null> {
     try {
         //try sync with remote
-        await syncIssueTypeList()
+        await syncIssueTypesList()
         //proceed getting data from the local source origin
         const response = await issueTypeService.getAll();
         return response
