@@ -43,9 +43,8 @@ export class SyncService {
 
     // Get current DB version
     const [results] = await db.executeSql(`SELECT value FROM meta WHERE key = 'db_version'`);
-    console.log(results)
     const currentVersion = results?.rows?.length ? parseInt(results.rows.item(0).value, 10) : 0;
-
+    console.log("Current database version:", currentVersion);
     if (currentVersion === 0) {
       // First run — create tables
 

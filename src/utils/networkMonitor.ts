@@ -40,7 +40,7 @@ function setupConnectionWatcher(): void {
 }
 
 export async function initialSync(): Promise<void> {
-  this.registerServices();
+  registerServices();
 
   await syncServiceInstance.initDB();
   if (initialSyncListener) return;
