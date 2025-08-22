@@ -11,14 +11,16 @@ import {
 import { ActivityIndicator, Button, TextInput } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { Controller, useForm } from 'react-hook-form';
-import { login } from '../../../store/ducks/authentication.duck';
+import { login, logout } from '../../../store/ducks/authentication.duck';
 import EADLLogo from '../../../../assets/eadl-logo.svg';
 import styles from './Login.style';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
-import { fetchAuthCredentials } from '../../../services/authService';
+import { fetchAuthCredentials, getCouchDBCredentials } from '../../../services/authService';
 import { i18n } from "../../../translations/i18n";
 import { colors } from '../../../utils/colors';
+import { DB_VERSION } from "../../../services/shared/SyncService";
+import { removeEncryptedValue } from '../../../utils/storageManager';
 
 const theme = {
   roundness: 12,
@@ -42,14 +44,57 @@ function Login()
     setResponseError(null);
     setLoading(true);
     const response = await fetchAuthCredentials({ username: data?.email, password: data?.password })
-    
+        
     if (response.error) {
       setResponseError(response.error);
       setLoading(false);
       return;
     }
+
+    //
+    //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    let dbConfig;
+    try {
+       dbConfig = await getEncryptedData(
+        `dbCredentials_${data?.password}_${data?.email.replace('@', '')}`
+      );
+    } catch (error) {
+      console.log("OK: not storing sensitive local user credentials used in combination with pouchdb");  
+    }
+    try { 
+      if (!dbConfig) {
+        dbConfig = await getEncryptedData(
+          `dbCredentials_${data?.email.replace('@', '')}`
+        );
+      }
+      
+    } catch (error) {
+      dispatch(logout());
+      console.warn("Proceeding fetch credentials from remote - locally not available (user credentials used in combination with pouchdb)");  
+    }
+    removeEncryptedValue(
+        `dbCredentials_${data?.password}_${data?.email.replace('@', '')}`
+      )
+    //
+    //
+
+    if (dbConfig) {
+      dispatch(login(response, { email: data?.email, password: data?.password }, dbConfig));
+      return;
+    } //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+
+    const couchDBCredentialsResponse = await getCouchDBCredentials({
+      email: data?.email,
+      password: data?.password
+    }) //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    
+
     setLoading(false);
-    dispatch(login(response, data));
+    dispatch(login(
+      response,
+      data, //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+      couchDBCredentialsResponse //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    ));
   };
 
   const { control, handleSubmit, errors } = useForm({
@@ -207,7 +252,7 @@ function Login()
       </KeyboardAvoidingView>
       <View style={{ marginTop: "auto" }}>
            <Text style={{ color: colors.secondary, fontSize: 12, textAlign: "center" }}>
-              v {version}
+              v {version} - {DB_VERSION}
            </Text>
       </View>
     </ScrollView>

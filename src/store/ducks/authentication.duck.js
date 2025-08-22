@@ -2,22 +2,29 @@ import { Map } from "immutable";
 import { createActions, handleActions } from "redux-actions";
 import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../db/databaseManager";
 import {
-  getEncryptedData,
   removeEncryptedValue,
   storeEncryptedData,
+  getEncryptedData
 } from "../../utils/storageManager";
+import { client } from "../../utils/request";
 import config from "../../../config";
 
 const defaultState = Map({
   session: null,
   profile: null,
+  userPassword: null, username: null, //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
 });
 
 function storeSessionData(sessionObject) {
   storeEncryptedData(config.USER_SESSION_KEY, JSON.stringify(sessionObject));
 }
 
+function addTokenToHttpClient(sessionObject) {
+  client.defaults.headers.common["Authorization"] = `Token ${sessionObject.token}`;
+}
+
 function removeSessionData() {
+  delete client.defaults.headers.common.Authorization;
   removeEncryptedValue(config.USER_SESSION_KEY);
 }
 
@@ -27,49 +34,94 @@ export async function getSessionData() {
 }
 
 export const { init, login, signUp, logout } = createActions({
-  INIT: (session) =>
+  INIT: (session, userCredentials, dbCredentials) =>
   {
-    // SyncToRemoteDatabase(session);
-    return { session };
+    SyncToRemoteDatabase(dbCredentials, userCredentials.email);  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    addTokenToHttpClient(session);
+    return {
+      session,
+      password: userCredentials.password, username: userCredentials.email //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+     };
   },
-  LOGIN: (sessionObject, credentials) =>
+  LOGIN: (session, userCredentials, dbCredentials) => {
+    storeEncryptedData(
+      `dbCredentials_${userCredentials.email.replace(
+        "@",
+        ""
+      )}`,
+      dbCredentials
+    ); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    SyncToRemoteDatabase(dbCredentials, userCredentials.email);  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    storeEncryptedData(`username`, userCredentials.email); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    addTokenToHttpClient(session)
+    storeSessionData(session);
+    return {
+      session,
+      password: userCredentials.password, username: userCredentials.email //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+     };
+  },
+  SIGN_UP: (session, userCredentials) => {
+    storeEncryptedData(
+      `dbCredentials_${userCredentials.email.replace(
+        "@",
+        ""
+      )}`,
+      dbCredentials
+    );  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    storeEncryptedData(`username`, userCredentials.email);//TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    addTokenToHttpClient(session)
+    storeSessionData(session);
+    return { session, password: userCredentials.password, username: userCredentials.email };
+  },
+  LOGOUT: () =>
   {
-    storeSessionData(sessionObject);
-    // SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { session: sessionObject, password: credentials.password, username: credentials.email };
-  },
-  SIGN_UP: (sessionObject, credentials) => {
-    storeSessionData(sessionObject);
-    // SyncToRemoteDatabase(dbCredentials, credentials.email);
-    return { password: credentials.password, username: credentials.email };
-  },
-  LOGOUT: () => {
+    try {
+      removeEncryptedValue("username"); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+      removeEncryptedValue("userPassword"); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    } catch (error) {
+      console.warn("No credentials to remove");
+      
+    }
+    
     removeSessionData();
     logoutRemoteDBs();
-    return { password: null, username: null };
+    return {
+      session: null, profile: null,
+      password: null, username: null //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+    };
   },
 });
 
 const authentication = handleActions(
   {
-    [init]: (draft, { payload: { session } }) => {
+    [init]: (draft, { payload: { session, username, password } }) => {
       return draft.withMutations((state) => {
         state.set("session", session);
+        state.set("username", username); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+        state.set("userPassword", password); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       });
     },
-    [login]: (draft, { payload: { session } }) => {
-      return draft.withMutations((state) => {        
-        state.set("session", session);
-      });
-    },
-    [signUp]: (draft, { payload: { session } }) => {
+    [login]: (draft, { payload: { session, username, password } }) => {
       return draft.withMutations((state) => {
         state.set("session", session);
+        state.set("username", username); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+        state.set("userPassword", password); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       });
     },
-    [logout]: (draft, { payload: { session } }) => {
+    [signUp]: (draft, { payload: { session, username, password } }) => {
       return draft.withMutations((state) => {
         state.set("session", session);
+        state.set("username", username); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+        state.set("userPassword", password); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+
+      });
+    },
+    [logout]: (draft, { payload: { session, username, password } }) =>
+    {
+      return draft.withMutations((state) => {
+        state.set("session", session);
+        state.set("username", username); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
+        state.set("userPassword", password); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       });
     },
   },

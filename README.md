@@ -1,49 +1,156 @@
-# Installation
-- Have node js >=18
-- Install packages using `yarn`
-<!-- - Run the project as `yarn start` -->
-- `yarn android`
+# grm-mobile
 
+An Android application built with React Native for managing data and interacting of GRM project.
+This mobile app provides offline and online mode.
 
-# Configuration URL
+## 💻 Technologies Used
+
+  * **React Native**
+  * **Expo**
+  * **Node.js**
+
+-----
+
+## 🚀 Getting Started
+
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+You need to have the following installed on your machine:
+
+  * **Node.js:** Version 18 or higher is required.
+  * **Yarn:** A package manager for Node.js to install packages 
+    
+### Installation
+
+1.  Clone the repository:
+
+    ```bash
+    git clone https://github.com/Corasec/grm-mobile.git
+    cd grm-mobile
+    ```
+
+2.  Install the project dependencies:
+
+    ```bash
+    yarn install
+    ```
+
+3.  Run the application on an Android emulator or a connected device:
+
+    ```bash
+    yarn android
+    ```
+
+    If you see the `CommandError` about the development build not being installed, this is expected. The `yarn android` command will handle the installation automatically.
+
+### Configuration
+
+You need to configure the database and API endpoints before running the app.
+
+  * **CouchDB URL:** Update the database URL in `src/db/databaseManager.js`.
+  * **Web App URL:** Update the API URL in `src/services/API.js`.
+
+-----
+
+## 🛠️ Development
+
+When adding new features or functionalities, follow these best practices for a clean and scalable codebase.
+
+  * **Scaffolding:** Use the following consistent folder structure to maintain a clear and organized project architecture.
 
 URLs for CouchDB Database
-`src/utils/databaseManager.js`
+`src/db/databaseManager.js`
 
-URL for Web App
-`src/services/API.js`
+```
+src/
+├── components/          # Shared, reusable UI components
+├── db/                  # Database management, e.g., databaseManager.js
+├── migrations/          # Database schema migrations
+│   └── v1/
+│       └── <schema_name>.ts # Define schemas here (e.g., export interface schema { ... })
+├── repositories/        # Data access layer
+│   ├── local/           # Local repositories for SQLite
+│   │   ├── BaseLocalRepository.js
+│   │   └── ...
+│   └── remote/          # Remote repositories for API calls
+│       ├── BaseRemoteRepository.js
+│       └── ...
+├── router/              # Navigation and route configuration
+│   ├── public.js
+│   └── private.js
+├── screens/             # Top-level screen components
+│   └── ScreenName/
+│       ├── containers/
+│       │   ├── Content.js
+│       │   └── ContentStyle.js
+│       ├── Screen.js    # The main screen component (e.g., <SafeAreaView><Content /></SafeAreaView>)
+│       └── ScreenStyles.js
+├── services/            # Business logic and shared functionality
+│   └── shared/
+│       └── ...
+├── store/               # State management setup
+├── translations/        # Internationalization files
+└── utils/               # Helper functions and utilities
+```
+
+Versión de la Aplicación: Para facilitar el reporte y la depuración de errores, asegúrate de que cada pantalla muestre la versión de la aplicación y de la base de datos en el siguiente formato: v <versión de la app> - <versión de la DB>.
+### Common Development Tasks
+
+  * **Clean and reinstall dependencies:** If you encounter dependency issues, run the following commands in order:
+
+    ```bash
+    rm -rf node_modules package-lock.json yarn.lock
+    yarn cache clean
+    yarn install
+    ```
+
+  * **Prebuild the project:** Use this command to ensure native dependencies are properly linked.
+
+    ```bash
+    npx expo prebuild --clean
+    ```
+
+-----
+## 🤝 Support
+
+To facilitate bug reporting and debugging, ensure that each screen displays the app version and database version in the following format:
+       
+`v <app version> - <DB version>`
+
+-----
+
+## 📦 Building the App
+
+Follow these steps to generate a release APK file for Android.
+
+1.  Ensure the project runs correctly in the development environment (`yarn android`).
+2.  Clean the project's dependencies:
+    ```bash
+    rm -rf package-lock.json yarn.lock
+    yarn install
+    npx expo prebuild --clean
+    ```
+3.  Navigate to the Android directory and clean the Gradle build:
+    ```bash
+    cd android
+    ./gradlew clean
+    ```
+4.  Build the release APK:
+    ```bash
+    ./gradlew assembleRelease
+    ```
+5.  The final `app-release.apk` file will be located in the `android/app/build/outputs/apk/release` folder.
+
+-----
+
+## 📜 Version Updates
+
+This section details the steps taken for major project updates. It serves as a historical record and a guide for future upgrades.
 
 
-# Development (see SDK version details for specific instructions)
-<!-- - `export NODE_OPTIONS=--openssl-legacy-provider` -->
-<!-- - `expo start` -->
-- `rm -rf package-lock.json`
-- `rm -rf yarn.lock`
-- `yarn install`
-- `npx expo prebuild --clean`
-- `yarn android`
-
-If you receive this message : `CommandError: No development build (com.setcobj.grmapp) for this project is installed. Please make and install a development build on the device first.`, this is not an execution abort error, but just a reminder that an application (your current application) is not installed on your laptop. In our case, with the `yarn android` command, the application will be installed within a few seconds of the message being displayed.
-
-
-# Build the App
-Build the app for android (Make sure the project runs correctly)
-<!-- - `eas build -p android --profile preview`
-- `eas build:run -p android --latest` -->
-- `rm -rf package-lock.json`
-- `rm -rf yarn.lock`
-- `yarn install`
-- `npx expo prebuild --clean`
-- `cd android`
-- `./gradlew clean`
-- `./gradlew assembleRelease`, this command allow you to build the apk
-
-You'll find the release app `app-release.apk` file on the `android\app\build\outputs\apk\release` folder
-
-
-# Update Version
-
-## 2025.03.06 Updating Project expo 43 to expo 47
+### 2025.03.06 Updating Project expo 43 to expo 47
 
 1. Make sure that the Git repository you are going to clone is with expo 43
 - `git clone -b deploy https://github.com/Corasec/grm-mobile.git`
@@ -75,7 +182,7 @@ You'll find the release app `app-release.apk` file on the `android\app\build\out
 
 
 
-## Convert React Native Expo 47 to React Native Eject
+### Convert React Native Expo 47 to React Native Eject
 
 1. Make sure you keep a version of the current project to come back to in case of ejection problems.
 
@@ -131,8 +238,7 @@ If you encounter any problems, follow these steps to clean and reinstall package
 - `yarn android`
 
 
-
-## 2025.03.07 Updating Project React Native EJect with Expo 47 to React Native EJect with Expo 51
+### 2025.03.07 Updating Project React Native EJect with Expo 47 to React Native EJect with Expo 51
 
 1. Make sure that the Git repository you are going to clone is with React Native EJect with Expo 47 And have a node version of at least 18. Execute the following commands : 
 - `git clone -b update_react_native_expo_47_to_react_native_eject https://github.com/Corasec/grm-mobile.git`
@@ -233,7 +339,7 @@ buildscript {
 
 
 
-3. Modify `metro.config.js` file like this
+3. Modify `metro.config.ts` file like this
 ```
 const { getDefaultConfig } = require('expo/metro-config');
 
@@ -273,3 +379,4 @@ module.exports = (async () => {
 - `yarn android`
 
 If you receive this message : `CommandError: No development build (com.setcobj.grmapp) for this project is installed. Please make and install a development build on the device first.`, this is not an execution abort error, but just a reminder that an application (your current application) is not installed on your laptop. In our case, with the `yarn android` command, the application will be installed within a few seconds of the message being displayed.
+
