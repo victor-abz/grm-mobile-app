@@ -1,7 +1,9 @@
 import { ResultSet } from 'react-native-sqlite-storage';
 import { getDBConnection } from "../../services/shared/SyncService";
 
-export type Schema = Array<{ [key: string]: string }>
+export type Schema = {
+  [key: string]: string;
+};
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
@@ -18,23 +20,29 @@ export class BaseLocalRepository<T> {
     private schema: Schema
   ) {}
 
-  async createTable(): Promise<void> {
-    const schemaString = this.schema.map(obj => {
-      const key = Object.keys(obj)[0];
-      const value = obj[key];
-      return `${key} ${value}`;
-    }).join(',');
 
-    const sql = `CREATE TABLE IF NOT EXISTS ${this.tableName} (${schemaString})`;
+  private formatSchema<T>(schema: Schema): string {
+      return Object.entries(schema)
+        .map(([key, value]) => `${key} ${value}`)
+        .join(", ");
+  };
+
+  async createTable(): Promise<void> {
+    const sql = `CREATE TABLE IF NOT EXISTS ${this.tableName} (${this.formatSchema(this.schema)})`;
     const dbInstance = await getDBConnection();
 
-    try {
-      await dbInstance.executeSql(sql);
-      console.log(`Table '${this.tableName}' created successfully.`);
-    } catch (err) {
-      console.warn(`[SyncService] Failed to create table '${this.tableName}'`, err);
-      throw err;
-    }
+    return new Promise((resolve, reject) => {
+      dbInstance.transaction(tx => {
+        tx.executeSql(
+          sql,
+          () => resolve(),
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
   }
 
   async hardDelete(id: string | number): Promise<void> {

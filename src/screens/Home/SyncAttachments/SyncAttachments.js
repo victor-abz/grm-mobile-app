@@ -47,7 +47,7 @@ function SyncAttachments({ navigation }) {
         });
         await axios.post(
           `${baseURL}${
-            file.taskOrdinal ? '/attachments/upload-to-task' : '/attachments/upload-to-issue'
+            file.taskOrdinal ? '/attachments/upload-to-task' : '/attachments/upload-to-issues'
           }`,
           formData,
           {

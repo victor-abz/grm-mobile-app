@@ -132,7 +132,7 @@ function Content({ issue }) {
             {/* <Text style={styles.subtitle}>
               {i18n.t('lodged_by')}
               <Text
-                style={styles.text}> {citizenTypes[issue.citizen_type] ?? i18n.t('information_not_available')}</Text>
+                style={styles.text}> {citizenTypes[issues.citizen_type] ?? i18n.t('information_not_available')}</Text>
             </Text> */}
             <Text style={styles.subtitle}>
               {i18n.t('name')}
@@ -147,13 +147,13 @@ function Content({ issue }) {
             {/* <View>
               <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('profession')}{' '}</Text>
               <Text style={[styles.text, {marginBottom: 5}]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_group_1?.name ?? i18n.t('information_not_available')}
+                {issues.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issues.citizen_group_1?.name ?? i18n.t('information_not_available')}
               </Text>
             </View>
             <View>
               <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('educational_level')}{' '}</Text>
               <Text style={[styles.text, {marginBottom: 5}]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_group_2?.name ?? i18n.t('information_not_available')}
+                {issues.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issues.citizen_group_2?.name ?? i18n.t('information_not_available')}
               </Text>
             </View> */}
             <View>
@@ -200,7 +200,7 @@ function Content({ issue }) {
             {/* <Text style={styles.subtitle}>
               {i18n.t('sub_component')}{' '}
               <Text
-                style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.sub_component?.name ?? i18n.t('information_not_available')}</Text>
+                style={styles.text}> {issues.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issues.sub_component?.name ?? i18n.t('information_not_available')}</Text>
             </Text> */}
 
           </View>

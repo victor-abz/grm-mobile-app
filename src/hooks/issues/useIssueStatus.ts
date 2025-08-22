@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import * as IssueStatusService from '../shared/IssueStatusService';
+import * as IssueStatusService from '../../services/issues/IssueStatusService';
 import { IssueStatus } from "../../models/issue_status";
 
 export function useIssueStatus() {

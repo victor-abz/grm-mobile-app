@@ -1,5 +1,7 @@
-import { BaseLocalRepository, Mapper } from './BaseLocalRepository';
-import { Issue } from "../../models/Issue";
+import { issue } from "../../../migrations/v1/issue";
+import { Issue } from "../../../models/Issue";
+import { BaseLocalRepository, Mapper } from "../BaseLocalRepository";
+
 
 const mapper: Mapper<Issue> = {
   toModel: (row: any): Issue => ({
@@ -11,7 +13,7 @@ const mapper: Mapper<Issue> = {
     category: JSON.parse(row.category),
     citizen: JSON.parse(row.citizen),
     component: JSON.parse(row.component),
-    confirmed: row.confirmed === 1, // sqlite guarda boolean como integer
+    confirmed: row.confirmed === 1,
     contact_medium: row.contact_medium,
     contact_information: JSON.parse(row.contact_information),
     contact_method: row.contact_method,
@@ -71,8 +73,9 @@ const mapper: Mapper<Issue> = {
   }),
 };
 
+
 export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   constructor() {
-    super('issues', 'id', 'updated_date', 'sync_date', mapper);
+    super('issues', 'id', 'updated_date', 'sync_date', mapper, issue);
   }
 }

@@ -43,7 +43,7 @@ export interface Issue extends Base {
   intake_date: Date,
   issue_date?: Date | null,
   issue_location_id: number,
-  issue_sub_type: string,
+  issue_sub_type: Base,
   issue_type: Base,
   internal_code: string,
   location_description: string,

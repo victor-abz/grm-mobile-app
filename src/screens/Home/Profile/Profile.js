@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './Profile.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
-import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
+import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 
 function Profile() {
   const [eadl, setEadl] = useState(false);
