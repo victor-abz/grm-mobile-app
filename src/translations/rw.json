@@ -170,7 +170,7 @@
 	"other": "Ikindi",
 	"rather_not_say":  "Ahubwo ntukavuge",
 
-	//issue detail
+	//issues detail
 	"description_label": "Ibisobanuro",
 
 	"reported_label": "Byatanzwe",
@@ -197,7 +197,7 @@
 
 	"confidential": "Ibanga",
 
-	//issue search
+	//issues search
 	"overdue_label": "Ibibazo byarengeje igihe",
 
 	"assigned_to_you_label": "Ibibazo wahawe",
@@ -217,7 +217,7 @@
 	"issue_was_escalated": "kibazo cyameshejwe inzego zo hejuru",
 	"issue_was_resolved": "Ikibazo cyakemutse",
 
-	// issue detail
+	// issues detail
 	"are_you_accepting": "Uremera ko iki kibazo kijyanye n'uyu mushinga? cyangwa ntikemewe kuberako ntaho gihuriye n'umushinga?",
 	"you_have_accepted": "Wemeye Iki kibazo muri porogaramu. Ubutumwa bwohererejwe umuturage bdetse nuwashyize ikibazo muri porogaramu.",
 	"finished": "Byarangiye",

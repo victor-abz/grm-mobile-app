@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './IssueActions.styles';
 import { LocalAdminLevelsDatabase } from '../../../db/databaseManager';
-import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
+import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;

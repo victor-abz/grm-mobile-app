@@ -12,7 +12,6 @@ export type Mapper<T> = {
   toRow: (model: T) => any;
 };
 
-
 export class BaseLocalRepository<T> {
   constructor(
     private tableName: string,
@@ -22,7 +21,6 @@ export class BaseLocalRepository<T> {
     private mapper: Mapper<T>,
     private schema: Schema<T>,
   ) {}
-
   
   private formatSchema<T>(schema: Schema<T>): string {
       return Object.entries(schema)

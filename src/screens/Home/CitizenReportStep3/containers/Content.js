@@ -172,12 +172,12 @@ function Content({ issue, eadl }) {
 
         {/* <View>
           <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_7')}</Text>
-          <Text style={styles.stepDescription}>{issue.citizen_group?.name ?? '--'}</Text>
+          <Text style={styles.stepDescription}>{issues.citizen_group?.name ?? '--'}</Text>
         </View> */}
 
         {/* <View>
           <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_6')}</Text>
-          <Text style={styles.stepDescription}>{issue.issueSubComponent?.name ?? '--'}</Text>
+          <Text style={styles.stepDescription}>{issues.issueSubComponent?.name ?? '--'}</Text>
         </View> */}
 
         <View>

@@ -1,9 +1,10 @@
-import request from "../../utils/request";
-import { BaseRemoteRepository } from "./BaseRemoteRepository";
-import { IssueStatus } from "../../models/IssueStatus";
-
+import request from "../../../utils/request";
+import { BaseRemoteRepository } from "../BaseRemoteRepository";
+import { IssueStatus } from "../../../models/IssueStatus";
+import { config } from "../../../../config.dev";
 
 class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {
+    private baseUrl = `${config.API_AUTH_BASE_URL}/issues/issue-statuses/`;
 
     create(item: IssueStatus): Promise<IssueStatus> {
         throw new Error('Method not implemented.');
@@ -14,7 +15,7 @@ class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {
     }
 
     async fetchAll(): Promise<IssueStatus[]> {
-        const url = `/issues/issue-statuses/`;
+        const url = `${this.baseUrl}`;
         const requestOptions = {
             url,
             method: "GET",

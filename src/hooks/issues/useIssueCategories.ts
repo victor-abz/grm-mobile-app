@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import * as IssueCategoryService from '../shared/IssueCategoryService';
+import * as IssueCategoryService from '../../services/issues/IssueCategoryService';
 import { IssueCategory } from '../../models/IssueCategory';
 
 export function useIssueCategories() {
@@ -21,3 +21,4 @@ export function useIssueCategories() {
     
     return { issueCategoriesList, loading }
 }
+

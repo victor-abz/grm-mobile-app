@@ -37,8 +37,8 @@ const Item = ({ item, onPress }) => {
 
 const searchFilter = (issue, searchPhrase, eadl) => {
   if (issue) {
-    // ((issue.assignee && issue.assignee.id === eadl?._id) ||
-    // (issue.reporter && issue.reporter.id === eadl?._id)) &&
+    // ((issues.assignee && issues.assignee.id === eadl?._id) ||
+    // (issues.reporter && issues.reporter.id === eadl?._id)) &&
     return (issue.tracking_code.includes(searchPhrase.toLowerCase()) ||
         issue.internal_code.includes(searchPhrase.toLowerCase()));
   }

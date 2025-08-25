@@ -6,7 +6,7 @@ import Content from './containers';
 import { styles } from './IssueSearch.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
-import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
+import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 
 function IssueSearch() {
   const customStyles = styles();

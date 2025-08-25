@@ -425,7 +425,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
     console.log("toSaveIssue.comments : ", issue.comments);
     LocalGRMDatabase.upsert(issue._id, (doc) => {
       doc = issue;
-      console.log("saving issue +++");
+      console.log("saving issues +++");
       return doc;
     }).then(() => {
         updateActionButtons();
@@ -439,7 +439,7 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
         }
       })
       .catch((err) => {
-        console.log('Save issue error', err);
+        console.log('Save issues error', err);
       });
   };
 
@@ -520,16 +520,16 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
 
           {/*<View style={styles.ratingInfoSection}>
             {
-              !issue.rating ?
+              !issues.rating ?
                 (
                   <Text style={styles.radioLabel}>{i18n.t('not_rate_yet')}</Text>
                 ) : (
-                  <Text style={styles.radioLabel}>{i18n.t(`satisfaction_level_${issue.rating}`)}</Text>
+                  <Text style={styles.radioLabel}>{i18n.t(`satisfaction_level_${issues.rating}`)}</Text>
                 )
             }
             <StarRating
               starSize={30}
-              rating={() => issue.rating ? issue.rating : 0}
+              rating={() => issues.rating ? issues.rating : 0}
               maxStars={5}
               onChange={() => null}
               emptyColor="#dddddd"/>

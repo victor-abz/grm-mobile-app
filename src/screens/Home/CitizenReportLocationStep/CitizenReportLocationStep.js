@@ -44,7 +44,7 @@ function CitizenReportLocationStep({ route }) {
       selector: { type: 'administrative_level' },
     }).then((result) => {
       setIssueCommunes(result?.docs);
-      console.log("issue communes : " + result?.docs[0]);
+      console.log("issues communes : " + result?.docs[0]);
     });
   }, []);
 

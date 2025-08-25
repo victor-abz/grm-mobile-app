@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import * as IssueStatusService from '../shared/IssueStatusService';
 import { IssueStatus } from "../../models/IssueStatus";
+import * as IssueStatusService from '../../services/issues/IssueStatusService';
 
 export function useIssueStatus() {
   const [issueStatusList, setIssueStatusList] = useState<IssueStatus[]>()
