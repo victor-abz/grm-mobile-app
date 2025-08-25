@@ -1,5 +1,5 @@
 import { BaseLocalRepository, Exact, Mapper, Schema } from "../BaseLocalRepository";
-import { IssueStatus } from "../../../models/IssueStatus";
+import type { IssueStatus } from "../../../models/IssueStatus";
 import { issueStatusTableSchema } from "../../../migrations/v1/issue_status";
 
 

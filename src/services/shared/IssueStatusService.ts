@@ -1,7 +1,8 @@
 import IssueStatusRemoteRepository from "../../repositories/remote/IssueStatusRemoteRepository";
 import { BaseService } from "./BaseService";
-import { IssueStatus } from "../../models/IssueStatus";
-import { IssueStatusLocalRepository } from "../../repositories/local/issueStatus/IssueStatusLocalRepository";
+import type { IssueStatus } from "../../models/IssueStatus";
+import { IssueStatusLocalRepository } from "../../repositories/local/IssueStatus/IssueStatusLocalRepository";
+
 
 const localRepository = new IssueStatusLocalRepository();
 const remoteRepository = new IssueStatusRemoteRepository();

@@ -1,4 +1,4 @@
-import { IssueType } from "../../models/IssueType";
+import type { IssueType } from "../../models/IssueType";
 import request from "../../utils/request";
 import { BaseRemoteRepository } from "./BaseRemoteRepository";
 

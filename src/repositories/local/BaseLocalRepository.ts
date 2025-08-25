@@ -26,7 +26,6 @@ export class BaseLocalRepository<T> {
 
 
   async createTable(): Promise<void> {
-    console.log("ISSUE TYPE TABLE: ", this.tableName === "issue_type", formatSchema(this.schema));
     
     const sql = `CREATE TABLE IF NOT EXISTS ${this.tableName} (${formatSchema(this.schema)})`;
     const dbInstance = await getDBConnection();

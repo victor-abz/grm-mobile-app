@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as IssueTypeService from '../shared/IssueTypeService';
-import { IssueType } from "../../models/IssueType";
+import type { IssueType } from "../../models/IssueType";
 
 export function useIssueTypes() {
   const [issueTypesList, setIssueTypesList] = useState<IssueType[]>()
