@@ -122,7 +122,7 @@
   "other": "Autre",
   "rather_not_say":  "Préfère ne rien dire",
 
-  //issue detail
+  //issues detail
   "description_label": "Description",
   "reported_label": "Déclaré/Rapporté",
   "status_label": "Status",
@@ -137,7 +137,7 @@
   "information_not_available": "Information non disponible",
   "confidential": "Confidentiel",
 
-  //issue search
+  //issues search
   "overdue_label": "Plaintes dont le traitement est en retard",
   "assigned_to_you_label": "Plaintes qui vous sont assignées",
   "resolved_by_you_label": "Plaintes Résolues par vous",
@@ -157,7 +157,7 @@
   "error_rejecting_issue": "Erreur lors du rejet de la plainte.",
   "issue_rejected_successfully": "La plainte a été rejetée avec succès.",
 
-  // issue detail
+  // issues detail
   "are_you_accepting": "Acceptez-vous qu'il s'agisse d'une plainte liée au projet ? Ou bien le rejetez-vous parce qu'il n'est pas pertinent ?",
   "you_have_accepted": "Vous avez accepté cette plainte dans le système. Des notifications ont été envoyées au citoyen et à l'enregistreur initial de la plainte.",
   "finished": "FINALISE",

@@ -1,6 +1,7 @@
 import NetInfo from '@react-native-community/netinfo';
 import { BaseLocalRepository } from '../../repositories/local/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/remote/BaseRemoteRepository';
+import { Issue } from "../../models/Issue";
 
 export class BaseService<T> {
   constructor(
@@ -27,11 +28,15 @@ export class BaseService<T> {
   }
 
   async getAll(): Promise<T[]> {
-    return this.localRepository.getAll();
-  }
-
-  async softDelete(id: string | number): Promise<void> {
-    await this.localRepository.softDelete(id);
+    const state = await NetInfo.fetch();
+    if (state.isConnected) {
+      try {
+        return await this.remoteRepository.fetchAll();
+      } catch (err) {
+        console.warn('[BaseService] Remote sync failed. Will retry later.', err);
+        return await this.localRepository.getAll();
+      }
+    }
   }
 
   async sync(): Promise<void> {

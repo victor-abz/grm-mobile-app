@@ -10,7 +10,7 @@ export const mapper: Mapper<IssueStatus> = {
         final_status: row.final_status,
         initial_status: row.initial_status,
         rejected_status: row.rejected_status,
-        open_status: row.open_status, 
+        open_status: row.open_status,
     })},
     toRow: (model: IssueStatus) => ({
         id: model.id,
@@ -24,4 +24,3 @@ export const mapper: Mapper<IssueStatus> = {
         deleted_at: null,
     })
 };
-
