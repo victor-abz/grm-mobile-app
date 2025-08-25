@@ -11,8 +11,8 @@ export const issueCategoryTableSchema = {
     redirection_protocol: "INTEGER",   
     label: "TEXT",
     value: "INTEGER",
-    created_at: "DATETIME DEFAULT CURRENT_TIMESTAMP",
-    deleted_at: "DATETIME NULL",
-    sync_at: "DATETIME NULL",
-    updated_at: "DATETIME NULL",
+    created_date: "DATETIME DEFAULT CURRENT_TIMESTAMP",
+    deleted_date: "DATETIME NULL",
+    sync_date: "DATETIME NULL",
+    updated_date: "DATETIME NULL",
 }

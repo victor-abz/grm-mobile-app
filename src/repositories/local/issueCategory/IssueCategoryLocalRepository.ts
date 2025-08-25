@@ -14,10 +14,10 @@ export const mapper: Mapper<IssueCategory> = {
         redirection_protocol: row.redirection_protocol,
         label: row.label,
         value: row.value,
-        created_at: row.created_at,
-        deleted_at: row.deleted_at,
-        sync_at: row.sync_at,
-        updated_at: row.updated_at,
+        created_date: row.created_date,
+        deleted_date: row.deleted_date,
+        sync_date: row.sync_date,
+        updated_date: row.updated_date,
     }),
     toRow: (model: IssueCategory) => ({ 
         id: model.id,
@@ -30,9 +30,10 @@ export const mapper: Mapper<IssueCategory> = {
         redirection_protocol: model.redirection_protocol,
         label: model.label,
         value: model.value,
-        deleted_at: model.deleted_at ?? null,
-        updated_at: model.updated_at ?? new Date().toISOString(),
-        sync_at: model.sync_at ?? null,
+        created_date: model.created_date ?? null,
+        deleted_date: model.deleted_date ?? null,
+        updated_date: model.updated_date ?? new Date().toISOString(),
+        sync_date: model.sync_date ?? null,
     })
 }
 
@@ -40,6 +41,6 @@ const issueCategorySchema: Exact<Schema<IssueCategory>, typeof issueCategoryTabl
 
 export class IssueCategoryLocalRepository extends BaseLocalRepository<IssueCategory> {
   constructor() {
-    super('issue_category', 'id', 'updated_at', 'sync_at', mapper, issueCategorySchema);
+    super('issue_category', 'id', 'updated_date', 'sync_date', mapper, issueCategorySchema);
   }
 }

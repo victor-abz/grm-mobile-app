@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native';
 import Content from './containers/Content';
 import { styles } from './CitizenReportStep2.styles';
 import { LocalGRMDatabase } from '../../../db/databaseManager';
-import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
+import { useIssueCategories } from '../../../hooks/issues/useIssueCategories';
 
 const CitizenReportStep2 = ({ route }) => {
   const { params } = route;

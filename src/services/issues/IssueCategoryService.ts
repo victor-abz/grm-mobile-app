@@ -1,5 +1,5 @@
 import IssueCategoryRemoteRepository from "../../repositories/remote/IssueCategoryRemoteRepository";
-import { BaseService } from "./BaseService";
+import { BaseService } from "../shared/BaseService";
 import { IssueCategoryLocalRepository } from "../../repositories/local/issueCategory/IssueCategoryLocalRepository";
 import { IssueCategory } from "../../models/IssueCategory";
 
