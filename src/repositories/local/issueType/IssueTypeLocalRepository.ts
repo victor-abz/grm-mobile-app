@@ -1,6 +1,6 @@
 import { BaseLocalRepository, Exact, Mapper, Schema } from "../BaseLocalRepository";
 import type { IssueType } from "../../../models/IssueType";
-import { issueTypeTableSchema } from "../../../migrations/v2/migration";
+import { issueTypeTableSchema } from "../../../migrations/v1/issue_type";
 
 export const mapper: Mapper<IssueType> = {
     toModel: (row: any): IssueType => ({
