@@ -1,6 +1,6 @@
-import { BaseRemoteRepository } from '../BaseRemoteRepository';
-import { Issue } from '../../../models/Issue';
 import { config } from "../../../../config.dev";
+import { BaseRemoteRepository } from "../../shared/BaseRemoteRepository";
+import { Issue } from "../../../models/issues/Issue";
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;

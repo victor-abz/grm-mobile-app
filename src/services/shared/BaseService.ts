@@ -1,7 +1,10 @@
 import NetInfo from '@react-native-community/netinfo';
-import { BaseLocalRepository } from '../../repositories/local/BaseLocalRepository';
-import { BaseRemoteRepository } from '../../repositories/remote/BaseRemoteRepository';
-import { Issue } from "../../models/Issue";
+import { BaseLocalRepository } from "../../repositories/shared/BaseLocalRepository";
+import { BaseRemoteRepository } from "../../repositories/shared/BaseRemoteRepository";
+import { synchronize } from "@nozbe/watermelondb/sync";
+import { getDBConnection } from "./SyncService";
+import { Model } from "@nozbe/watermelondb";
+
 
 export class BaseService<T> {
   constructor(
@@ -9,18 +12,17 @@ export class BaseService<T> {
     private remoteRepository: BaseRemoteRepository<T>
   ) {}
 
-  async createTable(): Promise<void> {
-    await this.localRepository.createTable();
-  }
-
-  async insert(item: T): Promise<void> {
+  async upsert(item: Model): Promise<void> {
     await this.localRepository.upsert(item);
 
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
-        const syncedItem = await this.remoteRepository.create(item);
-        await this.localRepository.markSynced(syncedItem);
+        const modelInterface = this.localRepository.fromLocalToRemote(item);
+        await this.remoteRepository.create(modelInterface);
+        // @ts-ignore
+        item.syncAt = new Date();
+        await this.localRepository.upsert(item);
       } catch (err) {
         console.warn('[BaseService] Remote sync failed. Will retry later.', err);
       }
@@ -31,45 +33,73 @@ export class BaseService<T> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
-        return await this.remoteRepository.fetchAll();
+        return await this.remoteRepository.fetchAll(null, null,null, null,null, null);
       } catch (err) {
         console.warn('[BaseService] Remote sync failed. Will retry later.', err);
-        return await this.localRepository.getAll();
+        return await this.localRepository.getAll(null, null,null, null);
       }
     }
   }
 
-  async sync(): Promise<void> {
-    try {
-      const unsyncedItems = await this.localRepository.getUnsynced();
+  async pullChanges({ lastPulledAt}): Promise<{
+    changes: { [key: string]: { deleted: any[]; created: any[]; updated: any[] } },
+    timestamp: number
+  }> {
+    const tableName = this.localRepository.tableName;
+    let changes = {};
+    changes[tableName] = { created: [], updated: [], deleted: [] };
 
-      // Update direction ["push"]: Local -> Remote
-      for (const item of unsyncedItems) {
-        const row = item as any;
+    const timestamp = Date.now();
+    const tableChanges = changes[tableName];
+    // 1. Fetch newly created records
+    const newRecords = await this.remoteRepository.fetchAll(null, null, null, lastPulledAt, null, null);
+    // @ts-ignore
+    tableChanges.created = newRecords.map(record => ({ id: record.id, ...record }));
 
-        try {
-          if (row.deleted_at) {
-            await this.remoteRepository.delete(row.id);
-            await this.localRepository.hardDelete(row.id);
-          } else {
-            const syncedItem = await this.remoteRepository.create(item);
-            await this.localRepository.markSynced(syncedItem);
-          }
-        } catch (err) {
-          console.warn('[BaseService] Sync failed for item', item, err);
-        }
+    // 2. Fetch updated records
+    const updatedRecords = await this.remoteRepository.fetchAll(null, null, null, null, lastPulledAt, null);
+    // @ts-ignore
+    tableChanges.updated = updatedRecords.map(record => ({ id: record.id, ...record }));
+
+    // 3. Fetch deleted records (soft deletes are highly recommended for this)
+    const deletedRecords = await this.remoteRepository.fetchAll(null, null, null, null, null, lastPulledAt);
+    // @ts-ignore
+    tableChanges.deleted = deletedRecords.map(record => record.id);
+
+    // Return all changes and the timestamp for the next pull
+    return { changes, timestamp };
+  }
+
+  async pushChanges({ changes, lastPulledAt }): Promise<void> {
+    const tableName = this.localRepository.tableName
+    const tableChanges = changes[tableName];
+
+    if (!tableChanges) {
+      return
+    }
+
+    // Handle created records
+    if (tableChanges.created.length > 0) {
+      console.log(`Pushing ${tableChanges.created.length} new records to ${tableName}`);
+      for (const record of tableChanges.created) {
+        await this.remoteRepository.create(record);
       }
+    }
 
-      // Update direction ["pull"]: Remote -> local
-      // TODO: define merge priorities
-      const results = await this.remoteRepository.fetchAll();
-      for (let index = 0; index < results.length; index++) {
-        const element = results[index];
-        await this.localRepository.upsert(element);
+    // Handle updated records
+    if (tableChanges.updated.length > 0) {
+      console.log(`Pushing ${tableChanges.updated.length} updated records to ${tableName}`);
+      for (const record of tableChanges.updated) {
+        await this.remoteRepository.update(record.id, record);
       }
+    }
 
-    } catch (error) {
-      console.warn("Sync failed: ", error)
+    // Handle deleted records
+    if (tableChanges.deleted.length > 0) {
+      console.log(`Pushing ${tableChanges.deleted.length} deletions to ${tableName}`);
+      for (const recordId of tableChanges.deleted) {
+        await this.remoteRepository.delete(recordId);
+      }
     }
   }
 }

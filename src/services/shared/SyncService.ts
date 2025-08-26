@@ -1,6 +1,12 @@
 import { openDatabase, enablePromise } from 'react-native-sqlite-storage';
+import SQLiteAdapter from "@nozbe/watermelondb/adapters/sqlite";
+import { Database } from "@nozbe/watermelondb";
+import schema from "../../migrations/schemas";
+import migrations from "../../migrations/migrations";
+import { synchronize } from "@nozbe/watermelondb/sync";
+import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
+import { IssueLocalModel } from "../../models/issues/Issue";
 
-export const DB_VERSION = 1; //
 const DB_NAME = "grm-db.db";
 let dbInstance = null;
 
@@ -14,11 +20,17 @@ export async function getDBConnection() {
 }
 
 export type Syncable = {
-   sync(): Promise<void>;
-   createTable(): Promise<void>
+   pullChanges({ lastPulledAt }): Promise<{
+    changes: { issue_statuses: { deleted: any[]; created: any[]; updated: any[] } };
+    timestamp: number
+  }>;
+   pushChanges({ changes, lastPulledAt }): Promise<void>;
+   tableName: string
 }
 
 export class SyncService {
+  private database: Database | null = null; // 💡 Store the database instance here
+
   constructor(
     private syncables: Syncable[] = []
   ) {}
@@ -28,52 +40,24 @@ export class SyncService {
   }
 
   async  initDB() {
-    const db = await getDBConnection();
-
-    // await db.executeSql(`DROP TABLE issue_statuses`);
-    // await db.executeSql(`DROP TABLE meta`);
-
-    // Check if schema version table exists
-      await db.executeSql(`
-      CREATE TABLE IF NOT EXISTS meta (
-        key TEXT PRIMARY KEY NOT NULL,
-        value TEXT
-      )
-    `);
-
-    // Get current DB version
-    const [results] = await db.executeSql(`SELECT value FROM meta WHERE key = 'db_version'`);
-    const currentVersion = results?.rows?.length ? parseInt(results.rows.item(0).value, 10) : 0;
-    console.log("Current database version:", currentVersion);
-    if (currentVersion === 0) {
-      // First run — create tables
-
-      for (const syncable of this.syncables) {
-        try {
-          await syncable.createTable();
-        } catch (err) {
-          console.warn('[SyncService] Failed to sync a repository', err);
-        }
+	  console.log('INIT DB')
+    const adapter = new SQLiteAdapter({
+      schema,
+      migrations,
+      dbName: DB_NAME,
+      jsi: true,
+      onSetUpError: error => {
+        // Database failed to load -- offer the user to reload the app or log out
       }
+    });
 
-
-      // Save version
-      await db.executeSql(`INSERT OR REPLACE INTO meta (key, value) VALUES ('db_version', ?)`, [
-        DB_VERSION.toString(),
-      ]);
-
-    } else if (currentVersion < DB_VERSION) {
-      // Migration path
-      await this.runMigrations(db, currentVersion, DB_VERSION);
-
-      await db.executeSql(`UPDATE meta SET value = ? WHERE key = 'db_version'`, [
-        DB_VERSION.toString(),
-      ]);
-    }
-
-    console.log("Finish migrations");
-
-    return db;
+    this.database = new Database({
+      adapter,
+      modelClasses: [
+        IssueStatusLocalModel,
+        IssueLocalModel,
+      ],
+    });
   }
 
   removeAll() {
@@ -91,15 +75,37 @@ export class SyncService {
     // Add more migrations here for future versions
   }
 
+
+
   async syncAll(): Promise<void> {
-    for (const syncable of this.syncables) {
-      try {
-        await syncable.sync();
-      } catch (err) {
-        console.warn('[SyncService] Failed to sync a repository', err);
-      }
+    if (!this.database) {
+      throw new Error("Database not initialized. Call initDB() first.");
     }
-  }
+
+    return await synchronize({
+        database: this.database,
+        pullChanges: async ({ lastPulledAt }) => {
+          console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
+          const changes = {};
+          const timestamp = Date.now();
+          for (const syncable of this.syncables) {
+            changes[syncable.tableName] = await syncable.pullChanges({ lastPulledAt });
+          }
+          console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
+
+          return { changes, timestamp };
+        },
+        pushChanges: async ({ changes, lastPulledAt }) => {
+          console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
+          for (const syncable of this.syncables) {
+            await syncable.pushChanges({ changes, lastPulledAt });
+          }
+          console.log(`🍉 Changes pushed successfully.`);
+        },
+        sendCreatedAsUpdated: true,
+      });
+    }
+
 }
 
 export const syncServiceInstance = new SyncService();

@@ -1,37 +1,26 @@
 import { BaseService } from '../shared/BaseService';
-import { Issue } from '../../models/Issue';
 import { IssueRemoteRepository } from '../../repositories/remote/issues/IssueRemoteRepository';
-import { IssueLocalRepository } from "../../repositories/local/issues/IssueLocalRepository";
+import {
+  IssueLocalRepository,
+} from '../../repositories/local/issues/IssueLocalRepository';
+import { Issue } from '../../models/issues/Issue';
+import { TABLE_NAMES } from "../../migrations/tableName";
 
 const localRepository = new IssueLocalRepository();
 const remoteRepository = new IssueRemoteRepository();
 
-const issueService = new BaseService<Issue>(
-    localRepository,
-    remoteRepository
-);
-
-async function syncIssueList () {
-    try {
-        const response = await issueService.sync()   
-        return response;
-    } catch (error) {
-        console.error("Error syncing issues:", error);
-    }
-}
+const issueService = new BaseService<Issue>(localRepository, remoteRepository);
 
 export async function fetchIssueList(): Promise<Issue[] | null> {
-    try {
-        //try sync with remote
-        await syncIssueList()
-        //proceed getting data from the local source origin
-      return await issueService.getAll();
-    } catch(error) {
-          console.error("Error syncing issues:", error);
-    } 
+  try {
+    return await issueService.getAll();
+  } catch (error) {
+    console.error('Error syncing issues:', error);
+  }
 }
 
-export const issueSyncable =     {
-        sync: () => issueService.sync(),
-        createTable: () => issueService.createTable()
-    };
+export const issueSyncable = {
+  pushChanges: ({ changes, lastPulledAt }) => issueService.pushChanges({ changes, lastPulledAt }),
+  pullChanges: ({ lastPulledAt }) => issueService.pullChanges({ lastPulledAt }),
+  tableName:  TABLE_NAMES.issue,
+};
