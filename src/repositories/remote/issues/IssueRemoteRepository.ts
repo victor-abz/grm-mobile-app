@@ -1,6 +1,7 @@
 import { config } from "../../../../config.dev";
 import { BaseRemoteRepository } from "../../shared/BaseRemoteRepository";
 import { Issue } from "../../../models/issues/Issue";
+import request from "../../../utils/request";
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
@@ -34,42 +35,55 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       tracking_code: item.tracking_code,
     };
 
-    const res = await fetch(`${this.baseUrl}/create/`, {
+    const url = `${this.baseUrl}/create/`;
+
+    const requestOptions = {
+      url,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      params: new URLSearchParams({ page: '1', pageSize: '20' }),
       body: JSON.stringify(body),
-    });
-    return res.json();
+    };
+
+    try {
+      const response = await request({
+        ...requestOptions,
+      });
+
+      const jsonData: any = response.data;
+      return jsonData.results;
+    } catch (error) {
+      console.error(error.message);
+    }
   }
 
   async delete(id: string): Promise<void> {
-    await fetch(`${this.baseUrl}/${id}`, {
-      method: 'DELETE',
-    });
+    throw new Error('Method not implemented.');
   }
 
   async fetchAll(): Promise<Issue[]> {
-    const res = await fetch(`${this.baseUrl}/list`, {
-    });
-    return res.json();
+    const url = `${this.baseUrl}/list/`;
+    const requestOptions = {
+      url,
+      method: 'GET',
+      params: new URLSearchParams({ page: '1', pageSize: '20' }),
+    };
+    try {
+      const response = await request({
+        ...requestOptions,
+      });
+
+      const jsonData: any = response.data;
+      return jsonData.results;
+    } catch (error) {
+      console.error(error.message);
+    }
   }
 
   async fetchById(id: string): Promise<Issue> {
-    const res = await fetch(`${this.baseUrl}/${id}`, {
-    });
-    return res.json();
+    throw new Error('Method not implemented.');
   }
 
   async update(id: string, item: Issue): Promise<Issue> {
-    const res = await fetch(`${this.baseUrl}/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(item),
-    });
-    return res.json();
+    throw new Error('Method not implemented.');
   }
 }

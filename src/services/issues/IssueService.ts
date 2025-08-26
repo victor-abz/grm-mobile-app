@@ -21,6 +21,6 @@ export async function fetchIssueList(): Promise<Issue[] | null> {
 
 export const issueSyncable = {
   pushChanges: ({ changes, lastPulledAt }) => issueService.pushChanges({ changes, lastPulledAt }),
-  pullChanges: ({ lastPulledAt }) => issueService.pullChanges({ lastPulledAt }),
+  pullChanges: ({ tableName, lastPulledAt }) => issueService.pullChanges({ tableName, lastPulledAt }),
   tableName:  TABLE_NAMES.issue,
 };

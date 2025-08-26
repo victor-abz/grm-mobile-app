@@ -41,11 +41,10 @@ export class BaseService<T> {
     }
   }
 
-  async pullChanges({ lastPulledAt}): Promise<{
+  async pullChanges({ tableName, lastPulledAt}): Promise<{
     changes: { [key: string]: { deleted: any[]; created: any[]; updated: any[] } },
     timestamp: number
   }> {
-    const tableName = this.localRepository.tableName;
     let changes = {};
     changes[tableName] = { created: [], updated: [], deleted: [] };
 

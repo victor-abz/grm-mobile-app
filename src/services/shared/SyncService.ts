@@ -7,7 +7,7 @@ import { synchronize } from "@nozbe/watermelondb/sync";
 import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
 import { IssueLocalModel } from "../../models/issues/Issue";
 
-const DB_NAME = "grm-db.db";
+const DB_NAME = "grm-db";
 let dbInstance = null;
 
 enablePromise(true);
@@ -20,8 +20,8 @@ export async function getDBConnection() {
 }
 
 export type Syncable = {
-   pullChanges({ lastPulledAt }): Promise<{
-    changes: { issue_statuses: { deleted: any[]; created: any[]; updated: any[] } };
+   pullChanges({ tableName, lastPulledAt }): Promise<{
+    changes: { tableName: { deleted: any[]; created: any[]; updated: any[] } };
     timestamp: number
   }>;
    pushChanges({ changes, lastPulledAt }): Promise<void>;
@@ -89,7 +89,7 @@ export class SyncService {
           const changes = {};
           const timestamp = Date.now();
           for (const syncable of this.syncables) {
-            changes[syncable.tableName] = await syncable.pullChanges({ lastPulledAt });
+            changes[syncable.tableName] = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });
           }
           console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
 
