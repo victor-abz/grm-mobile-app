@@ -6,7 +6,7 @@ import { IssueCategory } from "../../models/IssueCategory";
 const localRepository = new IssueCategoryLocalRepository();
 const remoteRepository = new IssueCategoryRemoteRepository();
 
-export const issueCategoryService = new BaseService<IssueCategory>(
+const issueCategoryService = new BaseService<IssueCategory>(
     localRepository,
     remoteRepository
 );
