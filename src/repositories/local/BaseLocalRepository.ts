@@ -1,11 +1,9 @@
 import { ResultSet } from 'react-native-sqlite-storage';
 import { getDBConnection } from "../../services/shared/SyncService";
 
-export type Schema<T> = {
-  [Property in keyof T]-?: string;
+export type Schema = {
+  [key: string]: string;
 };
-
-export type Exact<T, U> = T extends U ? T : never;
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
@@ -19,10 +17,10 @@ export class BaseLocalRepository<T> {
     private updatedDateKey: string,
     private syncDateKey: string,
     private mapper: Mapper<T>,
-    private schema: Schema<T>,
+    private schema: Schema,
   ) {}
   
-  private formatSchema<T>(schema: Schema<T>): string {
+  private formatSchema<T>(schema: Schema): string {
       return Object.entries(schema)
         .map(([key, value]) => `${key} ${value}`)
         .join(", ");

@@ -1,5 +1,5 @@
-
-export const issue = {
+import { Schema } from "../../repositories/local/BaseLocalRepository";
+export const issue: Schema = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   administrative_region: 'TEXT',
   assignee: 'TEXT',

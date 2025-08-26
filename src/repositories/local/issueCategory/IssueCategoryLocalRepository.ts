@@ -1,4 +1,4 @@
-import { BaseLocalRepository, Exact, Mapper, Schema } from "../BaseLocalRepository";
+import { BaseLocalRepository, Mapper } from "../BaseLocalRepository";
 import { IssueCategory } from "../../../models/IssueCategory";
 import { issueCategoryTableSchema } from "../../../migrations/v1/issue_category";
 
@@ -37,10 +37,8 @@ export const mapper: Mapper<IssueCategory> = {
     })
 }
 
-const issueCategorySchema: Exact<Schema<IssueCategory>, typeof issueCategoryTableSchema> = issueCategoryTableSchema;
-
 export class IssueCategoryLocalRepository extends BaseLocalRepository<IssueCategory> {
   constructor() {
-    super('issue_category', 'id', 'updated_date', 'sync_date', mapper, issueCategorySchema);
+    super('issue_category', 'id', 'updated_date', 'sync_date', mapper, issueCategoryTableSchema);
   }
 }

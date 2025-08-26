@@ -1,4 +1,4 @@
-import { BaseLocalRepository, Exact, Mapper, Schema } from "../BaseLocalRepository";
+import { BaseLocalRepository, Mapper } from "../BaseLocalRepository";
 import { IssueStatus } from "../../../models/IssueStatus";
 import { issueStatusTableSchema } from "../../../migrations/v1/issue_status";
 
@@ -30,11 +30,9 @@ export const mapper: Mapper<IssueStatus> = {
     })
 };
 
-const issueStatusSchema: Exact<Schema<IssueStatus>, typeof issueStatusTableSchema> = issueStatusTableSchema;
-
 export class IssueStatusLocalRepository extends BaseLocalRepository<IssueStatus> {
   constructor() {
-    super('issue_status', 'id', 'updated_at', 'sync_at', mapper, issueStatusSchema);
+    super('issue_status', 'id', 'updated_at', 'sync_at', mapper, issueStatusTableSchema);
   }
 }
 
