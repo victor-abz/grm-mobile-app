@@ -14,24 +14,26 @@ export async function getDBConnection() {
 }
 
 export type Syncable = {
-   sync(): Promise<void>;
-   createTable(): Promise<void>
+  sync(): Promise<void>;
+  createTable(): Promise<void>
 }
 
 export class SyncService {
   constructor(
     private syncables: Syncable[] = []
-  ) {}
+  ) { }
 
   register(syncable: Syncable) {
     this.syncables.push(syncable);
   }
 
-  async  initDB() {
+  async initDB() {
+
+
     const db = await getDBConnection();
 
-    // // Check if schema version table exists
-      await db.executeSql(`
+    // Check if schema version table exists
+    await db.executeSql(`
       CREATE TABLE IF NOT EXISTS meta (
         key TEXT PRIMARY KEY NOT NULL,
         value TEXT

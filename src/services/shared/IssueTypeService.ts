@@ -7,32 +7,33 @@ const localRepository = new IssueTypeLocalRepository();
 const remoteRepository = new IssueTypeRemoteRepository();
 
 export const issueTypeService = new BaseService<IssueType>(
-    localRepository,
-    remoteRepository
+  localRepository,
+  remoteRepository
 );
 
-async function syncIssueTypesList () {
-    try {
-        const response = await issueTypeService.sync()   
-        return response;
-    } catch (error) {
-        console.error("Error syncing Issue Type:", error);
-    }
+async function syncIssueTypesList() {
+  try {
+    const response = await issueTypeService.sync()
+    return response;
+  } catch (error) {
+    console.error("Error syncing Issue Type:", error);
+  }
 }
 
 export async function fetchIssueTypesList(): Promise<IssueType[] | null> {
-    try {
-        //try sync with remote
-        await syncIssueTypesList()
-        //proceed getting data from the local source origin
-        const response = await issueTypeService.getAll();
-        return response
-    } catch(error) {
-          console.error("Error syncing Issue Type:", error);    
-    } 
+  try {
+    //try sync with remote
+    await syncIssueTypesList()
+    //proceed getting data from the local source origin
+    const response = await issueTypeService.getAll();
+
+    return response
+  } catch (error) {
+    console.error("Error syncing Issue Type:", error);
+  }
 }
 
 export const issueTypeSyncable = {
-    sync: () => issueTypeService.sync(),
-    createTable: () => issueTypeService.createTable()
+  sync: () => issueTypeService.sync(),
+  createTable: () => issueTypeService.createTable()
 };

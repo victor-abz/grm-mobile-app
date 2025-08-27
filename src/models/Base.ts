@@ -1,5 +1,5 @@
 export interface Base {
-  created_at: Date,
+  created_date: Date,
   deleted_at?: Date | null,
   id: string,
   name: string,

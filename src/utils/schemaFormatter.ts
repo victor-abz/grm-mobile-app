@@ -1,9 +1,9 @@
 import { Schema } from "../repositories/local/BaseLocalRepository";
 
-export function formatSchema<T>(schema: Schema<T>): string {
-      return Object.entries(schema)
-        .map(([key, value]) => `${key} ${value}`)
-        .join(", ");
+export function formatSchema(schema: Schema): string {
+  return Object.entries(schema)
+    .map(([key, value]) => `${key} ${value}`)
+    .join(", ");
 };
-  
+
 

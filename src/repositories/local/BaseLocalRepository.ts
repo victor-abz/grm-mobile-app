@@ -2,8 +2,8 @@ import { ResultSet } from 'react-native-sqlite-storage';
 import { getDBConnection } from "../../services/shared/SyncService";
 import { formatSchema } from '../../utils/schemaFormatter';
 
-export type Schema<T> = {
-  [Property in keyof T]-?: string;
+export type Schema = {
+  [key: string]: string;
 };
 
 export type Exact<T, U> = T extends U ? T : never;
@@ -21,7 +21,7 @@ export class BaseLocalRepository<T> {
     private updatedDateKey: string,
     private syncDateKey: string,
     private mapper: Mapper<T>,
-    private schema: Schema<T>,
+    private schema: Schema,
   ) {}
 
 
