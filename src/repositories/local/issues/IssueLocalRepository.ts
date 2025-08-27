@@ -18,7 +18,7 @@ const mapper: Mapper<Issue> = {
     contact_information: JSON.parse(row.contact_information),
     contact_method: row.contact_method,
     created_date: row.created_date,
-    deleted_date: row.deleted_at,
+    deleted_at: row.deleted_at,
     description: row.description,
     intake_date: new Date(row.intake_date),
     issue_date: row.issue_date ? new Date(row.issue_date) : null,
@@ -35,8 +35,8 @@ const mapper: Mapper<Issue> = {
     tracking_code: row.tracking_code,
     sub_component: row.sub_component.id,
     status: JSON.parse(row.status),
-    updated_date: row.updated_at,
-    sync_date: row.sync_at
+    updated_at: row.updated_at,
+    sync_at: row.sync_at
   }),
 
   toRow: (model: Issue) => ({
@@ -53,7 +53,7 @@ const mapper: Mapper<Issue> = {
     contact_information: JSON.stringify(model.contact_information),
     contact_method: model.contact_method,
     description: model.description,
-    deleted_at: model.deleted_date ?? null,
+    deleted_at: model.deleted_at ?? null,
     intake_date: model.intake_date,
     issue_date: model.issue_date ? model.issue_date : null,
     issue_location_id: model.issue_location_id,
@@ -68,14 +68,14 @@ const mapper: Mapper<Issue> = {
     tracking_code: model.tracking_code,
     sub_component_id: model.sub_component.id,
     status: JSON.stringify(model.status),
-    updated_at: model.updated_date ?? new Date().toISOString(),
-    sync_at: model.sync_date ?? null,
+    updated_at: model.updated_at ?? new Date().toISOString(),
+    sync_at: model.sync_at ?? null,
   }),
 };
 
 
 export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   constructor() {
-    super('issues', 'id', 'updated_date', 'sync_date', mapper, issue);
+    super('issues', 'id', 'updated_at', 'sync_at', mapper, issue);
   }
 }

@@ -11,7 +11,7 @@ export const issue: Schema = {
   contact_method: 'TEXT',
   component: 'TEXT',
   created_date: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
-  deleted_date: 'DATETIME NULL',
+  deleted_at: 'DATETIME NULL',
   description: 'TEXT',
   escalated_date: 'DATETIME NULL',
   escalate_flag: 'BOOLEAN DEFAULT FALSE',
@@ -29,8 +29,8 @@ export const issue: Schema = {
   title: 'TEXT NULL',
   tracking_code: 'TEXT',
   internal_code: 'TEXT',
-  updated_date: 'DATETIME NULL',
-  sync_date: 'DATETIME NULL',
+  updated_at: 'DATETIME NULL',
+  sync_at: 'DATETIME NULL',
 }
-  
-  
+
+
