@@ -1,7 +1,7 @@
-import { getDBConnection } from '../../services/shared/SyncService';
 import { Model, Q } from '@nozbe/watermelondb';
 import { reader, writer } from '@nozbe/watermelondb/decorators';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
+import { syncServiceInstance } from '../../services/shared/SyncService';
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
@@ -18,7 +18,7 @@ export abstract class BaseLocalRepository<T> {
   // @ts-ignore
   @writer
   async hardDelete(item: Model): Promise<void> {
-    const dbInstance = await getDBConnection();
+    const dbInstance = syncServiceInstance.database
     await dbInstance.write(async () => {
       const dbItem = await dbInstance.get(this.tableName).find(item.id);
       await dbItem.destroyPermanently();
@@ -26,8 +26,7 @@ export abstract class BaseLocalRepository<T> {
   }
 
   // @ts-ignore
-  @reader
-  async getAll(
+    async getAll(
     sortBy: string | null,
     sortOrder: SortOrder | null,
     limit: number | null,
@@ -45,10 +44,10 @@ export abstract class BaseLocalRepository<T> {
 
     let queryClauses: QueryClause[] = [Q.sortBy(sortBy, sortOrder), Q.take(limit)];
     if (lastPulledAt) {
-      queryClauses.push(Q.where('created_at', Q.gte(lastPulledAt)));
+      queryClauses.push(Q.where('created_date', Q.gte(lastPulledAt)));
     }
 
-    const dbInstance = await getDBConnection();
+    const dbInstance = syncServiceInstance.database
     const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
     return results.map((result) => this.fromLocalToRemote(result));
   }
@@ -56,14 +55,14 @@ export abstract class BaseLocalRepository<T> {
   // @ts-ignore
   @reader
   async findOne(id: string | number): Promise<T> {
-    const dbInstance = await getDBConnection();
+    const dbInstance = syncServiceInstance.database
     return this.fromLocalToRemote(await dbInstance.get(this.tableName).find(id));
   }
 
   // @ts-ignore
   @writer
   async softDelete(item: Model): Promise<void> {
-    const dbInstance = await getDBConnection();
+    const dbInstance = syncServiceInstance.database
     await dbInstance.write(async () => {
       const dbItem = await dbInstance.get(this.tableName).find(item.id);
       await dbItem.markAsDeleted();
@@ -73,7 +72,7 @@ export abstract class BaseLocalRepository<T> {
   // @ts-ignore
   @writer
   async upsert(item: Model): Promise<void> {
-    const dbInstance = await getDBConnection();
+    const dbInstance = syncServiceInstance.database
 
     await dbInstance.write(async () => {
       const dbItem = await dbInstance.get(this.tableName).find(item.id);

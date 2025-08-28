@@ -13,7 +13,7 @@ export const issueTableSchema: TableSchema = tableSchema({
         { name: 'contact_medium', type: 'string'},
         { name: 'contact_method', type: 'string', isOptional: true },
         { name: 'component', type: 'string'},
-        { name: 'created_at', type: 'number' }, // DEFAULT CURRENT_TIMESTAMP
+        { name: 'created_date', type: 'number' }, // DEFAULT CURRENT_TIMESTAMP
         { name: 'deleted_at', type: 'number', isOptional: true },
         { name: 'description', type: 'string' },
         { name: 'escalated_date', type: 'string', isOptional: true },

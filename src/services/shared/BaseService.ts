@@ -1,8 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import { BaseLocalRepository } from "../../repositories/shared/BaseLocalRepository";
 import { BaseRemoteRepository } from "../../repositories/shared/BaseRemoteRepository";
-import { synchronize } from "@nozbe/watermelondb/sync";
-import { getDBConnection } from "./SyncService";
 import { Model } from "@nozbe/watermelondb";
 
 
@@ -10,7 +8,7 @@ export class BaseService<T> {
   constructor(
     private localRepository: BaseLocalRepository<T>,
     private remoteRepository: BaseRemoteRepository<T>
-  ) {}
+  ) { }
 
   async upsert(item: Model): Promise<void> {
     await this.localRepository.upsert(item);
@@ -33,15 +31,18 @@ export class BaseService<T> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
-        return await this.remoteRepository.fetchAll(null, null,null, null,null, null);
+        return await this.remoteRepository.fetchAll(null, null, null, null, null, null);
       } catch (err) {
         console.warn('[BaseService] Remote sync failed. Will retry later.', err);
-        return await this.localRepository.getAll(null, null,null, null);
+        console.log('[BaseService] Remote sync failed. Will retry later.', err);
+        return await this.localRepository.getAll(null, null, null, null);
       }
+    } else {
+      return await this.localRepository.getAll(null, null, null, null);
     }
   }
 
-  async pullChanges({ tableName, lastPulledAt}): Promise<{
+  async pullChanges({ tableName, lastPulledAt }): Promise<{
     changes: { [key: string]: { deleted: any[]; created: any[]; updated: any[] } },
     timestamp: number
   }> {

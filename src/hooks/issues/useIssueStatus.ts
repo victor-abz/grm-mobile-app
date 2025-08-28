@@ -9,15 +9,15 @@ export function useIssueStatus() {
   useEffect(() => {
     fetchIssueStatusList();
   }, []);
-    
+  
   const fetchIssueStatusList = async () => {
       setLoading(true)
       if (!issueStatusList) {
-        const issuesList = await IssueStatusService.fetchIssueStatusList()
-        setIssueStatusList(issuesList);
+        const issuesStatusList = await IssueStatusService.fetchIssueStatusList()
+        setIssueStatusList(issuesStatusList);
       }
       setLoading(false);
     }
     
-    return [issueStatusList, loading]
+  return { issueStatusList, loading }
 }
