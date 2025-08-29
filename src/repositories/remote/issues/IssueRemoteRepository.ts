@@ -52,7 +52,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       const jsonData: any = response.data;
       return jsonData.results;
     } catch (error) {
-      console.error(error.message);
+      console.error("Error creating issue at remote", error.message);
     }
   }
 
@@ -75,7 +75,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       const jsonData: any = response.data;
       return jsonData.results;
     } catch (error) {
-      console.error(error.message);
+      console.error("Error at fetching issues from remote", error.message);
     }
   }
 

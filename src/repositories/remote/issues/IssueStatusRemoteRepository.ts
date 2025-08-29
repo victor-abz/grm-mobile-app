@@ -29,7 +29,7 @@ class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {
       const jsonData: any = response.data;
       return jsonData.results;
     } catch (error) {
-      console.error(error.message);
+      console.error("Error at fetching all issues statuses from remote", error.message);
     }
   }
 

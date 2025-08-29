@@ -61,7 +61,7 @@ export interface Issue extends Base {
 }
 
 export class IssueLocalModel extends Model {
-  static table = TABLE_NAMES.issueStatus;
+  static table = TABLE_NAMES.issue;
 
   // @ts-ignore
   @json('administrative_region') administrative_region;

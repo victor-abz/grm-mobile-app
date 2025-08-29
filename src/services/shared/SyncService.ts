@@ -13,7 +13,7 @@ enablePromise(true);
 
 export type Syncable = {
   pullChanges({ tableName, lastPulledAt }): Promise<{
-    changes: { tableName: { deleted: any[]; created: any[]; updated: any[] } };
+    changes: { [tableName]: { deleted: any[]; created: any[]; updated: any[] } };
     timestamp: number
   }>;
   pushChanges({ changes, lastPulledAt }): Promise<void>;
