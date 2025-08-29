@@ -12,12 +12,12 @@ const DB_NAME = "grm-db";
 enablePromise(true);
 
 export type Syncable = {
-  pullChanges({ tableName, lastPulledAt }): Promise<{
-    changes: { [tableName]: { deleted: any[]; created: any[]; updated: any[] } };
+   pullChanges({ tableName, lastPulledAt }): Promise<{
+    changes: { tableName: { deleted: any[]; created: any[]; updated: any[] } };
     timestamp: number
   }>;
-  pushChanges({ changes, lastPulledAt }): Promise<void>;
-  tableName: string
+   pushChanges({ changes, lastPulledAt }): Promise<void>;
+   tableName: string
 }
 
 export class SyncService {
@@ -37,7 +37,6 @@ export class SyncService {
       schema,
       migrations,
       dbName: DB_NAME,
-      jsi: true,
       onSetUpError: error => {
         // Database failed to load -- offer the user to reload the app or log out
       }
@@ -73,28 +72,29 @@ export class SyncService {
     }
 
     return await synchronize({
-      database: this.database,
-      pullChanges: async ({ lastPulledAt }) => {
-        console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
-        const changes = {};
-        const timestamp = Date.now();
-        for (const syncable of this.syncables) {
-          changes[syncable.tableName] = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });
-        }
-        console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
+        database: this.database,
+        pullChanges: async ({ lastPulledAt }) => {
+          console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
+          let changes = {};
+          const timestamp = Date.now();
+          for (const syncable of this.syncables) {
+            const syncableChanges = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });
+            changes = {...syncableChanges.changes, ...changes }
+          }
+          console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
 
-        return { changes, timestamp };
-      },
-      pushChanges: async ({ changes, lastPulledAt }) => {
-        console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
-        for (const syncable of this.syncables) {
-          await syncable.pushChanges({ changes, lastPulledAt });
+          return { changes, timestamp };
+        },
+        pushChanges: async ({ changes, lastPulledAt }) => {
+          console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
+          for (const syncable of this.syncables) {
+            await syncable.pushChanges({ changes, lastPulledAt });
+          }
+          console.log(`🍉 Changes pushed successfully.`);
+
         }
-        console.log(`🍉 Changes pushed successfully.`);
-      },
-      sendCreatedAsUpdated: true,
-    });
-  }
+      });
+    }
 
 }
 

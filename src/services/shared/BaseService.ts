@@ -57,14 +57,14 @@ export class BaseService<T> {
     tableChanges.created = newRecords.map(record => ({ id: record.id, ...record }));
 
     // 2. Fetch updated records
-    const updatedRecords = await this.remoteRepository.fetchAll(null, null, null, null, lastPulledAt, null);
+    // const updatedRecords = await this.remoteRepository.fetchAll(null, null, null, null, lastPulledAt, null);
     // @ts-ignore
-    tableChanges.updated = updatedRecords.map(record => ({ id: record.id, ...record }));
+    // tableChanges.updated = updatedRecords.map(record => ({ id: record.id, ...record }));
 
     // 3. Fetch deleted records (soft deletes are highly recommended for this)
-    const deletedRecords = await this.remoteRepository.fetchAll(null, null, null, null, null, lastPulledAt);
+    // const deletedRecords = await this.remoteRepository.fetchAll(null, null, null, null, null, lastPulledAt);
     // @ts-ignore
-    tableChanges.deleted = deletedRecords.map(record => record.id);
+    // tableChanges.deleted = deletedRecords.map(record => record.id);
 
     // Return all changes and the timestamp for the next pull
     return { changes, timestamp };
