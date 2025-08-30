@@ -1,8 +1,7 @@
 import request from "../../../utils/request";
 import { BaseRemoteRepository } from "../BaseRemoteRepository";
-import { IssueStatus } from "../../../models/issue_status";
+import { IssueStatus } from "../../../models/IssueStatus";
 import { config } from "../../../../config.dev";
-
 
 class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {
     private baseUrl = `${config.API_AUTH_BASE_URL}/issues/issue-statuses/`;
@@ -46,7 +45,3 @@ class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {
 }
 
 export default IssueStatusRemoteRepository;
-
-
-
-

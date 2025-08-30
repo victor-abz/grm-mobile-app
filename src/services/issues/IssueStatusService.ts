@@ -1,19 +1,10 @@
-import { BaseLocalRepository } from "../../repositories/local/BaseLocalRepository";
-import { mapper } from "../../repositories/local/IssueStatus/mapper";
 import IssueStatusRemoteRepository from "../../repositories/remote/issues/IssueStatusRemoteRepository";
 import { BaseService } from "../shared/BaseService";
-import { issueStatusTableSchema } from "../../migrations/v1/issue_status";
-import { IssueStatus } from "../../models/issue_status";
+import { IssueStatus } from "../../models/IssueStatus";
+import { IssueStatusLocalRepository } from "../../repositories/local/issues/IssueStatusLocalRepository";
 
-const localRepository = new BaseLocalRepository<IssueStatus>(
-  'issue_statuses',
-  'id',
-  "updated_at",
-  "sync_at",
-  mapper,
-  issueStatusTableSchema
-)
 const remoteRepository = new IssueStatusRemoteRepository();
+const localRepository = new IssueStatusLocalRepository();
 
 const issueStatusService = new BaseService<IssueStatus>(
     localRepository,
@@ -22,7 +13,7 @@ const issueStatusService = new BaseService<IssueStatus>(
 
 async function syncIssueStatusList () {
     try {
-        const response = await issueStatusService.sync()   
+        const response = await issueStatusService.sync()
         return response;
     } catch (error) {
         console.error("Error syncing issues statuses:", error);
@@ -38,10 +29,10 @@ export async function fetchIssueStatusList(): Promise<IssueStatus[] | null> {
         return response
     } catch(error) {
           console.error("Error syncing issues statuses:", error);
-    } 
+    }
 }
 
-export const issueStatusSyncable =     {
+export const issueStatusSyncable = {
         sync: () => issueStatusService.sync(),
         createTable: () => issueStatusService.createTable()
     };

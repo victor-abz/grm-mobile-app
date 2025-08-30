@@ -30,10 +30,7 @@ export class SyncService {
   async  initDB() {
     const db = await getDBConnection();
 
-    // await db.executeSql(`DROP TABLE issue_statuses`);
-    // await db.executeSql(`DROP TABLE meta`);
-
-    // Check if schema version table exists
+    // // Check if schema version table exists
       await db.executeSql(`
       CREATE TABLE IF NOT EXISTS meta (
         key TEXT PRIMARY KEY NOT NULL,

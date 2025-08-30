@@ -32,5 +32,5 @@ export const issue: Schema = {
   updated_date: 'DATETIME NULL',
   sync_date: 'DATETIME NULL',
 }
-  
-  
+
+

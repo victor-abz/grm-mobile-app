@@ -11,7 +11,7 @@ import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 function IssueSearch() {
   const customStyles = styles();
   const [issues, setIssues] = useState();
-  const [issueStatusList, loading] = useIssueStatus();
+  const { issueStatusList, loading } = useIssueStatus();
   const [eadl, setEadl] = useState(false);
   const { session } = useSelector((state) => state.get('authentication').toObject());
   const username = session?.username ?? ''

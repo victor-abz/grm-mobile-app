@@ -1,8 +1,6 @@
-import { Schema } from "../../repositories/local/BaseLocalRepository";
-
-export const issueStatusTableSchema: Schema = {
+export const issueStatusTableSchema = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
-  created_at: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
+  created_date: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
   deleted_at: 'DATETIME NULL',
   final_status: 'BOOLEAN',
   initial_status: 'BOOLEAN',

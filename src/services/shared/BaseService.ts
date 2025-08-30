@@ -42,7 +42,6 @@ export class BaseService<T> {
   async sync(): Promise<void> {
     try {
       const unsyncedItems = await this.localRepository.getUnsynced();
-
       // Update direction ["push"]: Local -> Remote
       for (const item of unsyncedItems) {
         const row = item as any;
@@ -59,15 +58,12 @@ export class BaseService<T> {
           console.warn('[BaseService] Sync failed for item', item, err);
         }
       }
-
-      // Update direction ["pull"]: Remote -> local
       // TODO: define merge priorities
       const results = await this.remoteRepository.fetchAll();
       for (let index = 0; index < results.length; index++) {
         const element = results[index];
         await this.localRepository.upsert(element);
       }
-
     } catch (error) {
       console.warn("Sync failed: ", error)
     }

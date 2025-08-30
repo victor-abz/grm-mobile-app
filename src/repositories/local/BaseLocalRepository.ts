@@ -17,10 +17,9 @@ export class BaseLocalRepository<T> {
     private updatedDateKey: string,
     private syncDateKey: string,
     private mapper: Mapper<T>,
-    private schema: Schema
+    private schema: Schema,
   ) {}
-
-
+  
   private formatSchema<T>(schema: Schema): string {
       return Object.entries(schema)
         .map(([key, value]) => `${key} ${value}`)
@@ -172,6 +171,7 @@ export class BaseLocalRepository<T> {
     try {
       const dbInstance = await getDBConnection();
       const row = this.mapper.toRow(item);
+
       const keys = Object.keys(row);
       const values = keys.map(k => row[k]);
       const placeholders = keys.map(() => '?').join(',');
@@ -189,12 +189,12 @@ export class BaseLocalRepository<T> {
               return false;
             }
           );
+
         });
       });
     }
     catch (error) {
       console.log("error:", error);
-
     }
   }
 }
