@@ -18,7 +18,7 @@ const mapper: Mapper<Issue> = {
     contact_information: JSON.parse(row.contact_information),
     contact_method: row.contact_method,
     created_date: row.created_date,
-    deleted_at: row.deleted_at,
+    deleted_date: row.deleted_date,
     description: row.description,
     intake_date: new Date(row.intake_date),
     issue_date: row.issue_date ? new Date(row.issue_date) : null,
@@ -35,8 +35,8 @@ const mapper: Mapper<Issue> = {
     tracking_code: row.tracking_code,
     sub_component: row.sub_component.id,
     status: JSON.parse(row.status),
-    updated_at: row.updated_at,
-    sync_at: row.sync_at
+    updated_date: row.updated_date,
+    sync_date: row.sync_date
   }),
 
   toRow: (model: Issue) => ({
