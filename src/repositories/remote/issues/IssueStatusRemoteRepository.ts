@@ -43,7 +43,3 @@ class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {
 }
 
 export default IssueStatusRemoteRepository;
-
-
-
-

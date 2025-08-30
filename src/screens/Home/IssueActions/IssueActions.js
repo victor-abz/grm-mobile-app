@@ -8,7 +8,7 @@ import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;
-  const [issueStatusList, loading] = useIssueStatus();
+  const { issueStatusList, loading } = useIssueStatus();
   const [eadl, setEadl] = useState();
   const customStyles = styles();
   const { session } = useSelector((state) => state.get('authentication').toObject());

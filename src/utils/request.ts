@@ -1,10 +1,11 @@
 import axios from "axios";
 import config from "../../config";
+import { appVersion } from "./appVersion";
 
 export const client = axios.create({ baseURL: config.API_AUTH_BASE_URL });
 
-const request =  ({ ...options }) => {
-  
+const request = ({ ...options }) => {
+  client.defaults.headers.common["App-Version"] = appVersion;
   const onSuccess = (response) => response;
   const onError = (error) => {
     // You might want to handle specific error cases here

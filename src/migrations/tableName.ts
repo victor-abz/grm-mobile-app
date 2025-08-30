@@ -1,4 +1,6 @@
 export const enum TABLE_NAMES {
-  issueStatus = 'issue_statuses',
-  issue = 'issue'
+  issue = 'issue',
+  issueCategory = 'issue_category',
+  issueStatus = 'issue_status',
+  issueType = 'issue_type'
 }

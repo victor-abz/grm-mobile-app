@@ -5,11 +5,11 @@ import { IssueStatus } from "../../models/issues/IssueStatus";
 export function useIssueStatus() {
   const [issueStatusList, setIssueStatusList] = useState<IssueStatus[]>()
   const [loading, setLoading] = useState(false);
-    
+
   useEffect(() => {
     fetchIssueStatusList();
   }, []);
-  
+
   const fetchIssueStatusList = async () => {
       setLoading(true)
       if (!issueStatusList) {
@@ -18,6 +18,6 @@ export function useIssueStatus() {
       }
       setLoading(false);
     }
-    
+
   return { issueStatusList, loading }
 }

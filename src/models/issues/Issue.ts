@@ -90,8 +90,6 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @text('description') description;
   // @ts-ignore
-  @text('id') id;
-  // @ts-ignore
   @text('intake_date') intake_date;
   // @ts-ignore
   @text('issue_date') issue_date;

@@ -53,7 +53,6 @@ const Router = ({ theme }) => {
 
       await initialSync();
 
-
       dispatch(init(
         _session,
         { email: username }, dbCredentials  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
@@ -103,6 +102,5 @@ const Router = ({ theme }) => {
     </NavigationContainer>
   );
 };
-
 
 export default Router;

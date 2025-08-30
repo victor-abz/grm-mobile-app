@@ -1,30 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
-import { useSelector } from 'react-redux';
 import { ActivityIndicator } from 'react-native-paper';
+import { RootStateOrAny, useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './Statistics.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
+import { useIssueCategories } from '../../../hooks/issues/useIssueCategories';
+import { useIssueTypes } from "../../../hooks/issues/useIssueTypes";
+
 
 function Statistics() {
   const customStyles = styles();
   const [issues, setIssues] = useState();
-  const [issueType, setIssueType] = useState();
+  const { issueTypesList } = useIssueTypes();
   const [ageGroup, setAgeGroup] = useState();
   const [citizenGroup1, setCitizenGroup1] = useState();
   const [citizenGroup2, setCitizenGroup2] = useState();
-  const [issueStatusList, loading] = useIssueStatus();
-  const [issueCategory, setIssueCategory] = useState();
+  const {issueStatusList, loading: issueStatusLoading} = useIssueStatus();
+  const {issueCategoriesList, loading: issueCategoriesLoading} = useIssueCategories();
   const [issueComponent, setIssueComponent] = useState();
   const [issueSubComponent, setIssueSubComponent] = useState();
   const [eadl, setEadl] = useState(false);
-  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const { session } = useSelector((state: RootStateOrAny) => state.get('authentication').toObject());
   const username = session?.username ?? ''
-  
+
   useEffect(() => {
-   
+
     // Getting issue_age_group
     LocalGRMDatabase.find({
       selector: { type: 'issue_age_group' },
@@ -56,28 +59,6 @@ function Statistics() {
       })
       .catch((err) => {
         alert(`Unable to retrieve issue citizen group 2. ${JSON.stringify(err)}`);
-      });
-
-    // Getting issue_type
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_type' },
-    })
-      .then((result) => {
-        setIssueType(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue type. ${JSON.stringify(err)}`);
-      });
-
-    // Getting issue_category
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_category' },
-    })
-      .then((result) => {
-        setIssueCategory(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue category. ${JSON.stringify(err)}`);
       });
 
     // Getting issue_component
@@ -149,8 +130,8 @@ function Statistics() {
                  ageGroup={ageGroup}
                  citizenGroup1={citizenGroup1}
                  citizenGroup2={citizenGroup2}
-                 issueType={issueType}
-                 issueCategory={issueCategory}
+                 issueType={issueTypesList}
+                 issueCategory={issueCategoriesList}
                  issueComponent={issueComponent}
                  issueSubComponent={issueSubComponent}
         />

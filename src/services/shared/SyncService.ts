@@ -6,6 +6,8 @@ import migrations from "../../migrations/migrations";
 import { synchronize } from "@nozbe/watermelondb/sync";
 import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
 import { IssueLocalModel } from "../../models/issues/Issue";
+import { IssueTypeLocalModel } from "../../models/issues/IssueType";
+import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
 
 const DB_NAME = "grm-db";
 
@@ -46,6 +48,8 @@ export class SyncService {
       modelClasses: [
         IssueStatusLocalModel,
         IssueLocalModel,
+        IssueTypeLocalModel,
+        IssueCategoryLocalModel,
       ],
     });
 

@@ -11,6 +11,7 @@ export class IssueStatusLocalRepository extends BaseLocalRepository<IssueStatus>
     return {
       id: localModel.id,
       name: localModel.name,
+      created_date: localModel.created_date,
       final_status: localModel.final_status,
       initial_status: localModel.initial_status,
       rejected_status: localModel.rejected_status,
