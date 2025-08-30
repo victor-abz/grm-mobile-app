@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
-import * as IssueTypeService from '../shared/IssueTypeService';
+import * as IssueTypeService from '../../services/issues/IssueTypeService';
 import type { IssueType } from "../../models/IssueType";
 
 export function useIssueTypes() {
   const [issueTypesList, setIssueTypesList] = useState<IssueType[]>()
   const [loading, setLoading] = useState(false);
-    
+
   useEffect(() => {
     fetchIssueTypesList();
   }, []);
-    
+
   const fetchIssueTypesList = async () => {
       setLoading(true)
       if (!issueTypesList) {
@@ -18,7 +18,7 @@ export function useIssueTypes() {
       }
       setLoading(false);
     }
-    
+
   return { issueTypesList, loading }
 }
 

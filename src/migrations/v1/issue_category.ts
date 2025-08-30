@@ -12,7 +12,7 @@ export const issueCategoryTableSchema = {
   label: "TEXT",
   value: "INTEGER",
   created_date: "DATETIME DEFAULT CURRENT_TIMESTAMP",
-  deleted_at: "DATETIME NULL",
-  sync_at: "DATETIME NULL",
-  updated_at: "DATETIME NULL",
+  deleted_date: "DATETIME NULL",
+  sync_date: "DATETIME NULL",
+  updated_date: "DATETIME NULL",
 }

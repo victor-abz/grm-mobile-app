@@ -112,7 +112,7 @@
   "other": "Other",
   "rather_not_say":  "Rather not say",
 
-  //issue detail
+  //issues detail
   "description_label": "Description",
   "reported_label": "Reported",
   "status_label": "Status",
@@ -127,7 +127,7 @@
   "information_not_available": "information not available",
   "confidential": "Confidential",
 
-  //issue search
+  //issues search
   "overdue_label": "Overdue Issues",
   "assigned_to_you_label": "Issues assigned to you",
   "resolved_by_you_label": "Issues resolved by you",
@@ -144,7 +144,7 @@
   "error_rejecting_issue": "Error rejecting issue",
   "issue_rejected_successfully": "Issue rejected successfully",
 
-  // issue detail
+  // issues detail
   "are_you_accepting": "Are you accepting this is a grievance relevant to the project? Or are you rejecting\n because it is not relevant?",
   "you_have_accepted": "You have accepted this complaint into the system. Notifications have been sent to\n the citizen and the original recorder of the complaint.",
   "finished": "FINISHED",

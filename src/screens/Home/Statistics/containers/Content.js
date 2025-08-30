@@ -7,7 +7,7 @@ import PieChartGrm from '../components/PieChartGrm';
 import BarChartGrm from '../components/BarChartGrm';
 
 function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup2, issueType, issueCategory, issueComponent, issueSubComponent }) {
-  console.log ("stats issue : ", issues);
+  console.log ("stats issues : ", issues);
   const [_issues, setIssues] = useState([]);
 
   const [dataAgeGroup, setDataAgeGroup] = useState([]);
@@ -84,7 +84,7 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
     });
     setDataCitizenGroup2(_dataCitizenGroup2);
 
-    // Issue type data initialization
+    // issues type data initialization
     const _dataIssueType = [];
     issueType.forEach(value => {
       _dataIssueType.push({
@@ -98,7 +98,7 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
     });
     setDataIssueType(_dataIssueType);
 
-    // Issue category data initialization
+    // issues category data initialization
     const _dataIssueCategory = [];
     issueCategory?.forEach(value => {
       _dataIssueCategory.push({
@@ -112,7 +112,7 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
     });
     setDataIssueCategory(_dataIssueCategory);
 
-    // Issue Component data initialization
+    // issues Component data initialization
     const _dataIssueComponent = [];
     issueComponent.forEach(value => {
       _dataIssueComponent.push({
@@ -126,7 +126,7 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
     });
     setDataIssueComponent(_dataIssueComponent);
 
-    // Issue sub component data initialization
+    // issues sub component data initialization
     const _dataIssueSubComponent = [];
     issueSubComponent.forEach(value => {
       _dataIssueSubComponent.push({
@@ -163,28 +163,28 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
         setDataCitizenGroup2(_dataCitizenGroup2);
       }
 
-      // Issue type data filling
+      // issues type data filling
       index = _dataIssueType.findIndex(value => value.code === item.issue_type?.id);
       if (index !== -1) {
         _dataIssueType[index].population += 1;
         setDataIssueType(_dataIssueType);
       }
 
-      // Issue category data filling
+      // issues category data filling
       index = _dataIssueCategory.findIndex(value => value.code === item.category?.id);
       if (index !== -1) {
         _dataIssueCategory[index].population += 1;
         setDataIssueCategory(_dataIssueCategory);
       }
 
-      // Issue component data filling
+      // issues component data filling
       index = _dataIssueComponent.findIndex(value => value.code === item.component?.id);
       if (index !== -1) {
         _dataIssueComponent[index].population += 1;
         setDataIssueComponent(_dataIssueComponent);
       }
 
-      // Issue sub component data filling
+      // issues sub component data filling
       index = _dataIssueSubComponent.findIndex(value => value.code === item.sub_component?.id);
       if (index !== -1) {
         _dataIssueSubComponent[index].population += 1;

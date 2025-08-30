@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
-import * as IssueStatusService from '../shared/IssueStatusService';
-import type { IssueStatus } from "../../models/IssueStatus";
+import { IssueStatus } from "../../models/IssueStatus";
+import * as IssueStatusService from '../../services/issues/IssueStatusService';
 
 export function useIssueStatus() {
   const [issueStatusList, setIssueStatusList] = useState<IssueStatus[]>()
   const [loading, setLoading] = useState(false);
-    
+
   useEffect(() => {
     fetchIssueStatusList();
   }, []);
-    
+
   const fetchIssueStatusList = async () => {
       setLoading(true)
       if (!issueStatusList) {
@@ -18,6 +18,6 @@ export function useIssueStatus() {
       }
       setLoading(false);
     }
-    
+
   return { issueStatusList, loading }
 }

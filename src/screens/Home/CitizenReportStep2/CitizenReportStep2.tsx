@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native';
-import { LocalGRMDatabase } from '../../../db/databaseManager';
-import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
-import { styles } from './CitizenReportStep2.styles';
 import Content from './containers/Content';
-import { useIssueTypes } from '../../../services/hooks/useIssueTypes';
+import { styles } from './CitizenReportStep2.styles';
+import { LocalGRMDatabase } from '../../../db/databaseManager';
+import { useIssueTypes } from "../../../hooks/issues/useIssueTypes";
+import { useIssueCategories } from "../../../hooks/issues/useIssueCategories";
 
 const CitizenReportStep2 = ({ route }) => {
   const { params } = route;

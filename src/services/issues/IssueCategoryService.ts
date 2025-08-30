@@ -1,19 +1,19 @@
 import IssueCategoryRemoteRepository from "../../repositories/remote/IssueCategoryRemoteRepository";
-import { BaseService } from "./BaseService";
-import { IssueCategoryLocalRepository } from "../../repositories/local/issueCategory/IssueCategoryLocalRepository";
-import type { IssueCategory } from "../../models/IssueCategory";
+import { BaseService } from "../shared/BaseService";
+import { IssueCategory } from "../../models/IssueCategory";
+import { IssueCategoryLocalRepository } from "../../repositories/local/issues/IssueCategoryLocalRepository";
 
 const localRepository = new IssueCategoryLocalRepository();
 const remoteRepository = new IssueCategoryRemoteRepository();
 
-export const issueCategoryService = new BaseService<IssueCategory>(
+const issueCategoryService = new BaseService<IssueCategory>(
     localRepository,
     remoteRepository
 );
 
 async function syncIssueCategoryList () {
     try {
-        const response = await issueCategoryService.sync()   
+        const response = await issueCategoryService.sync()
         return response;
     } catch (error) {
         console.error("Error syncing issue category:", error);
@@ -28,8 +28,8 @@ export async function fetchIssueCategoriesList(): Promise<IssueCategory[] | null
         const response = await issueCategoryService.getAll();
         return response
     } catch(error) {
-          console.error("Error syncing issue category:", error);    
-    } 
+          console.error("Error syncing issue category:", error);
+    }
 }
 
 export const issueCategorySyncable = {

@@ -22,7 +22,7 @@ function Content({ issue }) {
   const [comments, setComments] = useState([]);
   useEffect(() => {
     if (issue?.comments) {
-      // console.log("History-updated comments :", issue.comments);
+      // console.log("History-updated comments :", issues.comments);
       setComments([...issue.comments].sort((a, b) => new Date(b.due_at) - new Date(a.due_at)));
     }
   }, [issue]);

@@ -18,10 +18,10 @@ function IssueHistory({ route }) {
       if (result.docs.length > 0) {
         setIssue(result.docs[0]);
       } else {
-        console.log("issue not found");
+        console.log("issues not found");
       }
     } catch (err) {
-      console.error("Error retrieving the issue:", err);
+      console.error("Error retrieving the issues:", err);
     }
   };
 

@@ -1,18 +1,14 @@
 import { ResultSet } from 'react-native-sqlite-storage';
 import { getDBConnection } from "../../services/shared/SyncService";
-import { formatSchema } from '../../utils/schemaFormatter';
 
 export type Schema = {
   [key: string]: string;
 };
 
-export type Exact<T, U> = T extends U ? T : never;
-
 export type Mapper<T> = {
   toModel: (row: any) => T;
   toRow: (model: T) => any;
 };
-
 
 export class BaseLocalRepository<T> {
   constructor(
@@ -24,10 +20,14 @@ export class BaseLocalRepository<T> {
     private schema: Schema,
   ) {}
 
+  private formatSchema<T>(schema: Schema): string {
+      return Object.entries(schema)
+        .map(([key, value]) => `${key} ${value}`)
+        .join(", ");
+  };
 
   async createTable(): Promise<void> {
-    
-    const sql = `CREATE TABLE IF NOT EXISTS ${this.tableName} (${formatSchema(this.schema)})`;
+    const sql = `CREATE TABLE IF NOT EXISTS ${this.tableName} (${this.formatSchema(this.schema)})`;
     const dbInstance = await getDBConnection();
 
     return new Promise((resolve, reject) => {

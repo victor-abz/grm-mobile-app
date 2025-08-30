@@ -27,11 +27,15 @@ export class BaseService<T> {
   }
 
   async getAll(): Promise<T[]> {
-    return this.localRepository.getAll();
-  }
-
-  async softDelete(id: string | number): Promise<void> {
-    await this.localRepository.softDelete(id);
+    const state = await NetInfo.fetch();
+    if (state.isConnected) {
+      try {
+        return await this.remoteRepository.fetchAll();
+      } catch (err) {
+        console.warn('[BaseService] Remote sync failed. Will retry later.', err);
+        return await this.localRepository.getAll();
+      }
+    }
   }
 
   async sync(): Promise<void> {

@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { RootStateOrAny, useSelector } from 'react-redux';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
-import { useIssueCategories } from '../../../services/hooks/useIssueCategories';
-import { useIssueStatus } from '../../../services/hooks/useIssueStatus';
-import { colors } from '../../../utils/colors';
 import Content from './containers';
 import { styles } from './Statistics.style';
-import { useIssueTypes } from '../../../services/hooks/useIssueTypes';
+import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
+import { colors } from '../../../utils/colors';
+import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
+import { useIssueCategories } from '../../../hooks/issues/useIssueCategories';
+import { useIssueTypes } from "../../../hooks/issues/useIssueTypes";
+
 
 function Statistics() {
   const customStyles = styles();
@@ -24,9 +25,9 @@ function Statistics() {
   const [eadl, setEadl] = useState(false);
   const { session } = useSelector((state: RootStateOrAny) => state.get('authentication').toObject());
   const username = session?.username ?? ''
-  
+
   useEffect(() => {
-   
+
     // Getting issue_age_group
     LocalGRMDatabase.find({
       selector: { type: 'issue_age_group' },

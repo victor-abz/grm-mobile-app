@@ -1,5 +1,5 @@
 import IssueTypeRemoteRepository from "../../repositories/remote/IssueTypeRemoteRepository";
-import { BaseService } from "./BaseService";
+import { BaseService } from "../shared/BaseService";
 import { IssueTypeLocalRepository } from "../../repositories/local/issueType/IssueTypeLocalRepository";
 import type { IssueType } from "../../models/IssueType";
 
