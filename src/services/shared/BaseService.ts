@@ -1,7 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import { BaseLocalRepository } from '../../repositories/local/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/remote/BaseRemoteRepository';
-import { Issue } from "../../models/Issue";
 
 export class BaseService<T> {
   constructor(

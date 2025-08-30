@@ -1,19 +1,19 @@
-import { IssueCategory } from "../../models/IssueCategory";
+import type { IssueType } from "../../models/IssueType";
 import request from "../../utils/request";
 import { BaseRemoteRepository } from "./BaseRemoteRepository";
 
-class IssueCategoryRemoteRepository extends BaseRemoteRepository<IssueCategory> {
-
-    create(item: IssueCategory): Promise<IssueCategory> {
+class IssueTypeRemoteRepository extends BaseRemoteRepository<IssueType> {
+  
+    create(item: IssueType): Promise<IssueType> {
         throw new Error('Method not implemented.');
     }
-
+    
     delete(id: string): Promise<void> {
         throw new Error('Method not implemented.');
     }
-
-    async fetchAll(): Promise<IssueCategory[]> {
-        const url = `/issues/issue-categories/`;
+    
+    async fetchAll(): Promise<IssueType[]> {
+        const url = `/issues/issue-types/`;
         const requestOptions = {
             url,
             method: "GET",
@@ -23,23 +23,23 @@ class IssueCategoryRemoteRepository extends BaseRemoteRepository<IssueCategory> 
             const response = await request({
                 ...requestOptions,
             })
-
+            
             const jsonData: any = response.data;
-            const results: IssueCategory[] = jsonData.results
-
+            const results: IssueType[] = jsonData.results
+            
             return results;
         } catch (error) {
             console.error(error.message);
         }
     }
 
-    fetchById(id: string): Promise<IssueCategory> {
+    fetchById(id: string): Promise<IssueType> {
         throw new Error('Method not implemented.');
     }
 
-    update(id: string, item: IssueCategory): Promise<IssueCategory> {
+    update(id: string, item: IssueType): Promise<IssueType> {
         throw new Error('Method not implemented.');
     }
 }
 
-export default IssueCategoryRemoteRepository;
+export default IssueTypeRemoteRepository;

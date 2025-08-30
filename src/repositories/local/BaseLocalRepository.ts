@@ -19,7 +19,7 @@ export class BaseLocalRepository<T> {
     private mapper: Mapper<T>,
     private schema: Schema,
   ) {}
-  
+
   private formatSchema<T>(schema: Schema): string {
       return Object.entries(schema)
         .map(([key, value]) => `${key} ${value}`)
