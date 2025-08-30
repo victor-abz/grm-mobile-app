@@ -11,9 +11,9 @@ export const mapper: Mapper<IssueStatus> = {
       rejected_status: row.rejected_status,
       open_status: row.open_status,
       created_date: row.created_date,
-      updated_at: row.updated_at,
-      sync_at: row.sync_at,
-      deleted_at: row.deleted_at
+      updated_date: row.updated_date,
+      sync_date: row.sync_date,
+      deleted_date: row.deleted_date
     }),
   toRow: (model: IssueStatus) => ({
     id: model.id,
@@ -23,8 +23,8 @@ export const mapper: Mapper<IssueStatus> = {
     rejected_status: model.rejected_status,
     open_status: model.open_status,
     created_date: model.created_date ?? null,
-    deleted_at: model.deleted_at ?? null,
-    updated_at: model.updated_at ?? new Date().toISOString(),
-    sync_at: model.sync_at ?? null,
+    deleted_date: model.deleted_date ?? null,
+    updated_date: model.updated_date ?? new Date().toISOString(),
+    sync_date: model.sync_date ?? null,
   })
 };

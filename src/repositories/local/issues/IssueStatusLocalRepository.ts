@@ -12,9 +12,9 @@ export const mapper: Mapper<IssueStatus> = {
     rejected_status: row.rejected_status,
     open_status: row.open_status,
     created_date: row.created_date,
-    deleted_at: row.deleted_at,
-    sync_at: row.sync_at,
-    updated_at: row.updated_at,
+    deleted_date: row.deleted_date,
+    sync_date: row.sync_date,
+    updated_date: row.updated_date,
   }),
   toRow: (model: IssueStatus) => ({
     id: model.id,
