@@ -1,6 +1,6 @@
 import IssueTypeRemoteRepository from "../../repositories/remote/IssueTypeRemoteRepository";
 import { BaseService } from "../shared/BaseService";
-import { IssueTypeLocalRepository } from "../../repositories/local/issueType/IssueTypeLocalRepository";
+import { IssueTypeLocalRepository } from "../../repositories/local/issues/IssueTypeLocalRepository";
 import type { IssueType } from "../../models/IssueType";
 
 const localRepository = new IssueTypeLocalRepository();

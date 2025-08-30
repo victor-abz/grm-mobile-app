@@ -1,17 +1,17 @@
-import type { IssueCategory } from "../../models/IssueCategory";
+import { IssueCategory } from "../../models/IssueCategory";
 import request from "../../utils/request";
 import { BaseRemoteRepository } from "./BaseRemoteRepository";
 
 class IssueCategoryRemoteRepository extends BaseRemoteRepository<IssueCategory> {
-  
+
     create(item: IssueCategory): Promise<IssueCategory> {
         throw new Error('Method not implemented.');
     }
-    
+
     delete(id: string): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    
+
     async fetchAll(): Promise<IssueCategory[]> {
         const url = `/issues/issue-categories/`;
         const requestOptions = {
@@ -23,10 +23,10 @@ class IssueCategoryRemoteRepository extends BaseRemoteRepository<IssueCategory> 
             const response = await request({
                 ...requestOptions,
             })
-            
+
             const jsonData: any = response.data;
             const results: IssueCategory[] = jsonData.results
-            
+
             return results;
         } catch (error) {
             console.error(error.message);
