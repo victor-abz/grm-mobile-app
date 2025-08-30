@@ -15,9 +15,9 @@ export const mapper: Mapper<IssueCategory> = {
     label: row.label,
     value: row.value,
     created_date: row.created_date,
-    deleted_at: row.deleted_at,
-    sync_at: row.sync_at,
-    updated_at: row.updated_at,
+    deleted_date: row.deleted_date,
+    sync_date: row.sync_date,
+    updated_date: row.updated_date,
   }),
   toRow: (model: IssueCategory) => ({
     id: model.id,
@@ -31,14 +31,14 @@ export const mapper: Mapper<IssueCategory> = {
     label: model.label,
     value: model.value,
     created_date: model.created_date ?? null,
-    deleted_at: model.deleted_at ?? null,
-    updated_at: model.updated_at ?? new Date().toISOString(),
-    sync_at: model.sync_at ?? null,
+    deleted_date: model.deleted_date ?? null,
+    updated_date: model.updated_date ?? new Date().toISOString(),
+    sync_date: model.sync_date ?? null,
   })
 }
 
 export class IssueCategoryLocalRepository extends BaseLocalRepository<IssueCategory> {
   constructor() {
-    super('issue_category', 'id', 'updated_at', 'sync_at', mapper, issueCategoryTableSchema);
+    super('issue_category', 'id', 'updated_date', 'sync_date', mapper, issueCategoryTableSchema);
   }
 }

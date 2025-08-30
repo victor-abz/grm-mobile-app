@@ -13,9 +13,7 @@ export function registerServices(): void {
   syncServiceInstance.removeAll();
   syncServiceInstance.register(issueCategorySyncable)
   syncServiceInstance.register(issueStatusSyncable)
-  syncServiceInstance.register(issueStatusSyncable);
   syncServiceInstance.register(issueSyncable);
-
 }
 
 function setupConnectionWatcher(): void {

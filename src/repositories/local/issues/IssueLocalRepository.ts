@@ -52,8 +52,9 @@ const mapper: Mapper<Issue> = {
     contact_medium: model.contact_medium,
     contact_information: JSON.stringify(model.contact_information),
     contact_method: model.contact_method,
+    created_date: model.created_date,
     description: model.description,
-    deleted_at: model.deleted_at ?? null,
+    deleted_date: model.deleted_date ?? null,
     intake_date: model.intake_date,
     issue_date: model.issue_date ? model.issue_date : null,
     issue_location_id: model.issue_location_id,
@@ -68,14 +69,14 @@ const mapper: Mapper<Issue> = {
     tracking_code: model.tracking_code,
     sub_component_id: model.sub_component.id,
     status: JSON.stringify(model.status),
-    updated_at: model.updated_at ?? new Date().toISOString(),
-    sync_at: model.sync_at ?? null,
+    updated_date: model.updated_date ?? new Date().toISOString(),
+    sync_date: model.sync_date ?? null,
   }),
 };
 
 
 export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   constructor() {
-    super('issues', 'id', 'updated_at', 'sync_at', mapper, issue);
+    super('issues', 'id', 'updated_date', 'sync_date', mapper, issue);
   }
 }
