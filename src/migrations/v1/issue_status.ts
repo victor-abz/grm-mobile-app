@@ -1,12 +1,17 @@
-export const issueStatusTableSchema = {
-  id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
-  created_date: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
-  deleted_at: 'DATETIME NULL',
-  final_status: 'BOOLEAN',
-  initial_status: 'BOOLEAN',
-  name: 'TEXT',
-  open_status: 'BOOLEAN',
-  rejected_status: 'BOOLEAN',
-  sync_at: 'DATETIME NULL',
-  updated_at: 'DATETIME NULL'
-};
+import { tableSchema, TableSchema } from "@nozbe/watermelondb";
+import { TABLE_NAMES } from "../tableName";
+
+export const issueStatusTableSchema: TableSchema = tableSchema({
+      name:  TABLE_NAMES.issueStatus,
+      columns: [
+        { name: 'created_date', type: 'number' },
+        { name: 'deleted_date', type: 'number', isOptional: true },
+        { name: 'final_status', type: 'boolean' },
+        { name: 'initial_status', type: 'boolean' },
+        { name: 'name', type: 'string' },
+        { name: 'open_status', type: 'boolean' },
+        { name: 'rejected_status', type: 'boolean' },
+        { name: 'sync_date', type: 'number', isOptional: true },
+        { name: 'updated_date', type: 'number' },
+      ],
+    });

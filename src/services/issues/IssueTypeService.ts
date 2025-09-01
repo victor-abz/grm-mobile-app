@@ -1,39 +1,25 @@
-import IssueTypeRemoteRepository from "../../repositories/remote/IssueTypeRemoteRepository";
-import { BaseService } from "../shared/BaseService";
+import { BaseService } from '../shared/BaseService';
+import { TABLE_NAMES } from "../../migrations/tableName";
 import { IssueTypeLocalRepository } from "../../repositories/local/issues/IssueTypeLocalRepository";
-import type { IssueType } from "../../models/IssueType";
+import IssueTypeRemoteRepository from "../../repositories/remote/issues/IssueTypeRemoteRepository";
+import { IssueType } from "../../models/issues/IssueType";
 
 const localRepository = new IssueTypeLocalRepository();
 const remoteRepository = new IssueTypeRemoteRepository();
 
-export const issueTypeService = new BaseService<IssueType>(
-  localRepository,
-  remoteRepository
-);
-
-async function syncIssueTypesList() {
-  try {
-    const response = await issueTypeService.sync()
-    return response;
-  } catch (error) {
-    console.error("Error syncing Issue Type:", error);
-  }
-}
+const issueTypeService = new BaseService<IssueType>(localRepository, remoteRepository);
 
 export async function fetchIssueTypesList(): Promise<IssueType[] | null> {
   try {
-    //try sync with remote
-    await syncIssueTypesList()
-    //proceed getting data from the local source origin
-    const response = await issueTypeService.getAll();
-
-    return response
+    return await issueTypeService.getAll();
   } catch (error) {
-    console.error("Error syncing Issue Type:", error);
+    console.error('Error syncing issues type:', error);
   }
 }
 
 export const issueTypeSyncable = {
-  sync: () => issueTypeService.sync(),
-  createTable: () => issueTypeService.createTable()
+  pushChanges: ({ changes, lastPulledAt }) =>
+    issueTypeService.pushChanges({ changes, lastPulledAt }),
+  pullChanges: ({ tableName, lastPulledAt }) => issueTypeService.pullChanges({ tableName, lastPulledAt }),
+  tableName:  TABLE_NAMES.issueType,
 };

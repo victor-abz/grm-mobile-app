@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { IssueStatus } from "../../models/IssueStatus";
 import * as IssueStatusService from '../../services/issues/IssueStatusService';
+import { IssueStatus } from "../../models/issues/IssueStatus";
 
 export function useIssueStatus() {
   const [issueStatusList, setIssueStatusList] = useState<IssueStatus[]>()
@@ -13,8 +13,8 @@ export function useIssueStatus() {
   const fetchIssueStatusList = async () => {
       setLoading(true)
       if (!issueStatusList) {
-        const issuesList = await IssueStatusService.fetchIssueStatusList()
-        setIssueStatusList(issuesList);
+        const issuesStatusList = await IssueStatusService.fetchIssueStatusList()
+        setIssueStatusList(issuesStatusList);
       }
       setLoading(false);
     }

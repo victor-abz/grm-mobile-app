@@ -66,8 +66,8 @@ function Content({ issue, eadl }) {
       citizen_group: issue.citizen_group,
       citizen_group_2: issue.citizen_group_2,
       location_info: {
-        issue_location: issue.issueLocation,
-        location_description: issue.locationDescription,
+        issue_location: issue.issueLocation, // already referenced at administrative_region, to be removed.
+        location_description: issue.locationDescription, //e.g. pasó en la esquina de la calle frank 19
       },
       administrative_region: issue.issueLocation,
       // category: {

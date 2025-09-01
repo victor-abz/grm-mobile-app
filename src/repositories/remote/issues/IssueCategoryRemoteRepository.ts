@@ -1,6 +1,7 @@
-import { IssueCategory } from "../../models/IssueCategory";
-import request from "../../utils/request";
-import { BaseRemoteRepository } from "./BaseRemoteRepository";
+import request from "../../../utils/request";
+import { BaseRemoteRepository } from "../../shared/BaseRemoteRepository";
+import { IssueCategory } from "../../../models/issues/IssueCategory";
+
 
 class IssueCategoryRemoteRepository extends BaseRemoteRepository<IssueCategory> {
 

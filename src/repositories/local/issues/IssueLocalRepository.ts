@@ -1,82 +1,54 @@
-import { issue } from "../../../migrations/v1/issue";
-import { Issue } from "../../../models/Issue";
-import { BaseLocalRepository, Mapper } from "../BaseLocalRepository";
+import { BaseLocalRepository } from "../../shared/BaseLocalRepository";
+import { ContactMedium, ContactMethod, Issue, IssueLocalModel } from "../../../models/issues/Issue";
+import { TABLE_NAMES } from "../../../migrations/tableName";
 
-
-const mapper: Mapper<Issue> = {
-  toModel: (row: any): Issue => ({
-    id: row.id,
-    administrative_region: JSON.parse(row.administrative_region),
-    assignee: JSON.parse(row.assignee),
-    attachments: JSON.parse(row.attachments) ?? [],
-    auto_increment_id: row.auto_increment_id,
-    category: JSON.parse(row.category),
-    citizen: JSON.parse(row.citizen),
-    component: JSON.parse(row.component),
-    confirmed: row.confirmed === 1,
-    contact_medium: row.contact_medium,
-    contact_information: JSON.parse(row.contact_information),
-    contact_method: row.contact_method,
-    created_date: row.created_date,
-    deleted_date: row.deleted_date,
-    description: row.description,
-    intake_date: new Date(row.intake_date),
-    issue_date: row.issue_date ? new Date(row.issue_date) : null,
-    issue_location_id: row.issue_location_id,
-    issue_sub_type: row.issue_sub_type,
-    issue_type: row.issue_type,
-    internal_code: row.internal_code,
-    location_description: row.location_description,
-    name: row.name,
-    ongoing_issue: row.ongoing_issue === 1,
-    reporter: JSON.parse(row.reporter),
-    resolution_date: row.resolution_at ? new Date(row.resolution_at) : null,
-    title: row.title,
-    tracking_code: row.tracking_code,
-    sub_component: row.sub_component.id,
-    status: JSON.parse(row.status),
-    updated_date: row.updated_date,
-    sync_date: row.sync_date
-  }),
-
-  toRow: (model: Issue) => ({
-    id: model.id,
-    administrative_region: JSON.stringify(model.administrative_region),
-    assignee: JSON.stringify(model.assignee),
-    attachments: JSON.stringify(model.attachments ?? []),
-    auto_increment_id: model.auto_increment_id,
-    category: JSON.stringify(model.category),
-    citizen: JSON.stringify(model.citizen),
-    component: JSON.stringify(model.component),
-    confirmed: model.confirmed ? 1 : 0,
-    contact_medium: model.contact_medium,
-    contact_information: JSON.stringify(model.contact_information),
-    contact_method: model.contact_method,
-    created_date: model.created_date,
-    description: model.description,
-    deleted_date: model.deleted_date ?? null,
-    intake_date: model.intake_date,
-    issue_date: model.issue_date ? model.issue_date : null,
-    issue_location_id: model.issue_location_id,
-    issue_sub_type: model.issue_sub_type,
-    issue_type: model.issue_type,
-    internal_code: model.internal_code,
-    location_description: model.location_description,
-    ongoing_issue: model.ongoing_issue ? 1 : 0,
-    reporter: JSON.stringify(model.reporter),
-    resolution_date: model.resolution_date ? model.resolution_date : null,
-    title: model.title,
-    tracking_code: model.tracking_code,
-    sub_component_id: model.sub_component.id,
-    status: JSON.stringify(model.status),
-    updated_date: model.updated_date ?? new Date().toISOString(),
-    sync_date: model.sync_date ?? null,
-  }),
-};
 
 
 export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   constructor() {
-    super('issues', 'id', 'updated_date', 'sync_date', mapper, issue);
+    super(TABLE_NAMES.issue);
   }
+
+  fromLocalToRemote(localModel: IssueLocalModel): Issue {
+  const parseJson = (jsonString: string | null): any => {
+    try {
+      return jsonString ? JSON.parse(jsonString) : null;
+    } catch (e) {
+      console.error('Failed to parse JSON:', e);
+      return null;
+    }
+  };
+
+  return {
+    id: localModel.id,
+    name: localModel.name,
+    auto_increment_id: localModel.auto_increment_id,
+    confirmed: localModel.confirmed,
+    description: localModel.description,
+    issue_location_id: localModel.issue_location_id,
+    internal_code: localModel.internal_code,
+    location_description: localModel.location_description,
+    ongoing_issue: localModel.ongoing_issue,
+    title: localModel.title,
+    tracking_code: localModel.tracking_code,
+    contact_medium: localModel.contact_medium as ContactMedium,
+    contact_method: localModel.contact_method as ContactMethod,
+    created_date: localModel.created_date,
+    intake_date: new Date(localModel.intake_date),
+    issue_date: localModel.issue_date ? new Date(localModel.issue_date) : null,
+    resolution_date: localModel.resolution_date ? new Date(localModel.resolution_date) : null,
+    administrative_region: parseJson(localModel.administrative_region),
+    assignee: parseJson(localModel.assignee),
+    attachments: parseJson(localModel.attachments),
+    category: parseJson(localModel.category),
+    citizen: parseJson(localModel.citizen),
+    component: parseJson(localModel.component),
+    contact_information: parseJson(localModel.contact_information),
+    issue_sub_type: parseJson(localModel.issue_sub_type),
+    issue_type: parseJson(localModel.issue_type),
+    reporter: parseJson(localModel.reporter),
+    sub_component: parseJson(localModel.sub_component),
+    status: parseJson(localModel.status)
+  };
+};
 }

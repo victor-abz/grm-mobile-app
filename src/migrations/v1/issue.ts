@@ -1,36 +1,37 @@
-import { Schema } from "../../repositories/local/BaseLocalRepository";
-export const issue: Schema = {
-  id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
-  administrative_region: 'TEXT',
-  assignee: 'TEXT',
-  category: 'TEXT',
-  citizen: 'TEXT',
-  contact_information: 'TEXT NULL',
-  confirmed: 'BOOLEAN DEFAULT FALSE',
-  contact_medium: 'TEXT',
-  contact_method: 'TEXT',
-  component: 'TEXT',
-  created_date: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
-  deleted_date: 'DATETIME NULL',
-  description: 'TEXT',
-  escalated_date: 'DATETIME NULL',
-  escalate_flag: 'BOOLEAN DEFAULT FALSE',
-  intake_date: 'DATETIME DEFAULT CURRENT_TIMESTAMP NULL',
-  issue_date: 'DATETIME NULL',
-  issue_location: 'TEXT',
-  issue_type: 'TEXT NULL',
-  issue_sub_type: 'TEXT NULL',
-  location_description: 'TEXT NULL',
-  ongoing_issue: 'BOOLEAN DEFAULT FALSE',
-  reporter: 'TEXT',
-  resolution_date: 'DATETIME NULL',
-  status: 'TEXT NULL',
-  sub_component: 'TEXT NULL',
-  title: 'TEXT NULL',
-  tracking_code: 'TEXT',
-  internal_code: 'TEXT',
-  updated_date: 'DATETIME NULL',
-  sync_date: 'DATETIME NULL',
-}
+import { tableSchema, TableSchema } from "@nozbe/watermelondb";
+import { TABLE_NAMES } from "../tableName";
 
-
+export const issueTableSchema: TableSchema = tableSchema({
+      name: TABLE_NAMES.issue,
+      columns: [
+        { name: 'administrative_region', type: 'string'},
+        { name: 'assignee', type: 'string'},
+        { name: 'category', type: 'string'},
+        { name: 'citizen', type: 'string'},
+        { name: 'contact_information', type: 'string', isOptional: true },
+        { name: 'confirmed', type: 'boolean' }, // default false
+        { name: 'contact_medium', type: 'string'},
+        { name: 'contact_method', type: 'string', isOptional: true },
+        { name: 'component', type: 'string'},
+        { name: 'created_date', type: 'number' }, // DEFAULT CURRENT_TIMESTAMP
+        { name: 'deleted_date', type: 'number', isOptional: true },
+        { name: 'description', type: 'string' },
+        { name: 'escalated_date', type: 'string', isOptional: true },
+        { name: 'escalate_flag', type: 'boolean' },  // DEFAULT FALSE
+        { name: 'intake_date', type: 'number', isOptional: true }, // DEFAULT CURRENT_TIMESTAMP
+        { name: 'issue_location', type: 'string'},
+        { name: 'issue_type', type: 'string', isOptional: true },
+        { name: 'issue_sub_type', type: 'string', isOptional: true },
+        { name: 'location_description', type: 'string', isOptional: true },
+        { name: 'ongoing_issue', type: 'boolean' },  // DEFAULT FALSE
+        { name: 'reporter', type: 'string' },
+        { name: 'resolution_date', type: 'number', isOptional: true }, // DEFAULT CURRENT_TIMESTAMP
+        { name: 'status', type: 'string' },
+        { name: 'sub_component', type: 'string', isOptional: true },
+        { name: 'title', type: 'string' },
+        { name: 'tracking_code', type: 'string' },
+        { name: 'internal_code', type: 'string' },
+        { name: 'sync_date', type: 'number', isOptional: true },
+        { name: 'updated_date', type: 'number' },
+      ],
+    });

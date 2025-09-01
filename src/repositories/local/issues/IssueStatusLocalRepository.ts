@@ -1,38 +1,21 @@
-import { BaseLocalRepository, Mapper } from "../BaseLocalRepository";
-import { IssueStatus } from "../../../models/IssueStatus";
-import { issueStatusTableSchema } from "../../../migrations/v1/issue_status";
-
-
-export const mapper: Mapper<IssueStatus> = {
-  toModel: (row) => ({
-    id: row.id,
-    name: row.name,
-    final_status: row.final_status,
-    initial_status: row.initial_status,
-    rejected_status: row.rejected_status,
-    open_status: row.open_status,
-    created_date: row.created_date,
-    deleted_date: row.deleted_date,
-    sync_date: row.sync_date,
-    updated_date: row.updated_date,
-  }),
-  toRow: (model: IssueStatus) => ({
-    id: model.id,
-    name: model.name,
-    final_status: model.final_status,
-    initial_status: model.initial_status,
-    rejected_status: model.rejected_status,
-    open_status: model.open_status,
-    created_date: model.created_date ?? new Date().toISOString(),
-    deleted_date: model.deleted_date ?? null,
-    updated_date: model.updated_date ?? new Date().toISOString(),
-    sync_date: model.sync_date ?? null,
-  })
-};
+import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
+import { IssueStatus, IssueStatusLocalModel } from '../../../models/issues/IssueStatus';
+import { TABLE_NAMES } from "../../../migrations/tableName";
 
 export class IssueStatusLocalRepository extends BaseLocalRepository<IssueStatus> {
   constructor() {
-    super('issue_status', 'id', 'updated_date', 'sync_date', mapper, issueStatusTableSchema);
+    super(TABLE_NAMES.issueStatus);
+  }
+
+  fromLocalToRemote(localModel: IssueStatusLocalModel): IssueStatus {
+    return {
+      id: localModel.id,
+      name: localModel.name,
+      created_date: localModel.created_date,
+      final_status: localModel.final_status,
+      initial_status: localModel.initial_status,
+      rejected_status: localModel.rejected_status,
+      open_status: localModel.open_status,
+    };
   }
 }
-

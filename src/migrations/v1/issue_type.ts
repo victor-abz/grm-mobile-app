@@ -1,17 +1,13 @@
+import { tableSchema, TableSchema } from "@nozbe/watermelondb";
+import { TABLE_NAMES } from "../tableName";
 
-export const issueTypeTableSchema = {
-  id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
-  name: 'TEXT',
-  created_date: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
-  deleted_date: 'DATETIME NULL',
-  sync_date: 'DATETIME NULL',
-  updated_date: 'DATETIME NULL'
-};
-
-
-// const migrationSchema = [
-//   `CREATE TABLE issue_type ${formatSchema(issueTypeTableSchema)}`,
-//   "ALTER TABLE issue_status ADD COLUMN phone TEXT",
-// ]
-
-// export default migrationSchema
+export const issueTypeTableSchema: TableSchema = tableSchema({
+  name:  TABLE_NAMES.issueType,
+  columns: [
+    { name: 'created_date', type: 'number' },
+    { name: 'deleted_date', type: 'number', isOptional: true },
+    { name: 'name', type: 'string' },
+    { name: 'sync_date', type: 'number', isOptional: true },
+    { name: 'updated_date', type: 'number' },
+  ],
+});
