@@ -54,7 +54,7 @@ function Content({ issues, eadl, statuses }) {
         <View style={styles.itemContainer}>
           <View>
             <Text style={[styles.title]}>{item.issue_type?.name} - {i18n.t('label_reference')} {item.tracking_code}</Text>
-            <Text style={[styles.subTitle]} numberOfLines={1}>{item.title ? item.title : item.description}</Text>
+            <Text style={[styles.subTitle]} numberOfLines={1}>{item.description}</Text>
             <Text style={[styles.subTitle]}>
               {item.citizen}, {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')},{' '}
               {item.intake_date && currentDate.diff(item.intake_date, 'days')} {i18n.t('days_ago')}
