@@ -16,7 +16,6 @@ import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { LocalGRMDatabase } from '../../../../db/databaseManager';
 import { i18n } from "../../../../translations/i18n";
-import StarRating from 'react-native-star-rating-widget';
 import AddAttachmentCard from "../../GRM/components/AddAttachmentCard";
 
 const theme = {
@@ -32,7 +31,7 @@ const theme = {
 const WHATSAPP_LINK = 'http://api.whatsapp.com/send?phone=223';
 const PHONE_CALL_LINK = 'tel://+223';
 
-function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
+function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }) {
   const [issue, setIssue] = useState(item);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
@@ -171,19 +170,6 @@ function Content({ item, navigation, statuses = [], eadl, updateIssue }) {
       return updatedIssue;
     });
   };
-
-  // const rejectIssue = () => {
-  //   const newStatus = statuses.find((x) => x.rejected_status === true);
-  //   setIssue((prevIssue) => {
-  //     const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
-  //       name: prevIssue.reporter.name,
-  //       id: eadl._id,
-  //       comment: i18n.t('issue_was_rejected'),
-  //       due_at: moment(),
-  //     });
-  //     return updatedIssue;
-  //   });
-  // };
 
   const rejectIssue = () => {
     const newStatus = statuses.find((x) => x.rejected_status === true);

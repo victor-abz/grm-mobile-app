@@ -8,15 +8,14 @@ import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;
-  const { issueStatusList, loading } = useIssueStatus();
+  const { issueStatusList, loading: statusListLoading } = useIssueStatus();
+  const [loading, setLoading] = useState<boolean>(false);
   const [eadl, setEadl] = useState();
   const customStyles = styles();
   const { session } = useSelector((state) => state.get('authentication').toObject());
-  const username = session?.username ?? ''
-  
-  useEffect(() =>
-  {
-    
+  const username = session?.username ?? '';
+
+  useEffect(() => {
     if (username) {
       LocalAdminLevelsDatabase.find({
         selector: { 'representative.email': username },
@@ -33,14 +32,32 @@ function IssueActions({ route, navigation }) {
     }
   }, [username]);
 
-  if (loading) return (
-    <SafeAreaView style={customStyles.container}>
-      <Text>loading...</Text>
-    </SafeAreaView>
-  )
+  useEffect(() => {
+    if (statusListLoading) {
+      setLoading(true);
+    } else {
+      setLoading(false);
+    }
+  }, [statusListLoading]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={customStyles.container}>
+        <Text>loading...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content loading={loading} eadl={eadl} item={params.item} navigation={navigation} statuses={issueStatusList} updateIssue={params.updateIssue}/>
+      <Content
+        loading={loading}
+        eadl={eadl}
+        item={params.item}
+        navigation={navigation}
+        statuses={issueStatusList}
+        updateIssue={params.updateIssue}
+      />
     </SafeAreaView>
   );
 }
