@@ -8,6 +8,7 @@ import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
 import { IssueLocalModel } from "../../models/issues/Issue";
 import { IssueTypeLocalModel } from "../../models/issues/IssueType";
 import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
+import { IssueCommentLocalModel } from "../../models/issues/IssueComment";
 
 const DB_NAME = "grm-db";
 
@@ -50,6 +51,7 @@ export class SyncService {
         IssueLocalModel,
         IssueTypeLocalModel,
         IssueCategoryLocalModel,
+        IssueCommentLocalModel,
       ],
     });
 

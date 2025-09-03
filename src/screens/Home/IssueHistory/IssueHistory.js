@@ -9,11 +9,11 @@ import { LocalGRMDatabase } from '../../../db/databaseManager';
 function IssueHistory({ route }) {
   const customStyles = styles();
   const [issue, setIssue] = useState(route?.params?.item || null);
-  const issueId = issue._id;
+  const issueId = issue.id;
   const fetchIssue = async () => {
     try {
       const result = await LocalGRMDatabase.find({
-        selector: { _id: issueId }
+        selector: { id: issueId }
       });
       if (result.docs.length > 0) {
         setIssue(result.docs[0]);

@@ -30,7 +30,8 @@ export abstract class BaseLocalRepository<T> {
     sortBy: string | null,
     sortOrder: SortOrder | null,
     limit: number | null,
-    lastPulledAt: string | null
+    lastPulledAt: string | null,
+    parentId: string | null
   ): Promise<T[]> {
     if (!sortBy) {
       sortBy = 'created_date';
@@ -45,6 +46,9 @@ export abstract class BaseLocalRepository<T> {
     let queryClauses: QueryClause[] = [Q.sortBy(sortBy, sortOrder), Q.take(limit)];
     if (lastPulledAt) {
       queryClauses.push(Q.where('created_date', Q.gte(lastPulledAt)));
+    }
+    if (parentId) {
+      queryClauses.push(Q.where('parent_id', Q.eq(parentId)));
     }
 
     const dbInstance = syncServiceInstance.database

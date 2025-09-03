@@ -14,6 +14,7 @@ import Collapsible from 'react-native-collapsible';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import RecordingCard from "../../GRM/components/RecordingCard";
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
+import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
 
 
 const theme = {
@@ -27,7 +28,8 @@ const theme = {
 };
 
 function Content({ issue }) {
-  const [comments, setComments] = useState(issue.comments);
+  const parentId = issue.id;
+  const { comments, loading} = useIssueComments(parentId);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
   const [newComment, setNewComment] = useState();
@@ -295,7 +297,7 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAttachmentCollapsed}>
           <View style={styles.collapsibleContent}>
-            { issue.attachments.map((attachment) => {
+            { issue.attachments?.map((attachment) => {
                 return (
                   <View style={{ flexDirection: 'row', maxWidth: '100%' , justifyContent: 'center'}}>
                     {(!attachment.isAudio && attachment.local_url) && (

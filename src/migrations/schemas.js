@@ -3,6 +3,7 @@ import { issueStatusTableSchema } from "./v1/issue_status";
 import { issueTableSchema } from "./v1/issue";
 import { issueCategoryTableSchema } from "./v1/issue_category";
 import { issueTypeTableSchema } from "./v1/issue_type";
+import { issueCommentTableSchema } from "./v1/issue_comment";
 
 export default appSchema({
   version: 1,
@@ -11,5 +12,6 @@ export default appSchema({
     issueTableSchema,
     issueCategoryTableSchema,
     issueTypeTableSchema,
+    issueCommentTableSchema,
   ]
 })

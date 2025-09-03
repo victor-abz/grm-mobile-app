@@ -27,18 +27,18 @@ export class BaseService<T> {
     }
   }
 
-  async getAll(): Promise<T[]> {
+  async getAll(parentId: string | null): Promise<T[]> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
-        return await this.remoteRepository.fetchAll(null, null, null, null, null, null);
+        return await this.remoteRepository.fetchAll(null, null, null, null, null, null, parentId);
       } catch (err) {
         console.warn('[BaseService] Remote sync failed. Will retry later.', err);
         console.log('[BaseService] Remote sync failed. Will retry later.', err);
-        return await this.localRepository.getAll(null, null, null, null);
+        return await this.localRepository.getAll(null, null, null, null, parentId);
       }
     } else {
-      return await this.localRepository.getAll(null, null, null, null);
+      return await this.localRepository.getAll(null, null, null, null, parentId);
     }
   }
 
@@ -52,7 +52,7 @@ export class BaseService<T> {
     const timestamp = Date.now();
     const tableChanges = changes[tableName];
     // 1. Fetch newly created records
-    const newRecords = await this.remoteRepository.fetchAll(null, null, null, lastPulledAt, null, null);
+    const newRecords = await this.remoteRepository.fetchAll(null, null, null, lastPulledAt, null, null, null);
     // @ts-ignore
     tableChanges.created = newRecords.map(record => ({ id: record.id, ...record }));
 
