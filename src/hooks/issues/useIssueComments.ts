@@ -14,7 +14,6 @@ export function useIssueComments(parentId: string) {
       setLoading(true)
       if (!issueCommentsList) {
         const issuesList = await IssueCommentService.fetchIssueCommentList(parentId)
-        console.log('issuesList', issuesList)
         setIssueCommentsList(issuesList);
       }
       setLoading(false);

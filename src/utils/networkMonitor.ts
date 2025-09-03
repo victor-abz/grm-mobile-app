@@ -24,8 +24,6 @@ export function registerServices(): void {
 
 async function setupConnectionWatcher(): Promise<void> {
   console.log('[Sync] Starting sync watcherListener');
-          await syncServiceInstance.syncAll();
-
   if (watcherListener) return;
   console.log('[Sync] No sync watcherListener initialized');
   watcherListener = NetInfo.addEventListener((state) => {

@@ -13,7 +13,7 @@ function IssueHistory({ route }) {
   const fetchIssue = async () => {
     try {
       const result = await LocalGRMDatabase.find({
-        selector: { id: issueId }
+        selector: { _id: issueId }
       });
       if (result.docs.length > 0) {
         setIssue(result.docs[0]);

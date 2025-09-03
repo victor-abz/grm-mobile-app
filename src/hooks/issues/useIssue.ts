@@ -17,10 +17,8 @@ export function useIssue() {
 
       if (!issues) {
         const issuesList = await IssueService.fetchIssueList()
-        console.log(issuesList)
         setIssues(issuesList);
       }
     }
-    console.log({ issues, loadingIssues })
     return { issues, loadingIssues }
 }

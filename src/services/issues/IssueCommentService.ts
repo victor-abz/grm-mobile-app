@@ -14,7 +14,6 @@ const issueCommentService = new BaseService<IssueComment>(localRepository, remot
 
 export async function fetchIssueCommentList(parentId: string): Promise<IssueComment[] | null> {
   try {
-    console.log('parentIdCi',parentId)
     return await issueCommentService.getAll(parentId);
   } catch (error) {
     console.error('Error syncing issues comment:', error);
