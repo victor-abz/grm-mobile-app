@@ -54,7 +54,7 @@ export class BaseService<T> {
     // 1. Fetch newly created records
     const newRecords = await this.remoteRepository.fetchAll(null, null, null, lastPulledAt, null, null);
     // @ts-ignore
-    tableChanges.created = newRecords.map(record => ({ id: record.id, ...record }));
+    tableChanges.created = newRecords.map(record => ({ id: new String(record.id), ...record }));
 
     // 2. Fetch updated records
     // const updatedRecords = await this.remoteRepository.fetchAll(null, null, null, null, lastPulledAt, null);

@@ -5,18 +5,25 @@ import {
   Text,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
   ToastAndroid,
-  Linking
+  Linking,
 } from 'react-native';
-import { Button, Dialog, Paragraph, Portal, TextInput, RadioButton, IconButton } from 'react-native-paper';
+import {
+  Button,
+  Dialog,
+  Paragraph,
+  Portal,
+  TextInput,
+  RadioButton,
+  IconButton,
+} from 'react-native-paper';
 import moment from 'moment';
-import { AntDesign, Feather } from '@expo/vector-icons';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { LocalGRMDatabase } from '../../../../db/databaseManager';
-import { i18n } from "../../../../translations/i18n";
-import AddAttachmentCard from "../../GRM/components/AddAttachmentCard";
+import { i18n } from '../../../../translations/i18n';
+import AddAttachmentCard from '../../GRM/components/AddAttachmentCard';
+import ActionButton from '../components/ActionButton';
 
 const theme = {
   roundness: 12,
@@ -35,15 +42,18 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
   const [issue, setIssue] = useState(item);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
+
   const [recordStepsDialog, setRecordStepsDialog] = useState(false);
   const [escalateDialog, setEscalateDialog] = useState(false);
   const [recordResolutionDialog, setRecordResolutionDialog] = useState(false);
   const [acceptedDialog, setAcceptedDialog] = useState(false);
+
   const [rejectedDialog, setRejectedDialog] = useState(false);
   const [escalatedDialog, setEscalatedDialog] = useState(false);
   const [disableEscalation, setDisableEscalation] = useState(false);
   const [rateAppealDialog, setRateAppealDialog] = useState(false);
   const [ratingDialog, setRatingDialog] = useState(false);
+
   const [recordedSteps, setRecordedSteps] = useState(false);
   const [recordedResolution, setRecordedResolution] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
@@ -51,6 +61,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
   const [reason, onChangeReason] = useState('');
   const [escalateComment, onChangeEscalateComment] = useState('');
   const [comment, onChangeComment] = useState('');
+
   const [resolution, onChangeResolution] = useState('');
   const [isAcceptEnabled, setIsAcceptEnabled] = useState(false);
   const [isRecordResolutionEnabled, setIsRecordResolutionEnabled] = useState(false);
@@ -97,19 +108,31 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
   const updateActionButtons = () => {
     function _isAcceptEnabled(x) {
       if (x.initial_status && isIssueAssignedToMe) {
-        return issue.status?.id === x.id;
+        if (typeof issue.status?.id === 'number') {
+          return JSON.stringify(issue.status?.id) === x.id;
+        } else {
+          return issue.status?.id === x.id;
+        }
       }
     }
 
     function _isRecordResolutionEnabled(x) {
       if (x.open_status && isIssueAssignedToMe) {
-        return issue.status?.id === x.id && !issue.escalate_flag;
+        if (typeof issue.status?.id === 'number') {
+          return JSON.stringify(issue.status?.id) === x.id && !issue.escalate_flag;
+        } else {
+          return issue.status?.id === x.id && !issue.escalate_flag;
+        }
       }
     }
 
     function _isRateAppealEnabled(x) {
       if (x.final_status && !isIssueAssignedToMe) {
-        return issue.status?.id === x.id;
+        if (typeof issue.status?.id === 'number') {
+          return JSON.stringify(issue.status?.id) === x.id;
+        } else {
+          return issue.status?.id === x.id;
+        }
       }
     }
 
@@ -129,31 +152,30 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
 
   const whatsApp = () => {
     Linking.openURL(WHATSAPP_LINK + issue.contact_information.contact)
-      .then(value => {
+      .then((value) => {
         console.log('whatsapp result: ', value);
-      }).catch(reason1 => {
-      console.error('Oups! An error occurred', reason1);
-    });
+      })
+      .catch((reason1) => {
+        console.error('Oups! An error occurred', reason1);
+      });
   };
 
   const phoneCall = () => {
     Linking.openURL(PHONE_CALL_LINK + issue.contact_information.contact)
-      .then(value => {
+      .then((value) => {
         console.log('phone_call result: ', value);
-      }).catch(reason1 => {
-      console.error('phone_call: Oups! An error occurred', reason1);
-    });
+      })
+      .catch((reason1) => {
+        console.error('phone_call: Oups! An error occurred', reason1);
+      });
   };
 
   const updateIssueWithComments = (issue, newStatus, commentData) => {
-    const newComments = [
-      ...issue.comments,
-      commentData,
-    ];
+    const newComments = [...issue.comments, commentData];
 
     return {
       ...issue,
-      status : newStatus,
+      status: newStatus,
       comments: newComments,
     };
   };
@@ -178,7 +200,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
       showToast(i18n.t('error_rejecting_issue'));
       return;
     }
-  
+
     setIssue((prevIssue) => {
       const updatedIssue = {
         ...prevIssue,
@@ -193,53 +215,53 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
             due_at: moment(),
             attachment: attachment.uri
               ? {
-                url: '',
-                id: attachment?.id,
-                uploaded: false,
-                local_url: attachment?.uri,
-                name: attachment?.uri.split('/').pop(),
-              }
+                  url: '',
+                  id: attachment?.id,
+                  uploaded: false,
+                  local_url: attachment?.uri,
+                  name: attachment?.uri.split('/').pop(),
+                }
               : undefined,
             recording: recordingURI
               ? {
-                url: '',
-                id: recordingURI.split('/').pop(),
-                uploaded: false,
-                local_url: recordingURI,
-                isAudio: true,
-                name: recordingURI.split('/').pop(),
-              }
+                  url: '',
+                  id: recordingURI.split('/').pop(),
+                  uploaded: false,
+                  local_url: recordingURI,
+                  isAudio: true,
+                  name: recordingURI.split('/').pop(),
+                }
               : undefined,
           },
         ],
       };
       return updatedIssue;
     });
-  
+
     setRejectedDialog(true);
     setDisableEscalation(true);
     setIsAcceptEnabled(false);
     setIsRecordResolutionEnabled(false);
     setIsRateAppealEnabled(false);
-  
+
     showToast(i18n.t('issue_rejected_successfully'));
     saveIssueStatus(newStatus, 'reject');
   };
 
   const rateIssue = () => {
     if (rating > 0) {
-        setIssue((prevIssue) => {
-          const updatedIssue = updateIssueWithComments(prevIssue, prevIssue.status, {
-            name: prevIssue.reporter.name,
-            id: eadl._id,
-            comment: i18n.t('issue_was_rated'),
-            due_at: moment(),
-          });
-          updatedIssue.rating = rating;
-          return updatedIssue;
+      setIssue((prevIssue) => {
+        const updatedIssue = updateIssueWithComments(prevIssue, prevIssue.status, {
+          name: prevIssue.reporter.name,
+          id: eadl._id,
+          comment: i18n.t('issue_was_rated'),
+          due_at: moment(),
         });
+        updatedIssue.rating = rating;
+        return updatedIssue;
+      });
     } else {
-        _showRateAppealDialog();
+      _showRateAppealDialog();
     }
     _hideRatingDialog();
   };
@@ -262,50 +284,50 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
 
   const escalateIssue = () => {
     setIssue((prevIssue) => {
-        const updatedIssue = {
-            ...prevIssue,
-            escalate_flag: true,
-            escalation_reasons: [
-                ...(prevIssue.escalation_reasons || []),
-                {
-                    id: eadl?._id,
-                    name: eadl?.representative?.name,
-                    comment: escalateComment,
-                    due_at: moment(),
-                },
-            ],
-            comments: [
-                ...(prevIssue.comments || []),
-                {
-                    name: prevIssue.reporter.name,
-                    id: eadl._id,
-                    comment: escalateComment,
-                    // comment: i18n.t('issue_was_escalated'),
-                    due_at: moment(),
-                    attachment: attachment.uri
-                      ? {
-                        url: '',
-                        id: attachment?.id,
-                        uploaded: false,
-                        local_url: attachment?.uri,
-                        name: attachment?.uri.split('/').pop(),
-                      }
-                      : undefined,
-                    recording: recordingURI
-                      ? {
-                        url: '',
-                        id: recordingURI.split('/').pop(),
-                        uploaded: false,
-                        local_url: recordingURI,
-                        isAudio: true,
-                        name: recordingURI.split('/').pop(),
-                      }
-                      : undefined,
-                },
-            ],
-        };
-        console.log("escalate : ", updatedIssue.comments);
-        return updatedIssue;
+      const updatedIssue = {
+        ...prevIssue,
+        escalate_flag: true,
+        escalation_reasons: [
+          ...(prevIssue.escalation_reasons || []),
+          {
+            id: eadl?._id,
+            name: eadl?.representative?.name,
+            comment: escalateComment,
+            due_at: moment(),
+          },
+        ],
+        comments: [
+          ...(prevIssue.comments || []),
+          {
+            name: prevIssue.reporter.name,
+            id: eadl._id,
+            comment: escalateComment,
+            // comment: i18n.t('issue_was_escalated'),
+            due_at: moment(),
+            attachment: attachment.uri
+              ? {
+                  url: '',
+                  id: attachment?.id,
+                  uploaded: false,
+                  local_url: attachment?.uri,
+                  name: attachment?.uri.split('/').pop(),
+                }
+              : undefined,
+            recording: recordingURI
+              ? {
+                  url: '',
+                  id: recordingURI.split('/').pop(),
+                  uploaded: false,
+                  local_url: recordingURI,
+                  isAudio: true,
+                  name: recordingURI.split('/').pop(),
+                }
+              : undefined,
+          },
+        ],
+      };
+      console.log('escalate : ', updatedIssue.comments);
+      return updatedIssue;
     });
     setDisableEscalation(true);
     setEscalatedDialog(true);
@@ -313,34 +335,34 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
   };
 
   const recordStep = () => {
-    setIssue(prevIssue => {
-        const updatedIssue = updateIssueWithComments(prevIssue, issue.status, {
-            name: prevIssue.reporter.name,
-            id: eadl._id,
-            comment,
-            due_at: moment(),
-            attachment: attachment.uri
-              ? {
-                url: '',
-                id: attachment?.id,
-                uploaded: false,
-                local_url: attachment?.uri,
-                name: attachment?.uri.split('/').pop(),
-              }
-              : undefined,
-            recording: recordingURI
-              ? {
-                url: '',
-                id: recordingURI.split('/').pop(),
-                uploaded: false,
-                local_url: recordingURI,
-                isAudio: true,
-                name: recordingURI.split('/').pop(),
-              }
-              : undefined,
-        });
-                
-        return updatedIssue;
+    setIssue((prevIssue) => {
+      const updatedIssue = updateIssueWithComments(prevIssue, issue.status, {
+        name: prevIssue.reporter.name,
+        id: eadl._id,
+        comment,
+        due_at: moment(),
+        attachment: attachment.uri
+          ? {
+              url: '',
+              id: attachment?.id,
+              uploaded: false,
+              local_url: attachment?.uri,
+              name: attachment?.uri.split('/').pop(),
+            }
+          : undefined,
+        recording: recordingURI
+          ? {
+              url: '',
+              id: recordingURI.split('/').pop(),
+              uploaded: false,
+              local_url: recordingURI,
+              isAudio: true,
+              name: recordingURI.split('/').pop(),
+            }
+          : undefined,
+      });
+
+      return updatedIssue;
     });
 
     setRecordedSteps(true);
@@ -360,60 +382,53 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
   const recordResolutionConfirmation = () => {
     const newStatus = statuses.find((x) => x.final_status === true);
     setIssue((prevIssue) => {
-        const updatedIssue = {
-            ...prevIssue,
-            research_result: resolution,
-            status : newStatus,
-            comments: [
-                ...prevIssue.comments,
-                {
-                    name: prevIssue.reporter.name,
-                    id: eadl._id,
-                    comment: i18n.t('issue_was_resolved'),
-                    due_at: moment(),
-                    attachment: attachment.uri
-                      ? {
-                        url: '',
-                        id: attachment?.id,
-                        uploaded: false,
-                        local_url: attachment?.uri,
-                        name: attachment?.uri.split('/').pop(),
-                      }
-                      : undefined,
-                    recording: recordingURI
-                      ? {
-                        url: '',
-                        id: recordingURI.split('/').pop(),
-                        uploaded: false,
-                        local_url: recordingURI,
-                        isAudio: true,
-                        name: recordingURI.split('/').pop(),
-                      }
-                      : undefined,
-                },
-            ],
-        };
-        return updatedIssue;
+      const updatedIssue = {
+        ...prevIssue,
+        research_result: resolution,
+        status: newStatus,
+        comments: [
+          ...prevIssue.comments,
+          {
+            name: prevIssue.reporter.name,
+            id: eadl._id,
+            comment: i18n.t('issue_was_resolved'),
+            due_at: moment(),
+            attachment: attachment.uri
+              ? {
+                  url: '',
+                  id: attachment?.id,
+                  uploaded: false,
+                  local_url: attachment?.uri,
+                  name: attachment?.uri.split('/').pop(),
+                }
+              : undefined,
+            recording: recordingURI
+              ? {
+                  url: '',
+                  id: recordingURI.split('/').pop(),
+                  uploaded: false,
+                  local_url: recordingURI,
+                  isAudio: true,
+                  name: recordingURI.split('/').pop(),
+                }
+              : undefined,
+          },
+        ],
+      };
+      return updatedIssue;
     });
     _hideRecordResolutionDialog();
     setHasActions(true);
   };
 
   const saveIssueStatus = (newStatus, type = 'none') => {
- 
-    // only add/update reject_reason if type == 'rejected'
-    // if (type === 'rejected') {
-    //   updatedIssue = {
-    //     ...updatedIssue,
-    //     reject_reason: reason,
-    //   };
-    // }
-    console.log("toSaveIssue.comments : ", issue.comments);
+    console.log('toSaveIssue.comments : ', issue.comments);
     LocalGRMDatabase.upsert(issue._id, (doc) => {
       doc = issue;
-      console.log("saving issues +++");
+      console.log('saving issues +++');
       return doc;
-    }).then(() => {
+    })
+      .then(() => {
         updateActionButtons();
         if (type === 'accept') {
           setAcceptedDialog(true);
@@ -428,7 +443,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
         console.log('Save issues error', err);
       });
   };
-
 
   useEffect(() => {
     function _isIssueAssignedToMe() {
@@ -461,8 +475,17 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
             {issue.intake_date && currentDate.diff(issue.intake_date, 'days')} {i18n.t('days_ago')}
           </Text>
           <Text style={styles.stepDescription}>
-            {i18n.t('status_label')}: <Text
-            style={{ color: ((issue.status?.id === 1 || issue.status?.id === 2) ? colors.inProgress : colors.primary) }}>{issue.status?.name}</Text>
+            {i18n.t('status_label')}:{' '}
+            <Text
+              style={{
+                color:
+                  issue.status?.id === 1 || issue.status?.id === 2
+                    ? colors.inProgress
+                    : colors.primary,
+              }}
+            >
+              {issue.status?.name}
+            </Text>
           </Text>
           <Text style={styles.stepNote}>{issue.description?.substring(0, 170)}</Text>
           <View style={styles.optionButtonContainer}>
@@ -477,187 +500,59 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
             </Button>
 
             {/* THROUGH THOSE BUTTONS OYU CAN MAKE A WHATSAPP CALL, PHONE CALL AND SEND EMAIL TO THE COMPLAINER */}
-            {issue.contact_information && issue.contact_information.contact !== '*' &&
-            (
+            {issue.contact_information && issue.contact_information.contact !== '*' && (
               <>
-                {issue.contact_information.type === 'phone_number' ?
-                  (
-                    <IconButton
-                      icon="phone"
-                      color={colors.primary}
-                      size={35}
-                      onPress={() => phoneCall()}
-                    />
-                  ) : issue.contact_information.type === 'whatsapp' ?
-                    (
-                      <IconButton
-                        icon="whatsapp"
-                        color={colors.primary}
-                        size={35}
-                        onPress={() => whatsApp()}
-                      />
-                    ) : (<></>)
-                }
-              </>
-            )
-            }
-
-          </View>
-
-          {/*<View style={styles.ratingInfoSection}>
-            {
-              !issues.rating ?
-                (
-                  <Text style={styles.radioLabel}>{i18n.t('not_rate_yet')}</Text>
+                {issue.contact_information.type === 'phone_number' ? (
+                  <IconButton
+                    icon="phone"
+                    color={colors.primary}
+                    size={35}
+                    onPress={() => phoneCall()}
+                  />
+                ) : issue.contact_information.type === 'whatsapp' ? (
+                  <IconButton
+                    icon="whatsapp"
+                    color={colors.primary}
+                    size={35}
+                    onPress={() => whatsApp()}
+                  />
                 ) : (
-                  <Text style={styles.radioLabel}>{i18n.t(`satisfaction_level_${issues.rating}`)}</Text>
-                )
-            }
-            <StarRating
-              starSize={30}
-              rating={() => issues.rating ? issues.rating : 0}
-              maxStars={5}
-              onChange={() => null}
-              emptyColor="#dddddd"/>
-
-          </View>*/}
-
-          {/* ACTION BUTTONS */}
-          <View style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}>
-            {/* <TouchableOpacity
-              onPress={() => _showDialog()}
-              disabled={!isAcceptEnabled}
-              style={{
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginVertical: 10,
-              }}
-            >
-              <Text style={styles.subtitle}>{i18n.t('accept_issue')}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <AntDesign
-                  style={{ marginRight: 5 }}
-                  name="rightsquare"
-                  size={35}
-                  color={isAcceptEnabled ? colors.primary : colors.disabled}
-                />
-                <Feather name="help-circle" size={24} color="gray"/>
-              </View>
-            </TouchableOpacity> */}
-
-            <TouchableOpacity
-              onPress={_showRejectDialog}
-              disabled={rejectedDialog || hasActions}
-              style={{
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginVertical: 10,
-              }}
-            >
-              <Text style={styles.subtitle}>{i18n.t('reject_issue')}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <AntDesign
-                  style={{ marginRight: 5 }}
-                  name="rightsquare"
-                  size={35}
-                  color={!rejectedDialog && !hasActions ? colors.primary : colors.disabled}
-                />
-                <Feather name="help-circle" size={24} color="gray"/>
-              </View>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={_showRecordStepsDialog}
-              disabled={!isRecordResolutionEnabled }
-              style={{
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginVertical: 10,
-              }}
-            >
-              <Text style={styles.subtitle}>{i18n.t('record_steps_taken')}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <AntDesign
-                  style={{ marginRight: 5 }}
-                  name="rightsquare"
-                  size={35}
-                  color={isRecordResolutionEnabled ? colors.primary : colors.disabled}
-                />
-                <Feather name="help-circle" size={24} color="gray"/>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={_showRecordResolutionDialog}
-              disabled={!isRecordResolutionEnabled}
-              style={{
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginVertical: 10,
-              }}
-            >
-              <Text style={styles.subtitle}>{i18n.t('record_resolution')}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <AntDesign
-                  style={{ marginRight: 5 }}
-                  name="rightsquare"
-                  size={35}
-                  color={isRecordResolutionEnabled ? colors.primary : colors.disabled}
-                />
-                <Feather name="help-circle" size={24} color="gray"/>
-              </View>
-            </TouchableOpacity>
-
-            {/* <TouchableOpacity
-              onPress={_showRatingDialog}
-              disabled={!isRateAppealEnabled}
-              style={{
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginVertical: 10,
-              }}
-            >
-              <Text style={styles.subtitle}>{i18n.t('rate_appeal')}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <AntDesign
-                  style={{ marginRight: 5 }}
-                  name="rightsquare"
-                  size={35}
-                  color={isRateAppealEnabled ? colors.primary : colors.disabled}
-                />
-                <Feather name="help-circle" size={24} color="gray"/>
-              </View>
-            </TouchableOpacity> */}
+                  <></>
+                )}
+              </>
+            )}
           </View>
-            <TouchableOpacity
-              onPress={_showEscalateDialog}
-              disabled={disableEscalation || !isRecordResolutionEnabled}
-              style={{
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginVertical: 10,
-                padding: 15,
-              }}
-            >
-              <Text style={styles.subtitle}>{i18n.t('escalate')}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <AntDesign
-                  style={{ marginRight: 5 }}
-                  name="rightsquare"
-                  size={35}
-                  color={
-                    !disableEscalation && isRecordResolutionEnabled ? colors.primary : colors.disabled
-                  }
-                />
-                <Feather name="help-circle" size={24} color="gray"/>
-              </View>
-            </TouchableOpacity>
+          {/* ACTION BUTTONS */}
+          <View
+            style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}
+          >
+            {/* Actions */}
+            <ActionButton
+              label={i18n.t('accept_issue')}
+              onShowDialog={_showDialog}
+              isEnabled={isAcceptEnabled}
+            />
+            <ActionButton
+              label={i18n.t('reject_issue')}
+              onShowDialog={_showRejectDialog}
+              isEnabled={!rejectedDialog && !hasActions}
+            />
+            <ActionButton
+              label={i18n.t('record_steps_taken')}
+              onShowDialog={_showRecordStepsDialog}
+              isEnabled={isRecordResolutionEnabled}
+            />
+            <ActionButton
+              label={i18n.t('record_resolution')}
+              onShowDialog={_showRecordResolutionDialog}
+              isEnabled={isRecordResolutionEnabled}
+            />
+          </View>
+          <ActionButton
+            label={i18n.t('escalate')}
+            onShowDialog={_showEscalateDialog}
+            isEnabled={!disableEscalation && isRecordResolutionEnabled}
+          />
         </View>
       </KeyboardAvoidingView>
 
@@ -666,9 +561,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
         <Dialog visible={rateAppealDialog} onDismiss={_hideRateAppealDialog}>
           <Dialog.Title>{i18n.t('confirmation')}?</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>
-              {i18n.t('confirm_your_choice')}
-            </Paragraph>
+            <Paragraph>{i18n.t('confirm_your_choice')}</Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
@@ -703,9 +596,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
         <Dialog visible={ratingDialog} onDismiss={_hideRatingDialog}>
           <Dialog.Title>{i18n.t('rating')}?</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>
-              {i18n.t('rate_issue')}
-            </Paragraph>
+            <Paragraph>{i18n.t('rate_issue')}</Paragraph>
             <RadioButton.Group
               onValueChange={(newValue) => {
                 if (newValue === rating) {
@@ -717,40 +608,28 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
               value={rating}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={5} uncheckedColor="#dedede" color={colors.primary}/>
-                <Text style={styles.radioLabel}>
-                  {i18n.t('satisfaction_level_5')}{' '}
-                </Text>
+                <RadioButton.Android value={5} uncheckedColor="#dedede" color={colors.primary} />
+                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_5')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={4} uncheckedColor="#dedede" color={colors.primary}/>
-                <Text style={styles.radioLabel}>
-                  {i18n.t('satisfaction_level_4')}{' '}
-                </Text>
+                <RadioButton.Android value={4} uncheckedColor="#dedede" color={colors.primary} />
+                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_4')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={3} uncheckedColor="#dedede" color={colors.primary}/>
-                <Text style={styles.radioLabel}>
-                  {i18n.t('satisfaction_level_3')}{' '}
-                </Text>
+                <RadioButton.Android value={3} uncheckedColor="#dedede" color={colors.primary} />
+                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_3')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={2} uncheckedColor="#dedede" color={colors.primary}/>
-                <Text style={styles.radioLabel}>
-                  {i18n.t('satisfaction_level_2')}{' '}
-                </Text>
+                <RadioButton.Android value={2} uncheckedColor="#dedede" color={colors.primary} />
+                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_2')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={1} uncheckedColor="#dedede" color={colors.primary}/>
-                <Text style={styles.radioLabel}>
-                  {i18n.t('satisfaction_level_1')}{' '}
-                </Text>
+                <RadioButton.Android value={1} uncheckedColor="#dedede" color={colors.primary} />
+                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_1')} </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={0} uncheckedColor="#dedede" color={colors.primary}/>
-                <Text style={styles.radioLabel}>
-                  {i18n.t('satisfaction_level_0')}{' '}
-                </Text>
+                <RadioButton.Android value={0} uncheckedColor="#dedede" color={colors.primary} />
+                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_0')} </Text>
               </View>
             </RadioButton.Group>
           </Dialog.Content>
@@ -782,13 +661,9 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
         <Dialog visible={rejectDialog} onDismiss={_hideRejectDialog}>
           <Dialog.Content>
             {!rejectedDialog ? (
-              <Paragraph>
-                {i18n.t('you_are_rejecting')}
-              </Paragraph>
+              <Paragraph>{i18n.t('you_are_rejecting')}</Paragraph>
             ) : (
-              <Paragraph>
-                {i18n.t('complaint_rejected')}
-              </Paragraph>
+              <Paragraph>{i18n.t('complaint_rejected')}</Paragraph>
             )}
             {!rejectedDialog && (
               <View>
@@ -800,7 +675,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
                   onChangeText={onChangeReason}
                   value={reason}
                 />
-                <AddAttachmentCard 
+                <AddAttachmentCard
                   theme={theme}
                   onAttachmentChange={(a, r) => {
                     setAttachment(a);
@@ -808,7 +683,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
                   }}
                 />
               </View>
-
             )}
           </Dialog.Content>
           {!rejectedDialog ? (
@@ -855,13 +729,9 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           {!acceptedDialog && <Dialog.Title>{i18n.t('accept_issue')}?</Dialog.Title>}
           <Dialog.Content>
             {!acceptedDialog ? (
-              <Paragraph>
-                {i18n.t('are_you_accepting')}
-              </Paragraph>
+              <Paragraph>{i18n.t('are_you_accepting')}</Paragraph>
             ) : (
-              <Paragraph>
-                {i18n.t('you_have_accepted')}
-              </Paragraph>
+              <Paragraph>{i18n.t('you_have_accepted')}</Paragraph>
             )}
           </Dialog.Content>
           {!acceptedDialog ? (
@@ -906,13 +776,9 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
         <Dialog visible={escalateDialog} onDismiss={_hideEscalateDialog}>
           <Dialog.Content>
             {!escalatedDialog ? (
-              <Paragraph>
-                {i18n.t('you_are_escalating')}
-              </Paragraph>
+              <Paragraph>{i18n.t('you_are_escalating')}</Paragraph>
             ) : (
-              <Paragraph>
-                {i18n.t('escalated_text')}
-              </Paragraph>
+              <Paragraph>{i18n.t('escalated_text')}</Paragraph>
             )}
             {!escalatedDialog && (
               <TextInput
@@ -923,11 +789,11 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
                 onChangeText={onChangeEscalateComment}
               />
             )}
-            <AddAttachmentCard 
+            <AddAttachmentCard
               theme={theme}
               onAttachmentChange={(a, r) => {
-              setAttachment(a);
-              setRecordingURI(r);
+                setAttachment(a);
+                setRecordingURI(r);
               }}
             />
           </Dialog.Content>
@@ -977,13 +843,9 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
         <Dialog visible={recordStepsDialog} onDismiss={_hideRecordStepsDialog}>
           <Dialog.Content>
             {!recordedSteps ? (
-              <Paragraph>
-                {i18n.t('record_steps_text')}
-              </Paragraph>
+              <Paragraph>{i18n.t('record_steps_text')}</Paragraph>
             ) : (
-              <Paragraph>
-                {i18n.t('recorded_comment')}
-              </Paragraph>
+              <Paragraph>{i18n.t('recorded_comment')}</Paragraph>
             )}
             {!recordedSteps && (
               <TextInput
@@ -994,11 +856,11 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
                 onChangeText={onChangeComment}
               />
             )}
-            <AddAttachmentCard 
+            <AddAttachmentCard
               theme={theme}
               onAttachmentChange={(a, r) => {
-              setAttachment(a);
-              setRecordingURI(r);
+                setAttachment(a);
+                setRecordingURI(r);
               }}
             />
           </Dialog.Content>
@@ -1073,11 +935,11 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
                 {'\n'}"{resolution}"
               </Text>
             )}
-            <AddAttachmentCard 
+            <AddAttachmentCard
               theme={theme}
               onAttachmentChange={(a, r) => {
-              setAttachment(a);
-              setRecordingURI(r);
+                setAttachment(a);
+                setRecordingURI(r);
               }}
             />
           </Dialog.Content>

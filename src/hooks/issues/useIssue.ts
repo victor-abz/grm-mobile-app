@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as IssueService from '../../services/issues/IssueService';
-import { Issue } from "../../models/issues/Issue";
+import type { Issue } from "../../models/issues/Issue";
 
 export function useIssue() {
   const [issueList, setIssueList] = useState<Issue[]>()
@@ -17,7 +17,14 @@ export function useIssue() {
         setIssueList(issuesList);
       }
       setLoading(false);
-    }
+  }
+  
+  const createIssue = async (issue: Issue) => {
+    setLoading(true)
+    const createdIssue = await IssueService.createIssue(issue);
+    setLoading(false);
+    return createdIssue;
+  }
     
-    return [issueList, loading]
+  return { issueList, loading, createIssue }
 }
