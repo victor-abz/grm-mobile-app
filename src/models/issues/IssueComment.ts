@@ -1,7 +1,5 @@
-import { Base } from "../Base";
-import { Attachment } from "../Attachment";
 import { Model } from "@nozbe/watermelondb";
-import { json, text, field } from "@nozbe/watermelondb/decorators";
+import { field, text } from "@nozbe/watermelondb/decorators";
 import { TABLE_NAMES } from "../../migrations/tableName";
 
 
@@ -15,10 +13,10 @@ export interface IssueComment {
 export class IssueCommentLocalModel extends Model {
   static table = TABLE_NAMES.issueComment;
 
-  // @ts-ignore
-  @text('comment') comment;
-  // @ts-ignore
-  @text('due_date') due_date;
-  // @ts-ignore
-  @text('parent_id') parent_id;
+  @text('comment_text') comment_text;
+  @field('created_date') created_date;
+  @field('deleted_date') deleted_date;
+  @field('comment_due_date') comment_due_date;
+  @field('sync_date') sync_date;
+  @field('updated_date') updated_date; // Corrected: use @field for 'number' type
 }

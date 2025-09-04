@@ -51,7 +51,7 @@ export class SyncService {
         IssueLocalModel,
         IssueTypeLocalModel,
         IssueCategoryLocalModel,
-        IssueCommentLocalModel,
+        IssueCommentLocalModel
       ],
     });
 
