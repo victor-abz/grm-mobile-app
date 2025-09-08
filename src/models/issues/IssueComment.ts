@@ -13,10 +13,18 @@ export interface IssueComment {
 export class IssueCommentLocalModel extends Model {
   static table = TABLE_NAMES.issueComment;
 
+  // @ts-ignore
   @text('comment_text') comment_text;
+  // @ts-ignore
   @field('created_date') created_date;
+  // @ts-ignore
   @field('deleted_date') deleted_date;
+  // @ts-ignore
   @field('comment_due_date') comment_due_date;
+  // @ts-ignore
   @field('sync_date') sync_date;
-  @field('updated_date') updated_date; // Corrected: use @field for 'number' type
+  // @ts-ignore
+  @field('updated_date') updated_date;
+  // @ts-ignore
+  @field('parent_id') parent_id;
 }

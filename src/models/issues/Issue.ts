@@ -1,8 +1,8 @@
 import { Base } from "../Base";
-import { Attachment } from "../Attachment";
 import { Model } from "@nozbe/watermelondb";
 import { json, text, field } from "@nozbe/watermelondb/decorators";
 import { TABLE_NAMES } from "../../migrations/tableName";
+import { IssueAttachment } from "./IssueAttachment";
 
 
 export enum ContactMedium {
@@ -30,7 +30,7 @@ export interface Citizen extends Base {
 export interface Issue extends Base {
   administrative_region: Base,
   assignee: Base,
-  attachments: Array<Attachment>,
+  attachments: Array<IssueAttachment>,
   auto_increment_id: string,
   category: Base,
   citizen: Citizen,

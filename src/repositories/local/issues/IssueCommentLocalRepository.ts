@@ -9,9 +9,10 @@ export class IssueCommentLocalRepository extends BaseLocalRepository<IssueCommen
 
   fromLocalToRemote(localModel: IssueCommentLocalModel): IssueComment {
     return {
+      parent_id: localModel.parent_id,
       id: localModel.id,
-      comment: localModel.comment,
-      due_date: localModel.due_date
+      comment: localModel.comment_text,
+      due_date: localModel.comment_due_date
     };
   }
 }
