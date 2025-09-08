@@ -5,9 +5,9 @@ import { Base } from "../Base";
 
 export interface IssueAttachment extends Base {
   id: string;
-  fileName: string;
-  isAudio: boolean;
-  localUrl: string;
+  file_name: string;
+  is_audio: boolean;
+  local_url: string;
   url?: string;
-  parentId: string,
+  parent_id: string,
 }
