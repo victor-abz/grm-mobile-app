@@ -9,7 +9,7 @@ export class IssueStatusLocalRepository extends BaseLocalRepository<IssueStatus>
 
   fromLocalToRemote(localModel: IssueStatusLocalModel): IssueStatus {
     return {
-      id: localModel.id,
+      id: String(localModel.id).replace(/[^a-zA-Z0-9-]/g, ''),
       name: localModel.name,
       created_date: localModel.created_date,
       final_status: localModel.final_status,

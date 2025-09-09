@@ -3,6 +3,7 @@ import { TABLE_NAMES } from "../../migrations/tableName";
 import { IssueTypeLocalRepository } from "../../repositories/local/issues/IssueTypeLocalRepository";
 import IssueTypeRemoteRepository from "../../repositories/remote/issues/IssueTypeRemoteRepository";
 import { IssueType } from "../../models/issues/IssueType";
+import { Syncable } from '../shared/SyncService';
 
 const localRepository = new IssueTypeLocalRepository();
 const remoteRepository = new IssueTypeRemoteRepository();
@@ -17,7 +18,7 @@ export async function fetchIssueTypesList(): Promise<IssueType[] | null> {
   }
 }
 
-export const issueTypeSyncable = {
+export const issueTypeSyncable: Syncable = {
   pushChanges: ({ changes, lastPulledAt }) =>
     issueTypeService.pushChanges({ changes, lastPulledAt }),
   pullChanges: ({ tableName, lastPulledAt }) => issueTypeService.pullChanges({ tableName, lastPulledAt }),

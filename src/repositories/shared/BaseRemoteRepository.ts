@@ -6,6 +6,7 @@ export abstract class BaseRemoteRepository<T> {
   abstract delete(id: string): Promise<void>;
 
   abstract fetchAll(
+    endpointType: string | null,
     sortBy: string | null,
     sortOrder: SortOrder | null,
     limit: number | null,

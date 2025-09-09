@@ -46,6 +46,7 @@ export abstract class BaseLocalRepository<T> {
     if (lastPulledAt) {
       queryClauses.push(Q.where('created_date', Q.gte(lastPulledAt)));
     }
+    console.log("DATABASE", syncServiceInstance.database);
 
     const dbInstance = syncServiceInstance.database
     const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
@@ -54,7 +55,7 @@ export abstract class BaseLocalRepository<T> {
 
   // @ts-ignore
   @reader
-  async findOne(id: string | number): Promise<T> {
+  async findOne(id: string): Promise<T> {
     const dbInstance = syncServiceInstance.database
     return this.fromLocalToRemote(await dbInstance.get(this.tableName).find(id));
   }
@@ -70,12 +71,15 @@ export abstract class BaseLocalRepository<T> {
   }
 
   // @ts-ignore
-  @writer
+  
   async upsert(item: Model): Promise<void> {
     const dbInstance = syncServiceInstance.database
 
     await dbInstance.write(async () => {
       const dbItem = await dbInstance.get(this.tableName).find(item.id);
+      console.log("OLD INSTANCE:", dbItem);
+      console.log("NEW INSTANCE", item);
+      
       await dbItem.update(() => {
         Object.assign(dbItem, item);
       });

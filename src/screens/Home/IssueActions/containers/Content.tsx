@@ -20,10 +20,12 @@ import {
 import moment from 'moment';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
-import { LocalGRMDatabase } from '../../../../db/databaseManager';
 import { i18n } from '../../../../translations/i18n';
 import AddAttachmentCard from '../../GRM/components/AddAttachmentCard';
 import ActionButton from '../components/ActionButton';
+import { Issue } from '../../../../models/issues/Issue';
+import { IssueStatus } from '../../../../models/issues/IssueStatus';
+import { compareIdsEquivalence } from '../../../../utils/utils';
 
 const theme = {
   roundness: 12,
@@ -38,8 +40,17 @@ const theme = {
 const WHATSAPP_LINK = 'http://api.whatsapp.com/send?phone=223';
 const PHONE_CALL_LINK = 'tel://+223';
 
-function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }) {
-  const [issue, setIssue] = useState(item);
+type Props = {
+  currentIssue: any;
+  navigation: any;
+  loading: boolean;
+  statuses: IssueStatus[];
+  eadl: any;
+  updateIssue: (issue: Issue) => Promise<Issue>;
+};
+
+function Content({ currentIssue, navigation, loading, statuses = [], eadl, updateIssue }: Props) {
+  const [issue, setIssue] = useState(currentIssue);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
 
@@ -107,32 +118,25 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
 
   const updateActionButtons = () => {
     function _isAcceptEnabled(x) {
+      console.log('INITIAL STATUS DEBUG', issue.status, x.id, issue.escalate_flag);
+
+      console.log(x.id);
       if (x.initial_status && isIssueAssignedToMe) {
-        if (typeof issue.status?.id === 'number') {
-          return JSON.stringify(issue.status?.id) === x.id;
-        } else {
-          return issue.status?.id === x.id;
-        }
+        return compareIdsEquivalence(issue.status?.id, x.id);
       }
     }
 
     function _isRecordResolutionEnabled(x) {
+      console.log('OPEN STATUS DEBUG', issue.status, x.id, issue.escalate_flag);
+      console.log(isIssueAssignedToMe);
       if (x.open_status && isIssueAssignedToMe) {
-        if (typeof issue.status?.id === 'number') {
-          return JSON.stringify(issue.status?.id) === x.id && !issue.escalate_flag;
-        } else {
-          return issue.status?.id === x.id && !issue.escalate_flag;
-        }
+        return compareIdsEquivalence(issue.status?.id, x.id) && !issue.escalate_flag;
       }
     }
 
     function _isRateAppealEnabled(x) {
       if (x.final_status && !isIssueAssignedToMe) {
-        if (typeof issue.status?.id === 'number') {
-          return JSON.stringify(issue.status?.id) === x.id;
-        } else {
-          return issue.status?.id === x.id;
-        }
+        return compareIdsEquivalence(issue.status?.id, x.id);
       }
     }
 
@@ -146,6 +150,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
     const hasComments = issue.comments && issue.comments.length > 0;
     const hasEscalated = issue.escalate_flag;
     const hasRejected = issue.reject_flag;
+
 
     setHasActions(hasComments || hasEscalated || hasRejected);
   };
@@ -245,7 +250,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
     setIsRateAppealEnabled(false);
 
     showToast(i18n.t('issue_rejected_successfully'));
-    saveIssueStatus(newStatus, 'reject');
+    saveIssueStatus('reject');
   };
 
   const rateIssue = () => {
@@ -327,6 +332,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
         ],
       };
       console.log('escalate : ', updatedIssue.comments);
+      updateIssue(updatedIssue);
       return updatedIssue;
     });
     setDisableEscalation(true);
@@ -381,7 +387,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
 
   const recordResolutionConfirmation = () => {
     const newStatus = statuses.find((x) => x.final_status === true);
-    setIssue((prevIssue) => {
+    setIssue(async (prevIssue) => {
       const updatedIssue = {
         ...prevIssue,
         research_result: resolution,
@@ -415,55 +421,55 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           },
         ],
       };
-      return updatedIssue;
+      try {
+        await updateIssue(updatedIssue);
+        return updatedIssue;
+      } catch (error) {
+        console.error('updateIssue failed:', error);
+        return prevIssue;
+      }
     });
     _hideRecordResolutionDialog();
     setHasActions(true);
   };
 
-  const saveIssueStatus = (newStatus, type = 'none') => {
+  const saveIssueStatus = async (type = 'none') => {
     console.log('toSaveIssue.comments : ', issue.comments);
-    LocalGRMDatabase.upsert(issue._id, (doc) => {
-      doc = issue;
-      console.log('saving issues +++');
-      return doc;
-    })
-      .then(() => {
-        updateActionButtons();
-        if (type === 'accept') {
-          setAcceptedDialog(true);
-        } else if (type === 'reject') {
-          setRejectedDialog(true);
-        } else if (type === 'record_resolution') {
-          setRecordedResolution(false);
-          _hideRecordResolutionDialog();
-        }
-      })
-      .catch((err) => {
-        console.log('Save issues error', err);
-      });
+    console.log('Temporarily disabled action: [POUCHDB issue upsert] ');
+    try {
+      await updateIssue(issue);
+      updateActionButtons();
+      if (type === 'accept') {
+        setAcceptedDialog(true);
+      } else if (type === 'reject') {
+        setRejectedDialog(true);
+      } else if (type === 'record_resolution') {
+        setRecordedResolution(false);
+        _hideRecordResolutionDialog();
+      }
+    } catch (error) {
+      console.log('Save issues error', error);
+    }
   };
 
   useEffect(() => {
-    function _isIssueAssignedToMe() {
-      if (issue.assignee && issue.assignee.id) {
-        return issue.reporter.id === issue.assignee.id || issue.assignee.id === eadl?._id;
-      }
-      return false;
-    }
-
-    setIsIssueAssignedToMe(_isIssueAssignedToMe());
+    if (loading) return;
+    const isAssigned =
+      issue.assignee?.id &&
+      (issue.reporter.id === issue.assignee.id || issue.assignee.id === eadl?._id);
+    setIsIssueAssignedToMe(isAssigned);
 
     if (issue.citizen_type !== 1) {
       setCitizenName(issue.citizen);
-    } else if (issue.citizen_type === 1) {
-      setCitizenName(_isIssueAssignedToMe() ? issue.citizen : 'Anonymous');
+    } else {
+      setCitizenName(isAssigned ? issue.citizen : 'Anonymous');
     }
 
     if (issue.rating) {
       setRating(issue.rating);
     }
     updateActionButtons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   });
 
   return (
@@ -535,7 +541,7 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
             <ActionButton
               label={i18n.t('reject_issue')}
               onShowDialog={_showRejectDialog}
-              isEnabled={!rejectedDialog && !hasActions}
+              isEnabled={(!rejectedDialog && !hasActions) || isAcceptEnabled}
             />
             <ActionButton
               label={i18n.t('record_steps_taken')}
@@ -555,7 +561,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           />
         </View>
       </KeyboardAvoidingView>
-
       {/* FEEDBACK AND APPEAL MODAL */}
       <Portal>
         <Dialog visible={rateAppealDialog} onDismiss={_hideRateAppealDialog}>
@@ -590,7 +595,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           </Dialog.Actions>
         </Dialog>
       </Portal>
-
       {/* RATING MODAL */}
       <Portal>
         <Dialog visible={ratingDialog} onDismiss={_hideRatingDialog}>
@@ -655,7 +659,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           </Dialog.Actions>
         </Dialog>
       </Portal>
-
       {/* REJECT MODAL */}
       <Portal>
         <Dialog visible={rejectDialog} onDismiss={_hideRejectDialog}>
@@ -722,7 +725,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           )}
         </Dialog>
       </Portal>
-
       {/* ACCEPT MODAL */}
       <Portal>
         <Dialog visible={acceptDialog} onDismiss={_hideDialog}>
@@ -770,7 +772,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           )}
         </Dialog>
       </Portal>
-
       {/* ESCALATE MODAL */}
       <Portal>
         <Dialog visible={escalateDialog} onDismiss={_hideEscalateDialog}>
@@ -837,7 +838,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           )}
         </Dialog>
       </Portal>
-
       {/* RECORD STEPS MODAL */}
       <Portal>
         <Dialog visible={recordStepsDialog} onDismiss={_hideRecordStepsDialog}>
@@ -913,7 +913,6 @@ function Content({ item, navigation, loading, statuses = [], eadl, updateIssue }
           )}
         </Dialog>
       </Portal>
-
       <Portal>
         <Dialog visible={recordResolutionDialog} onDismiss={_hideRecordResolutionDialog}>
           <Dialog.Content>

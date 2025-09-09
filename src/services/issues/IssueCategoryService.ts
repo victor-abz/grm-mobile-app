@@ -3,6 +3,7 @@ import { TABLE_NAMES } from "../../migrations/tableName";
 import { IssueCategoryLocalRepository } from "../../repositories/local/issues/IssueCategoryLocalRepository";
 import IssueCategoryRemoteRepository from "../../repositories/remote/issues/IssueCategoryRemoteRepository";
 import { IssueCategory } from "../../models/issues/IssueCategory";
+import { Syncable } from '../shared/SyncService';
 
 const localRepository = new IssueCategoryLocalRepository();
 const remoteRepository = new IssueCategoryRemoteRepository();
@@ -17,7 +18,7 @@ export async function fetchIssueCategoriesList(): Promise<IssueCategory[] | null
     }
 }
 
-export const issueCategorySyncable = {
+export const issueCategorySyncable: Syncable = {
     pushChanges: ({ changes, lastPulledAt }) =>
       issueCategoryService.pushChanges({ changes, lastPulledAt }),
     pullChanges: ({ tableName, lastPulledAt }) => issueCategoryService.pullChanges({ tableName, lastPulledAt }),

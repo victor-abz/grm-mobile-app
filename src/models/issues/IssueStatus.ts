@@ -1,5 +1,5 @@
-import { Model } from '@nozbe/watermelondb';
-import { text, field } from '@nozbe/watermelondb/decorators';
+import { Model, Q } from '@nozbe/watermelondb';
+import { text, field, lazy } from '@nozbe/watermelondb/decorators';
 import { TABLE_NAMES } from "../../migrations/tableName";
 import { Base } from "../Base";
 
@@ -11,7 +11,7 @@ export interface IssueStatus extends Base {
 }
 
 export class IssueStatusLocalModel extends Model {
-  static table =  TABLE_NAMES.issueStatus;
+  static table = TABLE_NAMES.issueStatus;
 
   // @ts-ignore
   @text('created_date') created_date;
@@ -25,4 +25,5 @@ export class IssueStatusLocalModel extends Model {
   @field('rejected_status') rejected_status;
   // @ts-ignore
   @field('open_status') open_status;
+
 }

@@ -2,9 +2,51 @@ import { config } from "../../../../config.dev";
 import { BaseRemoteRepository } from "../../shared/BaseRemoteRepository";
 import { Issue } from "../../../models/issues/Issue";
 import request from "../../../utils/request";
+import { SortOrder } from "@nozbe/watermelondb/QueryDescription";
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
+  
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
+
+  /**
+   * Fetch all issues from a dynamic endpoint.
+   * @param endpointType 'assignee' | 'reporter' | etc.
+   */
+  async fetchAll(
+    endpointType: string | null,
+    sortBy: string | null,
+    sortOrder: SortOrder | null,
+    limit: number | null,
+    created_date: string | null,
+    update_date: string | null,
+    deleted_date: string | null
+  ): Promise<Issue[]> {
+    const params: Record<string, string> = {};
+console.log("ENDPOINT_TYPE", endpointType);
+
+    if (sortBy) params.sortBy = sortBy;
+    if (sortOrder) params.sortOrder = sortOrder;
+    if (limit) params.limit = limit.toString();
+    if (created_date) params.created_date = created_date;
+    if (update_date) params.update_date = update_date;
+    if (deleted_date) params.deleted_date = deleted_date;
+
+    const url = `${this.baseUrl}/${endpointType}`;
+
+    try {
+      const response = await request({
+        url,
+        method: 'GET',
+        params: new URLSearchParams(params),
+      });
+
+      const jsonData: any = response.data;
+      return jsonData.results || [];
+    } catch (error) {
+      console.error('Error fetching issues from remote', error.message);
+      return [];
+    }
+  }
 
   async create(item: Issue): Promise<Issue> {
     const body = {
@@ -52,31 +94,12 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       const jsonData: any = response.data;
       return jsonData.results;
     } catch (error) {
-      console.error("Error creating issue at remote", error.message);
+      console.error('Error creating issue at remote', error.message);
     }
   }
 
   async delete(id: string): Promise<void> {
     throw new Error('Method not implemented.');
-  }
-
-  async fetchAll(): Promise<Issue[]> {
-    const url = `${this.baseUrl}/list/`;
-    const requestOptions = {
-      url,
-      method: 'GET',
-      params: new URLSearchParams({ page: '1', pageSize: '20' }),
-    };
-    try {
-      const response = await request({
-        ...requestOptions,
-      });
-
-      const jsonData: any = response.data;
-      return jsonData.results;
-    } catch (error) {
-      console.error("Error at fetching issues from remote", error.message);
-    }
   }
 
   async fetchById(id: string): Promise<Issue> {

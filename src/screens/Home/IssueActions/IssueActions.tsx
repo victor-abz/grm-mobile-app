@@ -5,10 +5,12 @@ import Content from './containers/Content';
 import { styles } from './IssueActions.styles';
 import { LocalAdminLevelsDatabase } from '../../../db/databaseManager';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
+import { useIssue } from '../../../hooks/issues/useIssue';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;
   const { issueStatusList, loading: statusListLoading } = useIssueStatus();
+  const { updateIssue } = useIssue();
   const [loading, setLoading] = useState<boolean>(false);
   const [eadl, setEadl] = useState();
   const customStyles = styles();
@@ -33,6 +35,8 @@ function IssueActions({ route, navigation }) {
   }, [username]);
 
   useEffect(() => {
+    console.log("### ISSUE STATUSES LIST", issueStatusList);
+    
     if (statusListLoading) {
       setLoading(true);
     } else {
@@ -53,10 +57,10 @@ function IssueActions({ route, navigation }) {
       <Content
         loading={loading}
         eadl={eadl}
-        item={params.item}
+        currentIssue={params.item}
         navigation={navigation}
         statuses={issueStatusList}
-        updateIssue={params.updateIssue}
+        updateIssue={updateIssue}
       />
     </SafeAreaView>
   );

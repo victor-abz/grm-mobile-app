@@ -8,7 +8,7 @@ import { i18n } from "../../../../translations/i18n";
 import ListHeader from '../components/ListHeader';
 import moment from 'moment';
 
-function Content({ issues, eadl, statuses }) {
+function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('reported');
@@ -22,31 +22,34 @@ function Content({ issues, eadl, statuses }) {
   };
 
   useEffect(() => {
-    setIssues(issues);
-  }, []);
+    console.log(" Filtered issues", _issues);
+
+  }, [_issues]);
 
   useEffect(() => {
     let filteredIssues = [];
     let foundStatus;
-    switch (status) {
-      case 'assigned':
-        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id);
-        filteredIssues = sortByCreationDateDesc(filteredIssues);
-        break;
-      case 'reported':
-        filteredIssues = issues.filter((issue) => (issue.reporter && issue.reporter.id === eadl._id));
-        filteredIssues = sortByCreationDateDesc(filteredIssues);
-        break;
-      case 'resolved':
-        foundStatus = statuses.find((el) => el.final_status === true);
-        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id && issue.status.id === foundStatus.id);
-        filteredIssues = sortByCreationDateDesc(filteredIssues);
-        break;
-      default:
-        filteredIssues = _issues.map((issue) => issue);
+    if (assigneeIssueList || reporterIssueList) {
+      switch (status) {
+        case 'assigned':
+          filteredIssues = assigneeIssueList
+          filteredIssues = sortByCreationDateDesc(filteredIssues);
+          break;
+          case 'reported':
+          filteredIssues = reporterIssueList
+          filteredIssues = sortByCreationDateDesc(filteredIssues);
+          break;
+        case 'resolved':
+          foundStatus = statuses.find((el) => el.final_status === true);
+          filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id && issue.status.id === foundStatus.id);
+          filteredIssues = sortByCreationDateDesc(filteredIssues);
+          break;
+        default:
+          filteredIssues = _issues.map((issue) => issue);
+      }
     }
     setIssues(filteredIssues);
-  }, [status]);
+  }, [status, assigneeIssueList, reporterIssueList]);
 
   function Item({ item, onPress, backgroundColor, textColor }) {
     return (
@@ -175,7 +178,7 @@ function Content({ issues, eadl, statuses }) {
         data={_issues}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => item.id.toString()}
         extraData={selectedId}
       />
     </>

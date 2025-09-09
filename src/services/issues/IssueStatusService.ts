@@ -5,21 +5,27 @@ import {
 } from '../../repositories/local/issues/IssueStatusLocalRepository';
 import { IssueStatus } from '../../models/issues/IssueStatus';
 import { TABLE_NAMES } from "../../migrations/tableName";
+import { Syncable } from '../shared/SyncService';
+
+console.log("REPOSITORY DEFINITION");
 
 const localRepository = new IssueStatusLocalRepository();
 const remoteRepository = new IssueStatusRemoteRepository();
-
+  
 const issueStatusService = new BaseService<IssueStatus>(localRepository, remoteRepository);
 
-export async function fetchIssueStatusList(): Promise<IssueStatus[] | null> {
+export async function fetchIssueStatusList(): Promise<IssueStatus[]> {
   try {
-    return await issueStatusService.getAll();
+    const list = await issueStatusService.getAll();
+    console.log("### ISL at IS Service:", list);
+    
+    return list
   } catch (error) {
     console.error('Error syncing issues statuses:', error);
   }
 }
 
-export const issueStatusSyncable = {
+export const issueStatusSyncable: Syncable = {
   pushChanges: ({ changes, lastPulledAt }) =>
     issueStatusService.pushChanges({ changes, lastPulledAt }),
   pullChanges: ({ tableName, lastPulledAt }) => issueStatusService.pullChanges({ tableName, lastPulledAt }),

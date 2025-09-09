@@ -8,6 +8,7 @@ import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
 import { IssueLocalModel } from "../../models/issues/Issue";
 import { IssueTypeLocalModel } from "../../models/issues/IssueType";
 import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
+import { SyncDatabaseChangeSet } from '@nozbe/watermelondb/sync';
 
 const DB_NAME = "grm-db";
 
@@ -41,6 +42,7 @@ export class SyncService {
       dbName: DB_NAME,
       onSetUpError: error => {
         // Database failed to load -- offer the user to reload the app or log out
+        console.log("Watermelon Adapter set up Failed", error);
       }
     });
     this.database = new Database({
@@ -71,12 +73,15 @@ export class SyncService {
   }
 
   async syncAll(): Promise<void> {
+    console.log("SYNCING ALL");
+    
     if (!this.database) {
       throw new Error("Database not initialized. Call initDB() first.");
     }
 
+
     return await synchronize({
-        database: this.database,
+      database: this.database,
         pullChanges: async ({ lastPulledAt }) => {
           console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
           let changes = {};

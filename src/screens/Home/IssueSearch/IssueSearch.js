@@ -7,10 +7,12 @@ import { styles } from './IssueSearch.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
+import { useIssue } from '../../../hooks/issues/useIssue';
 
 function IssueSearch() {
   const customStyles = styles();
   const [issues, setIssues] = useState();
+  const { assigneeIssueList, reporterIssueList, loading: issueListLoading } = useIssue();
   const { issueStatusList, loading } = useIssueStatus();
   const [eadl, setEadl] = useState(false);
   const { session } = useSelector((state) => state.get('authentication').toObject());
@@ -34,7 +36,7 @@ function IssueSearch() {
   }, [username]);
 
   useEffect(() => {
-    // FETCH ISSUE CATEGORY
+    // FETCH ISSUE
     if (eadl) {
       LocalGRMDatabase.find({
         selector: {
@@ -58,11 +60,10 @@ function IssueSearch() {
     }
   }, [eadl]);
 
-  if (!issues)
-    return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
+  if (issueListLoading) return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content issues={issues} eadl={eadl} statuses={issueStatusList} />
+      <Content assigneeIssueList={assigneeIssueList} reporterIssueList={reporterIssueList} eadl={eadl} statuses={issueStatusList} />
     </SafeAreaView>
   );
 }

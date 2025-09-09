@@ -295,7 +295,7 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAttachmentCollapsed}>
           <View style={styles.collapsibleContent}>
-            { issue.attachments.map((attachment) => {
+            { issue.attachments && issue.attachments.map((attachment) => {
                 return (
                   <View style={{ flexDirection: 'row', maxWidth: '100%' , justifyContent: 'center'}}>
                     {(!attachment.isAudio && attachment.local_url) && (
