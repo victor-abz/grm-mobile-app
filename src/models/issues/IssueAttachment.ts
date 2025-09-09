@@ -11,3 +11,27 @@ export interface IssueAttachment extends Base {
   url?: string;
   parent_id: string,
 }
+
+export class IssueAttachmentLocalModel extends Model {
+  static table =  TABLE_NAMES.issueAttachment;
+
+  // @ts-ignore
+  @text('created_date') created_date;
+  // @ts-ignore
+  @field('deleted_date') deleted_date;
+  // @ts-ignore
+  @text('local_url') local_url;
+  // @ts-ignore
+  @text('url') url;
+  // @ts-ignore
+  @field('is_audio') is_audio;
+  // @ts-ignore
+  @text('file_name') file_name;
+  // @ts-ignore
+  @field('sync_date') sync_date;
+  // @ts-ignore
+  @field('updated_date') updated_date;
+  // @ts-ignore
+  @field('parent_id') parent_id;
+
+}

@@ -4,6 +4,7 @@ import { issueTableSchema } from "./v1/issue";
 import { issueCategoryTableSchema } from "./v1/issue_category";
 import { issueTypeTableSchema } from "./v1/issue_type";
 import { issueCommentTableSchema } from "./v1/issue_comment";
+import { issueAttachmentTableSchema } from "./v1/issue_attachment";
 
 export default appSchema({
   version: 1,
@@ -13,5 +14,6 @@ export default appSchema({
     issueCategoryTableSchema,
     issueTypeTableSchema,
     issueCommentTableSchema,
+    issueAttachmentTableSchema,
   ]
 })

@@ -48,8 +48,6 @@ export class SyncService {
       }
     });
 
-    console.log("Registered model classes:", modelClasses.map(m => m.name));
-
     this.database = new Database({
       adapter,
       modelClasses: [
@@ -57,7 +55,8 @@ export class SyncService {
         IssueLocalModel,
         IssueTypeLocalModel,
         IssueCategoryLocalModel,
-        IssueCommentLocalModel
+        IssueCommentLocalModel,
+        IssueAttachmentLocalModel,
       ],
     });
 
