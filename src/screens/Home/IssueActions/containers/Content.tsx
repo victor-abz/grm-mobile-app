@@ -460,24 +460,26 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   return (
     <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : null}>
-        {renderIssueDetailActions(
-          citizenName,
-          issue,
-          currentDate,
-          goToDetails,
-          phoneCall,
-          whatsApp,
-          _showDialog,
-          isAcceptEnabled,
-          _showRejectDialog,
-          rejectedDialog,
-          hasActions,
-          _showRecordStepsDialog,
-          isRecordResolutionEnabled,
-          _showRecordResolutionDialog,
-          _showEscalateDialog,
-          disableEscalation
-        )}
+        {
+          renderHeaderAndActions(
+            citizenName,
+            issue,
+            currentDate,
+            goToDetails,
+            phoneCall,
+            whatsApp,
+            _showDialog,
+            isAcceptEnabled,
+            _showRejectDialog,
+            rejectedDialog,
+            hasActions,
+            _showRecordStepsDialog,
+            isRecordResolutionEnabled,
+            _showRecordResolutionDialog,
+            _showEscalateDialog,
+            disableEscalation
+          )
+        }
       </KeyboardAvoidingView>
 
       {/* DIALOGS */}
@@ -551,7 +553,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
 
 export default Content;
 
-function renderIssueDetailActions(
+function renderHeaderAndActions(
   citizenName: string,
   issue: any,
   currentDate: moment.Moment,
