@@ -11,7 +11,6 @@ import { useIssue } from '../../../hooks/issues/useIssue';
 
 function IssueSearch() {
   const customStyles = styles();
-  const [issues, setIssues] = useState();
   const { assigneeIssueList, reporterIssueList, loading: issueListLoading } = useIssue();
   const { issueStatusList, loading } = useIssueStatus();
   const [eadl, setEadl] = useState(false);
@@ -34,31 +33,6 @@ function IssueSearch() {
         });
     }
   }, [username]);
-
-  useEffect(() => {
-    // FETCH ISSUE
-    if (eadl) {
-      LocalGRMDatabase.find({
-        selector: {
-          type: 'issue',
-          '$or': [
-            {
-              'reporter.name': eadl.representative.name,
-            },
-            {
-              'assignee.name': eadl.representative.name
-            }
-          ]
-        },
-      })
-        .then((result) => {
-          setIssues(result?.docs);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  }, [eadl]);
 
   if (issueListLoading) return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
   return (

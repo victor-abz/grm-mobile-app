@@ -1,31 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import { withObservables } from '@nozbe/watermelondb/react';
+import moment from 'moment';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
   ScrollView,
   Text,
-  KeyboardAvoidingView,
-  Platform,
   ToastAndroid,
-  Linking,
+  View,
 } from 'react-native';
-import {
-  Button,
-  Dialog,
-  Paragraph,
-  Portal,
-  TextInput,
-  RadioButton,
-  IconButton,
-} from 'react-native-paper';
-import moment from 'moment';
-import { colors } from '../../../../utils/colors';
-import { styles } from './Content.styles';
-import { i18n } from '../../../../translations/i18n';
-import AddAttachmentCard from '../../GRM/components/AddAttachmentCard';
-import ActionButton from '../components/ActionButton';
+import { Button, IconButton, Paragraph } from 'react-native-paper';
 import { Issue } from '../../../../models/issues/Issue';
 import { IssueStatus } from '../../../../models/issues/IssueStatus';
+import { i18n } from '../../../../translations/i18n';
+import { colors } from '../../../../utils/colors';
 import { compareIdsEquivalence } from '../../../../utils/utils';
+import AcceptDialog from '../components/AcceptDialog';
+import ActionButton from '../components/ActionButton';
+import AppealDialog from '../components/AppealDialog';
+import EscalateDialog from '../components/EscalateDialog';
+import RatingDialog from '../components/RatingDialog';
+import RecordResolutionDialog from '../components/RecordResolutionDialog';
+import RecordStepsDialog from '../components/RecordStepsDialog';
+import RejectDialog from '../components/RejectDialog';
+import { styles } from './Content.styles';
 
 const theme = {
   roundness: 12,
@@ -68,7 +68,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   const [recordedSteps, setRecordedSteps] = useState(false);
   const [recordedResolution, setRecordedResolution] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
-  const [citizenName, setCitizenName] = useState();
+  const [citizenName, setCitizenName] = useState("");
   const [reason, onChangeReason] = useState('');
   const [escalateComment, onChangeEscalateComment] = useState('');
   const [comment, onChangeComment] = useState('');
@@ -103,7 +103,6 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     setRateAppealDialog(true);
   };
   const _hideRateAppealDialog = () => setRateAppealDialog(false);
-  const _showRatingDialog = () => setRatingDialog(true);
   const _hideRatingDialog = () => setRatingDialog(false);
   const _hideDialog = () => setAcceptDialog(false);
   const _showRejectDialog = () => {
@@ -120,7 +119,6 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     function _isAcceptEnabled(x) {
       console.log('INITIAL STATUS DEBUG', issue.status, x.id, issue.escalate_flag);
 
-      console.log(x.id);
       if (x.initial_status && isIssueAssignedToMe) {
         return compareIdsEquivalence(issue.status?.id, x.id);
       }
@@ -128,7 +126,6 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
 
     function _isRecordResolutionEnabled(x) {
       console.log('OPEN STATUS DEBUG', issue.status, x.id, issue.escalate_flag);
-      console.log(isIssueAssignedToMe);
       if (x.open_status && isIssueAssignedToMe) {
         return compareIdsEquivalence(issue.status?.id, x.id) && !issue.escalate_flag;
       }
@@ -150,7 +147,6 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     const hasComments = issue.comments && issue.comments.length > 0;
     const hasEscalated = issue.escalate_flag;
     const hasRejected = issue.reject_flag;
-
 
     setHasActions(hasComments || hasEscalated || hasRejected);
   };
@@ -212,7 +208,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
         status: newStatus,
         reject_flag: true,
         comments: [
-          ...prevIssue.comments,
+          ...(prevIssue.comments ?? []),
           {
             name: prevIssue.reporter.name,
             id: eadl._id,
@@ -332,7 +328,6 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
         ],
       };
       console.log('escalate : ', updatedIssue.comments);
-      updateIssue(updatedIssue);
       return updatedIssue;
     });
     setDisableEscalation(true);
@@ -370,7 +365,6 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
 
       return updatedIssue;
     });
-
     setRecordedSteps(true);
     setHasActions(true);
   };
@@ -421,21 +415,12 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
           },
         ],
       };
-      try {
-        await updateIssue(updatedIssue);
-        return updatedIssue;
-      } catch (error) {
-        console.error('updateIssue failed:', error);
-        return prevIssue;
-      }
     });
     _hideRecordResolutionDialog();
     setHasActions(true);
   };
 
   const saveIssueStatus = async (type = 'none') => {
-    console.log('toSaveIssue.comments : ', issue.comments);
-    console.log('Temporarily disabled action: [POUCHDB issue upsert] ');
     try {
       await updateIssue(issue);
       updateActionButtons();
@@ -448,7 +433,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
         _hideRecordResolutionDialog();
       }
     } catch (error) {
-      console.log('Save issues error', error);
+      console.log('Save issue error', error);
     }
   };
 
@@ -475,521 +460,198 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   return (
     <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : null}>
-        <View style={{ padding: 23 }}>
-          <Text style={styles.stepDescription}>
-            {citizenName}, {issue.intake_date && moment(issue.intake_date).format('DD-MMM-YYYY')}{' '}
-            {issue.intake_date && currentDate.diff(issue.intake_date, 'days')} {i18n.t('days_ago')}
-          </Text>
-          <Text style={styles.stepDescription}>
-            {i18n.t('status_label')}:{' '}
-            <Text
-              style={{
-                color:
-                  issue.status?.id === 1 || issue.status?.id === 2
-                    ? colors.inProgress
-                    : colors.primary,
-              }}
-            >
-              {issue.status?.name}
-            </Text>
-          </Text>
-          <Text style={styles.stepNote}>{issue.description?.substring(0, 170)}</Text>
-          <View style={styles.optionButtonContainer}>
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center', margin: 24 }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={goToDetails}
-            >
-              {i18n.t('view_details')}
-            </Button>
-
-            {/* THROUGH THOSE BUTTONS OYU CAN MAKE A WHATSAPP CALL, PHONE CALL AND SEND EMAIL TO THE COMPLAINER */}
-            {issue.contact_information && issue.contact_information.contact !== '*' && (
-              <>
-                {issue.contact_information.type === 'phone_number' ? (
-                  <IconButton
-                    icon="phone"
-                    color={colors.primary}
-                    size={35}
-                    onPress={() => phoneCall()}
-                  />
-                ) : issue.contact_information.type === 'whatsapp' ? (
-                  <IconButton
-                    icon="whatsapp"
-                    color={colors.primary}
-                    size={35}
-                    onPress={() => whatsApp()}
-                  />
-                ) : (
-                  <></>
-                )}
-              </>
-            )}
-          </View>
-          {/* ACTION BUTTONS */}
-          <View
-            style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}
-          >
-            {/* Actions */}
-            <ActionButton
-              label={i18n.t('accept_issue')}
-              onShowDialog={_showDialog}
-              isEnabled={isAcceptEnabled}
-            />
-            <ActionButton
-              label={i18n.t('reject_issue')}
-              onShowDialog={_showRejectDialog}
-              isEnabled={(!rejectedDialog && !hasActions) || isAcceptEnabled}
-            />
-            <ActionButton
-              label={i18n.t('record_steps_taken')}
-              onShowDialog={_showRecordStepsDialog}
-              isEnabled={isRecordResolutionEnabled}
-            />
-            <ActionButton
-              label={i18n.t('record_resolution')}
-              onShowDialog={_showRecordResolutionDialog}
-              isEnabled={isRecordResolutionEnabled}
-            />
-          </View>
-          <ActionButton
-            label={i18n.t('escalate')}
-            onShowDialog={_showEscalateDialog}
-            isEnabled={!disableEscalation && isRecordResolutionEnabled}
-          />
-        </View>
+        {renderIssueDetailActions(
+          citizenName,
+          issue,
+          currentDate,
+          goToDetails,
+          phoneCall,
+          whatsApp,
+          _showDialog,
+          isAcceptEnabled,
+          _showRejectDialog,
+          rejectedDialog,
+          hasActions,
+          _showRecordStepsDialog,
+          isRecordResolutionEnabled,
+          _showRecordResolutionDialog,
+          _showEscalateDialog,
+          disableEscalation
+        )}
       </KeyboardAvoidingView>
-      {/* FEEDBACK AND APPEAL MODAL */}
-      <Portal>
-        <Dialog visible={rateAppealDialog} onDismiss={_hideRateAppealDialog}>
-          <Dialog.Title>{i18n.t('confirmation')}?</Dialog.Title>
-          <Dialog.Content>
-            <Paragraph>{i18n.t('confirm_your_choice')}</Paragraph>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button
-              theme={theme}
-              style={{
-                alignSelf: 'center',
-                backgroundColor: '#E74C3C',
-                paddingLeft: 15,
-                paddingRight: 15,
-              }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={_hideRateAppealDialog}
-            >
-              {i18n.t('no')}
-            </Button>
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center', margin: 24, paddingLeft: 15, paddingRight: 15 }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={appealIssue}
-            >
-              {i18n.t('yes')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-      {/* RATING MODAL */}
-      <Portal>
-        <Dialog visible={ratingDialog} onDismiss={_hideRatingDialog}>
-          <Dialog.Title>{i18n.t('rating')}?</Dialog.Title>
-          <Dialog.Content>
-            <Paragraph>{i18n.t('rate_issue')}</Paragraph>
-            <RadioButton.Group
-              onValueChange={(newValue) => {
-                if (newValue === rating) {
-                  setRating(0);
-                } else {
-                  setRating(newValue);
-                }
-              }}
-              value={rating}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={5} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_5')} </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={4} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_4')} </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={3} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_3')} </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={2} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_2')} </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={1} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_1')} </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-                <RadioButton.Android value={0} uncheckedColor="#dedede" color={colors.primary} />
-                <Text style={styles.radioLabel}>{i18n.t('satisfaction_level_0')} </Text>
-              </View>
-            </RadioButton.Group>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={_hideRatingDialog}
-            >
-              {i18n.t('cancel')}
-            </Button>
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center', margin: 24 }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={rateIssue}
-            >
-              {i18n.t('save_button_text')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-      {/* REJECT MODAL */}
-      <Portal>
-        <Dialog visible={rejectDialog} onDismiss={_hideRejectDialog}>
-          <Dialog.Content>
-            {!rejectedDialog ? (
-              <Paragraph>{i18n.t('you_are_rejecting')}</Paragraph>
-            ) : (
-              <Paragraph>{i18n.t('complaint_rejected')}</Paragraph>
-            )}
-            {!rejectedDialog && (
-              <View>
-                <TextInput
-                  multiline
-                  style={{ marginTop: 10 }}
-                  mode="outlined"
-                  theme={theme}
-                  onChangeText={onChangeReason}
-                  value={reason}
-                />
-                <AddAttachmentCard
-                  theme={theme}
-                  onAttachmentChange={(a, r) => {
-                    setAttachment(a);
-                    setRecordingURI(r);
-                  }}
-                />
-              </View>
-            )}
-          </Dialog.Content>
-          {!rejectedDialog ? (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={_hideRejectDialog}
-              >
-                {i18n.t('cancel')}
-              </Button>
-              <Button
-                disabled={reason === ''}
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={rejectIssue}
-              >
-                {i18n.t('submit')}
-              </Button>
-            </Dialog.Actions>
-          ) : (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={_hideRejectDialog}
-              >
-                {i18n.t('finished')}
-              </Button>
-            </Dialog.Actions>
-          )}
-        </Dialog>
-      </Portal>
-      {/* ACCEPT MODAL */}
-      <Portal>
-        <Dialog visible={acceptDialog} onDismiss={_hideDialog}>
-          {!acceptedDialog && <Dialog.Title>{i18n.t('accept_issue')}?</Dialog.Title>}
-          <Dialog.Content>
-            {!acceptedDialog ? (
-              <Paragraph>{i18n.t('are_you_accepting')}</Paragraph>
-            ) : (
-              <Paragraph>{i18n.t('you_have_accepted')}</Paragraph>
-            )}
-          </Dialog.Content>
-          {!acceptedDialog ? (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={_showRejectDialog}
-              >
-                {i18n.t('reject')}
-              </Button>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={acceptIssue}
-              >
-                {i18n.t('accept')}
-              </Button>
-            </Dialog.Actions>
-          ) : (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={_hideDialog}
-              >
-                {i18n.t('finished')}
-              </Button>
-            </Dialog.Actions>
-          )}
-        </Dialog>
-      </Portal>
-      {/* ESCALATE MODAL */}
-      <Portal>
-        <Dialog visible={escalateDialog} onDismiss={_hideEscalateDialog}>
-          <Dialog.Content>
-            {!escalatedDialog ? (
-              <Paragraph>{i18n.t('you_are_escalating')}</Paragraph>
-            ) : (
-              <Paragraph>{i18n.t('escalated_text')}</Paragraph>
-            )}
-            {!escalatedDialog && (
-              <TextInput
-                multiline
-                style={{ marginTop: 10 }}
-                mode="outlined"
-                theme={theme}
-                onChangeText={onChangeEscalateComment}
-              />
-            )}
-            <AddAttachmentCard
-              theme={theme}
-              onAttachmentChange={(a, r) => {
-                setAttachment(a);
-                setRecordingURI(r);
-              }}
-            />
-          </Dialog.Content>
-          {!escalatedDialog ? (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={_hideEscalateDialog}
-              >
-                {i18n.t('cancel')}
-              </Button>
-              <Button
-                disabled={escalateComment === ''}
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={escalateIssue}
-              >
-                {i18n.t('submit')}
-              </Button>
-            </Dialog.Actions>
-          ) : (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={() => {
-                  _hideEscalateDialog();
-                  setEscalatedDialog(false);
-                }}
-              >
-                {i18n.t('finished')}
-              </Button>
-            </Dialog.Actions>
-          )}
-        </Dialog>
-      </Portal>
-      {/* RECORD STEPS MODAL */}
-      <Portal>
-        <Dialog visible={recordStepsDialog} onDismiss={_hideRecordStepsDialog}>
-          <Dialog.Content>
-            {!recordedSteps ? (
-              <Paragraph>{i18n.t('record_steps_text')}</Paragraph>
-            ) : (
-              <Paragraph>{i18n.t('recorded_comment')}</Paragraph>
-            )}
-            {!recordedSteps && (
-              <TextInput
-                multiline
-                style={{ marginTop: 10 }}
-                mode="outlined"
-                theme={theme}
-                onChangeText={onChangeComment}
-              />
-            )}
-            <AddAttachmentCard
-              theme={theme}
-              onAttachmentChange={(a, r) => {
-                setAttachment(a);
-                setRecordingURI(r);
-              }}
-            />
-          </Dialog.Content>
-          {!recordedSteps ? (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={_hideRecordStepsDialog}
-              >
-                {i18n.t('cancel')}
-              </Button>
-              <Button
-                disabled={comment === ''}
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={recordStep}
-              >
-                {i18n.t('submit')}
-              </Button>
-            </Dialog.Actions>
-          ) : (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={() => {
-                  _hideRecordStepsDialog();
-                  setRecordedSteps(false);
-                }}
-              >
-                {i18n.t('finished')}
-              </Button>
-              {/* <Button
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={goToHistory}
-              >
-                {i18n.t('view_history')}
-              </Button> */}
-            </Dialog.Actions>
-          )}
-        </Dialog>
-      </Portal>
-      <Portal>
-        <Dialog visible={recordResolutionDialog} onDismiss={_hideRecordResolutionDialog}>
-          <Dialog.Content>
-            {!recordedResolution ? (
-              <Paragraph>{i18n.t('summarize_resolution')}</Paragraph>
-            ) : (
-              <Paragraph>{i18n.t('please_confirm_resolution')}</Paragraph>
-            )}
-            {!recordedResolution ? (
-              <TextInput
-                multiline
-                style={{ marginTop: 10 }}
-                mode="outlined"
-                theme={theme}
-                onChangeText={onChangeResolution}
-              />
-            ) : (
-              <Text>
-                {'\n'}"{resolution}"
-              </Text>
-            )}
-            <AddAttachmentCard
-              theme={theme}
-              onAttachmentChange={(a, r) => {
-                setAttachment(a);
-                setRecordingURI(r);
-              }}
-            />
-          </Dialog.Content>
-          {!recordedResolution ? (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={_hideRecordResolutionDialog}
-              >
-                {i18n.t('cancel')}
-              </Button>
-              <Button
-                disabled={resolution === ''}
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={recordResolution}
-              >
-                {i18n.t('submit')}
-              </Button>
-            </Dialog.Actions>
-          ) : (
-            <Dialog.Actions>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={() => setRecordedResolution(false)}
-              >
-                {i18n.t('cancel')}
-              </Button>
-              <Button
-                theme={theme}
-                style={{ alignSelf: 'center', margin: 24 }}
-                labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-                mode="contained"
-                onPress={recordResolutionConfirmation}
-              >
-                {i18n.t('confirm')}
-              </Button>
-            </Dialog.Actions>
-          )}
-        </Dialog>
-      </Portal>
+
+      {/* DIALOGS */}
+      <AppealDialog
+        visible={rateAppealDialog}
+        onDismiss={_hideRateAppealDialog}
+        onSubmit={appealIssue}
+      />
+      <RatingDialog
+        visible={ratingDialog}
+        rating={rating}
+        setRating={setRating}
+        onDismiss={_hideRatingDialog}
+        onSubmit={rateIssue}
+      />
+      <RejectDialog
+        visible={rejectDialog}
+        rejectedDialog={rejectedDialog}
+        reason={reason}
+        onChangeReason={onChangeReason}
+        attachment={attachment}
+        setAttachment={setAttachment}
+        setRecordingURI={setRecordingURI}
+        onDismiss={_hideRejectDialog}
+        onSubmit={rejectIssue}
+      />
+      <AcceptDialog
+        visible={acceptDialog}
+        acceptedDialogVisible={acceptedDialog}
+        _showRejectDialog={_showRejectDialog}
+        onSubmit={acceptIssue}
+        onDismiss={_hideDialog}
+      />
+      <EscalateDialog
+        visible={escalateDialog}
+        escalatedDialog={escalatedDialog}
+        onChangeEscalateComment={onChangeEscalateComment}
+        setAttachment={setAttachment}
+        setRecordingURI={setRecordingURI}
+        escalateComment={escalateComment}
+        setEscalatedDialog={setEscalatedDialog}
+        onSubmit={escalateIssue}
+        onDismiss={_hideEscalateDialog}
+      />
+      <RecordStepsDialog
+        visible={recordStepsDialog}
+        recordedSteps={recordedSteps}
+        onChangeComment={onChangeComment}
+        setAttachment={setAttachment}
+        setRecordingURI={setRecordingURI}
+        comment={comment}
+        setRecordedSteps={setRecordedSteps}
+        onSubmit={recordStep}
+        onDismiss={_hideRecordStepsDialog}
+      />
+      <RecordResolutionDialog
+        visible={recordResolutionDialog}
+        recordedResolution={recordedResolution}
+        onChangeResolution={onChangeResolution}
+        resolution={resolution}
+        setAttachment={setAttachment}
+        setRecordingURI={setRecordingURI}
+        recordResolution={recordResolution}
+        setRecordedResolution={setRecordedResolution}
+        onSubmit={recordResolutionConfirmation}
+        onDismiss={_hideRecordResolutionDialog}
+      />
     </ScrollView>
   );
 }
 
 export default Content;
+
+function renderIssueDetailActions(
+  citizenName: string,
+  issue: any,
+  currentDate: moment.Moment,
+  goToDetails: () => any,
+  phoneCall: () => void,
+  whatsApp: () => void,
+  _showDialog: () => void,
+  isAcceptEnabled: boolean,
+  _showRejectDialog: () => void,
+  rejectedDialog: boolean,
+  hasActions: boolean,
+  _showRecordStepsDialog: () => void,
+  isRecordResolutionEnabled: boolean,
+  _showRecordResolutionDialog: () => void,
+  _showEscalateDialog: () => void,
+  disableEscalation: boolean
+) {
+  return (
+    <View style={{ padding: 23 }}>
+      <Text style={styles.stepDescription}>
+        {citizenName}, {issue.intake_date && moment(issue.intake_date).format('DD-MMM-YYYY')}{' '}
+        {issue.intake_date && currentDate.diff(issue.intake_date, 'days')} {i18n.t('days_ago')}
+      </Text>
+      <Text style={styles.stepDescription}>
+        {i18n.t('status_label')}:{' '}
+        <Text
+          style={{
+            color:
+              issue.status?.id === 1 || issue.status?.id === 2 ? colors.inProgress : colors.primary,
+          }}
+        >
+          {issue.status?.name}
+        </Text>
+      </Text>
+      <Text style={styles.stepNote}>{issue.description?.substring(0, 170)}</Text>
+      <View style={styles.optionButtonContainer}>
+        <Button
+          theme={theme}
+          style={{ alignSelf: 'center', margin: 24 }}
+          labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
+          mode="contained"
+          onPress={goToDetails}
+        >
+          {i18n.t('view_details')}
+        </Button>
+
+        {/* THROUGH THOSE BUTTONS OYU CAN MAKE A WHATSAPP CALL, PHONE CALL AND SEND EMAIL TO THE COMPLAINER */}
+        {issue.contact_information && issue.contact_information.contact !== '*' && (
+          <>
+            {issue.contact_information.type === 'phone_number' ? (
+              <IconButton
+                icon="phone"
+                color={colors.primary}
+                size={35}
+                onPress={() => phoneCall()}
+              />
+            ) : issue.contact_information.type === 'whatsapp' ? (
+              <IconButton
+                icon="whatsapp"
+                color={colors.primary}
+                size={35}
+                onPress={() => whatsApp()}
+              />
+            ) : (
+              <></>
+            )}
+          </>
+        )}
+      </View>
+      {/* ACTION BUTTONS */}
+      <View
+        style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}
+      >
+        {/* Actions */}
+        <ActionButton
+          label={i18n.t('accept_issue')}
+          onShowDialog={_showDialog}
+          isEnabled={isAcceptEnabled}
+        />
+        <ActionButton
+          label={i18n.t('reject_issue')}
+          onShowDialog={_showRejectDialog}
+          isEnabled={(!rejectedDialog && !hasActions) || isAcceptEnabled}
+        />
+        <ActionButton
+          label={i18n.t('record_steps_taken')}
+          onShowDialog={_showRecordStepsDialog}
+          isEnabled={isRecordResolutionEnabled}
+        />
+        <ActionButton
+          label={i18n.t('record_resolution')}
+          onShowDialog={_showRecordResolutionDialog}
+          isEnabled={isRecordResolutionEnabled}
+        />
+      </View>
+      <ActionButton
+        label={i18n.t('escalate')}
+        onShowDialog={_showEscalateDialog}
+        isEnabled={!disableEscalation && isRecordResolutionEnabled}
+      />
+    </View>
+  );
+}
