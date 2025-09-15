@@ -9,7 +9,7 @@ import { useIssue } from '../../../hooks/issues/useIssue';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;
-  const { issueStatusList, loading: statusListLoading } = useIssueStatus();
+  const { issueStatusList, loading: statusListLoading, getStatus } = useIssueStatus();
   const { updateIssue } = useIssue();
   const [loading, setLoading] = useState<boolean>(false);
   const [eadl, setEadl] = useState();
@@ -51,7 +51,7 @@ function IssueActions({ route, navigation }) {
       </SafeAreaView>
     );
   }
-
+  
   return (
     <SafeAreaView style={customStyles.container}>
       <Content
@@ -61,6 +61,7 @@ function IssueActions({ route, navigation }) {
         navigation={navigation}
         statuses={issueStatusList}
         updateIssue={updateIssue}
+        getStatus={getStatus}
       />
     </SafeAreaView>
   );

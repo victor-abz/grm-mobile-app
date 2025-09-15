@@ -14,9 +14,7 @@ const issueService = new BaseService<Issue>(localRepository, remoteRepository);
 
 export async function fetchIssueList(endpointType: string): Promise<Issue[] | null> {
   try {
-    const issueList = await issueService.getAll(endpointType);
-    console.log("Show me the list!", issueList);
-    
+    const issueList = await issueService.getAll(endpointType);    
     return issueList;
   } catch (error) {
     console.error('Error syncing issues:', error);

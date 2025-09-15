@@ -1,8 +1,8 @@
-import { config } from "../../../../config.dev";
-import { BaseRemoteRepository } from "../../shared/BaseRemoteRepository";
-import { Issue } from "../../../models/issues/Issue";
-import request from "../../../utils/request";
-import { SortOrder } from "@nozbe/watermelondb/QueryDescription";
+import { config } from '../../../../config.dev';
+import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
+import { Issue } from '../../../models/issues/Issue';
+import request from '../../../utils/request';
+import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   
@@ -43,8 +43,7 @@ console.log("ENDPOINT_TYPE", endpointType);
       const jsonData: any = response.data;
       return jsonData.results || [];
     } catch (error) {
-      console.error('Error fetching issues from remote', error.message);
-      return [];
+      return Promise.reject({ message: error.message });
     }
   }
 
@@ -92,7 +91,7 @@ console.log("ENDPOINT_TYPE", endpointType);
       });
 
       const jsonData: any = response.data;
-      return jsonData.results;
+      return jsonData;
     } catch (error) {
       console.error('Error creating issue at remote', error.message);
     }
@@ -106,7 +105,39 @@ console.log("ENDPOINT_TYPE", endpointType);
     throw new Error('Method not implemented.');
   }
 
+  // Partially update an issue. Only specific fields can be modified.
+  // Access Control:
+  // Only users who are either the reporter or assignee of the issue can access this endpoint.
   async update(id: string, item: Issue): Promise<Issue> {
+    const url = `${this.baseUrl}/${id}/update/`;
+    
+    console.log("UPDATE: ", item);
+
+    const body = {
+      escalate_flag: item.escalate_flag,
+      reject_flag: item.reject_flag,
+      rating: item.rating,
+      escalation_reason: item.escalation_reason,
+      research_result: item.research_result,
+      status: item.status.id,
+    };
+    console.log("PATCH BODY", body);
+    
+    const requestOptions = {
+      url,
+      method: 'PATCH',
+      data: JSON.stringify(body),
+    };
+    
+    try {
+      const response = await request({
+        ...requestOptions,
+      });
+      const jsonData: any = response.data;
+      return jsonData;
+    } catch (error) {
+      console.error('Error creating issue at remote', error.message);
+    }
     throw new Error('Method not implemented.');
   }
 }

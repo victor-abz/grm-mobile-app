@@ -27,6 +27,17 @@ import RecordStepsDialog from '../components/RecordStepsDialog';
 import RejectDialog from '../components/RejectDialog';
 import { styles } from './Content.styles';
 
+type ConfirmationDialogType =
+  | 'record_steps'
+  | 'appeal'
+  | 'rating'
+  | 'accept'
+  | 'reject'
+  | 'escalate'
+  | 'record_resolution'
+  | null;
+  
+
 const theme = {
   roundness: 12,
   colors: {
@@ -47,9 +58,10 @@ type Props = {
   statuses: IssueStatus[];
   eadl: any;
   updateIssue: (issue: Issue) => Promise<Issue>;
+  getStatus: (statusName: keyof IssueStatus) => IssueStatus;
 };
 
-function Content({ currentIssue, navigation, loading, statuses = [], eadl, updateIssue }: Props) {
+function Content({ currentIssue, navigation, loading, statuses = [], eadl, updateIssue, getStatus }: Props) {
   const [issue, setIssue] = useState(currentIssue);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
@@ -68,7 +80,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   const [recordedSteps, setRecordedSteps] = useState(false);
   const [recordedResolution, setRecordedResolution] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
-  const [citizenName, setCitizenName] = useState("");
+  const [citizenName, setCitizenName] = useState('');
   const [reason, onChangeReason] = useState('');
   const [escalateComment, onChangeEscalateComment] = useState('');
   const [comment, onChangeComment] = useState('');
@@ -79,8 +91,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   const [isRateAppealEnabled, setIsRateAppealEnabled] = useState(false);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [rating, setRating] = useState(0);
-  const [status, setStatus] = useState(null);
-  const [hasActions, setHasActions] = useState(false);
+  const [hasActionsOrResolved, setHasActionsOrResolved] = useState(false);
   const [attachment, setAttachment] = useState({});
   const [recordingURI, setRecordingURI] = useState();
 
@@ -117,7 +128,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
 
   const updateActionButtons = () => {
     function _isAcceptEnabled(x) {
-      console.log('INITIAL STATUS DEBUG', issue.status, x.id, issue.escalate_flag);
+      
 
       if (x.initial_status && isIssueAssignedToMe) {
         return compareIdsEquivalence(issue.status?.id, x.id);
@@ -125,7 +136,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     }
 
     function _isRecordResolutionEnabled(x) {
-      console.log('OPEN STATUS DEBUG', issue.status, x.id, issue.escalate_flag);
+      
       if (x.open_status && isIssueAssignedToMe) {
         return compareIdsEquivalence(issue.status?.id, x.id) && !issue.escalate_flag;
       }
@@ -147,8 +158,13 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     const hasComments = issue.comments && issue.comments.length > 0;
     const hasEscalated = issue.escalate_flag;
     const hasRejected = issue.reject_flag;
+    
+    let isIssueResolved: boolean;
+    if (statuses.length > 0) {
+      isIssueResolved = isIssueStatusEqualTo('final_status', issue)
+    }
 
-    setHasActions(hasComments || hasEscalated || hasRejected);
+    setHasActionsOrResolved(hasComments || hasEscalated || hasRejected || isIssueResolved);
   };
 
   const whatsApp = () => {
@@ -177,12 +193,14 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     return {
       ...issue,
       status: newStatus,
-      comments: newComments,
+      // TODO: Use new comment services to add
+      // the following commented property
+      // comments: newComments,
     };
   };
 
   const acceptIssue = () => {
-    const newStatus = statuses.find((x) => x.open_status === true);
+    const newStatus = getStatus('open_status');
     setIssue((prevIssue) => {
       const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
         name: prevIssue.reporter.name,
@@ -195,7 +213,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   };
 
   const rejectIssue = () => {
-    const newStatus = statuses.find((x) => x.rejected_status === true);
+    const newStatus = getStatus('rejected_status');
     if (!newStatus) {
       console.error('No rejected status found');
       showToast(i18n.t('error_rejecting_issue'));
@@ -207,46 +225,40 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
         ...prevIssue,
         status: newStatus,
         reject_flag: true,
-        comments: [
-          ...(prevIssue.comments ?? []),
-          {
-            name: prevIssue.reporter.name,
-            id: eadl._id,
-            comment: reason,
-            due_at: moment(),
-            attachment: attachment.uri
-              ? {
-                  url: '',
-                  id: attachment?.id,
-                  uploaded: false,
-                  local_url: attachment?.uri,
-                  name: attachment?.uri.split('/').pop(),
-                }
-              : undefined,
-            recording: recordingURI
-              ? {
-                  url: '',
-                  id: recordingURI.split('/').pop(),
-                  uploaded: false,
-                  local_url: recordingURI,
-                  isAudio: true,
-                  name: recordingURI.split('/').pop(),
-                }
-              : undefined,
-          },
-        ],
+
+        // TODO: Use new comment services to add
+        // the following commented property
+        // comments: [
+        //   ...(prevIssue.comments ?? []),
+        //   {
+        //     name: prevIssue.reporter.name,
+        //     id: eadl._id,
+        //     comment: reason,
+        //     due_at: moment().toNow(),
+        //     attachment: attachment.uri
+        //       ? {
+        //           url: '',
+        //           id: attachment?.id,
+        //           uploaded: false,
+        //           local_url: attachment?.uri,
+        //           name: attachment?.uri.split('/').pop(),
+        //         }
+        //       : undefined,
+        //     recording: recordingURI
+        //       ? {
+        //           url: '',
+        //           id: recordingURI.split('/').pop(),
+        //           uploaded: false,
+        //           local_url: recordingURI,
+        //           isAudio: true,
+        //           name: recordingURI.split('/').pop(),
+        //         }
+        //       : undefined,
+        //   },
+        // ],
       };
       return updatedIssue;
     });
-
-    setRejectedDialog(true);
-    setDisableEscalation(true);
-    setIsAcceptEnabled(false);
-    setIsRecordResolutionEnabled(false);
-    setIsRateAppealEnabled(false);
-
-    showToast(i18n.t('issue_rejected_successfully'));
-    saveIssueStatus('reject');
   };
 
   const rateIssue = () => {
@@ -268,7 +280,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   };
 
   const appealIssue = () => {
-    const newStatus = statuses.find((x) => x.open_status === true);
+    const newStatus = getStatus('open_status');
     setIssue((prevIssue) => {
       const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
         name: prevIssue.reporter.name,
@@ -288,51 +300,44 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
       const updatedIssue = {
         ...prevIssue,
         escalate_flag: true,
-        escalation_reasons: [
-          ...(prevIssue.escalation_reasons || []),
-          {
-            id: eadl?._id,
-            name: eadl?.representative?.name,
-            comment: escalateComment,
-            due_at: moment(),
-          },
-        ],
-        comments: [
-          ...(prevIssue.comments || []),
-          {
-            name: prevIssue.reporter.name,
-            id: eadl._id,
-            comment: escalateComment,
-            // comment: i18n.t('issue_was_escalated'),
-            due_at: moment(),
-            attachment: attachment.uri
-              ? {
-                  url: '',
-                  id: attachment?.id,
-                  uploaded: false,
-                  local_url: attachment?.uri,
-                  name: attachment?.uri.split('/').pop(),
-                }
-              : undefined,
-            recording: recordingURI
-              ? {
-                  url: '',
-                  id: recordingURI.split('/').pop(),
-                  uploaded: false,
-                  local_url: recordingURI,
-                  isAudio: true,
-                  name: recordingURI.split('/').pop(),
-                }
-              : undefined,
-          },
-        ],
+        //leave it singular as a string
+        escalation_reason: '',
+
+        // TODO: Use new comment services to add
+        // the following commented property
+        // comments: [
+        //   ...(prevIssue.comments || []),
+        //   {
+        //     //check if can be replaced with create response
+        //     name: prevIssue.reporter.name,
+        //     id: eadl._id,
+        //     comment: escalateComment,
+        //     due_at: moment(),
+        //     attachment: attachment.uri
+        //       ? {
+        //           url: '',
+        //           id: attachment?.id,
+        //           uploaded: false,
+        //           local_url: attachment?.uri,
+        //           name: attachment?.uri.split('/').pop(),
+        //         }
+        //       : undefined,
+        //     recording: recordingURI
+        //       ? {
+        //           url: '',
+        //           id: recordingURI.split('/').pop(),
+        //           uploaded: false,
+        //           local_url: recordingURI,
+        //           isAudio: true,
+        //           name: recordingURI.split('/').pop(),
+        //         }
+        //       : undefined,
+        //   },
+        // ],
       };
       console.log('escalate : ', updatedIssue.comments);
       return updatedIssue;
     });
-    setDisableEscalation(true);
-    setEscalatedDialog(true);
-    setHasActions(true);
   };
 
   const recordStep = () => {
@@ -365,14 +370,40 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
 
       return updatedIssue;
     });
-    setRecordedSteps(true);
-    setHasActions(true);
   };
 
   useEffect(() => {
-    if (recordedSteps || recordResolutionConfirmation || escalateIssue || rejectedDialog) {
-      saveIssueStatus();
+    // Determine which dialog confirmation type is active
+    let confirmationDialogType: ConfirmationDialogType = null;
+
+    if (recordResolutionDialog) {
+      confirmationDialogType = 'record_resolution';
+    } else if (acceptDialog) {
+      confirmationDialogType = 'accept';
+    } else if (recordStepsDialog) {
+      confirmationDialogType = 'record_steps';
+    } else if (escalateDialog) {
+      confirmationDialogType = 'escalate';
+    } else if (rejectDialog) {
+      confirmationDialogType = 'reject';
+    } else if (rateAppealDialog) {
+      confirmationDialogType = 'appeal';
+    } else if (ratingDialog) {
+      confirmationDialogType = 'rating';
     }
+
+    if (
+      rateAppealDialog ||
+      acceptDialog ||
+      recordStepsDialog ||
+      recordResolutionDialog ||
+      escalateDialog ||
+      rejectDialog ||
+      ratingDialog
+    ) {
+      saveIssueStatus(confirmationDialogType);
+    }
+    
   }, [issue]);
 
   const recordResolution = () => {
@@ -380,58 +411,52 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   };
 
   const recordResolutionConfirmation = () => {
-    const newStatus = statuses.find((x) => x.final_status === true);
+    const newStatus = getStatus('final_status');
     setIssue(async (prevIssue) => {
       const updatedIssue = {
         ...prevIssue,
         research_result: resolution,
         status: newStatus,
-        comments: [
-          ...prevIssue.comments,
-          {
-            name: prevIssue.reporter.name,
-            id: eadl._id,
-            comment: i18n.t('issue_was_resolved'),
-            due_at: moment(),
-            attachment: attachment.uri
-              ? {
-                  url: '',
-                  id: attachment?.id,
-                  uploaded: false,
-                  local_url: attachment?.uri,
-                  name: attachment?.uri.split('/').pop(),
-                }
-              : undefined,
-            recording: recordingURI
-              ? {
-                  url: '',
-                  id: recordingURI.split('/').pop(),
-                  uploaded: false,
-                  local_url: recordingURI,
-                  isAudio: true,
-                  name: recordingURI.split('/').pop(),
-                }
-              : undefined,
-          },
-        ],
+        // comments: [
+        //   ...prevIssue.comments,
+        //   {
+        //     name: prevIssue.reporter.name,
+        //     id: eadl._id,
+        //     comment: i18n.t('issue_was_resolved'),
+        //     due_at: moment(),
+        //     attachment: attachment.uri
+        //       ? {
+        //           url: '',
+        //           id: attachment?.id,
+        //           uploaded: false,
+        //           local_url: attachment?.uri,
+        //           name: attachment?.uri.split('/').pop(),
+        //         }
+        //       : undefined,
+        //     recording: recordingURI
+        //       ? {
+        //           url: '',
+        //           id: recordingURI.split('/').pop(),
+        //           uploaded: false,
+        //           local_url: recordingURI,
+        //           isAudio: true,
+        //           name: recordingURI.split('/').pop(),
+        //         }
+        //       : undefined,
+        //   },
+        // ],
       };
+      return updatedIssue
     });
-    _hideRecordResolutionDialog();
-    setHasActions(true);
   };
 
-  const saveIssueStatus = async (type = 'none') => {
+  const saveIssueStatus = async (
+    dialogConfirmationType?: ConfirmationDialogType
+  ) => {
     try {
       await updateIssue(issue);
       updateActionButtons();
-      if (type === 'accept') {
-        setAcceptedDialog(true);
-      } else if (type === 'reject') {
-        setRejectedDialog(true);
-      } else if (type === 'record_resolution') {
-        setRecordedResolution(false);
-        _hideRecordResolutionDialog();
-      }
+      handleConfirmationDialogs(dialogConfirmationType);
     } catch (error) {
       console.log('Save issue error', error);
     }
@@ -460,26 +485,24 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   return (
     <ScrollView>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : null}>
-        {
-          renderHeaderAndActions(
-            citizenName,
-            issue,
-            currentDate,
-            goToDetails,
-            phoneCall,
-            whatsApp,
-            _showDialog,
-            isAcceptEnabled,
-            _showRejectDialog,
-            rejectedDialog,
-            hasActions,
-            _showRecordStepsDialog,
-            isRecordResolutionEnabled,
-            _showRecordResolutionDialog,
-            _showEscalateDialog,
-            disableEscalation
-          )
-        }
+        {renderHeaderAndActions(
+          citizenName,
+          issue,
+          currentDate,
+          goToDetails,
+          phoneCall,
+          whatsApp,
+          _showDialog,
+          isAcceptEnabled,
+          _showRejectDialog,
+          rejectedDialog,
+          hasActionsOrResolved,
+          _showRecordStepsDialog,
+          isRecordResolutionEnabled,
+          _showRecordResolutionDialog,
+          _showEscalateDialog,
+          disableEscalation
+        )}
       </KeyboardAvoidingView>
 
       {/* DIALOGS */}
@@ -549,9 +572,37 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
       />
     </ScrollView>
   );
+
+  function isIssueStatusEqualTo(targetStatus: keyof IssueStatus, issue: Issue) {
+    const status = getStatus(targetStatus)
+    return compareIdsEquivalence(issue.status?.id, status.id);
+  }
+
+  function handleConfirmationDialogs(dialogConfirmationType: string) {
+    if (dialogConfirmationType === 'accept') {
+      setAcceptedDialog(true);
+    } else if (dialogConfirmationType === 'reject') {
+      setRejectedDialog(true);
+      setDisableEscalation(true);
+      setIsAcceptEnabled(false);
+      setIsRecordResolutionEnabled(false);
+      setIsRateAppealEnabled(false);
+      showToast(i18n.t('issue_rejected_successfully'));
+    } else if (dialogConfirmationType === 'escalate') {
+      setDisableEscalation(true);
+      setEscalatedDialog(true);
+      setHasActionsOrResolved(true);
+    } else if (dialogConfirmationType === 'record_resolution') {
+      setRecordedResolution(false);
+      _hideRecordResolutionDialog();
+      setHasActionsOrResolved(true);
+    } else if (dialogConfirmationType === 'record_steps') {
+      setRecordedSteps(true);
+      setHasActionsOrResolved(true);
+    }
+  }
 }
 
-export default Content;
 
 function renderHeaderAndActions(
   citizenName: string,
@@ -564,7 +615,7 @@ function renderHeaderAndActions(
   isAcceptEnabled: boolean,
   _showRejectDialog: () => void,
   rejectedDialog: boolean,
-  hasActions: boolean,
+  hasActionsOrResolved: boolean,
   _showRecordStepsDialog: () => void,
   isRecordResolutionEnabled: boolean,
   _showRecordResolutionDialog: () => void,
@@ -636,7 +687,7 @@ function renderHeaderAndActions(
         <ActionButton
           label={i18n.t('reject_issue')}
           onShowDialog={_showRejectDialog}
-          isEnabled={(!rejectedDialog && !hasActions) || isAcceptEnabled}
+          isEnabled={!hasActionsOrResolved || isAcceptEnabled}
         />
         <ActionButton
           label={i18n.t('record_steps_taken')}
@@ -657,3 +708,4 @@ function renderHeaderAndActions(
     </View>
   );
 }
+export default Content;

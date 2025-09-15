@@ -1,6 +1,8 @@
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 import { ContactMedium, ContactMethod, Issue, IssueLocalModel } from '../../../models/issues/Issue';
 import { TABLE_NAMES } from '../../../migrations/tableName';
+import moment from 'moment';
+
 
 export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   constructor() {
@@ -10,16 +12,35 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   fromLocalToRemote(localModel: IssueLocalModel): Issue {
     const parseJson = (jsonString: string | null): any => {
       try {
-        return jsonString ? JSON.parse(jsonString) : null;
+        return jsonString ? JSON.parse(JSON.stringify(jsonString), (key, value) => {
+
+          if (typeof value === "string") {
+            // Try to parse ISO date strings to Date or Moment
+              const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?$/;
+              if (isoDateRegex.test(value)) {
+                return moment(value);
+              }
+            }
+            
+            if (value === undefined) {
+              return null;
+            }
+            return value
+        }) : null;
       } catch (e) {
         console.error('Failed to parse JSON:', e);
         return null;
       }
     };
-
+  
     return {
       id: localModel.id,
       name: localModel.name,
+      escalate_flag: localModel.escalate_flag,
+      reject_flag: localModel.reject_flag,
+      rating: localModel.rating,
+      escalation_reason: localModel.escalate_flag,
+      research_result: localModel.research_result,
       auto_increment_id: localModel.auto_increment_id,
       confirmed: localModel.confirmed,
       description: localModel.description,

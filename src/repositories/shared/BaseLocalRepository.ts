@@ -76,13 +76,19 @@ export abstract class BaseLocalRepository<T> {
     const dbInstance = syncServiceInstance.database
 
     await dbInstance.write(async () => {
-      const dbItem = await dbInstance.get(this.tableName).find(item.id);
-      console.log("OLD INSTANCE:", dbItem);
-      console.log("NEW INSTANCE", item);
-      
-      await dbItem.update(() => {
-        Object.assign(dbItem, item);
-      });
+      let dbItem: Model;
+      try {
+        dbItem = await dbInstance.get(this.tableName).find(item.id);
+        await dbItem.update((_item) => {
+          Object.assign(_item, item);
+        });
+      } catch (error) {
+        // If not found, create new
+        console.log('Could not update, attempting to create locally', error);
+        await dbInstance.get(this.tableName).create((newItem: any) => {
+          Object.assign(newItem, item);
+        });
+      }
     });
   }
 }

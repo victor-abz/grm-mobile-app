@@ -33,11 +33,11 @@ export class IssueCategoryLocalModel extends Model {
   // @ts-ignore
   @text('abbreviation') abbreviation;
   // @ts-ignore
-  @json('assigned_department') assigned_department;
+  @json('assigned_department', json => json) assigned_department;
   // @ts-ignore
-  @json('assigned_appeal_department') assigned_appeal_department;
+  @json('assigned_appeal_department', json => json) assigned_appeal_department;
   // @ts-ignore
-  @json('assigned_escalation_department') assigned_escalation_department;
+  @json('assigned_escalation_department', json => json) assigned_escalation_department;
   // @ts-ignore
   @text('confidentiality_level') confidentiality_level;
   // @ts-ignore
