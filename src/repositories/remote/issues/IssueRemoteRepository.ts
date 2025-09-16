@@ -22,7 +22,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     deleted_date: string | null
   ): Promise<Issue[]> {
     const params: Record<string, string> = {};
-console.log("ENDPOINT_TYPE", endpointType);
 
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
@@ -31,7 +30,7 @@ console.log("ENDPOINT_TYPE", endpointType);
     if (update_date) params.update_date = update_date;
     if (deleted_date) params.deleted_date = deleted_date;
 
-    const url = `${this.baseUrl}/${endpointType}`;
+    const url = `${this.baseUrl}/${endpointType}/`;
 
     try {
       const response = await request({

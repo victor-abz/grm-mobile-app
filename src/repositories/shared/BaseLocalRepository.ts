@@ -72,22 +72,36 @@ export abstract class BaseLocalRepository<T> {
 
   // @ts-ignore
   
-  async upsert(item: Model): Promise<void> {
+  async upsert(newEntry: unknown): Promise<void> {
     const dbInstance = syncServiceInstance.database
 
     await dbInstance.write(async () => {
       let dbItem: Model;
       try {
-        dbItem = await dbInstance.get(this.tableName).find(item.id);
+        dbItem = await dbInstance.get(this.tableName).find(String(newEntry.id));
         await dbItem.update((_item) => {
-          Object.assign(_item, item);
+          Object.keys(newEntry).forEach((key) => {
+            if (key !== 'id') {
+              _item[key] = newEntry[key];
+            }
+          });
         });
+        console.log('Item successfully updated');
       } catch (error) {
         // If not found, create new
-        console.log('Could not update, attempting to create locally', error);
-        await dbInstance.get(this.tableName).create((newItem: any) => {
-          Object.assign(newItem, item);
+        console.warn(error);
+        console.log('Could not update, attempting to create locally...');
+        await dbInstance.get(this.tableName).create((updatableItem) => {
+          Object.keys(newEntry).forEach((key) => {
+            if (key !== 'id') {
+              updatableItem[key] = newEntry[key];
+            } else if (newEntry.id){ 
+              updatableItem._raw.id = String(newEntry.id)
+            }
+          });
         });
+        console.log('Item successfully created');
+       
       }
     });
   }
