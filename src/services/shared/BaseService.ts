@@ -3,10 +3,6 @@ import { BaseLocalRepository } from '../../repositories/shared/BaseLocalReposito
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import type { Database, DirtyRaw, Model } from '@nozbe/watermelondb';
 import { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
-import { issueStatusTableSchema } from '../../migrations/v1/issue_status';
-import { issueCategoryTableSchema } from '../../migrations/v1/issue_category';
-import { issueTypeTableSchema } from '../../migrations/v1/issue_type';
-import { issueTableSchema } from '../../migrations/v1/issue';
 import { RawRecord } from '@nozbe/watermelondb';
 import { TABLE_NAMES } from '../../migrations/tableName';
 
@@ -22,16 +18,40 @@ export class BaseService<T> {
       try {
         const modelInterface = this.localRepository.fromLocalToRemote(item);
         // Try to create on remote, if fails due to existence, update instead
+        
+        let createdResponse;
+        let updatedResponse;
+        
         try {
-          await this.remoteRepository.create(modelInterface);
+          createdResponse = await this.remoteRepository.create(modelInterface);
+         
         } catch (createErr: any) {
           // If already exists, update instead
-          await this.remoteRepository.update(modelInterface.id, modelInterface);
+         
+          updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
         }
         // @ts-ignore
         item.syncAt = new Date();
         // Upsert locally using WatermelonDB
-        await this.localRepository.upsert(item);
+        
+        if (createdResponse) {
+          // TODO: Use newly created id from backend response to upsert
+            if (createdResponse.data) {
+            createdResponse.data.syncAt = new Date();
+            }
+          await this.localRepository.upsert(createdResponse.data);
+        } else if (updatedResponse) {
+            if (updatedResponse.data) {
+              updatedResponse.data.syncAt = new Date();
+            }
+
+          await this.localRepository.upsert(updatedResponse.data);
+        } else {
+          await this.localRepository.upsert(item);
+        }
+        console.log("Succesfully Updated Watermelon DB");
+        
+
       } catch (err) {
         console.warn('[BaseService] Remote sync failed. Will retry later.', err);
       }
@@ -47,15 +67,20 @@ export class BaseService<T> {
       try {
         return await this.remoteRepository.fetchAll(endpointType, null, null, null, null, null, null);
       } catch (err) {
-        console.warn('[BaseService] Remote sync failed. Will retry later.', err);
-        console.log('[BaseService] Remote sync failed. Will retry later.', err);
-        return await this.localRepository.getAll(null, null, null, null);
+       
+        const results = await this.localRepository.getAll(null, null, null, null);
+       
+        return results
       }
     } else {
-      const localRepositoryResults = await this.localRepository.getAll(null, null, null, null);
-      console.log('localRepositoryResults', localRepositoryResults);
-
-      return localRepositoryResults;
+      try {
+        const localRepositoryResults = await this.localRepository.getAll(null, null, null, null);
+        
+        
+        return localRepositoryResults; 
+      } catch (error) {
+      
+      }
     }
   }
 
@@ -80,18 +105,35 @@ export class BaseService<T> {
       null,
       null
     );
-    
-    // @ts-ignore
-    tableChanges.created = newRecords.map(record => {
-      return { id: String(record.id), ...record }
-    });
-    
-    // 2. Fetch updated records
-    // @ts-ignore
-    tableChanges.updated = updatedRecords.map((record) => ({ id: new String(record.id), ...record }));
 
-    // 3. Fetch deleted records (soft deletes are highly recommended for this)
-    const deletedRecords = await this.remoteRepository.fetchAll(null, null, null, null, null, null, lastPulledAt);
+    // @ts-ignore
+    tableChanges.created = newRecords.map((record) => {
+      return { ...record, id: String(record.id) };
+    });
+
+    console.log("TABLE NAME:", tableName, endPointType);
+    console.log(tableChanges.created.length);
+    
+
+    // 2. Fetch updated records
+    // const updatedRecords = []
+    // // const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, lastPulledAt, null);
+    // // @ts-ignore
+    // tableChanges.updated = updatedRecords.map((record) => ({
+    //   id:  String(record.id),
+    //   ...record,
+    // }));
+
+    // // 3. Fetch deleted records (soft deletes are highly recommended for this)
+    // const deletedRecords = await this.remoteRepository.fetchAll(
+    //   endPointType,
+    //   null,
+    //   null,
+    //   null,
+    //   null,
+    //   null,
+    //   lastPulledAt
+    // );
 
     // Return all changes and the timestamp for the next pull
     return { changes, timestamp };

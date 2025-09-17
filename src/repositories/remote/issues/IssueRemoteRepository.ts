@@ -135,8 +135,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       const jsonData: any = response.data;
       return jsonData;
     } catch (error) {
-      console.error('Error creating issue at remote', error.message);
+      console.error('Error updating issue at remote', error.message);
     }
-    throw new Error('Method not implemented.');
   }
 }

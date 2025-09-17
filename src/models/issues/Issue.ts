@@ -89,7 +89,7 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @text('auto_increment_id') auto_increment_id;
   // @ts-ignore
-  @json('category', json => json, json => json) category;
+  @json('category', json => json) category;
   // @ts-ignore
   @json('citizen', json => json) citizen;
   // @ts-ignore

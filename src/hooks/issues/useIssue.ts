@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react'
 import * as IssueService from '../../services/issues/IssueService';
 import type { Issue } from "../../models/issues/Issue";
+import { useDatabase } from '@nozbe/watermelondb/react';
+import { useSelector } from 'react-redux';
 
 export function useIssue() {
   const [assigneeIssueList, setAssigneeIssueList] = useState<Issue[]>()
+  const database = useDatabase();
+  const { session } = useSelector((state) => {
+      return state.get("authentication").toObject();
+    });
   const [reporterIssueList, setReporterIssueList] = useState<Issue[]>()
   const [loading, setLoading] = useState(false);
   
@@ -20,18 +26,18 @@ export function useIssue() {
     
   const fetchAssigneeIssueList = async () => {
       setLoading(true)
-      if (!assigneeIssueList) {
-        const issuesList = await IssueService.fetchIssueList('assignee');
-        console.log("$##@@ ISSUE LIST: ", issuesList); 
-        setAssigneeIssueList(issuesList);
-      }
+    if (!assigneeIssueList) {
+      const issuesList = await IssueService.fetchIssueList('assignee');
+      const filteredList = issuesList.filter((issue) => issue.assignee ? session.user_id == issue.assignee.id : false)
+      setAssigneeIssueList(filteredList);
+    }
   }
 
   const fetchReporterIssueList = async () => {
     setLoading(true);
     if (!reporterIssueList) {
-      const issuesList = await IssueService.fetchIssueList('reporter');
-      console.log('$##@@ ISSUE LIST: ', issuesList);
+      let issuesList = await IssueService.fetchIssueList('reporter');
+      issuesList = issuesList.filter((issue) => issue.reporter ? session.user_id == issue.reporter.id : false);
       setReporterIssueList(issuesList);
     }
   }
