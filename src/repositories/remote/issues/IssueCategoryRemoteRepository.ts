@@ -4,7 +4,7 @@ import { IssueCategory } from "../../../models/issues/IssueCategory";
 
 
 class IssueCategoryRemoteRepository extends BaseRemoteRepository<IssueCategory> {
-
+    
     create(item: IssueCategory): Promise<IssueCategory> {
         throw new Error('Method not implemented.');
     }
@@ -26,8 +26,8 @@ class IssueCategoryRemoteRepository extends BaseRemoteRepository<IssueCategory> 
             })
 
             const jsonData: any = response.data;
-            const results: IssueCategory[] = jsonData.results
-
+            const results: IssueCategory[] = jsonData.results ?? []
+            
             return results;
         } catch (error) {
             console.error(error.message);

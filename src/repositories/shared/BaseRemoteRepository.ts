@@ -1,6 +1,7 @@
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 
 export abstract class BaseRemoteRepository<T> {
+  
   abstract create(item: T): Promise<T>;
 
   abstract delete(id: string): Promise<void>;

@@ -1,12 +1,33 @@
 import { config } from '../../../../config.dev';
 import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
-import { Issue } from '../../../models/issues/Issue';
+import { Issue, IssueLocalModel } from '../../../models/issues/Issue';
 import request from '../../../utils/request';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
-  
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
+
+  fromRemoteToLocal(issue: any, index): any {
+
+    
+    if (issue && typeof issue === 'object') {
+      const i = issue as Record<string, any>;
+      return {
+      ...i,
+      assignee: JSON.stringify(i.assignee),
+      category: JSON.stringify(i.category),
+      citizen: JSON.stringify(i.citizen),
+      component: JSON.stringify(i.component),
+      issue_sub_type: JSON.stringify(i.issue_sub_type),
+      issue_type: JSON.stringify(i.issue_type),
+      reporter: JSON.stringify(i.reporter),
+      sub_component: JSON.stringify(i.sub_component),
+      status: JSON.stringify(i.status),
+      };
+    }
+    return null;
+  }
+
 
   /**
    * Fetch all issues from a dynamic endpoint.
@@ -40,7 +61,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       });
 
       const jsonData: any = response.data;
-      return jsonData.results || [];
+      return jsonData.results ?? []
     } catch (error) {
       return Promise.reject({ message: error.message });
     }
@@ -59,13 +80,13 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       administrative_region: item.administrative_region.id,
       reporter: item.reporter.id,
       assignee: item.assignee.id,
-      citizen: {
+      citizen: item.citizen ? {
         name: item.citizen.name,
         type: item.citizen.type,
         age_group: item.citizen.age_group.id,
         group: item.citizen.group.id,
         group_2: item.citizen.group_2.id,
-      },
+      } : null,
       component: item.component.id,
       sub_component: item.sub_component.id,
       contact_medium: item.contact_medium,
@@ -109,8 +130,8 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   // Only users who are either the reporter or assignee of the issue can access this endpoint.
   async update(id: string, item: Issue): Promise<Issue> {
     const url = `${this.baseUrl}/${id}/update/`;
-    
-    console.log("UPDATE: ", item);
+
+    console.log('UPDATE: ', item);
 
     const body = {
       escalate_flag: item.escalate_flag,
@@ -120,14 +141,14 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       research_result: item.research_result,
       status: item.status.id,
     };
-    console.log("PATCH BODY", body);
-    
+    console.log('PATCH BODY', body);
+
     const requestOptions = {
       url,
       method: 'PATCH',
       data: JSON.stringify(body),
     };
-    
+
     try {
       const response = await request({
         ...requestOptions,

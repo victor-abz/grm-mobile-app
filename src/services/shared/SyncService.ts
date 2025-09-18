@@ -1,7 +1,7 @@
 import { enablePromise } from 'react-native-sqlite-storage';
 import SQLiteAdapter from "@nozbe/watermelondb/adapters/sqlite";
 import { Database } from "@nozbe/watermelondb";
-import schema from "../../migrations/schemas";
+import schema from "../../migrations/appSchema";
 import migrations from "../../migrations/migrations";
 import { synchronize } from "@nozbe/watermelondb/sync";
 import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";

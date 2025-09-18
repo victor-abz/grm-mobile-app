@@ -1,10 +1,20 @@
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 import { IssueStatus, IssueStatusLocalModel } from '../../../models/issues/IssueStatus';
 import { TABLE_NAMES } from "../../../migrations/tableName";
+import { RawRecord } from '@nozbe/watermelondb';
+import { sanitizedRaw } from '@nozbe/watermelondb/RawRecord';
+import { issueStatusTableSchema } from '../../../migrations/table-schemas/issue_status';
 
 export class IssueStatusLocalRepository extends BaseLocalRepository<IssueStatus> {
   constructor() {
     super(TABLE_NAMES.issueStatus);
+  }
+
+  fromRemoteToLocal(issueStatus: any): RawRecord {
+    const raw = {
+      ...issueStatus,
+    };
+    return raw
   }
 
   fromLocalToRemote(localModel: IssueStatusLocalModel): IssueStatus {

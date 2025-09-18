@@ -39,13 +39,17 @@ export class BaseService<T> {
             if (createdResponse.data) {
             createdResponse.data.syncAt = new Date();
             }
-          await this.localRepository.upsert(createdResponse.data);
+          const formattedItem = this.localRepository.fromRemoteToLocal(createdResponse.data)
+            await this.localRepository.upsert(formattedItem);
+          
         } else if (updatedResponse) {
             if (updatedResponse.data) {
               updatedResponse.data.syncAt = new Date();
             }
 
-          await this.localRepository.upsert(updatedResponse.data);
+          console.log("UPDATED RESPONSE TO UPSERT", updatedResponse.data);
+          const formattedItem = this.localRepository.fromRemoteToLocal(updatedResponse.data)
+          await this.localRepository.upsert(formattedItem);
         } else {
           await this.localRepository.upsert(item);
         }
@@ -106,8 +110,11 @@ export class BaseService<T> {
       null
     );
 
+    const rawRecords = newRecords.map((item) => this.localRepository.fromRemoteToLocal(item));
+    console.log('formatted records', rawRecords[0]);
+    // response log: {"administrative_region": {"administrative_id": "1", "name": "sample administrative region"}, "assignee": "{\"id\":4,\"name\":\"Comité village Representative\"}", "category": "{\"id\":1,\"name\":\"sample category\"}", "citizen": undefined, "component": undefined, "id": 432432, "intake_date": "2025-08-19T00:51:27.330758Z", "issue_sub_type": undefined, "issue_type": "{\"id\":1,\"name\":\"type 1\"}", "reporter": "{\"id\":5,\"name\":\"Test Representative\"}", "status": "{\"id\":4,\"name\":\"Sample status 4\",\"final_status\":false,\"initial_status\":false,\"rejected_status\":true,\"open_status\":false}", "sub_component": undefined, "tracking_code": "string"}
     // @ts-ignore
-    tableChanges.created = newRecords.map((record) => {
+    tableChanges.created = rawRecords.map((record) => {
       return { ...record, id: String(record.id) };
     });
 

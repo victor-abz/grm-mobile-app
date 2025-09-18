@@ -27,7 +27,7 @@ class IssueStatusRemoteRepository extends BaseRemoteRepository<IssueStatus> {
       });
 
       const jsonData: any = response.data;
-      return jsonData.results;
+      return jsonData.results ?? [];
     } catch (error) {
       return Promise.reject({ message: error.message });
     }
