@@ -40,16 +40,13 @@ export class BaseService<T> {
             createdResponse.data.syncAt = new Date();
             }
           const formattedItem = this.localRepository.fromRemoteToLocal(createdResponse.data)
-            await this.localRepository.upsert(formattedItem);
+            await this.localRepository.upsert(item);
           
         } else if (updatedResponse) {
             if (updatedResponse.data) {
               updatedResponse.data.syncAt = new Date();
             }
-
-          console.log("UPDATED RESPONSE TO UPSERT", updatedResponse.data);
-          const formattedItem = this.localRepository.fromRemoteToLocal(updatedResponse.data)
-          await this.localRepository.upsert(formattedItem);
+          await this.localRepository.upsert(item);
         } else {
           await this.localRepository.upsert(item);
         }
