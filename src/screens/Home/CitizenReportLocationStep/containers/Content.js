@@ -19,6 +19,7 @@ import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/Cu
 import { DataContext } from '../../../../providers/DataProvider';
 import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
+import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
 import { processRegions } from '../../../../utils/citizenReportUtils';
 
@@ -230,7 +231,13 @@ export const Content = ({ stepOneParams, stepTwoParams, regions = [] }) => {
     refreshRegionData,
   } = useContext(DataContext);
 
-  console.log('🔍 [LOCATION] Component initialized with:', { regionsCount: regions.length });
+  useEffect(() => {
+    logger.userAction('screen_load', 'CitizenReportLocationStep', {
+      projectId: stepOneParams?.selectedProject?.id,
+      regionsCount: regions.length,
+      hasStepTwoParams: !!stepTwoParams,
+    });
+  }, []);
 
   const projectId = stepOneParams?.selectedProject?.id || null;
 
@@ -561,11 +568,12 @@ export const Content = ({ stepOneParams, stepTwoParams, regions = [] }) => {
       };
     }
 
-    console.log('➡️ [LOCATION] Proceeding to step 3 with location params:', {
-      administrative_region: locationParams.administrative_region,
-      regionName: locationParams.regionMetadata.regionName,
+    logger.userAction('location_step_next', 'CitizenReportLocationStep', {
+      administrativeRegion: locationParams.administrative_region,
+      regionName: locationParams.regionMetadata?.regionName,
       projectId: locationParams.projectId,
       hasCoordinates: !!locationParams.coordinates,
+      hasDescription: !!locationParams.locationDescription,
     });
 
     navigation.navigate('CitizenReportStep3', {

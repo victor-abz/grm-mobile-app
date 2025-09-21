@@ -11,6 +11,7 @@ import watermelonManager from '../../../../database/watermelonManager';
 import dataManager from '../../../../services/DataManager'; // Import DataManager for proper API sync
 import { AttachmentList } from '../../../../components/AttachmentList/AttachmentList';
 import { colors } from '../../../../utils/colors';
+import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
 import { createLookupMap } from '../../../../utils/issueDetailUtils';
 import { generateTrackingCode } from '../../../../utils/trackingCodeGenerator';
@@ -211,12 +212,15 @@ const Content = ({
   const submitIssue = async () => {
     setIsSubmitting(true);
 
-    try {
-      console.log('🔍 [STEP3] Starting issue submission...');
-      console.log('🔍 [STEP3] stepOneParams:', stepOneParams);
-      console.log('🔍 [STEP3] stepTwoParams:', stepTwoParams);
-      console.log('🔍 [STEP3] stepLocationParams:', stepLocationParams);
+    logger.userAction('issue_submission_start', 'CitizenReportStep3', {
+      projectId: stepOneParams.selectedProject?.id,
+      categoryId: stepTwoParams.category?.id,
+      issueTypeId: stepTwoParams.issueType?.id,
+      hasAttachments: !!(stepTwoParams.attachments?.length || stepTwoParams.recordings?.length),
+      administrativeRegion: stepLocationParams.administrative_region,
+    });
 
+    try {
       // ✅ Get user context for both assignment and reporter ID
       const userContext = dataManager.getUserContext();
       console.log('🔍 [STEP3] User context for issue creation:', userContext);
@@ -314,20 +318,15 @@ const Content = ({
 
       // ✅ USE DataManager instead of watermelonManager directly
       // This ensures proper API sync when online and local storage when offline
-      console.log('🔍 [STEP3] Creating issue via DataManager (handles API sync)...');
       const newIssue = await dataManager.createIssue(issueData);
 
-      console.log('✅ [STEP3] Issue created via DataManager successfully!');
-      console.log('✅ [STEP3] Created issue details:', {
-        id: newIssue.id,
-        name: newIssue.name,
+      logger.info('Issue created successfully', {
+        issueId: newIssue.id,
         trackingCode: newIssue.tracking_code || newIssue.trackingCode,
-        issueTypeId: newIssue.issue_type_id,
-        categoryId: newIssue.category_id,
-        status: newIssue.status_id,
-        statusName: statusMap.get(newIssue.status_id) || newIssue.status_id,
-        assigneeId: newIssue.assignee_id,
-        assignmentReason: assignmentResult.reason,
+        categoryId: stepTwoParams.category?.id,
+        issueTypeId: stepTwoParams.issueType?.id,
+        hasAssignee: !!assignmentResult.assigneeId,
+        administrativeRegion: stepLocationParams.administrative_region,
       });
 
       // Verify the issue was actually saved by trying to fetch it from local database
@@ -404,8 +403,12 @@ const Content = ({
         trackingCode,
       });
     } catch (error) {
-      console.error('❌ [STEP3] Error creating issue:', error);
-      console.error('❌ [STEP3] Error stack:', error.stack);
+      logger.error('Issue creation failed', error, {
+        projectId: stepOneParams.selectedProject?.id,
+        categoryId: stepTwoParams.category?.id,
+        issueTypeId: stepTwoParams.issueType?.id,
+        administrativeRegion: stepLocationParams.administrative_region,
+      });
       Alert.alert(t('error'), t('issue_creation_error'), [{ text: t('ok'), style: 'default' }], {
         cancelable: true,
       });

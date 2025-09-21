@@ -18,6 +18,7 @@ import { Button } from 'react-native-paper';
 import CustomSeparator from '../../../../components/CustomSeparator/CustomSeparator';
 import CollapsibleSection from '../../../../components/CollapsibleSection';
 import { colors } from '../../../../utils/colors';
+import { logger } from '../../../../utils/logger';
 import { citizenTypes } from '../../../../utils/utils';
 import { useIssueDetail } from '../../../../hooks/useIssueDetail';
 import watermelonManager from '../../../../database/watermelonManager';
@@ -108,6 +109,22 @@ const Content = ({
     getSecureDisplayValue,
   } = useIssueDetail(issue, lookupData, currentUserId, t);
 
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'IssueDetail', {
+      issueId: issue?.id,
+      trackingCode: issue?.tracking_code,
+      hasUserContext: !!userContext,
+      currentUserId,
+      lookupDataCounts: {
+        categories: categories.length,
+        types: types.length,
+        statuses: statuses.length,
+        users: users.length,
+      },
+    });
+  }, []);
+
   useBackHandler(
     () =>
       // navigation.navigate("GRM")
@@ -124,9 +141,15 @@ const Content = ({
       if (!enrichedIssue?.id) return;
       try {
         const atts = await watermelonManager.getAttachmentsForIssue(enrichedIssue.id);
-        console.log('📎 Loaded attachments:', atts.length);
+        logger.info('IssueDetail: Loaded attachments', {
+          issueId: enrichedIssue.id,
+          attachmentCount: atts.length,
+        });
         setAttachments(atts || []);
-      } catch (e) {
+      } catch (error) {
+        logger.error('IssueDetail: Error loading attachments', error, {
+          issueId: enrichedIssue.id,
+        });
         setAttachments([]);
       }
     }
@@ -162,6 +185,11 @@ const Content = ({
   const [modalImageUri, setModalImageUri] = useState(null);
 
   const handleViewImage = (attachment) => {
+    logger.userAction('view_attachment', 'IssueDetail', {
+      issueId: enrichedIssue?.id,
+      attachmentType: attachment.type || 'unknown',
+      hasLocalUrl: !!attachment.local_url,
+    });
     setModalImageUri(attachment.local_url || attachment.attachment);
     setModalVisible(true);
   };
@@ -335,8 +363,10 @@ const Content = ({
             labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
             mode="contained"
             onPress={() => {
+              logger.userAction('back_button_press', 'IssueDetail', {
+                issueId: enrichedIssue?.id,
+              });
               // Navigate back or handle back action
-              console.log('Back button pressed');
             }}
           >
             {t('back')}

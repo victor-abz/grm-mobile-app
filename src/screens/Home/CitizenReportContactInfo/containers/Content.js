@@ -7,6 +7,7 @@ import { withObservables } from '@nozbe/watermelondb/react';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
+import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
 import { processAgeGroups, processCitizenGroupsByType } from '../../../../utils/citizenReportUtils';
 
@@ -23,6 +24,16 @@ const theme = {
 const Content = ({ stepOneParams, ageGroups = [], citizenGroups = [], projectLinks = [] }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
+
+  // Log screen load
+  React.useEffect(() => {
+    logger.userAction('screen_load', 'CitizenReportContactInfo', {
+      projectId: stepOneParams?.selectedProject?.id,
+      contactMethod: stepOneParams?.methodOfContact,
+      ageGroupsCount: ageGroups.length,
+      citizenGroupsCount: citizenGroups.length,
+    });
+  }, []);
 
   // Form state
   const [name, setName] = useState('');
@@ -87,6 +98,15 @@ const Content = ({ stepOneParams, ageGroups = [], citizenGroups = [], projectLin
       gender: pickerGenderValue,
       selectedProject: stepOneParams?.selectedProject,
     };
+
+    logger.userAction('contact_info_next', 'CitizenReportContactInfo', {
+      hasName: !!name,
+      citizenType: confidentialValue,
+      hasAgeGroup: !!selectedAge,
+      gender: pickerGenderValue,
+      hasCitizenGroup1: !!selectedCitizenGroupI,
+      hasCitizenGroup2: !!selectedCitizenGroupII,
+    });
 
     navigation.navigate('CitizenReportStep2', {
       stepOneParams: navigationData,

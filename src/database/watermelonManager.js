@@ -4,6 +4,7 @@ import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import schema from './schema';
 import migrations from './migrations';
 import { modelClasses } from './models';
+import { logger } from '../utils/logger';
 
 /**
  * WatermelonDB Manager for GRM Mobile App
@@ -41,9 +42,9 @@ class WatermelonManager {
         });
 
         this.isInitialized = true;
-        console.log('✅ WatermelonDB initialized successfully');
+        logger.info('WatermelonDB: Database initialized successfully');
       } catch (error) {
-        console.error('❌ Error initializing WatermelonDB:', error);
+        logger.error('WatermelonDB: Failed to initialize database', error);
         throw error;
       }
     }
@@ -61,6 +62,7 @@ class WatermelonManager {
    * Issues Management - Updated to use corrected field names
    */
   async getIssues(filters = {}) {
+    const startTime = Date.now();
     try {
       const db = this.getDatabase();
       const issuesCollection = db.get('grm_issues');
@@ -110,23 +112,33 @@ class WatermelonManager {
       }
 
       const issues = await query.fetch();
-      // Return raw data directly - no transformation
-      return issues
+      const duration = Date.now() - startTime;
+
+      const results = issues
         .filter((issue) => issue && issue._raw)
         .map((issue) => ({
           ...issue._raw,
           name: issue._raw.id || issue._raw.name,
         }))
         .filter((issue) => issue !== null);
+
+      logger.database('getIssues', 'grm_issues', duration, {
+        filterCount: Object.keys(filters).length,
+        resultCount: results.length,
+      });
+
+      return results;
     } catch (error) {
-      console.error('Error fetching issues from WatermelonDB:', error);
+      logger.error('WatermelonDB: Error fetching issues', error, {
+        filters: Object.keys(filters),
+      });
       return [];
     }
   }
 
   async getIssue(issueId) {
     try {
-      console.log('🔍 [WM] getIssue called with ID:', issueId);
+      logger.database('getIssue', 'grm_issues', 0, { issueId });
 
       const db = this.getDatabase();
       const issue = await db.get('grm_issues').find(issueId);
@@ -137,20 +149,24 @@ class WatermelonManager {
           name: issue._raw.id || issue._raw.name,
         };
 
-        console.log('✅ [WM] Returning found issue:', result);
+        logger.info('WatermelonDB: Issue found', { issueId, hasResult: true });
         return result;
       }
-      console.log('❌ [WM] Issue not found for ID:', issueId);
+      logger.warn('WatermelonDB: Issue not found', { issueId });
       return null;
     } catch (error) {
-      console.error('❌ [WM] Error fetching issue from WatermelonDB:', error);
+      logger.error('WatermelonDB: Error fetching issue', error, { issueId });
       return null;
     }
   }
 
   async createIssue(issueData) {
     try {
-      console.log('🔍 [WM] createIssue called with data:', issueData);
+      logger.info('WatermelonDB: Creating issue', {
+        category: issueData.category,
+        project: issueData.project,
+        hasDescription: !!issueData.description,
+      });
 
       const db = this.getDatabase();
 
@@ -230,10 +246,17 @@ class WatermelonManager {
         })
       );
 
-      console.log('✅ [WM] Issue created successfully:', issue.id);
+      logger.info('WatermelonDB: Issue created successfully', {
+        issueId: issue.id,
+        project: issueData.project,
+        category: issueData.category,
+      });
       return issue._raw;
     } catch (error) {
-      console.error('❌ [WM] Error creating issue:', error);
+      logger.error('WatermelonDB: Error creating issue', error, {
+        project: issueData?.project,
+        category: issueData?.category,
+      });
       throw error;
     }
   }
@@ -256,7 +279,10 @@ class WatermelonManager {
 
       // Create all attachments concurrently using Promise.all
       const createPromises = validAttachments.map((att) => {
-        console.log('🔍 [WM] Creating attachment:', att);
+        logger.database('createAttachment', 'grm_issue_attachments', 0, {
+          issueId: att.issue,
+          hasUrl: !!att.attachment_url,
+        });
         return db.get('grm_issue_attachments').create((a) => {
           // Map to backend schema fields only
           a._setRaw('grm_issue', att.issue);
@@ -279,7 +305,10 @@ class WatermelonManager {
 
       const created = await Promise.all(createPromises);
       const createdRaws = created.map((record) => record._raw);
-      console.log('🔍 [WM] Created attachments:', createdRaws);
+      logger.info('WatermelonDB: Created attachments', {
+        createdCount: createdRaws.length,
+        validAttachmentsCount: validAttachments.length,
+      });
       return createdRaws;
     });
   }
@@ -360,10 +389,10 @@ class WatermelonManager {
         await issue.destroyPermanently();
       });
 
-      console.log('✅ [WM] Issue deleted successfully:', issueId);
+      logger.info('WatermelonDB: Issue deleted successfully', { issueId });
       return true;
     } catch (error) {
-      console.error('❌ [WM] Error deleting issue:', error);
+      logger.error('WatermelonDB: Error deleting issue', error, { issueId });
       throw error;
     }
   }
@@ -486,7 +515,9 @@ class WatermelonManager {
 
       const projects = await db.get('grm_projects').query().fetch();
 
-      console.log(`🔍 [PROJECTS] Found ${projects.length} project records in database`);
+      logger.database('getProjects', 'grm_projects', 0, {
+        foundRecords: projects.length,
+      });
 
       // Enhanced filtering with detailed logging
       const validProjects = projects.filter((project, index) => {
@@ -510,7 +541,10 @@ class WatermelonManager {
         return true;
       });
 
-      console.log(`🔍 [PROJECTS] ${validProjects.length} valid project records after filtering`);
+      logger.info('WatermelonDB: Projects filtered', {
+        validProjects: validProjects.length,
+        totalProjects: projects.length,
+      });
 
       // Return raw data directly - no transformation
       const transformedProjects = validProjects
@@ -527,7 +561,9 @@ class WatermelonManager {
         })
         .filter((project) => project !== null);
 
-      console.log(`🔍 [PROJECTS] ${transformedProjects.length} projects successfully processed`);
+      logger.info('WatermelonDB: Projects processed successfully', {
+        processedCount: transformedProjects.length,
+      });
 
       return transformedProjects;
     } catch (error) {
@@ -834,7 +870,7 @@ class WatermelonManager {
       await db.write(async () => {
         await db.unsafeResetDatabase();
       });
-      console.log('WatermelonDB database cleared successfully');
+      logger.info('WatermelonDB: Database cleared successfully');
     } catch (error) {
       console.error('Error clearing WatermelonDB database:', error);
       throw error;
@@ -867,7 +903,7 @@ class WatermelonManager {
             context.updatedAt = now;
           });
 
-          console.log('✅ User context updated successfully');
+          logger.info('WatermelonDB: User context updated successfully', { userId });
         } catch (error) {
           // Context doesn't exist, create new one
           await userContextCollection.create((context) => {
@@ -883,7 +919,7 @@ class WatermelonManager {
             context.updatedAt = now;
           });
 
-          console.log('✅ User context created successfully');
+          logger.info('WatermelonDB: User context created successfully', { userId });
         }
       });
 
@@ -921,7 +957,7 @@ class WatermelonManager {
         await userContext.markAsDeleted();
       });
 
-      console.log('✅ User context cleared successfully');
+      logger.info('WatermelonDB: User context cleared successfully', { userId });
       return true;
     } catch (error) {
       console.warn('⚠️ Error clearing user context (may not exist):', error.message);
@@ -937,10 +973,16 @@ class WatermelonManager {
       const db = this.getDatabase();
       const atts = await db.get('grm_issue_attachments').query().fetch();
       // Filter by grm_issue field
-      console.log('🔍 [WM] All attachments:', atts);
+      logger.database('getAttachmentsForIssue', 'grm_issue_attachments', 0, {
+        totalAttachments: atts.length,
+        issueId,
+      });
       const filtered = atts.filter((a) => a._raw?.grm_issue === issueId);
       // Return as plain objects
-      console.log('🔍 [WM] Filtered attachments:', filtered);
+      logger.info('WatermelonDB: Attachments filtered for issue', {
+        filteredCount: filtered.length,
+        issueId,
+      });
       return filtered.map((a) => a._raw);
     } catch (e) {
       return [];

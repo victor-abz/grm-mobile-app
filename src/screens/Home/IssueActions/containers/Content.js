@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Linking, Platform, ScrollView, Text, View } from 
 import { Button, IconButton } from 'react-native-paper';
 import StarRating from 'react-native-star-rating-widget';
 import { colors } from '../../../../utils/colors';
+import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
 import { useIssueActions } from '../../../../hooks/useIssueActions';
 import { ACTION_TYPES, DIALOG_TYPES, DIALOG_STATES } from '../../../../utils/issueActionTypes';
@@ -28,24 +29,22 @@ const Content = ({ issue, navigation, statuses = [], userContext }) => {
   const { t } = useTranslation();
 
   // Debug logging for IssueActions
-  console.log('🔍 [IssueActions] Processing issue data:', {
+  logger.debug('IssueActions: Processing issue data', {
     isArray: Array.isArray(issue),
-    issue: issue?._raw ? 'WatermelonDB Object' : 'Raw Object',
+    issueType: issue?._raw ? 'WatermelonDB Object' : 'Raw Object',
   });
 
   if (issue && issue._raw) {
-    console.log('🔍 [IssueActions] Raw issue data:', {
-      id: issue._raw.id,
+    logger.debug('IssueActions: Raw issue data', {
+      issueId: issue._raw.id,
       status: issue._raw.status,
-      assignee: issue._raw.assignee,
-      reporter: issue._raw.reporter,
-      issue_date: issue._raw.issue_date,
-      intake_date: issue._raw.intake_date,
+      hasAssignee: !!issue._raw.assignee,
+      hasReporter: !!issue._raw.reporter,
     });
   }
 
-  console.log('🔍 [IssueActions] User context:', {
-    user: userContext?.user,
+  logger.debug('IssueActions: User context', {
+    hasUser: !!userContext?.user,
     hasPermissions: !!userContext?.permissions,
     hasAssignments: !!userContext?.assignments,
   });

@@ -8,6 +8,7 @@ import { Q } from '@nozbe/watermelondb';
 import watermelonManager from '../../../../database/watermelonManager';
 import LockImage from '../../../../../assets/lock.svg';
 import { colors } from '../../../../utils/colors';
+import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
 import { enrichIssueData, createDetailLookupMaps } from '../../../../utils/issueDetailUtils';
 
@@ -41,6 +42,15 @@ const Content = ({
   const { t } = useTranslation();
   const { issueId, trackingCode } = route?.params || {};
   const [isLoading, setIsLoading] = useState(true);
+
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'CitizenReportStep4', {
+      issueId,
+      trackingCode,
+      hasIssue: !!issue,
+    });
+  }, []);
 
   // Create lookup maps using shared utility for enriching issue data
   const lookupMaps = useMemo(() => {

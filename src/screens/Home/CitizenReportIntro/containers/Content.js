@@ -6,6 +6,7 @@ import { Button } from 'react-native-paper';
 import { withObservables } from '@nozbe/watermelondb/react';
 import CrowdImage from '../../../../../assets/crowd.svg';
 import { colors } from '../../../../utils/colors';
+import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import watermelonManager from '../../../../database/watermelonManager';
@@ -25,6 +26,13 @@ const theme = {
 const Content = ({ projects = [] }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
+
+  // Log screen load
+  React.useEffect(() => {
+    logger.userAction('screen_load', 'CitizenReportIntro', {
+      projectsCount: projects.length,
+    });
+  }, []);
 
   // Prepare project items for dropdown
   const projectItems = useMemo(
@@ -92,6 +100,12 @@ const Content = ({ projects = [] }) => {
             disabled={!selectedProject}
             onPress={() => {
               if (selectedProject) {
+                logger.userAction('project_selected', 'CitizenReportIntro', {
+                  projectId: selectedProject.id,
+                  projectTitle: selectedProject.title,
+                  projectCode: selectedProject.projectCode,
+                });
+
                 navigation.navigate('CitizenReport', {
                   selectedProject: {
                     id: selectedProject.id,

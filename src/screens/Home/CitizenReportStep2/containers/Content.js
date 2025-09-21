@@ -40,6 +40,7 @@ import { AttachmentList } from '../../../../components/AttachmentList/Attachment
 import watermelonManager from '../../../../database/watermelonManager';
 import { colors } from '../../../../utils/colors';
 import { formatDuration } from '../../../../utils/functions';
+import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
 import {
   processCategories,
@@ -75,6 +76,15 @@ const _stylesAudio = StyleSheet.create({
 const Content = ({ stepOneParams, categories = [], types = [], projectLinks = [] }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
+
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'CitizenReportStep2', {
+      projectId: stepOneParams?.selectedProject?.id,
+      categoriesAvailable: categories.length,
+      typesAvailable: types.length,
+    });
+  }, []);
 
   // Form state
   const [pickerValue, setPickerValue] = useState(null);
@@ -454,6 +464,18 @@ const Content = ({ stepOneParams, categories = [], types = [], projectLinks = []
   };
 
   const onNext = useCallback(() => {
+    const selectedCategory = getCategory(pickerValue2);
+
+    logger.userAction('report_step2_next', 'CitizenReportStep2', {
+      hasDate: !!date,
+      issueTypeId: selectedIssueType?.id,
+      categoryId: selectedCategory?.id,
+      hasAdditionalDetails: !!additionalDetails,
+      attachmentCount: attachments.length,
+      recordingCount: recordingURIs.length,
+      ongoingEvent: checked,
+    });
+
     navigation.navigate('CitizenReportLocationStep', {
       stepOneParams,
       stepTwoParams: {
@@ -477,7 +499,7 @@ const Content = ({ stepOneParams, categories = [], types = [], projectLinks = []
         ongoingEvent: checked,
         attachments: attachments.length > 0 ? attachments : undefined,
         recordings: recordingURIs.length > 0 ? recordingURIs : [],
-        category: getCategory(pickerValue2),
+        category: selectedCategory,
         additionalDetails,
       },
     });

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { Button, Dialog, Divider, Paragraph, Portal } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
+import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
 import {
   createUserLookupMap,
@@ -24,8 +25,19 @@ const theme = {
 const Content = ({ issue, comments: commentsFromDB, users }) => {
   const { t } = useTranslation();
 
-  // Debug logging for IssueHistory
-  console.log('🔍 [IssueHistory] Processing issue data:', {
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'IssueHistory', {
+      issueId: issue?.id || issue?._raw?.id,
+      isArray: Array.isArray(issue),
+      hasRawData: !!issue?._raw,
+      commentsCount: commentsFromDB?.length || 0,
+      usersCount: users?.length || 0,
+    });
+  }, []);
+
+  // Log issue data processing
+  logger.info('IssueHistory: Processing issue data', {
     isArray: Array.isArray(issue),
     issue: issue?._raw ? 'WatermelonDB Object' : 'Raw Object',
     commentsFromDB: commentsFromDB?.length || 0,
@@ -33,7 +45,7 @@ const Content = ({ issue, comments: commentsFromDB, users }) => {
   });
 
   if (issue && issue._raw) {
-    console.log('🔍 [IssueHistory] Raw issue data:', {
+    logger.info('IssueHistory: Raw issue data', {
       id: issue._raw.id,
       commentsFromDB: commentsFromDB?.length || 0,
       usersCount: users?.length || 0,
@@ -44,7 +56,10 @@ const Content = ({ issue, comments: commentsFromDB, users }) => {
   // Create user lookup map using utility
   const userMap = useMemo(() => {
     const map = createUserLookupMap(users);
-    console.log('🔍 [IssueHistory] User map created:', map.size, 'users');
+    logger.info('IssueHistory: User map created', {
+      userMapSize: map.size,
+      usersCount: users?.length || 0,
+    });
     return map;
   }, [users]);
 
@@ -65,7 +80,7 @@ const Content = ({ issue, comments: commentsFromDB, users }) => {
       regionName: rawData.regionName || rawData.region_name,
     };
 
-    console.log('✅ [IssueHistory] Enriched issue:', {
+    logger.info('IssueHistory: Enriched issue', {
       id: enriched.id,
       commentsFromDB: commentsFromDB?.length || 0,
       usersInMap: userMap.size,
@@ -90,6 +105,11 @@ const Content = ({ issue, comments: commentsFromDB, users }) => {
   // ========== DIALOG MANAGEMENT ==========
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = (_selected) => {
+    logger.userAction('view_comment_detail', 'IssueHistory', {
+      issueId: enrichedIssue?.id,
+      activityType: _selected?.activity_type,
+      commentId: _selected?.id,
+    });
     setShowDialog(true);
     setSelected(_selected);
   };
@@ -134,7 +154,7 @@ const Content = ({ issue, comments: commentsFromDB, users }) => {
 
   // ========== EFFECTS ==========
   useEffect(() => {
-    console.log('🔍 [IssueHistory] useEffect triggered:', {
+    logger.info('IssueHistory: useEffect triggered', {
       enrichedIssue: !!enrichedIssue,
       commentsFromDB: commentsFromDB?.length || 0,
       userMapSize: userMap.size,

@@ -2,6 +2,7 @@ import React, { useContext, createContext, useState, useEffect, useMemo } from '
 import { FrappeApp } from 'frappe-js-sdk';
 import { AuthContext } from './AuthProvider';
 import { FRAPPE_BASE_URL } from '../utils/constants';
+import { logger } from '../utils/logger';
 
 const FrappeContext = createContext();
 
@@ -13,18 +14,32 @@ const FrappeProvider = ({ children }) => {
 
   useEffect(() => {
     if (!accessToken) {
+      logger.debug('FrappeProvider: No access token available');
       return;
     }
 
-    const frappe = new FrappeApp(FRAPPE_BASE_URL, {
-      useToken: true,
-      type: 'Bearer',
-      token: () => accessToken,
-    });
+    try {
+      logger.info('FrappeProvider: Initializing Frappe connection', {
+        baseUrl: FRAPPE_BASE_URL,
+        hasToken: !!accessToken,
+      });
 
-    setDb(frappe.db());
-    setCall(frappe.call());
-    setAuth(frappe.auth());
+      const frappe = new FrappeApp(FRAPPE_BASE_URL, {
+        useToken: true,
+        type: 'Bearer',
+        token: () => accessToken,
+      });
+
+      setDb(frappe.db());
+      setCall(frappe.call());
+      setAuth(frappe.auth());
+
+      logger.info('FrappeProvider: Frappe connection initialized successfully');
+    } catch (error) {
+      logger.error('FrappeProvider: Failed to initialize Frappe connection', error, {
+        baseUrl: FRAPPE_BASE_URL,
+      });
+    }
   }, [accessToken]);
 
   const contextValue = useMemo(

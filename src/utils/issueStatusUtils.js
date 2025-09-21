@@ -4,6 +4,7 @@
  */
 
 import { ACTION_TYPES } from './issueActionTypes';
+import { logger } from './logger';
 
 /**
  * Find status by specific property
@@ -21,7 +22,13 @@ const findStatusByProperty = (statuses, property, value = true) => {
  * Get the appropriate status for each action type
  */
 export const getStatusForAction = (actionType, statuses) => {
-  if (!statuses || !Array.isArray(statuses)) return null;
+  if (!statuses || !Array.isArray(statuses)) {
+    logger.warn('IssueStatus: Invalid statuses provided for action', {
+      actionType,
+      statusesValid: false,
+    });
+    return null;
+  }
 
   const statusMappings = {
     [ACTION_TYPES.ACCEPT]: () => findStatusByProperty(statuses, 'open_status'),
@@ -35,7 +42,16 @@ export const getStatusForAction = (actionType, statuses) => {
   };
 
   const statusFinder = statusMappings[actionType];
-  return statusFinder ? statusFinder() : null;
+  const result = statusFinder ? statusFinder() : null;
+
+  if (!result && statusFinder) {
+    logger.warn('IssueStatus: No status found for action', {
+      actionType,
+      statusesCount: statuses.length,
+    });
+  }
+
+  return result;
 };
 
 /**

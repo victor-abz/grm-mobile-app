@@ -18,6 +18,7 @@ import BG9 from '../../../../../assets/BG_9.png';
 import smallRectangle from '../../../../../assets/small-rectangle.png';
 import lookupDataManager from '../../../../services/LookupDataManager';
 import dataManager from '../../../../services/DataManager';
+import { logger } from '../../../../utils/logger';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -29,13 +30,15 @@ const Content = () => {
 
   // Trigger background sync when home page loads
   useEffect(() => {
+    logger.userAction('screen_load', 'Dashboard/Content');
+
     const triggerBackgroundSync = async () => {
       try {
-        console.log('🏠 Home page loaded, triggering background sync...');
+        logger.info('Dashboard: Starting background sync');
         await lookupDataManager.performBackgroundSync();
-        console.log('✅ Background sync completed on home page');
+        logger.info('Dashboard: Background sync completed successfully');
       } catch (error) {
-        console.warn('⚠️ Background sync failed on home page:', error.message);
+        logger.warn('Dashboard: Background sync failed', error);
       }
     };
 
@@ -49,17 +52,21 @@ const Content = () => {
     const syncPendingChanges = async () => {
       try {
         const syncStatus = await dataManager.getSyncStatus();
-        console.log('[Home] Pending changes on load:', syncStatus.pendingChanges);
+        logger.info('Dashboard: Pending changes on load', {
+          pendingChanges: syncStatus.pendingChanges,
+        });
         if (syncStatus.pendingChanges > 0 && syncStatus.isOnline) {
-          console.log('[Home] Syncing pending changes...');
+          logger.info('Dashboard: Syncing pending changes');
           await dataManager.performSync();
           const syncStatusAfter = await dataManager.getSyncStatus();
-          console.log('[Home] Pending changes after sync:', syncStatusAfter.pendingChanges);
+          logger.info('Dashboard: Pending changes after sync', {
+            pendingChanges: syncStatusAfter.pendingChanges,
+          });
         } else {
-          console.log('[Home] No pending changes to sync or offline.');
+          logger.info('Dashboard: No pending changes to sync or offline');
         }
       } catch (err) {
-        console.log('[Home] Error syncing pending changes:', err.message);
+        logger.error('Dashboard: Error syncing pending changes', err);
       }
     };
     syncPendingChanges();
@@ -82,22 +89,27 @@ const Content = () => {
           onPress: async () => {
             setIsResetting(true);
             try {
-              console.log('💥 User initiated nuclear reset from Dashboard');
+              logger.userAction('nuclear_reset_initiated', 'Dashboard');
               const success = await performNuclearReset();
 
               if (success) {
+                logger.info('Dashboard: Nuclear reset successful');
                 Alert.alert(
                   t('✅ Reset Successful'),
                   t('Databases have been reset successfully. The app should now work normally.')
                 );
               } else {
+                logger.error(
+                  'Dashboard: Nuclear reset failed',
+                  new Error('Reset operation failed')
+                );
                 Alert.alert(
                   t('❌ Reset Failed'),
                   t('Database reset failed. Please restart the app and try again.')
                 );
               }
             } catch (error) {
-              console.error('Nuclear reset error:', error);
+              logger.error('Dashboard: Nuclear reset error', error);
               Alert.alert(
                 t('Reset Error'),
                 t('An error occurred during reset. Please restart the app.')

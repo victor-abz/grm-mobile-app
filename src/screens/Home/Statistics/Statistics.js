@@ -10,6 +10,7 @@ import moment from 'moment';
 import dataManager from '../../../services/DataManager';
 import watermelonManager from '../../../database/watermelonManager';
 import { colors } from '../../../utils/colors';
+import { logger } from '../../../utils/logger';
 
 // Chart components
 import PieChartGrm from './components/PieChartGrm';
@@ -51,6 +52,18 @@ const Statistics = ({
 
   const { username } = useSelector((state) => state.get('authentication').toObject());
 
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'Statistics', {
+      issuesCount: issues.length,
+      categoriesCount: categories.length,
+      typesCount: types.length,
+      statusesCount: statuses.length,
+      regionsCount: regions.length,
+      projectsCount: projects.length,
+    });
+  }, []);
+
   // Helper function to create lookup maps with proper WatermelonDB support
   const createStatisticsLookupMap = (items, labelField) => {
     const map = new Map();
@@ -58,7 +71,6 @@ const Statistics = ({
 
     items.forEach((item) => {
       const itemData = item._raw || item;
-      console.log('Debug stupidly', item);
       if (itemData && itemData.id) {
         const label = itemData[labelField] || itemData.name || itemData.id;
         map.set(itemData.id, label);
@@ -109,7 +121,7 @@ const Statistics = ({
 
   // Create lookup maps for efficient data processing
   const lookupMaps = useMemo(() => {
-    console.log('📊 [STATISTICS] Creating lookup maps:', {
+    logger.info('Statistics: Creating lookup maps', {
       categoriesCount: categories.length,
       typesCount: types.length,
       statusesCount: statuses.length,
@@ -119,13 +131,13 @@ const Statistics = ({
 
     // Log sample data for debugging
     if (categories.length > 0) {
-      console.log('📊 [STATISTICS] Sample category:', categories[0]._raw || categories[0]);
+      logger.debug('Statistics: Sample category', categories[0]._raw || categories[0]);
     }
     if (types.length > 0) {
-      console.log('📊 [STATISTICS] Sample type:', types[0]._raw || types[0]);
+      logger.debug('Statistics: Sample type', types[0]._raw || types[0]);
     }
     if (statuses.length > 0) {
-      console.log('📊 [STATISTICS] Sample status:', statuses[0]._raw || statuses[0]);
+      logger.debug('Statistics: Sample status', statuses[0]._raw || statuses[0]);
     }
 
     return {
@@ -143,7 +155,10 @@ const Statistics = ({
       return null;
     }
 
-    console.log('📊 [STATISTICS] Processing', issues.length, 'issues for statistics');
+    logger.info('Statistics: Processing issues', {
+      issuesCount: issues.length,
+      hasLookupMaps: !!lookupMaps,
+    });
 
     const threeMonthsAgo = moment().subtract(3, 'months');
     const sixMonthsAgo = moment().subtract(6, 'months');
@@ -421,7 +436,7 @@ const Statistics = ({
     // Calculate average resolution time (mock calculation)
     const avgResolutionDays = resolvedIssues > 0 ? Math.round(Math.random() * 15 + 5) : 0;
 
-    console.log('✅ [STATISTICS] Data processing completed:', {
+    logger.info('Statistics: Data processing completed', {
       totalIssues,
       recentIssues,
       pendingIssues,
@@ -463,21 +478,25 @@ const Statistics = ({
 
   const loadStatistics = async () => {
     try {
-      console.log('📊 [STATISTICS] Loading statistics data...');
+      logger.info('Statistics: Loading statistics data');
 
       // Get user context
       const userContext = dataManager.getUserContext();
-      console.log('📊 [STATISTICS] User context:', userContext?.user?.id);
+      logger.info('Statistics: User context', {
+        userId: userContext?.user?.id,
+        hasUserContext: !!userContext,
+      });
 
       // Get comprehensive statistics from DataManager
 
-      console.log('✅ [STATISTICS] Statistics loaded successfully');
+      logger.info('Statistics: Statistics loaded successfully');
     } catch (error) {
-      console.error('❌ [STATISTICS] Error loading statistics:', error);
+      logger.error('Statistics: Error loading statistics', error);
     }
   };
 
   const onRefresh = async () => {
+    logger.userAction('statistics_refresh', 'Statistics');
     setRefreshing(true);
     await loadStatistics();
     setRefreshing(false);

@@ -5,6 +5,7 @@ import { ActivityIndicator, Snackbar, Card, Divider } from 'react-native-paper';
 import { hasUnsyncedChanges } from '@nozbe/watermelondb/sync';
 import watermelonManager from '../../../database/watermelonManager';
 import { DataContext } from '../../../providers/DataProvider';
+import { logger } from '../../../utils/logger';
 import CheckCircle from '../../../../assets/check-circle.svg';
 import SyncImage from '../../../../assets/sync-image.svg';
 import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreenButton';
@@ -224,22 +225,49 @@ const SyncAttachments = ({ navigation }) => {
 
   const syncStatus = useSyncStatus(dataManager);
 
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'SyncAttachments', {
+      hasDataManager: !!dataManager,
+      hasSyncManager: !!dataManager?.syncManager,
+      hasPendingChanges: syncStatus.hasPendingChanges,
+      pendingCount: syncStatus.pendingCount,
+    });
+  }, []);
+
   const handleSync = async () => {
     if (!dataManager?.syncManager) {
+      logger.warn('SyncAttachments: Sync not available', {
+        hasDataManager: !!dataManager,
+        hasSyncManager: !!dataManager?.syncManager,
+      });
       setError(t('Sync is not available'));
       return;
     }
 
+    logger.userAction('sync_initiated', 'SyncAttachments', {
+      hasPendingChanges: syncStatus.hasPendingChanges,
+      pendingCount: syncStatus.pendingCount,
+    });
+
     try {
       await dataManager.performSync();
+      logger.info('SyncAttachments: Sync completed successfully', {
+        pendingCount: syncStatus.pendingCount,
+      });
       setShowSuccessModal(true);
       syncStatus.refreshPendingChanges();
     } catch (syncError) {
+      logger.error('SyncAttachments: Sync failed', syncError, {
+        pendingCount: syncStatus.pendingCount,
+        errorMessage: syncError.message,
+      });
       setError(syncError.message || t('Sync failed'));
     }
   };
 
   const handleCloseSuccess = () => {
+    logger.userAction('sync_success_modal_close', 'SyncAttachments');
     setShowSuccessModal(false);
     navigation.goBack();
   };

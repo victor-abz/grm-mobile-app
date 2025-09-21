@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { logger } from '../../../../utils/logger';
 import BigCard from '../../Dashboard/components/BigCard';
 
 import greenBg from '../../../../../assets/greenBg.png';
@@ -35,6 +36,23 @@ const DATA = [
 
 const Content = () => {
   const navigation = useNavigation();
+
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'CitizenEngagement', {
+      availableOptions: DATA.length,
+    });
+  }, []);
+
+  const handleCardPress = (item) => {
+    logger.userAction('citizen_engagement_option_selected', 'CitizenEngagement', {
+      optionId: item.id,
+      optionTitle: item.title,
+      navigateTo: item.navigateTo || 'WorkInProgress',
+    });
+    navigation.navigate(item.navigateTo || 'WorkInProgress');
+  };
+
   return (
     <FlatList
       removeClippedSubviews
@@ -43,7 +61,7 @@ const Content = () => {
         <View style={{ marginVertical: 10 }}>
           <BigCard
             image={item.background}
-            onCardPress={() => navigation.navigate(item.navigateTo || 'WorkInProgress')}
+            onCardPress={() => handleCardPress(item)}
             title={item.title}
             // icon={<TeamWorkIcon />}
           />

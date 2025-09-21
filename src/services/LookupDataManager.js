@@ -1,4 +1,5 @@
 import watermelonManager from '../database/watermelonManager';
+import { logger } from '../utils/logger';
 
 /**
  * Lookup Data Manager - Pure Sync-First Approach
@@ -18,17 +19,18 @@ class LookupDataManager {
    * Initialize with sync manager and credentials
    */
   async initialize(syncManager, credentials) {
-    console.log('🔧 [LOOKUP] Initializing LookupDataManager...');
-    console.log('🔧 [LOOKUP] Credentials available:', !!credentials);
-    console.log('🔧 [LOOKUP] Sync manager available:', !!syncManager);
+    logger.info('LookupDataManager: Initializing', {
+      hasCredentials: !!credentials,
+      hasSyncManager: !!syncManager,
+    });
 
     this.syncManager = syncManager;
     this.credentials = credentials;
 
     if (syncManager) {
-      console.log('✅ [LOOKUP] LookupDataManager initialized with sync manager');
+      logger.info('LookupDataManager: Initialized with sync manager');
     } else {
-      console.warn('⚠️ [LOOKUP] LookupDataManager initialized without sync manager');
+      logger.warn('LookupDataManager: Initialized without sync manager');
     }
   }
 
@@ -39,37 +41,45 @@ class LookupDataManager {
    * 3. Return data from local DB (post-sync if triggered)
    */
   async getData(type) {
-    console.log(`🔍 [LOOKUP] Getting ${type} data...`);
+    logger.info('LookupDataManager: Getting data', { type });
 
     try {
       // Step 1: Check local data first
-      console.log(`🔍 [LOOKUP] Checking local ${type} data...`);
       let data = await this.getFromLocalDB(type);
-      console.log(`🔍 [LOOKUP] Found ${data.length} ${type} records in local DB`);
+      logger.info('LookupDataManager: Found local data', {
+        type,
+        recordCount: data.length,
+      });
 
       // Step 2: If no local data and we have credentials, try sync
       if (data.length === 0 && this.credentials && this.syncManager) {
-        console.log(`🔄 [LOOKUP] No local ${type} data found, triggering sync...`);
+        logger.info('LookupDataManager: No local data found, triggering sync', { type });
 
         try {
           await this.syncManager.sync();
-          console.log(`✅ [LOOKUP] Sync completed, retrying ${type} data from local DB...`);
+          logger.info('LookupDataManager: Sync completed, retrying', { type });
 
           // Retry after sync
           data = await this.getFromLocalDB(type);
-          console.log(`🔍 [LOOKUP] Found ${data.length} ${type} records after sync`);
+          logger.info('LookupDataManager: Found data after sync', {
+            type,
+            recordCount: data.length,
+          });
         } catch (syncError) {
-          console.error(`❌ [LOOKUP] Sync failed for ${type}:`, syncError);
+          logger.error('LookupDataManager: Sync failed', syncError, { type });
           // Continue with empty data - don't throw
         }
       } else if (data.length === 0) {
-        console.warn(`⚠️ [LOOKUP] No ${type} data available and no sync capability`);
+        logger.warn('LookupDataManager: No data available and no sync capability', { type });
       }
 
-      console.log(`📊 [LOOKUP] Returning ${data.length} ${type} records`);
+      logger.info('LookupDataManager: Returning data', {
+        type,
+        recordCount: data.length,
+      });
       return data;
     } catch (error) {
-      console.error(`❌ [LOOKUP] Error getting ${type} data:`, error);
+      logger.error('LookupDataManager: Error getting data', error, { type });
       return [];
     }
   }
@@ -79,36 +89,40 @@ class LookupDataManager {
    */
   async getFromLocalDB(type) {
     try {
-      console.log(`📱 [LOOKUP_LOCAL] Fetching ${type} from WatermelonDB...`);
+      logger.database('getFromLocalDB', type, 0, { type });
 
       const tableName = this.getTableName(type);
       if (!tableName) {
-        console.error(`❌ [LOOKUP_LOCAL] Unknown data type: ${type}`);
+        logger.error('LookupDataManager: Unknown data type', null, { type });
         return [];
       }
 
-      console.log(`📱 [LOOKUP_LOCAL] Using table: ${tableName}`);
-
       const database = watermelonManager.getDatabase();
       if (!database) {
-        console.error('❌ [LOOKUP_LOCAL] Database not available');
+        logger.error('LookupDataManager: Database not available');
         return [];
       }
 
       const collection = database.get(tableName);
       const records = await collection.query().fetch();
 
-      console.log(`📱 [LOOKUP_LOCAL] Found ${records.length} records in ${tableName}`);
+      logger.info('LookupDataManager: Records fetched from local DB', {
+        type,
+        tableName,
+        recordCount: records.length,
+      });
 
       // Log sample record for debugging
       if (records.length > 0) {
-        const [sample] = records;
-        console.log(`📱 [LOOKUP_LOCAL] Sample ${type} record:`, {
-          id: sample.id,
-          name: sample.name || sample.title || sample.label || 'N/A',
-          created_at: sample.created_at,
-          updated_at: sample.updated_at,
-          ...sample._raw,
+        const sample = records[0];
+        logger.debug('LookupDataManager: Sample record', {
+          type,
+          sampleRecord: {
+            id: sample.id,
+            name: sample.name || sample.title || sample.label || 'N/A',
+            created_at: sample.created_at,
+            updated_at: sample.updated_at,
+          },
         });
       }
 
@@ -119,10 +133,13 @@ class LookupDataManager {
         ...record._raw,
       }));
 
-      console.log(`📱 [LOOKUP_LOCAL] Converted ${data.length} records to plain objects`);
+      logger.info('LookupDataManager: Records converted to plain objects', {
+        type,
+        convertedCount: data.length,
+      });
       return data;
     } catch (error) {
-      console.error(`❌ [LOOKUP_LOCAL] Error fetching ${type} from local DB:`, error);
+      logger.error('LookupDataManager: Error fetching from local DB', error, { type });
       return [];
     }
   }
@@ -145,7 +162,10 @@ class LookupDataManager {
     };
 
     const tableName = tableMap[type];
-    console.log(`🗂️ [LOOKUP_TABLE] Mapping ${type} → ${tableName}`);
+    logger.debug('LookupDataManager: Table mapping', {
+      type,
+      tableName: tableName || 'UNKNOWN',
+    });
     return tableName;
   }
 

@@ -6,6 +6,7 @@ import { withObservables } from '@nozbe/watermelondb/react';
 import { useData } from '../../../providers/DataProvider';
 import watermelonManager from '../../../database/watermelonManager';
 import { colors } from '../../../utils/colors';
+import { logger } from '../../../utils/logger';
 import { styles } from './IssueSearch.style';
 import Content from './containers';
 
@@ -20,13 +21,15 @@ const IssueSearch = ({
   projects = [],
   users = [],
 }) => {
-  console.log('🔍 [IssueSearch] Component props received:');
-  console.log('  - Issues:', issues?.length || 0);
-  console.log('  - Categories:', categories?.length || 0);
-  console.log('  - Types:', types?.length || 0);
-  console.log('  - Statuses:', statuses?.length || 0);
-  console.log('  - Users:', users?.length || 0);
-  console.log('  - Sample issue:', issues?.[0]);
+  useEffect(() => {
+    logger.userAction('screen_load', 'IssueSearch', {
+      issuesCount: issues?.length || 0,
+      categoriesCount: categories?.length || 0,
+      typesCount: types?.length || 0,
+      statusesCount: statuses?.length || 0,
+      usersCount: users?.length || 0,
+    });
+  }, []);
 
   const customStyles = styles();
   const { username } = useSelector((state) => state.get('authentication').toObject());

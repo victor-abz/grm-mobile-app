@@ -4,6 +4,7 @@
  */
 
 import { ACTION_TYPES } from './issueActionTypes';
+import { logger } from './logger';
 
 /**
  * Create user lookup map for performance
@@ -112,18 +113,30 @@ export const processComment = (commentRecord, userMap, t) => {
  */
 export const processComments = (commentsFromDB, userMap, t) => {
   if (!commentsFromDB || commentsFromDB.length === 0) {
-    console.log('🔍 [IssueHistory] No comments found from database');
+    logger.debug('IssueHistory: No comments found from database');
     return [];
   }
 
-  console.log('🔍 [IssueHistory] Loading comments from database:', commentsFromDB.length);
+  logger.info('IssueHistory: Processing comments from database', {
+    commentCount: commentsFromDB.length,
+    userMapSize: userMap?.size || 0,
+  });
 
-  const processedComments = commentsFromDB.map((commentRecord) =>
-    processComment(commentRecord, userMap, t)
-  );
+  try {
+    const processedComments = commentsFromDB.map((commentRecord) =>
+      processComment(commentRecord, userMap, t)
+    );
 
-  console.log('✅ [IssueHistory] Processed comments:', processedComments.length);
-  return processedComments;
+    logger.info('IssueHistory: Comments processed successfully', {
+      processedCount: processedComments.length,
+    });
+    return processedComments;
+  } catch (error) {
+    logger.error('IssueHistory: Error processing comments', error, {
+      commentCount: commentsFromDB.length,
+    });
+    return [];
+  }
 };
 
 /**

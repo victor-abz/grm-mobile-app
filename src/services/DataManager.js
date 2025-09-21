@@ -3,6 +3,7 @@ import { FrappeApp } from 'frappe-js-sdk';
 import watermelonManager from '../database/watermelonManager';
 import WatermelonSyncManager from './WatermelonSyncManager';
 import lookupDataManager from './LookupDataManager';
+import { logger } from '../utils/logger';
 
 const DEFAULT_CONFIG = {
   url: '',
@@ -56,7 +57,10 @@ export function extractApiResponse(response) {
   }
 
   // Default error response
-  console.error('❌ Unknown API response format:', response);
+  logger.error('DataManager: Unknown API response format', new Error('Invalid response format'), {
+    responseType: typeof response,
+    hasResponse: !!response,
+  });
   return {
     status: 'error',
     data: null,
@@ -76,7 +80,10 @@ const LookupAPI = {
       const rawResponse = await call.get(endpoint, params);
       return extractApiResponse(rawResponse);
     } catch (error) {
-      console.warn(`⚠️ API call failed for ${endpoint}:`, error.message);
+      logger.error('DataManager: API call failed', error, {
+        endpoint,
+        params: Object.keys(params),
+      });
       return { status: 'error', data: null, message: error.message };
     }
   },
@@ -85,31 +92,34 @@ const LookupAPI = {
    * Fetch categories - return raw Frappe data
    */
   async getCategories(call, projectId = null) {
-    console.log('🔍 [FRAPPE_API] Fetching categories from Frappe...');
+    logger.info('DataManager: Fetching categories from Frappe', { projectId });
     const response = await this.callAPI(call, 'egrm.api.lookup.categories', {
       project: projectId,
     });
 
     if (response.status === 'success') {
-      console.log(
-        '🔍 [FRAPPE_API] Categories response success, data length:',
-        response.data?.length || 0
-      );
+      logger.info('DataManager: Categories response success', {
+        dataLength: response.data?.length || 0,
+      });
       if (response.data && response.data.length > 0) {
-        console.log('🔍 [FRAPPE_API] Sample category from Frappe:', response.data[0]);
-        console.log('🔍 [FRAPPE_API] Sample category fields:', {
-          name: response.data[0].name,
-          category_name: response.data[0].category_name,
-          assigned_department_id: response.data[0].assigned_department_id,
-          administrative_level_id: response.data[0].administrative_level_id,
-          confidentiality_level: response.data[0].confidentiality_level,
+        logger.debug('DataManager: Sample category from Frappe', {
+          sampleCategory: {
+            name: response.data[0].name,
+            category_name: response.data[0].category_name,
+            assigned_department_id: response.data[0].assigned_department_id,
+            administrative_level_id: response.data[0].administrative_level_id,
+            confidentiality_level: response.data[0].confidentiality_level,
+          },
         });
       }
       // Return raw Frappe data directly - no transformation
       return response.data || [];
     }
 
-    console.log('🔍 [FRAPPE_API] Categories response failed or empty:', response);
+    logger.warn('DataManager: Categories response failed or empty', {
+      responseStatus: response.status,
+      projectId,
+    });
     return [];
   },
 
@@ -227,7 +237,7 @@ const LookupAPI = {
       }
 
       // If that fails, try to get basic user info
-      console.log('🔄 Trying alternative user info endpoint...');
+      logger.info('DataManager: Trying alternative user info endpoint');
       const userInfoResponse = await this.callAPI(call, 'frappe.auth.get_logged_user');
 
       if (userInfoResponse.status === 'success') {
@@ -240,10 +250,10 @@ const LookupAPI = {
         };
       }
 
-      console.warn('⚠️ Could not fetch user context, using empty context');
+      logger.warn('DataManager: Could not fetch user context, using empty context');
       return {};
     } catch (error) {
-      console.warn('⚠️ Failed to get user context:', error.message);
+      logger.warn('DataManager: Failed to get user context', error);
       return {};
     }
   },
@@ -300,46 +310,43 @@ class DataManager {
    * Initialize DataManager with credentials and sync capability
    */
   async initialize(credentials = null) {
-    console.log('🔧 [DATAMANAGER] Initializing DataManager...');
-    console.log('🔧 [DATAMANAGER] Credentials provided:', !!credentials);
+    const startTime = Date.now();
+    logger.info('DataManager: Starting initialization', {
+      hasCredentials: !!credentials,
+      baseUrl: credentials?.url,
+    });
 
     this.credentials = credentials;
 
     // Initialize Frappe SDK if credentials provided
     if (credentials) {
-      console.log('🔧 [DATAMANAGER] Setting up Frappe SDK connection...');
-
       try {
         await this.initializeFrappeConnection(credentials);
-        console.log('✅ [DATAMANAGER] Frappe SDK connection established');
+        logger.info('DataManager: Frappe SDK connection established');
         this.isOnline = true;
 
         // Initialize WatermelonDB sync manager
-        console.log('🔧 [DATAMANAGER] Initializing WatermelonDB sync manager...');
-        this.syncManager = new WatermelonSyncManager(
-          watermelonManager.getDatabase(),
-          this.call // Pass authenticated call instance
-        );
-        console.log('✅ [DATAMANAGER] WatermelonDB sync manager initialized');
+        this.syncManager = new WatermelonSyncManager(watermelonManager.getDatabase(), this.call);
+        logger.info('DataManager: WatermelonDB sync manager initialized');
 
         // Initialize LookupDataManager with sync manager
-        console.log('🔧 [DATAMANAGER] Initializing LookupDataManager...');
         await lookupDataManager.initialize(this.syncManager, credentials);
-        console.log('✅ [DATAMANAGER] LookupDataManager initialized');
+        logger.info('DataManager: LookupDataManager initialized');
 
         // Initialize user context
-        console.log('🔧 [DATAMANAGER] Initializing user context...');
         await this.initializeUserContext();
-        console.log('✅ [DATAMANAGER] User context initialized');
+        logger.info('DataManager: User context initialized');
       } catch (error) {
-        console.error('❌ [DATAMANAGER] Error during online initialization:', error);
-        console.log('🔄 [DATAMANAGER] Falling back to offline mode...');
+        logger.error('DataManager: Error during online initialization', error, {
+          baseUrl: credentials?.url,
+          username: credentials?.username,
+        });
         this.isOnline = false;
         this.call = null;
         this.syncManager = null;
       }
     } else {
-      console.log('⚠️ [DATAMANAGER] No credentials provided, offline mode only');
+      logger.info('DataManager: No credentials provided, offline mode only');
       this.isOnline = false;
 
       // Initialize LookupDataManager without sync manager
@@ -349,11 +356,15 @@ class DataManager {
       const localContext = await this.loadLocalUserContext();
       if (localContext) {
         this.userContext = localContext;
-        console.log('📱 [DATAMANAGER] User context loaded from local storage');
+        logger.info('DataManager: User context loaded from local storage');
       }
     }
 
-    console.log('✅ [DATAMANAGER] DataManager initialization completed');
+    const duration = Date.now() - startTime;
+    logger.performance('DataManager initialization', duration, {
+      online: this.isOnline,
+      hasCredentials: !!credentials,
+    });
     return { success: true, message: 'DataManager initialized successfully' };
   }
 
@@ -511,19 +522,26 @@ class DataManager {
    * Perform sync using WatermelonDB sync manager
    */
   async performSync() {
-    console.log('🔄 [DATAMANAGER] Starting sync operation...');
+    const startTime = Date.now();
+    logger.info('DataManager: Starting sync operation');
 
     if (!this.syncManager) {
-      throw new Error('Sync manager not initialized');
+      const error = new Error('Sync manager not initialized');
+      logger.error('DataManager: Sync failed - no sync manager', error);
+      throw error;
     }
 
     try {
-      console.log('🔄 [DATAMANAGER] Calling WatermelonDB sync...');
       await this.syncManager.sync();
-      console.log('✅ [DATAMANAGER] Sync operation completed successfully');
+      const duration = Date.now() - startTime;
+      logger.performance('DataManager sync', duration);
+      logger.info('DataManager: Sync operation completed successfully');
       return { success: true, message: 'Sync completed successfully' };
     } catch (error) {
-      console.error('❌ [DATAMANAGER] Sync operation failed:', error);
+      logger.error('DataManager: Sync operation failed', error, {
+        syncManagerExists: !!this.syncManager,
+        isOnline: this.isOnline,
+      });
       throw error;
     }
   }
@@ -722,11 +740,13 @@ class DataManager {
       this.isOnline = state.isConnected;
 
       if (wasOffline && this.isOnline) {
-        console.log('🌐 Network status changed: online');
+        logger.info('DataManager: Network status changed to online');
         // Perform background sync when coming back online
         this.performBackgroundSync();
       } else {
-        console.log(`🌐 Network status changed: ${this.isOnline ? 'online' : 'offline'}`);
+        logger.info('DataManager: Network status changed', {
+          status: this.isOnline ? 'online' : 'offline',
+        });
       }
     });
   }
@@ -960,7 +980,11 @@ class DataManager {
    */
   async createIssue(issueData) {
     try {
-      console.log('🔧 [DATAMANAGER] Creating issue with data:', issueData);
+      logger.info('DataManager: Creating issue', {
+        category: issueData.category,
+        project: issueData.project,
+        hasDescription: !!issueData.description,
+      });
 
       // Ensure field names are correct (remove any legacy _id suffixes if they exist)
       const mappedData = {
@@ -993,11 +1017,13 @@ class DataManager {
       delete mappedData.administrative_region_id;
       delete mappedData.amended_from_id;
 
-      console.log('🔧 [DATAMANAGER] Mapped issue data:', mappedData);
-
       // Create issue locally (will be synced via WatermelonDB sync)
       const createdIssue = await watermelonManager.createIssue(mappedData);
-      console.log('✅ [DATAMANAGER] Issue created locally:', createdIssue?.id);
+      logger.info('DataManager: Issue created locally', {
+        issueId: createdIssue?.id,
+        project: mappedData.project,
+        category: mappedData.category,
+      });
 
       // Inform sync manager that local data has changed so it can update pending counts
       if (this.syncManager) {
@@ -1019,7 +1045,10 @@ class DataManager {
 
       return createdIssue;
     } catch (error) {
-      console.error('❌ [DATAMANAGER] Error creating issue:', error);
+      logger.error('DataManager: Error creating issue', error, {
+        category: issueData?.category,
+        project: issueData?.project,
+      });
       throw error;
     }
   }

@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import watermelonManager from '../database/watermelonManager';
+import { logger } from '../utils/logger';
 
 // Storage keys for user region data
 const STORAGE_KEYS = {
@@ -34,7 +35,9 @@ class UserRegionService {
    * Initialize with credentials (DataProvider compatibility)
    */
   async initialize(credentials, _userProject = null) {
-    console.log('🔧 [USER_REGIONS] Initializing UserRegionService with credentials...');
+    logger.info('UserRegionService: Initializing with credentials', {
+      hasCredentials: !!credentials,
+    });
 
     try {
       this.credentials = credentials;
@@ -44,9 +47,9 @@ class UserRegionService {
       this.syncManager = dataManager.syncManager;
 
       if (this.syncManager) {
-        console.log('✅ [USER_REGIONS] Sync manager obtained from DataManager');
+        logger.info('UserRegionService: Sync manager obtained from DataManager');
       } else {
-        console.warn('⚠️ [USER_REGIONS] No sync manager available - offline mode only');
+        logger.warn('UserRegionService: No sync manager available - offline mode only');
       }
 
       // Load cached data first
@@ -54,14 +57,17 @@ class UserRegionService {
 
       // Fetch fresh data if we have sync capability
       if (credentials && this.syncManager) {
-        console.log('🔄 [USER_REGIONS] Fetching fresh region data via sync...');
+        logger.info('UserRegionService: Fetching fresh region data via sync');
         await this.fetchUserAssignedRegions();
       } else {
-        console.log('📱 [USER_REGIONS] Using cached data only');
+        logger.info('UserRegionService: Using cached data only');
       }
 
       this.isInitialized = true;
-      console.log('✅ [USER_REGIONS] UserRegionService initialized');
+      logger.info('UserRegionService: Service initialized successfully', {
+        regionsCount: this.userRegions.length,
+        hierarchyCount: this.regionHierarchy.length,
+      });
 
       return {
         success: true,
@@ -69,7 +75,7 @@ class UserRegionService {
         hierarchyCount: this.regionHierarchy.length,
       };
     } catch (error) {
-      console.error('❌ [USER_REGIONS] Error initializing UserRegionService:', error);
+      logger.error('UserRegionService: Error initializing service', error);
 
       // Try to use cached data as fallback
       await this.loadCachedData();
@@ -95,7 +101,7 @@ class UserRegionService {
    */
   async loadCachedData() {
     try {
-      console.log('📱 [USER_REGIONS] Loading cached region data...');
+      logger.info('UserRegionService: Loading cached region data');
 
       const [cachedRegions, cachedHierarchy, lastFetch] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.USER_REGIONS),
@@ -105,21 +111,23 @@ class UserRegionService {
 
       if (cachedRegions) {
         this.userRegions = JSON.parse(cachedRegions);
-        console.log(`📱 [USER_REGIONS] Loaded ${this.userRegions.length} cached user regions`);
+        logger.info('UserRegionService: Loaded cached user regions', {
+          userRegionsCount: this.userRegions.length,
+        });
       }
 
       if (cachedHierarchy) {
         this.regionHierarchy = JSON.parse(cachedHierarchy);
-        console.log(
-          `📱 [USER_REGIONS] Loaded ${this.regionHierarchy.length} cached hierarchy regions`
-        );
+        logger.info('UserRegionService: Loaded cached hierarchy regions', {
+          hierarchyRegionsCount: this.regionHierarchy.length,
+        });
       }
 
       if (lastFetch) {
         this.lastFetchTime = parseInt(lastFetch, 10);
       }
     } catch (error) {
-      console.error('❌ [USER_REGIONS] Error loading cached data:', error);
+      logger.error('UserRegionService: Error loading cached data', error);
       this.userRegions = [];
       this.regionHierarchy = [];
     }
@@ -130,7 +138,10 @@ class UserRegionService {
    */
   async cacheRegionData() {
     try {
-      console.log('💾 [USER_REGIONS] Caching region data...');
+      logger.info('UserRegionService: Caching region data', {
+        userRegionsCount: this.userRegions.length,
+        hierarchyCount: this.regionHierarchy.length,
+      });
 
       await Promise.all([
         AsyncStorage.setItem(STORAGE_KEYS.USER_REGIONS, JSON.stringify(this.userRegions)),
@@ -138,9 +149,9 @@ class UserRegionService {
         AsyncStorage.setItem(STORAGE_KEYS.LAST_FETCH_TIME, this.lastFetchTime.toString()),
       ]);
 
-      console.log('✅ [USER_REGIONS] Region data cached successfully');
+      logger.info('UserRegionService: Region data cached successfully');
     } catch (error) {
-      console.error('❌ [USER_REGIONS] Error caching region data:', error);
+      logger.error('UserRegionService: Error caching region data', error);
     }
   }
 
@@ -148,7 +159,7 @@ class UserRegionService {
    * Fetch user assigned regions using sync-first approach
    */
   async fetchUserAssignedRegions() {
-    console.log('🔍 [USER_REGIONS] Fetching user assigned regions...');
+    logger.info('UserRegionService: Fetching user assigned regions');
 
     try {
       // Step 1: Check if we have recent cached data
@@ -192,12 +203,12 @@ class UserRegionService {
       // Cache the data
       await this.cacheRegionData();
 
-      console.log(
-        `📊 [USER_REGIONS] Returning ${hierarchicalRegions.length} user-assigned regions`
-      );
+      logger.info('UserRegionService: Returning user-assigned regions', {
+        hierarchicalRegionsCount: hierarchicalRegions.length,
+      });
       return hierarchicalRegions;
     } catch (error) {
-      console.error('❌ [USER_REGIONS] Error fetching user assigned regions:', error);
+      logger.error('UserRegionService: Error fetching user assigned regions', error);
       return this.regionHierarchy || [];
     }
   }
@@ -209,7 +220,7 @@ class UserRegionService {
     try {
       const database = watermelonManager.getDatabase();
       if (!database) {
-        console.error('❌ [USER_REGIONS_LOCAL] Database not available');
+        logger.error('UserRegionService: Database not available');
         return [];
       }
 
@@ -225,7 +236,7 @@ class UserRegionService {
 
       return regions;
     } catch (error) {
-      console.error('❌ [USER_REGIONS_LOCAL] Error fetching regions from local DB:', error);
+      logger.error('UserRegionService: Error fetching regions from local DB', error);
       return [];
     }
   }
@@ -238,7 +249,7 @@ class UserRegionService {
       const userId = this.credentials?.username || 'current_user';
       return await watermelonManager.getUserContext(userId);
     } catch (error) {
-      console.error('❌ [USER_REGIONS_CONTEXT] Error getting user context:', error);
+      logger.error('UserRegionService: Error getting user context', error);
       return null;
     }
   }

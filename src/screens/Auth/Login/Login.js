@@ -13,6 +13,7 @@ import { ActivityIndicator, Button, TextInput } from 'react-native-paper';
 import { AuthContext } from '../../../providers/AuthProvider';
 import { colors } from '../../../utils/colors';
 import MESSAGES from '../../../utils/formErrorMessages';
+import { logger } from '../../../utils/logger';
 import styles from './Login.style';
 
 const theme = {
@@ -35,13 +36,29 @@ const Login = () => {
   const onLoginPress = async (data) => {
     setLoading(true);
     setError('');
+
+    logger.userAction('login_attempt', 'Login', {
+      username: data.login,
+      hasPassword: !!data.password,
+    });
+
     try {
       const success = await login(data.login, data.password);
       if (!success) {
+        logger.warn('Login: Authentication failed', {
+          username: data.login,
+          reason: 'invalid_credentials',
+        });
         setError(t('invalid_credentials'));
+      } else {
+        logger.info('Login: User authenticated successfully', {
+          username: data.login,
+        });
       }
     } catch (err) {
-      console.error('Login error:', err);
+      logger.error('Login: Authentication error', err, {
+        username: data.login,
+      });
       setError(t('login_error'));
     } finally {
       setLoading(false);

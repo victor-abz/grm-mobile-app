@@ -1,10 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 import { Button, Title } from 'react-native-paper';
 import { styles } from './Content.style';
 // import { PreferencesContext } from "@providers/PreferencesProvider/PreferencesContext";
+import { logger } from '../../../../utils/logger';
 import ThinkingSVG from '../../../../../assets/think.svg';
 import LanguageSelector from '../../../../translations/TranslationComponent';
 
@@ -13,6 +14,11 @@ const Content = () => {
 
   const customStyles = styles();
   const navigation = useNavigation();
+
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'Onboarding');
+  }, []);
 
   return (
     <View style={customStyles.content}>
@@ -41,6 +47,7 @@ const Content = () => {
           style={[customStyles.button, { backgroundColor: '#24c38b' }]}
           mode="contained"
           onPress={() => {
+            logger.userAction('onboarding_existing_user', 'Onboarding');
             navigation.navigate('AuthStack', { screen: 'Login' });
           }}
         >
@@ -50,6 +57,7 @@ const Content = () => {
           style={[customStyles.button, { backgroundColor: '#ff5722' }]}
           mode="contained"
           onPress={() => {
+            logger.userAction('onboarding_new_user', 'Onboarding');
             navigation.navigate('AuthStack', { screen: 'SignUp' });
           }}
         >

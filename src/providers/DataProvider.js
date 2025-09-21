@@ -5,6 +5,7 @@ import nuclearDataManager from '../services/NuclearDataManager';
 import userRegionService from '../services/UserRegionService';
 import { AuthContext } from './AuthProvider';
 import { FRAPPE_BASE_URL } from '../utils/constants';
+import { logger } from '../utils/logger';
 
 const DataContext = createContext({});
 
@@ -42,15 +43,16 @@ const DataProvider = ({ children }) => {
   // Initialize data services when user is authenticated
   useEffect(() => {
     if (isAuthenticated && credentials && !isDataInitialized) {
-      console.log('🔄 DataProvider: User authenticated, starting data services initialization');
-      console.log('🔄 DataProvider: Credentials available:', credentials ? 'yes' : 'no');
+      logger.info('DataProvider: User authenticated, starting data services initialization', {
+        hasCredentials: !!credentials,
+      });
       initializeDataServices(); // eslint-disable-line no-use-before-define
     } else if (!isAuthenticated && isDataInitialized) {
       // User logged out, reset data
-      console.log('🔄 DataProvider: User logged out, resetting data services');
+      logger.info('DataProvider: User logged out, resetting data services');
       resetDataServices(); // eslint-disable-line no-use-before-define
     } else if (!isAuthenticated && !credentials) {
-      console.log('🔄 DataProvider: No user authentication, data services not initialized');
+      logger.info('DataProvider: No user authentication, data services not initialized');
     }
   }, [isAuthenticated, credentials]);
 
@@ -62,7 +64,7 @@ const DataProvider = ({ children }) => {
     setRegionError(null);
 
     try {
-      console.log('🔄 Initializing data services...');
+      logger.info('DataProvider: Initializing data services');
 
       // Check if we have valid credentials
       if (!credentials || !credentials.username || !credentials.password) {
@@ -75,16 +77,16 @@ const DataProvider = ({ children }) => {
         url: FRAPPE_BASE_URL,
       };
 
-      console.log('🔄 DataProvider: Initializing DataManager with credentials...');
+      logger.info('DataProvider: Initializing DataManager with credentials');
 
       // Import DataManager dynamically and initialize with enhanced credentials
       const { default: DataManagerModule } = await import('../services/DataManager');
       try {
         await DataManagerModule.initialize(enhancedCredentials);
         setDataManager(DataManagerModule);
-        console.log('✅ DataManager initialized successfully');
+        logger.info('DataProvider: DataManager initialized successfully');
       } catch (authError) {
-        console.error('❌ DataManager authentication failed:', authError);
+        logger.error('DataProvider: DataManager authentication failed', authError);
 
         // If authentication fails, it means credentials are invalid
         if (
@@ -92,8 +94,8 @@ const DataProvider = ({ children }) => {
           authError.message.includes('credentials') ||
           authError.message.includes('Incomplete login')
         ) {
-          console.log(
-            '🔄 Authentication error detected, will trigger logout after initialization...'
+          logger.warn(
+            'DataProvider: Authentication error detected, will trigger logout after initialization'
           );
           // Set a flag to trigger logout after this function completes
           setTimeout(() => {
@@ -109,7 +111,7 @@ const DataProvider = ({ children }) => {
         }
 
         // Don't throw here, continue with offline initialization
-        console.log('🔄 Continuing with offline initialization...');
+        logger.info('DataProvider: Continuing with offline initialization');
       }
 
       // Initialize LookupDataManager
@@ -128,7 +130,7 @@ const DataProvider = ({ children }) => {
             action:
               'Please contact your administrator to assign administrative regions to your account.',
           });
-          console.error('❌ User has no regions assigned');
+          logger.error('DataProvider: User has no regions assigned');
         } else {
           setRegionError({
             type: 'REGION_INITIALIZATION_FAILED',
@@ -136,21 +138,21 @@ const DataProvider = ({ children }) => {
             title: 'Region Service Initialization Failed',
             action: 'Please try refreshing or contact support if the problem persists.',
           });
-          console.error('❌ Region service initialization failed');
+          logger.error('DataProvider: Region service initialization failed');
         }
       } else {
-        console.log(
-          `✅ Region service initialized with ${regionResult.regionsCount} assigned regions`
-        );
+        logger.info('DataProvider: Region service initialized successfully', {
+          regionsCount: regionResult.regionsCount,
+        });
       }
 
       // Load lookup data
       // await loadLookupData();
 
       setIsDataInitialized(true);
-      console.log('✅ All data services initialized successfully');
+      logger.info('DataProvider: All data services initialized successfully');
     } catch (error) {
-      console.error('❌ Error initializing data services:', error);
+      logger.error('DataProvider: Error initializing data services', error);
       setInitializationError({
         message: error.message,
         details: 'Failed to initialize data services. Please try logging in again.',
@@ -163,7 +165,7 @@ const DataProvider = ({ children }) => {
   };
 
   const resetDataServices = async () => {
-    console.log('🔄 Resetting data services...');
+    logger.info('DataProvider: Resetting data services');
 
     setIsDataInitialized(false);
     setDataManager(null);
@@ -185,12 +187,12 @@ const DataProvider = ({ children }) => {
       projects: [],
     });
 
-    console.log('✅ Data services reset');
+    logger.info('DataProvider: Data services reset');
   };
 
   const loadLookupData = async () => {
     try {
-      console.log('🔄 Loading lookup data...');
+      logger.info('DataProvider: Loading lookup data');
 
       // Get user's accessible regions from UserRegionService
       const userRegions = userRegionService.getAccessibleRegions();
@@ -229,9 +231,15 @@ const DataProvider = ({ children }) => {
           'projects',
         ];
         if (result.status === 'rejected') {
-          console.warn(`⚠️ [${dataTypes[index].toUpperCase()}] Failed to load:`, result.reason);
+          logger.warn('DataProvider: Failed to load lookup data type', {
+            dataType: dataTypes[index],
+            error: result.reason,
+          });
         } else {
-          console.log(`✅ [${dataTypes[index].toUpperCase()}] Loaded ${result.value.length} items`);
+          logger.info('DataProvider: Successfully loaded lookup data type', {
+            dataType: dataTypes[index],
+            itemCount: result.value.length,
+          });
         }
       });
 
@@ -249,9 +257,9 @@ const DataProvider = ({ children }) => {
 
       setLookupData(newLookupData);
       setIsDataInitialized(true);
-      console.log('✅ Lookup data loaded and cached successfully');
+      logger.info('DataProvider: Lookup data loaded and cached successfully');
     } catch (error) {
-      console.error('❌ Error loading lookup data:', error);
+      logger.error('DataProvider: Error loading lookup data', error);
       setIsDataInitialized(true);
     }
   };
@@ -261,7 +269,7 @@ const DataProvider = ({ children }) => {
     try {
       await loadLookupData();
     } catch (error) {
-      console.error('❌ Error refreshing lookup data:', error);
+      logger.error('DataProvider: Error refreshing lookup data', error);
     } finally {
       setIsLoading(false);
     }
@@ -280,7 +288,7 @@ const DataProvider = ({ children }) => {
           ...prev,
           regions: userRegions,
         }));
-        console.log('✅ Region data refreshed successfully');
+        logger.info('DataProvider: Region data refreshed successfully');
       } else {
         setRegionError({
           type: 'REFRESH_FAILED',
@@ -290,7 +298,7 @@ const DataProvider = ({ children }) => {
         });
       }
     } catch (error) {
-      console.error('❌ Error refreshing region data:', error);
+      logger.error('DataProvider: Error refreshing region data', error);
       setRegionError({
         type: 'REFRESH_ERROR',
         message: error.message,
@@ -305,7 +313,7 @@ const DataProvider = ({ children }) => {
   const performEmergencyCleanup = async () => {
     setIsLoading(true);
     try {
-      console.log('🚨 Performing emergency database cleanup...');
+      logger.info('DataProvider: Performing emergency database cleanup');
       const result = await nuclearDataManager.emergencyCleanup();
 
       if (result.success) {
@@ -315,7 +323,7 @@ const DataProvider = ({ children }) => {
       }
       return { success: false, message: result.message };
     } catch (error) {
-      console.error('❌ Emergency cleanup failed:', error);
+      logger.error('DataProvider: Emergency cleanup failed', error);
       return { success: false, message: error.message };
     } finally {
       setIsLoading(false);
@@ -347,7 +355,7 @@ const DataProvider = ({ children }) => {
         regionError,
       };
     } catch (error) {
-      console.error('❌ Error getting system status:', error);
+      logger.error('DataProvider: Error getting system status', error);
       return { error: error.message };
     }
   };
@@ -356,7 +364,7 @@ const DataProvider = ({ children }) => {
   const refreshContactData = async () => {
     setIsLoading(true);
     try {
-      console.log('🔄 Refreshing contact-related data...');
+      logger.info('DataProvider: Refreshing contact-related data');
 
       const [ageGroups, citizenGroups] = await Promise.all([
         lookupDataManager.getAgeGroups(),
@@ -369,9 +377,9 @@ const DataProvider = ({ children }) => {
         citizenGroups,
       }));
 
-      console.log('✅ Contact data refreshed successfully');
+      logger.info('DataProvider: Contact data refreshed successfully');
     } catch (error) {
-      console.error('❌ Error refreshing contact data:', error);
+      logger.error('DataProvider: Error refreshing contact data', error);
     } finally {
       setIsLoading(false);
     }
@@ -379,7 +387,7 @@ const DataProvider = ({ children }) => {
 
   // Handle authentication errors by logging out the user
   const handleAuthenticationError = async (error) => {
-    console.error('🚨 Authentication error detected:', error);
+    logger.error('DataProvider: Authentication error detected', error);
     setInitializationError({
       message: 'Session expired or authentication failed',
       details: 'You will be redirected to the login screen.',
@@ -408,7 +416,9 @@ const DataProvider = ({ children }) => {
   const AuthErrorHandler = () => {
     useEffect(() => {
       if (initializationError && initializationError.requiresLogin) {
-        console.log('🔄 AuthErrorHandler: Authentication error detected in initialization');
+        logger.info(
+          'DataProvider: AuthErrorHandler detected authentication error in initialization'
+        );
       }
     }, [initializationError]);
 

@@ -3,6 +3,8 @@
  * Follows DRY and KISS principles by extracting complex button enablement logic
  */
 
+import { logger } from './logger';
+
 /**
  * Check if accept button should be enabled
  * RULE: Accept button enabled when:
@@ -115,6 +117,21 @@ export const calculateButtonStates = (
   currentUserId,
   disableEscalation = false
 ) => {
+  if (!enrichedIssue || !currentUserId) {
+    logger.warn('IssueButtons: Missing required parameters for button state calculation', {
+      hasIssue: !!enrichedIssue,
+      hasUserId: !!currentUserId,
+      statusesCount: statuses?.length || 0,
+    });
+    return {
+      isIssueAssignedToMe: false,
+      isAcceptEnabled: false,
+      isRecordResolutionEnabled: false,
+      isRateAppealEnabled: false,
+      isEscalateEnabled: false,
+    };
+  }
+
   const isAssigned = checkIsIssueAssignedToMe(enrichedIssue, currentUserId);
   const acceptEnabled = isAcceptEnabled(statuses, enrichedIssue, isAssigned);
   const recordResolutionEnabled = isRecordResolutionEnabled(statuses, enrichedIssue, isAssigned);
@@ -124,6 +141,16 @@ export const calculateButtonStates = (
     enrichedIssue,
     disableEscalation
   );
+
+  logger.debug('IssueButtons: Button states calculated', {
+    issueId: enrichedIssue.id,
+    currentStatus: enrichedIssue.status,
+    isAssigned,
+    acceptEnabled,
+    recordResolutionEnabled,
+    rateAppealEnabled,
+    escalateEnabled,
+  });
 
   return {
     isIssueAssignedToMe: isAssigned,

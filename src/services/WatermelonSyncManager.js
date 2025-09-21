@@ -1,5 +1,6 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
 import * as FileSystem from 'expo-file-system';
+import { logger } from '../utils/logger';
 
 /**
  * WatermelonDB Sync Manager
@@ -24,54 +25,57 @@ class WatermelonSyncManager {
    * Main sync method - coordinates full synchronization
    */
   async sync() {
-    console.log('🔄 [SYNC] Starting sync operation...');
+    logger.info('WatermelonSyncManager: Starting sync operation');
 
     if (this.syncInProgress) {
-      console.warn('⚠️ [SYNC] Sync already in progress, skipping...');
+      logger.warn('WatermelonSyncManager: Sync already in progress, skipping');
       throw new Error('Sync already in progress');
     }
 
-    console.log('🔄 [SYNC] Setting sync in progress flag...');
+    logger.info('WatermelonSyncManager: Setting sync in progress flag');
     this.syncInProgress = true;
 
-    console.log('🔄 [SYNC] Notifying listeners - sync starting...');
+    logger.info('WatermelonSyncManager: Notifying listeners - sync starting');
     this.notifyListeners({ phase: 'starting', progress: 0 });
 
     const syncStartTime = Date.now();
 
     try {
-      console.log('🔄 [SYNC] Initializing WatermelonDB synchronize...');
-      console.log('🔄 [SYNC] Database schema version:', this.database.schema.version);
+      logger.info('WatermelonSyncManager: Initializing WatermelonDB synchronize', {
+        schemaVersion: this.database.schema.version,
+      });
 
       // Update progress
       this.notifyListeners({ phase: 'connecting', progress: 10 });
 
-      console.log('🔄 [SYNC] Calling WatermelonDB synchronize function...');
+      logger.info('WatermelonSyncManager: Calling WatermelonDB synchronize function');
 
       // Use WatermelonDB's standard synchronize function
       const syncResult = await synchronize({
         database: this.database,
         pullChanges: async (args) => {
-          console.log('🔄 [SYNC] WatermelonDB calling pullChanges with args:', args);
+          logger.info('WatermelonSyncManager: WatermelonDB calling pullChanges', { args });
           this.notifyListeners({ phase: 'pulling', progress: 30 });
           const result = await this.pullChanges(args);
-          console.log('🔄 [SYNC] pullChanges completed, returning result to WatermelonDB');
+          logger.info(
+            'WatermelonSyncManager: pullChanges completed, returning result to WatermelonDB'
+          );
           return result;
         },
         pushChanges: async (args) => {
-          console.log('🔄 [SYNC] WatermelonDB calling pushChanges with args:', {
+          logger.info('WatermelonSyncManager: WatermelonDB calling pushChanges', {
             hasChanges: !!args.changes,
             lastPulledAt: args.lastPulledAt,
             changeKeys: args.changes ? Object.keys(args.changes) : null,
           });
           this.notifyListeners({ phase: 'pushing', progress: 70 });
           const result = await this.pushChanges(args);
-          console.log('🔄 [SYNC] pushChanges completed');
+          logger.info('WatermelonSyncManager: pushChanges completed');
           return result;
         },
         migrationsEnabledAtVersion: this.database.schema.version,
         log: (message) => {
-          console.log('🔄 [WATERMELON-LOG]', message);
+          logger.debug('WatermelonSyncManager: WatermelonDB log', { message });
         },
         // Add timeout to prevent hanging
         sendCreatedAsUpdated: false,
@@ -82,16 +86,19 @@ class WatermelonSyncManager {
       // After a successful sync re-evaluate pending changes and notify listeners
       await this.refreshPendingChanges();
 
-      console.log('🔄 [SYNC] WatermelonDB synchronize completed');
-      console.log('🔄 [SYNC] Sync result:', syncResult);
+      logger.info('WatermelonSyncManager: WatermelonDB synchronize completed', { syncResult });
 
       const syncDuration = Date.now() - syncStartTime;
-      console.log(`🔄 [SYNC] Total sync duration: ${syncDuration}ms`);
+      logger.performance('WatermelonSyncManager: Total sync completed', syncDuration, {
+        lastSync: this.lastSyncTimestamp,
+      });
 
       this.lastSyncTimestamp = new Date().toISOString();
-      console.log('🔄 [SYNC] Updated last sync timestamp:', this.lastSyncTimestamp);
+      logger.info('WatermelonSyncManager: Updated last sync timestamp', {
+        lastSyncTimestamp: this.lastSyncTimestamp,
+      });
 
-      console.log('🔄 [SYNC] Notifying listeners - sync completed...');
+      logger.info('WatermelonSyncManager: Notifying listeners - sync completed');
       this.notifyListeners({
         phase: 'completed',
         progress: 100,
@@ -99,18 +106,16 @@ class WatermelonSyncManager {
         duration: syncDuration,
       });
 
-      console.log('✅ [SYNC] Sync operation completed successfully');
+      logger.info('WatermelonSyncManager: Sync operation completed successfully');
     } catch (error) {
       const syncDuration = Date.now() - syncStartTime;
-      console.error('❌ [SYNC] Sync operation failed after', `${syncDuration}ms`);
-      console.error('❌ [SYNC] Error details:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-        cause: error.cause,
+      logger.error('WatermelonSyncManager: Sync operation failed', error, {
+        syncDuration,
+        errorName: error.name,
+        errorCause: error.cause,
       });
 
-      console.log('🔄 [SYNC] Notifying listeners - sync error...');
+      logger.info('WatermelonSyncManager: Notifying listeners - sync error');
       this.notifyListeners({
         phase: 'error',
         progress: 0,
@@ -120,9 +125,9 @@ class WatermelonSyncManager {
 
       throw error;
     } finally {
-      console.log('🔄 [SYNC] Clearing sync in progress flag...');
+      logger.info('WatermelonSyncManager: Clearing sync in progress flag');
       this.syncInProgress = false;
-      console.log('🔄 [SYNC] Sync cleanup completed');
+      logger.info('WatermelonSyncManager: Sync cleanup completed');
     }
   }
 
@@ -130,8 +135,7 @@ class WatermelonSyncManager {
    * Pull changes from server (WatermelonDB sync protocol)
    */
   async pullChanges({ lastPulledAt }) {
-    console.log('📥 [PULL] Starting pull changes...');
-    console.log('📥 [PULL] Last pulled at:', lastPulledAt);
+    logger.info('WatermelonSyncManager: Starting pull changes', { lastPulledAt });
 
     const pullStartTime = Date.now();
     let apiCallDuration = 0;
@@ -140,45 +144,36 @@ class WatermelonSyncManager {
     try {
       const params = lastPulledAt ? { lastPulledAt } : {};
 
-      console.log('📥 [PULL] Making API call to pull_changes with params:', params);
+      logger.info('WatermelonSyncManager: Making API call to pull_changes', { params });
 
       // Start timing the API call specifically
       const apiStartTime = Date.now();
-      console.log('📥 [PULL] Calling frappeCall.get...');
+      logger.info('WatermelonSyncManager: Calling frappeCall.get');
 
       // Make API call to backend sync endpoint
       const response = await this.frappeCall.get('egrm.api.sync.pull_changes', params);
-      console.log('***** RESPONSE *****');
       apiCallDuration = Date.now() - apiStartTime;
-      console.log(
-        `📥 [PULL] API call completed in ${apiCallDuration}ms (${(apiCallDuration / 1000).toFixed(
-          2
-        )}s)`
-      );
+      logger.apiCall('WatermelonSyncManager: pull_changes API completed', {
+        endpoint: 'egrm.api.sync.pull_changes',
+        duration: apiCallDuration,
+        params,
+      });
 
       // Start timing response processing
       const processStartTime = Date.now();
-      console.log('📥 [PULL] Processing API response...');
+      logger.info('WatermelonSyncManager: Processing API response');
 
       // Log response structure for debugging
-      console.log('📥 [PULL] Raw response received:', typeof response);
-      console.log('📥 [PULL] Response object structure:', {
-        hasResponse: !!response,
+      logger.debug('WatermelonSyncManager: Response structure analysis', {
         responseType: typeof response,
+        hasResponse: !!response,
         responseKeys: response ? Object.keys(response) : null,
         hasData: !!response?.data,
         hasMessage: !!response?.message,
         status: response?.status,
-        hasStatus: !!response?.status,
       });
 
-      // Enhanced response preview for debugging
-      if (response) {
-        const responseStr = JSON.stringify(response).substring(0, 200);
-        console.log('📥 [PULL] Response preview (first 200 chars):', responseStr);
-      }
-
-      console.log('📥 [PULL] Processing response data...');
+      logger.info('WatermelonSyncManager: Processing response data');
 
       // Extract data from Frappe response format
       let responseData;
@@ -191,42 +186,35 @@ class WatermelonSyncManager {
       }
 
       // Validate response structure
-      console.log('📥 [PULL] Response data extracted:', {
+      logger.debug('WatermelonSyncManager: Response data extracted', {
         hasResponseData: !!responseData,
         responseDataType: typeof responseData,
         responseDataKeys: responseData ? Object.keys(responseData) : null,
         hasChanges: !!responseData?.changes,
         hasTimestamp: !!responseData?.timestamp,
-        changesType: typeof responseData?.changes,
-        timestampType: typeof responseData?.timestamp,
         timestamp: responseData?.timestamp,
       });
 
       if (!responseData || !responseData.changes) {
-        console.error('❌ [PULL] Invalid response format - missing changes object');
+        logger.error('WatermelonSyncManager: Invalid response format - missing changes object');
         throw new Error('Invalid response format: missing changes object');
       }
 
-      console.log('📥 [PULL] Changes and timestamp extracted successfully');
+      logger.info('WatermelonSyncManager: Changes and timestamp extracted successfully');
 
       // Log sync data statistics
-      console.log('📥 [PULL] Received sync data:');
-      console.log(
-        `📅 [PULL] Server timestamp: ${
-          responseData.timestamp
-        } (type: ${typeof responseData.timestamp})`
-      );
+      logger.info('WatermelonSyncManager: Received sync data', {
+        serverTimestamp: responseData.timestamp,
+        timestampType: typeof responseData.timestamp,
+      });
 
-      console.log('📊 [PULL] Changes summary:');
-      console.log('📊 [PULL] Processing changes object...');
+      logger.info('WatermelonSyncManager: Processing changes summary');
 
       let totalCreated = 0;
       let totalUpdated = 0;
       let totalDeleted = 0;
 
       Object.entries(responseData.changes).forEach(([tableName, tableChanges]) => {
-        console.log(`📊 [PULL] Processing table: ${tableName}`);
-
         const created = tableChanges.created?.length || 0;
         const updated = tableChanges.updated?.length || 0;
         const deleted = tableChanges.deleted?.length || 0;
@@ -235,7 +223,12 @@ class WatermelonSyncManager {
         totalUpdated += updated;
         totalDeleted += deleted;
 
-        console.log(`📊 [PULL] ${tableName}: +${created} ~${updated} -${deleted}`);
+        logger.info('WatermelonSyncManager: Processing table changes', {
+          tableName,
+          created,
+          updated,
+          deleted,
+        });
 
         // Show sample record for debugging (without sensitive data)
         if (created > 0) {
@@ -246,33 +239,46 @@ class WatermelonSyncManager {
             _status: sampleRecord?._status,
             _changed: sampleRecord?._changed,
           };
-          console.log(`📄 [PULL] ${tableName} sample created record:`, sampleInfo);
+          logger.debug('WatermelonSyncManager: Sample created record', {
+            tableName,
+            sampleInfo,
+          });
 
           // Check for prohibited fields
           if (sampleRecord?._status || sampleRecord?._changed) {
-            console.error(
-              `❌ [PULL] CRITICAL: ${tableName} contains prohibited WatermelonDB internal fields!`
-            );
-            console.error(
-              `❌ [PULL] _status: ${sampleRecord._status}, _changed: ${sampleRecord._changed}`
+            logger.error(
+              'WatermelonSyncManager: CRITICAL - prohibited WatermelonDB internal fields found',
+              null,
+              {
+                tableName,
+                _status: sampleRecord._status,
+                _changed: sampleRecord._changed,
+              }
             );
           }
         }
       });
 
-      console.log(`📊 [PULL] Total changes: +${totalCreated} ~${totalUpdated} -${totalDeleted}`);
+      logger.info('WatermelonSyncManager: Total changes summary', {
+        totalCreated,
+        totalUpdated,
+        totalDeleted,
+      });
 
       responseProcessingDuration = Date.now() - processStartTime;
-      console.log(`📊 [PULL] Response processing completed in ${responseProcessingDuration}ms`);
+      logger.performance(
+        'WatermelonSyncManager: Response processing completed',
+        responseProcessingDuration
+      );
 
-      console.log('📥 [PULL] Building return object...');
+      logger.info('WatermelonSyncManager: Building return object for WatermelonDB');
 
       const returnData = {
         changes: responseData.changes,
         timestamp: responseData.timestamp,
       };
 
-      console.log('📥 [PULL] Return data prepared:', {
+      logger.info('WatermelonSyncManager: Return data prepared', {
         hasChanges: !!returnData.changes,
         hasTimestamp: !!returnData.timestamp,
         timestampValue: returnData.timestamp,
@@ -281,42 +287,32 @@ class WatermelonSyncManager {
       const totalPullDuration = Date.now() - pullStartTime;
 
       // Performance breakdown logging
-      console.log('⏱️ [PULL] Performance Summary:');
-      console.log(
-        `⏱️ [PULL] Total pull duration: ${totalPullDuration}ms (${(
-          totalPullDuration / 1000
-        ).toFixed(2)}s)`
-      );
-      console.log(
-        `⏱️ [PULL] API call duration: ${apiCallDuration}ms (${(
-          (apiCallDuration / totalPullDuration) *
-          100
-        ).toFixed(1)}%)`
-      );
-      console.log(
-        `⏱️ [PULL] Response processing: ${responseProcessingDuration}ms (${(
-          (responseProcessingDuration / totalPullDuration) *
-          100
-        ).toFixed(1)}%)`
-      );
+      logger.performance('WatermelonSyncManager: Pull performance summary', totalPullDuration, {
+        apiCallDuration,
+        responseProcessingDuration,
+        apiCallPercentage: ((apiCallDuration / totalPullDuration) * 100).toFixed(1),
+        processingPercentage: ((responseProcessingDuration / totalPullDuration) * 100).toFixed(1),
+      });
 
       // Performance analysis
       if (apiCallDuration > 10000) {
         // > 10 seconds
-        console.warn(
-          `⚠️ [PULL] SLOW API: Backend took ${(apiCallDuration / 1000).toFixed(1)}s to respond`
-        );
+        logger.warn('WatermelonSyncManager: Slow API response detected', {
+          apiCallDuration,
+          apiCallSeconds: (apiCallDuration / 1000).toFixed(1),
+          threshold: '10 seconds',
+        });
       }
       if (responseProcessingDuration > 5000) {
         // > 5 seconds
-        console.warn(
-          `⚠️ [PULL] SLOW PROCESSING: Frontend took ${(responseProcessingDuration / 1000).toFixed(
-            1
-          )}s to process response`
-        );
+        logger.warn('WatermelonSyncManager: Slow response processing detected', {
+          responseProcessingDuration,
+          processingSeconds: (responseProcessingDuration / 1000).toFixed(1),
+          threshold: '5 seconds',
+        });
       }
 
-      console.log('✅ [PULL] Pull changes completed successfully');
+      logger.info('WatermelonSyncManager: Pull changes completed successfully');
 
       // Process attachments that have file data (both created and updated)
       if (returnData.changes?.grm_issue_attachments) {
@@ -333,19 +329,13 @@ class WatermelonSyncManager {
       return returnData;
     } catch (error) {
       const totalPullDuration = Date.now() - pullStartTime;
-      console.error(`❌ [PULL] Pull changes failed after ${totalPullDuration}ms`);
-      console.error('❌ [PULL] Error details:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-        cause: error.cause,
+      logger.error('WatermelonSyncManager: Pull changes failed', error, {
+        totalPullDuration,
+        errorName: error.name,
+        errorCause: error.cause,
+        apiCallDuration,
+        responseProcessingDuration,
       });
-
-      // Performance breakdown even on error
-      console.error('⏱️ [PULL] Performance at failure:');
-      console.error(`⏱️ [PULL] API call duration: ${apiCallDuration}ms`);
-      console.error(`⏱️ [PULL] Response processing: ${responseProcessingDuration}ms`);
-      console.error(`⏱️ [PULL] Total duration: ${totalPullDuration}ms`);
 
       throw new Error(`Pull failed: ${error.message}`);
     }
@@ -355,9 +345,8 @@ class WatermelonSyncManager {
    * Push changes to server (WatermelonDB sync protocol)
    */
   async pushChanges({ changes, lastPulledAt }) {
-    console.log('📤 [PUSH] Starting push changes...');
-    console.log('📤 [PUSH] Last pulled at:', lastPulledAt);
-    console.log('📤 [PUSH] Changes to push:', {
+    logger.info('WatermelonSyncManager: Starting push changes', {
+      lastPulledAt,
       hasChanges: !!changes,
       changesType: typeof changes,
       tableCount: changes ? Object.keys(changes).length : 0,
@@ -370,7 +359,7 @@ class WatermelonSyncManager {
       let totalUpdated = 0;
       let totalDeleted = 0;
 
-      console.log('📤 [PUSH] Analyzing changes to push...');
+      logger.info('WatermelonSyncManager: Analyzing changes to push');
 
       Object.entries(changes).forEach(([tableName, tableChanges]) => {
         const created = tableChanges.created?.length || 0;
@@ -381,30 +370,40 @@ class WatermelonSyncManager {
         totalUpdated += updated;
         totalDeleted += deleted;
 
-        console.log(`📤 [PUSH] ${tableName}: +${created} ~${updated} -${deleted}`);
+        logger.info('WatermelonSyncManager: Table changes breakdown', {
+          tableName,
+          created,
+          updated,
+          deleted,
+        });
 
         // Log sample records for debugging
         if (created > 0 && tableChanges.created[0]) {
-          console.log(`📄 [PUSH] ${tableName} sample created record:`, {
-            id: tableChanges.created[0].id,
-            _status: tableChanges.created[0]._status,
-            _changed: tableChanges.created[0]._changed,
-            fieldCount: Object.keys(tableChanges.created[0]).length,
+          logger.debug('WatermelonSyncManager: Sample created record', {
+            tableName,
+            sampleRecord: {
+              id: tableChanges.created[0].id,
+              _status: tableChanges.created[0]._status,
+              _changed: tableChanges.created[0]._changed,
+              fieldCount: Object.keys(tableChanges.created[0]).length,
+            },
           });
         }
       });
 
-      console.log(
-        `📤 [PUSH] Total changes to push: +${totalCreated} ~${totalUpdated} -${totalDeleted}`
-      );
+      logger.info('WatermelonSyncManager: Total changes summary for push', {
+        totalCreated,
+        totalUpdated,
+        totalDeleted,
+      });
 
       if (totalCreated === 0 && totalUpdated === 0 && totalDeleted === 0) {
-        console.log('📤 [PUSH] No changes to push to server');
+        logger.info('WatermelonSyncManager: No changes to push to server');
       }
     }
 
     try {
-      console.log('📤 [PUSH] Preparing push data...');
+      logger.info('WatermelonSyncManager: Preparing push data for backend');
 
       // ------------------------------------------------------------------
       // 🔄 1. Filter changes → Issue Actions sync: grm_issues (created/updated) and
@@ -425,7 +424,10 @@ class WatermelonSyncManager {
             deleted: [],
           };
           hasChangesToPush = true;
-          console.log(`📤 [PUSH] grm_issues: +${issueCreated.length} ~${issueUpdated.length}`);
+          logger.info('WatermelonSyncManager: Including grm_issues changes', {
+            created: issueCreated.length,
+            updated: issueUpdated.length,
+          });
         }
       }
 
@@ -440,7 +442,9 @@ class WatermelonSyncManager {
             deleted: [],
           };
           hasChangesToPush = true;
-          console.log(`📤 [PUSH] grm_issue_logs: +${logsCreated.length}`);
+          logger.info('WatermelonSyncManager: Including grm_issue_logs changes', {
+            created: logsCreated.length,
+          });
         }
       }
 
@@ -455,7 +459,9 @@ class WatermelonSyncManager {
             deleted: [],
           };
           hasChangesToPush = true;
-          console.log(`📤 [PUSH] grm_issue_comments: +${commentsCreated.length}`);
+          logger.info('WatermelonSyncManager: Including grm_issue_comments changes', {
+            created: commentsCreated.length,
+          });
         }
       }
 
@@ -474,13 +480,17 @@ class WatermelonSyncManager {
             deleted: [],
           };
           hasChangesToPush = true;
-          console.log(`📤 [PUSH] grm_issue_attachments: +${processedAttachments.length}`);
+          logger.info('WatermelonSyncManager: Including grm_issue_attachments changes', {
+            created: processedAttachments.length,
+          });
         }
       }
 
       // If no Issue Actions changes exist, simply return – nothing to push
       if (!hasChangesToPush) {
-        console.log('📤 [PUSH] No Issue Actions changes to push – skipping backend call.');
+        logger.info(
+          'WatermelonSyncManager: No Issue Actions changes to push, skipping backend call'
+        );
         return; // WatermelonDB treats void as success
       }
 
@@ -489,7 +499,7 @@ class WatermelonSyncManager {
         lastPulledAt,
       };
 
-      console.log('📤 [PUSH] Push data prepared:', {
+      logger.info('WatermelonSyncManager: Push data prepared for API call', {
         hasChanges: !!pushData.changes,
         hasLastPulledAt: !!pushData.lastPulledAt,
         lastPulledAt: pushData.lastPulledAt,
@@ -499,15 +509,18 @@ class WatermelonSyncManager {
       // Start timing the API call
       const startTime = Date.now();
 
-      console.log('📤 [PUSH] Making API call to push_changes...');
+      logger.info('WatermelonSyncManager: Making API call to push_changes endpoint');
 
       // Use Frappe SDK for API calls
       const response = await this.frappeCall.post('egrm.api.sync.push_changes', pushData);
 
       const apiCallDuration = Date.now() - startTime;
-      console.log(`📤 [PUSH] API call completed in ${apiCallDuration}ms`);
+      logger.apiCall('WatermelonSyncManager: push_changes API completed', {
+        endpoint: 'egrm.api.sync.push_changes',
+        duration: apiCallDuration,
+      });
 
-      console.log('📤 [PUSH] Push response received:', {
+      logger.info('WatermelonSyncManager: Push response received', {
         hasResponse: !!response,
         responseType: typeof response,
         status: response?.status,
@@ -520,13 +533,17 @@ class WatermelonSyncManager {
       if (response) {
         try {
           const responseStr = JSON.stringify(response);
-          console.log('📤 [PUSH] Response preview:', `${responseStr.substring(0, 100)}...`);
+          logger.debug('WatermelonSyncManager: Response preview', {
+            responsePreview: `${responseStr.substring(0, 100)}...`,
+          });
         } catch (stringifyError) {
-          console.log('📤 [PUSH] Could not stringify response:', stringifyError.message);
+          logger.debug('WatermelonSyncManager: Could not stringify response', {
+            error: stringifyError.message,
+          });
         }
       }
 
-      console.log('✅ [PUSH] Push changes completed successfully');
+      logger.info('WatermelonSyncManager: Push changes completed successfully');
 
       // Process file URLs returned from backend for attachments
       if (response?.file_urls?.grm_issue_attachments) {
@@ -535,25 +552,27 @@ class WatermelonSyncManager {
 
       // WatermelonDB expects void return from pushChanges per spec
     } catch (error) {
-      console.error('❌ [PUSH] Push changes failed:', error);
-      console.error('❌ [PUSH] Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
+      logger.error('WatermelonSyncManager: Push changes failed', error, {
+        errorName: error.name,
         response: error.response?.data,
       });
 
       // Enhanced error handling for different types of failures
       if (error.code === 'NETWORK_ERROR' || error.message.includes('network')) {
-        console.error('❌ [PUSH] Network error during push - changes will be retried on next sync');
+        logger.error('WatermelonSyncManager: Network error during push, changes will be retried', {
+          errorCode: error.code,
+        });
         throw new Error('Network error during push. Changes will be retried on next sync.');
       } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        console.error(
-          '❌ [PUSH] Request timeout during push - changes will be retried on next sync'
+        logger.error(
+          'WatermelonSyncManager: Request timeout during push, changes will be retried',
+          {
+            errorCode: error.code,
+          }
         );
         throw new Error('Request timeout during push. Changes will be retried on next sync.');
       } else if (error.response) {
-        console.error('❌ [PUSH] HTTP Error Response:', {
+        logger.error('WatermelonSyncManager: HTTP error response received', {
           status: error.response.status,
           statusText: error.response.statusText,
           headers: error.response.headers,
@@ -623,7 +642,7 @@ class WatermelonSyncManager {
       try {
         listener(status);
       } catch (error) {
-        console.error('Error notifying sync listener:', error);
+        logger.error('WatermelonSyncManager: Error notifying sync listener', error);
       }
     });
   }
@@ -642,14 +661,14 @@ class WatermelonSyncManager {
    */
   async testConnection() {
     try {
-      console.log('🔧 [SYNC_TEST] Testing sync connection...');
+      logger.info('WatermelonSyncManager: Testing sync connection');
       // Try to pull with empty timestamp to test connection
       const result = await this.pullChanges({ lastPulledAt: '' });
       const isValid = !!(result && result.changes);
-      console.log('🔧 [SYNC_TEST] Connection test result:', isValid);
+      logger.info('WatermelonSyncManager: Connection test completed', { isValid });
       return isValid;
     } catch (error) {
-      console.error('❌ [SYNC_TEST] Sync connection test failed:', error);
+      logger.error('WatermelonSyncManager: Sync connection test failed', error);
       return false;
     }
   }
@@ -686,10 +705,10 @@ class WatermelonSyncManager {
             return null;
           } catch (tableErr) {
             // Skip table if any error occurs, but log for debugging
-            console.warn(
-              `⚠️ [PENDING] Failed to inspect collection ${tableName}:`,
-              tableErr.message
-            );
+            logger.warn('WatermelonSyncManager: Failed to inspect collection for pending changes', {
+              tableName,
+              error: tableErr.message,
+            });
             return null;
           }
         }
@@ -706,7 +725,7 @@ class WatermelonSyncManager {
         }
       });
     } catch (err) {
-      console.error('❌ [PENDING] Failed to calculate pending changes:', err);
+      logger.error('WatermelonSyncManager: Failed to calculate pending changes', err);
     }
 
     return { total, tables: result };
@@ -733,7 +752,9 @@ class WatermelonSyncManager {
    * @returns {Promise<Array>} - Processed attachments with file data
    */
   async processAttachmentsWithFileData(attachments) {
-    console.log('📤 [PUSH] Processing attachments with file data...');
+    logger.info('WatermelonSyncManager: Processing attachments with file data for upload', {
+      attachmentCount: attachments.length,
+    });
 
     const processedAttachments = [];
 
@@ -747,7 +768,8 @@ class WatermelonSyncManager {
 
         const isUnuploaded = hasLocalFile && isNotUploaded && hasNoServerUrl;
 
-        console.log(`📤 [PUSH] Checking attachment ${attachment.file_name}:`, {
+        logger.debug('WatermelonSyncManager: Checking attachment upload status', {
+          fileName: attachment.file_name,
           hasLocalFile,
           isNotUploaded,
           hasNoServerUrl,
@@ -758,7 +780,9 @@ class WatermelonSyncManager {
         });
 
         if (isUnuploaded) {
-          console.log(`📤 [PUSH] Processing unuploaded file: ${attachment.file_name}`);
+          logger.info('WatermelonSyncManager: Processing unuploaded file', {
+            fileName: attachment.file_name,
+          });
 
           // Read file data from local storage
           const fileData = await FileSystem.readAsStringAsync(attachment.local_url, {
@@ -773,20 +797,27 @@ class WatermelonSyncManager {
           };
 
           processedAttachments.push(enhancedAttachment);
-          console.log(`📤 [PUSH] Added file data for: ${attachment.file_name}`);
+          logger.info('WatermelonSyncManager: Added file data for attachment', {
+            fileName: attachment.file_name,
+          });
         } else {
           // Attachment already uploaded or no local file, pass through
           processedAttachments.push(attachment);
-          console.log(
-            `📤 [PUSH] Attachment already uploaded or no local file: ${attachment.file_name}`
-          );
+          logger.debug('WatermelonSyncManager: Attachment already uploaded or no local file', {
+            fileName: attachment.file_name,
+          });
         }
       } catch (error) {
-        console.error(`📤 [PUSH] Error processing attachment ${attachment.file_name}:`, error);
+        logger.error('WatermelonSyncManager: Error processing attachment file data', error, {
+          fileName: attachment.file_name,
+        });
       }
     }
 
-    console.log(`📤 [PUSH] Processed ${processedAttachments.length} attachments`);
+    logger.info('WatermelonSyncManager: Completed processing attachments', {
+      processedCount: processedAttachments.length,
+      originalCount: attachments.length,
+    });
     return processedAttachments;
   }
 
@@ -795,7 +826,9 @@ class WatermelonSyncManager {
    * @param {Object} fileUrls - Map of attachment IDs to file URLs
    */
   async processFileUrlsResponse(fileUrls) {
-    console.log('📤 [PUSH] Processing file URLs response from backend...');
+    logger.info('WatermelonSyncManager: Processing file URLs response from backend', {
+      fileUrlCount: Object.keys(fileUrls).length,
+    });
 
     try {
       const db = this.database;
@@ -810,16 +843,27 @@ class WatermelonSyncManager {
               record.uploaded = true;
             });
 
-            console.log(`📤 [PUSH] Updated attachment ${attachmentId} with server URL: ${fileUrl}`);
+            logger.info('WatermelonSyncManager: Updated attachment with server URL', {
+              attachmentId,
+              fileUrl,
+            });
           } catch (error) {
-            console.error(`📤 [PUSH] Error updating attachment ${attachmentId}:`, error);
+            logger.error(
+              'WatermelonSyncManager: Error updating attachment with server URL',
+              error,
+              {
+                attachmentId,
+              }
+            );
           }
         }
       });
 
-      console.log(`📤 [PUSH] Successfully processed ${Object.keys(fileUrls).length} file URLs`);
+      logger.info('WatermelonSyncManager: Successfully processed file URLs', {
+        processedCount: Object.keys(fileUrls).length,
+      });
     } catch (error) {
-      console.error('📤 [PUSH] Error processing file URLs response:', error);
+      logger.error('WatermelonSyncManager: Error processing file URLs response', error);
     }
   }
 
@@ -828,20 +872,21 @@ class WatermelonSyncManager {
    * @param {Array} attachments - Array of attachment records from backend
    */
   async processNewAttachmentsForDownload(attachments) {
-    console.log('📥 [PULL] Processing new attachments with file data...');
-    console.log(`📥 [PULL] Received ${attachments.length} total attachments`);
+    logger.info('WatermelonSyncManager: Processing new attachments for download', {
+      totalAttachments: attachments.length,
+    });
 
     try {
       const attachmentsWithData = attachments.filter(
         (attachment) => attachment.file_data // Has base64 file data - remove local_url check to allow re-downloads
       );
 
-      console.log(
-        `📥 [PULL] Found ${attachmentsWithData.length} attachments with file data to process`
-      );
+      logger.info('WatermelonSyncManager: Found attachments with file data', {
+        attachmentsWithDataCount: attachmentsWithData.length,
+      });
 
       if (attachmentsWithData.length === 0) {
-        console.log('📥 [PULL] No attachments have file data to save');
+        logger.info('WatermelonSyncManager: No attachments have file data to save');
         return;
       }
 
@@ -855,19 +900,21 @@ class WatermelonSyncManager {
       const successful = results.filter((r) => r.status === 'fulfilled').length;
       const failed = results.filter((r) => r.status === 'rejected').length;
 
-      console.log(`📥 [PULL] File save results: ${successful} successful, ${failed} failed`);
+      logger.info('WatermelonSyncManager: File save results', {
+        successful,
+        failed,
+      });
 
       // Log failed saves
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
-          console.error(
-            `📥 [PULL] Failed to save attachment ${attachmentsWithData[index].id}:`,
-            result.reason
-          );
+          logger.error('WatermelonSyncManager: Failed to save attachment file', result.reason, {
+            attachmentId: attachmentsWithData[index].id,
+          });
         }
       });
     } catch (error) {
-      console.error('📥 [PULL] Error processing attachments file data:', error);
+      logger.error('WatermelonSyncManager: Error processing attachments file data', error);
     }
   }
 
@@ -877,7 +924,9 @@ class WatermelonSyncManager {
    * @returns {Promise<boolean>} - Success status
    */
   async saveAttachmentFileData(attachment) {
-    console.log(`📥 [PULL] Saving file data for attachment: ${attachment.id}`);
+    logger.info('WatermelonSyncManager: Saving file data for attachment', {
+      attachmentId: attachment.id,
+    });
 
     try {
       const fileData = attachment.file_data;
@@ -892,7 +941,9 @@ class WatermelonSyncManager {
       const documentsDir = FileSystem.documentDirectory;
       const localPath = `${documentsDir}${attachment.id}_${fileName}`;
 
-      console.log(`📥 [PULL] Saving file data to: ${localPath}`);
+      logger.debug('WatermelonSyncManager: Saving file data to local path', {
+        localPath,
+      });
 
       // Save base64 data directly to file (no subdirectories to match app pattern)
       await FileSystem.writeAsStringAsync(localPath, fileData, {
@@ -905,8 +956,11 @@ class WatermelonSyncManager {
         throw new Error(`File was not created successfully: ${localPath}`);
       }
 
-      console.log(`📥 [PULL] File saved successfully: ${fileName} (${fileInfo.size} bytes)`);
-      console.log(`📥 [PULL] Local path for app: ${localPath}`);
+      logger.info('WatermelonSyncManager: File saved successfully', {
+        fileName,
+        fileSize: fileInfo.size,
+        localPath,
+      });
 
       // Update the attachment record with the correct local file URI
       // Use the actual local path that the app can access
@@ -914,7 +968,9 @@ class WatermelonSyncManager {
 
       return true;
     } catch (error) {
-      console.error(`📥 [PULL] Error saving attachment file data ${attachment.id}:`, error);
+      logger.error('WatermelonSyncManager: Error saving attachment file data', error, {
+        attachmentId: attachment.id,
+      });
 
       // Enhanced error handling for save failures
       if (error.code === 'EACCES') {
@@ -946,9 +1002,14 @@ class WatermelonSyncManager {
         });
       });
 
-      console.log(`📥 [PULL] Updated attachment ${attachmentId} with local path: ${localPath}`);
+      logger.info('WatermelonSyncManager: Updated attachment with local path', {
+        attachmentId,
+        localPath,
+      });
     } catch (error) {
-      console.error(`📥 [PULL] Error updating attachment local path:`, error);
+      logger.error('WatermelonSyncManager: Error updating attachment local path', error, {
+        attachmentId,
+      });
       throw error;
     }
   }

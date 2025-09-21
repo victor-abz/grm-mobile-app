@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
+import { logger } from '../../../../utils/logger';
 import Chart from '../../../../../assets/chart_line_solid.svg';
 import SearchIcon from '../../../../../assets/magnifying-glass-solid.svg';
 import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
@@ -15,18 +16,30 @@ import BigCard from '../components/BigCard';
 const Content = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
+
+  // Log screen load
+  useEffect(() => {
+    logger.userAction('screen_load', 'GRM');
+  }, []);
+
   return (
     <ScrollView contentContainerStyle={{ paddingTop: 20 }} style={{ backgroundColor: 'white' }}>
       <BigCard
         image={BG9}
-        onCardPress={() => navigation.navigate('CitizenReportIntro')}
+        onCardPress={() => {
+          logger.userAction('grm_collect_reports', 'GRM');
+          navigation.navigate('CitizenReportIntro');
+        }}
         title={t('collect_reports')}
         icon={<TeamWorkIcon />}
       />
       <View style={{ marginVertical: 20 }}>
         <BigCard
           image={purpleBg}
-          onCardPress={() => navigation.navigate('IssueSearch')}
+          onCardPress={() => {
+            logger.userAction('grm_search_reports', 'GRM');
+            navigation.navigate('IssueSearch');
+          }}
           title={t('search_reports')}
           icon={
             <View style={{ padding: 15 }}>
@@ -37,7 +50,10 @@ const Content = () => {
       </View>
       <BigCard
         image={smallRectangle}
-        onCardPress={() => navigation.navigate('SyncAttachments')}
+        onCardPress={() => {
+          logger.userAction('grm_sync_files', 'GRM');
+          navigation.navigate('SyncAttachments');
+        }}
         title={t('sync_files')}
         icon={<SyncIcon />}
         // cardHeight={79}
@@ -52,7 +68,10 @@ const Content = () => {
       >
         <BigCard
           image={BG1}
-          onCardPress={() => navigation.navigate('Statistics')}
+          onCardPress={() => {
+            logger.userAction('grm_view_statistics', 'GRM');
+            navigation.navigate('Statistics');
+          }}
           title={t('View Report')}
           icon={<Chart />}
           // cardHeight={79}
