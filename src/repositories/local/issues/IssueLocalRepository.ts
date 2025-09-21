@@ -13,6 +13,7 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
       
       return {
         ...i,
+        administrative_region: JSON.stringify(i.administrative_region),
         assignee: JSON.stringify(i.assignee),
         category: JSON.stringify(i.category),
         citizen: JSON.stringify(i.citizen),

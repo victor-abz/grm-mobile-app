@@ -188,7 +188,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
   };
 
   const updateIssueWithComments = (issue, newStatus, commentData) => {
-    const newComments = [...issue.comments, commentData];
+    const newComments = [...(issue.comments ?? []), commentData];
 
     return {
       ...issue,
@@ -204,7 +204,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     setIssue((prevIssue) => {
       const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
         name: prevIssue.reporter.name,
-        id: eadl._id,
+        id: prevIssue.assignee.id,
         comment: i18n.t('issue_was_accepted'),
         due_at: moment(),
       });

@@ -21,22 +21,17 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
     });
   };
 
-  useEffect(() => {
-    console.log(" Filtered issues", _issues);
-
-  }, [_issues]);
 
   useEffect(() => {
     let filteredIssues = [];
     let foundStatus;
-    if (assigneeIssueList || reporterIssueList) {
       switch (status) {
         case 'assigned':
-          filteredIssues = assigneeIssueList
+          filteredIssues = assigneeIssueList ?? []
           filteredIssues = sortByCreationDateDesc(filteredIssues);
           break;
-          case 'reported':
-          filteredIssues = reporterIssueList
+        case 'reported':
+          filteredIssues = reporterIssueList ?? []
           filteredIssues = sortByCreationDateDesc(filteredIssues);
           break;
         case 'resolved':
@@ -44,9 +39,8 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
           filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id && issue.status.id === foundStatus.id);
           filteredIssues = sortByCreationDateDesc(filteredIssues);
           break;
-        default:
+        default:   
           filteredIssues = _issues.map((issue) => issue);
-      }
     }
     setIssues(filteredIssues);
   }, [status, assigneeIssueList, reporterIssueList]);
