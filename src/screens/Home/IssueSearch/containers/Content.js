@@ -52,18 +52,37 @@ function Content({ issues, eadl, statuses }) {
     return (
       <TouchableOpacity onPress={onPress} style={[styles.item]}>
         <View style={styles.itemContainer}>
-          <View>
-            <Text style={[styles.title]}>{item.issue_type?.name} - {i18n.t('label_reference')} {item.tracking_code}</Text>
-            <Text style={[styles.subTitle]} numberOfLines={1}>{item.title ? item.title : item.description}</Text>
+          <View style={styles.content}>
+            <Text style={[styles.title]}>
+              {item.issue_type?.name} - {i18n.t('label_reference')} {item.tracking_code}
+            </Text>
+            <Text style={[styles.subTitle]} numberOfLines={1}>
+              {item.description}
+            </Text>
             <Text style={[styles.subTitle]}>
-              {item.citizen}, {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')},{' '}
+              {item.citizen}
+              {item.citizen && item.intake_date && ','}{' '}
+              {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')}
+              {item.intake_date && ','}{' '}
               {item.intake_date && currentDate.diff(item.intake_date, 'days')} {i18n.t('days_ago')}
             </Text>
             <Text style={styles.subTitle}>
-              {i18n.t('status_label')}: <Text style={{ color: ((item.status?.id === 1 || item.status?.id === 2) ? colors.inProgress : colors.primary) }}>{item.status?.name}</Text>
+              {i18n.t('status_label')}:{' '}
+              <Text
+                style={{
+                  color:
+                    item.status?.id === 1 || item.status?.id === 2
+                      ? colors.inProgress
+                      : colors.primary,
+                }}
+              >
+                {item.status?.name}
+              </Text>
             </Text>
           </View>
-          <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />
+          <View style={styles.proceedIconContainer}>
+            <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />
+          </View>
         </View>
         {/* <Text style={[styles.title]}>{item.description}</Text> */}
       </TouchableOpacity>
@@ -192,6 +211,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  content: { flex: 10, paddingRight: 10, justifyContent: 'center' },
+  proceedIconContainer: { flexShrink: 0, justifyContent: 'center', alignItems: 'flex-end' },
   item: {
     flex: 1,
     padding: 20,
