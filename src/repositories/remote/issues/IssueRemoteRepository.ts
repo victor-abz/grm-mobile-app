@@ -147,6 +147,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       url,
       method: 'PATCH',
       data: JSON.stringify(body),
+      headers: {'Content-Type': 'application/json'}
     };
 
     try {
