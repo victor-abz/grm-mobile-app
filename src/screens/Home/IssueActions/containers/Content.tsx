@@ -157,12 +157,8 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     // check if can reject
     const hasComments = issue.comments && issue.comments.length > 0;
     const hasEscalated = issue.escalate_flag;
-    const hasRejected = issue.reject_flag;
-    
-    let isIssueResolved: boolean;
-    if (statuses.length > 0) {
-      isIssueResolved = isIssueStatusEqualTo('final_status', issue)
-    }
+    const isIssueResolved = statuses.length > 0 && isIssueStatusEqualTo('final_status', issue);
+    const hasRejected = statuses.length > 0 && isIssueStatusEqualTo('rejected_status', issue);
 
     setHasActionsOrResolved(hasComments || hasEscalated || hasRejected || isIssueResolved);
   };
