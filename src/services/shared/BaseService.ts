@@ -97,36 +97,43 @@ export class BaseService<T> {
     //remove extra statuses , test status id match, convert ids to remote ids
 
     // // 1. Fetch newly created records
-    const newRecords = await this.remoteRepository.fetchAll(
-      endPointType,
-      null,
-      null,
-      null,
-      lastPulledAt,
-      null,
-      null
-    );
-
-    const rawRecords = newRecords.map((item) => this.localRepository.fromRemoteToLocal(item));
-    console.log('formatted records', rawRecords[0]);
-    // response log: {"administrative_region": {"administrative_id": "1", "name": "sample administrative region"}, "assignee": "{\"id\":4,\"name\":\"Comité village Representative\"}", "category": "{\"id\":1,\"name\":\"sample category\"}", "citizen": undefined, "component": undefined, "id": 432432, "intake_date": "2025-08-19T00:51:27.330758Z", "issue_sub_type": undefined, "issue_type": "{\"id\":1,\"name\":\"type 1\"}", "reporter": "{\"id\":5,\"name\":\"Test Representative\"}", "status": "{\"id\":4,\"name\":\"Sample status 4\",\"final_status\":false,\"initial_status\":false,\"rejected_status\":true,\"open_status\":false}", "sub_component": undefined, "tracking_code": "string"}
-    // @ts-ignore
-    tableChanges.created = rawRecords.map((record) => {
-      return { ...record, id: String(record.id) };
-    });
-
-    console.log("TABLE NAME:", tableName, endPointType);
+    try {
+      const newRecords = await this.remoteRepository.fetchAll(
+        endPointType,
+        null,
+        null,
+        null,
+        lastPulledAt,
+        null,
+        null
+      );
+      const formattedRecords = newRecords.map((item) => this.localRepository.fromRemoteToLocal(item));
+      tableChanges.created = formattedRecords.map((record) => {
+        return { ...record, id: String(record.id) };
+      });
+    } catch (e) {
+      console.error("Catch pulling created changes", e);
+      tableChanges.created = []
+    }
     console.log(tableChanges.created.length);
     
 
     // 2. Fetch updated records
-    // const updatedRecords = []
-    // // const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, lastPulledAt, null);
-    // // @ts-ignore
-    // tableChanges.updated = updatedRecords.map((record) => ({
-    //   id:  String(record.id),
-    //   ...record,
-    // }));
+    try {
+      const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, lastPulledAt, null);
+      const formattedRecords = updatedRecords.map((item) =>
+        this.localRepository.fromRemoteToLocal(item)
+      );
+      tableChanges.updated = formattedRecords.map((record) => ({
+          ...record,
+          id:  String(record.id),
+        }
+      ));
+
+    } catch (error) {
+      console.error('Catch pulling updated changes', error);
+      tableChanges.updated = [];
+    }
 
     // // 3. Fetch deleted records (soft deletes are highly recommended for this)
     // const deletedRecords = await this.remoteRepository.fetchAll(

@@ -88,7 +88,33 @@ export class SyncService {
           const timestamp = Date.now();
           for (const syncable of this.syncables) {
             const syncableChanges = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });
-            changes = {...syncableChanges.changes, ...changes }
+            // Create unique issue list from remote lists
+            if (changes && changes.issue) {
+              const createdUniqueArray = Array.from(
+                new Map(
+                  [...changes.issue.created, ...syncableChanges.changes.issue.created]
+                    .map((item) => [item.id, item])
+                ).values()
+              );
+              const updatedUniqueArray = Array.from(
+                new Map(
+                  [...changes.issue.updated, ...syncableChanges.changes.issue.updated]
+                    .map((item) => [item.id, item])
+                  ).values()
+              );
+              const deletedUniqueArray = Array.from(
+                new Map(
+                  [...changes.issue.deleted, ...syncableChanges.changes.issue.deleted]
+                    .map((item) => [item.id, item])
+                  ).values()
+              );
+              
+              changes = { ...changes, issue: { created: createdUniqueArray, updated: updatedUniqueArray, deleted: deletedUniqueArray } }
+              
+            } else {
+              changes = { ...syncableChanges.changes, ...changes }
+            }
+            
           }
           console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
 

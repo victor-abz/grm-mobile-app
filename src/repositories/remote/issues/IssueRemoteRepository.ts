@@ -1,8 +1,7 @@
-import { config } from '../../../../config.dev';
-import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
-import { Issue, IssueLocalModel } from '../../../models/issues/Issue';
-import request from '../../../utils/request';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
+import { Issue } from '../../../models/issues/Issue';
+import request from '../../../utils/request';
+import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
@@ -38,18 +37,18 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     sortBy: string | null,
     sortOrder: SortOrder | null,
     limit: number | null,
-    created_date: string | null,
-    update_date: string | null,
-    deleted_date: string | null
+    created_date: EpochTimeStamp | null,
+    updated_date: EpochTimeStamp | null,
+    deleted_date: EpochTimeStamp | null
   ): Promise<Issue[]> {
     const params: Record<string, string> = {};
 
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
     if (limit) params.limit = limit.toString();
-    if (created_date) params.created_date = created_date;
-    if (update_date) params.update_date = update_date;
-    if (deleted_date) params.deleted_date = deleted_date;
+    if (created_date) params.created_date = String(new Date(created_date).toISOString());
+    if (updated_date) params.updated_date = String(new Date(updated_date).toISOString());
+    // if (deleted_date) params.deleted_date = deleted_date;
 
     const url = `${this.baseUrl}/${endpointType}/`;
 
