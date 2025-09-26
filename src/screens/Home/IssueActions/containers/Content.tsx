@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { withObservables } from '@nozbe/watermelondb/react';
 import moment from 'moment';
-import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
