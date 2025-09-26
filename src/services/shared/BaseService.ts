@@ -91,10 +91,11 @@ export class BaseService<T> {
   }> {
     let changes = {};
     changes[tableName] = { created: [], updated: [], deleted: [] };
- 
+
     const timestamp = Date.now();
     const tableChanges = changes[tableName];
     //remove extra statuses , test status id match, convert ids to remote ids
+    
 
     // // 1. Fetch newly created records
     try {
@@ -115,8 +116,6 @@ export class BaseService<T> {
       console.error("Catch pulling created changes", e);
       tableChanges.created = []
     }
-    console.log(tableChanges.created.length);
-    
 
     // 2. Fetch updated records
     try {
@@ -181,47 +180,5 @@ export class BaseService<T> {
         await this.remoteRepository.delete(recordId);
       }
     }
-  }
-}
-
-export interface TableChangesAdapter {
-  // handles pulled changes
-  toLocal(changes: SyncTableChangeSet, database: Database): Promise<SyncTableChangeSet>;
-  // handles pushing changes
-  toRemote(changes: SyncTableChangeSet, database: Database): Promise<SyncTableChangeSet>;
-}
-
-export class HandleLocalRecordsAdapter implements TableChangesAdapter {
-  // if a server record has a localId, add the localId to deleted to delete local record
-  toLocal(changes: SyncTableChangeSet): Promise<SyncTableChangeSet> {
-    if (changes && changes.created) {
-      changes.created.forEach((record: DirtyRaw) => {
-        if (record.localId) {
-          if (!changes.deleted) {
-            changes.deleted = [];
-          }
-          changes.deleted.push(record.localId);
-        }
-        return record;
-      });
-    }
-    return Promise.resolve(changes);
-  }
-
-  // if a local record is created, add a localId to keep track of the record on the next pulling
-  toRemote(changes: SyncTableChangeSet): Promise<SyncTableChangeSet> {
-    if (changes && changes.created) {
-      changes = {
-        ...changes,
-        created: changes.created.map((record: DirtyRaw) => {
-          return {
-            ...record,
-            localId: record.id,
-            id: null, // use null to be compatible with non-string server id
-          };
-        }),
-        };
-    }
-    return Promise.resolve(changes);
   }
 }

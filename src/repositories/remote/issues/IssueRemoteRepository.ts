@@ -42,13 +42,13 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     deleted_date: EpochTimeStamp | null
   ): Promise<Issue[]> {
     const params: Record<string, string> = {};
-
+    
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
     if (limit) params.limit = limit.toString();
     if (created_date) params.created_date = String(new Date(created_date).toISOString());
     if (updated_date) params.updated_date = String(new Date(updated_date).toISOString());
-    // if (deleted_date) params.deleted_date = deleted_date;
+    if (deleted_date) params.deleted_date = String(new Date(deleted_date).toISOString());
 
     const url = `${this.baseUrl}/${endpointType}/`;
 
@@ -100,7 +100,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     const requestOptions = {
       url,
       method: 'POST',
-      params: new URLSearchParams({ page: '1', pageSize: '20' }),
       body: JSON.stringify(body),
     };
 
@@ -130,8 +129,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   async update(id: string, item: Issue): Promise<Issue> {
     const url = `${this.baseUrl}/${id}/update/`;
 
-    console.log('UPDATE: ', item);
-
     const body = {
       escalate_flag: item.escalate_flag,
       reject_flag: item.reject_flag,
@@ -140,7 +137,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       research_result: item.research_result,
       status: item.status.id,
     };
-    console.log('PATCH BODY', body);
 
     const requestOptions = {
       url,

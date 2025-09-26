@@ -8,7 +8,6 @@ import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
 import { IssueLocalModel } from "../../models/issues/Issue";
 import { IssueTypeLocalModel } from "../../models/issues/IssueType";
 import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
-import { SyncDatabaseChangeSet } from '@nozbe/watermelondb/sync';
 
 const DB_NAME = "grm-db";
 
@@ -82,12 +81,13 @@ export class SyncService {
 
     return await synchronize({
       database: this.database,
-        pullChanges: async ({ lastPulledAt }) => {
+        pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
           console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
-          let changes = {};
+          let changes = {};          
           const timestamp = Date.now();
           for (const syncable of this.syncables) {
-            const syncableChanges = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });
+            const syncableChanges = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });            
+            
             // Create unique issue list from remote lists
             if (changes && changes.issue) {
               const createdUniqueArray = Array.from(
@@ -117,6 +117,7 @@ export class SyncService {
             
           }
           console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
+
 
           return { changes, timestamp };
         },
