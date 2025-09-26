@@ -7,7 +7,22 @@ import { DatabaseProvider } from '@nozbe/watermelondb/react';
 const Stack = createStackNavigator();
 const PrivateRoutes = () =>
 {
-  if (!syncServiceInstance.database) return <></>
+  const [dbReady, setDbReady] = React.useState(!!syncServiceInstance.database);
+
+  React.useEffect(() => {
+    if (!syncServiceInstance.database) {
+      // Wait for the database to be initialized asynchronously
+      const checkDb = setInterval(() => {
+        if (syncServiceInstance.database) {
+          setDbReady(true);
+          clearInterval(checkDb);
+        }
+      }, 100);
+      return () => clearInterval(checkDb);
+    }
+  }, []);
+
+  if (!dbReady) return <><Text>Loading database...</Text></>;
     return (
       <DatabaseProvider database={syncServiceInstance.database}>
         <Stack.Navigator>
