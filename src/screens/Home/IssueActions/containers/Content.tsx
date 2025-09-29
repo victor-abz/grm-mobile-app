@@ -488,6 +488,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
           whatsApp,
           _showDialog,
           isAcceptEnabled,
+          isIssueAssignedToMe,
           _showRejectDialog,
           rejectedDialog,
           hasActionsOrResolved,
@@ -607,6 +608,7 @@ function renderHeaderAndActions(
   whatsApp: () => void,
   _showDialog: () => void,
   isAcceptEnabled: boolean,
+  isIssueAssignedToMe: boolean,
   _showRejectDialog: () => void,
   rejectedDialog: boolean,
   hasActionsOrResolved: boolean,
@@ -676,12 +678,12 @@ function renderHeaderAndActions(
         <ActionButton
           label={i18n.t('accept_issue')}
           onShowDialog={_showDialog}
-          isEnabled={isAcceptEnabled}
+          isEnabled={isAcceptEnabled && isIssueAssignedToMe}
         />
         <ActionButton
           label={i18n.t('reject_issue')}
           onShowDialog={_showRejectDialog}
-          isEnabled={!hasActionsOrResolved || isAcceptEnabled}
+          isEnabled={(!hasActionsOrResolved || isAcceptEnabled) && isIssueAssignedToMe}
         />
         <ActionButton
           label={i18n.t('record_steps_taken')}
@@ -691,7 +693,7 @@ function renderHeaderAndActions(
         <ActionButton
           label={i18n.t('record_resolution')}
           onShowDialog={_showRecordResolutionDialog}
-          isEnabled={isRecordResolutionEnabled}
+          isEnabled={isRecordResolutionEnabled && isIssueAssignedToMe}
         />
       </View>
       <ActionButton
