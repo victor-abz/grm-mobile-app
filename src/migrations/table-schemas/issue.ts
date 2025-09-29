@@ -1,9 +1,6 @@
 import { tableSchema, TableSchema } from "@nozbe/watermelondb";
 import { TABLE_NAMES } from "../tableName";
 
-//funcionó con watermelon el retrieve local y update local - cambiando un issue y su issue_status
-// 7:09 - 12:38 | 1:25 - 1:40 | 3:04 - 7:23
-// updated_date
 export const issueTableSchema: TableSchema = tableSchema({
   name: TABLE_NAMES.issue,
   columns: [

@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import HomeRouter from '../screens/Home/';
 import { syncServiceInstance } from '../services/shared/SyncService';
@@ -22,24 +23,27 @@ const PrivateRoutes = () =>
     }
   }, []);
 
-  if (!dbReady) return <><Text>Loading database...</Text></>;
-    return (
-      <DatabaseProvider database={syncServiceInstance.database}>
-        <Stack.Navigator>
-          {/* //* Home */}
-          <Stack.Screen
-            options={{
-              headerShown: false,
-            }}
-            name="Main"
-            component={HomeRouter}
-          />
-          {/* /* Along with these would come any other route that wouldn't fit inside
+  if (!dbReady) return (<View style={{flex: 1, justifyContent: 'center'}}>
+    <ActivityIndicator size="small" color="#24c38b" />
+  </View>);
+  
+  return (
+    <DatabaseProvider database={syncServiceInstance.database}>
+      <Stack.Navigator>
+        {/* //* Home */}
+        <Stack.Screen
+          options={{
+            headerShown: false,
+          }}
+          name="Main"
+          component={HomeRouter}
+        />
+        {/* /* Along with these would come any other route that wouldn't fit inside
       the bottom tab navigator, meaning any view which doesn't display the tabs
       at the bottom of the screen. */}
-        </Stack.Navigator>
-      </DatabaseProvider>
-    );
+      </Stack.Navigator>
+    </DatabaseProvider>
+  );
 };
 
 export default PrivateRoutes;
