@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, Text } from 'react-native';
+import { SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
+import CustomLoadingSpinner from '../../../components/CustomLoadingSpinner/CustomLoadingSpinner';
+import { LocalAdminLevelsDatabase } from '../../../db/databaseManager';
+import { useIssue } from '../../../hooks/issues/useIssue';
+import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 import Content from './containers/Content';
 import { styles } from './IssueActions.styles';
-import { LocalAdminLevelsDatabase } from '../../../db/databaseManager';
-import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
-import { useIssue } from '../../../hooks/issues/useIssue';
 
 function IssueActions({ route, navigation }) {
   const { params } = route;
@@ -46,17 +47,16 @@ function IssueActions({ route, navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={customStyles.container}>
-        <Text>loading...</Text>
-      </SafeAreaView>
+      <CustomLoadingSpinner />
     );
   }
-  
+
   return (
     <SafeAreaView style={customStyles.container}>
       <Content
         loading={loading}
         eadl={eadl}
+        session={session}
         currentIssue={params.item}
         navigation={navigation}
         statuses={issueStatusList}

@@ -65,7 +65,7 @@ const Router = ({ theme }) => {
   {
 
       const checkSessionAndSync = async () => {
-        if (!syncServiceInstance.database && session) {
+        if (!syncServiceInstance.database && session?.token) {
           await initialSync();
           setLoading(false);
         } else {

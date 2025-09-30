@@ -2,31 +2,10 @@ import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { Issue } from '../../../models/issues/Issue';
 import request from '../../../utils/request';
 import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
+import config from '../../../../config';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
-
-  fromRemoteToLocal(issue: any, index): any {
-
-    
-    if (issue && typeof issue === 'object') {
-      const i = issue as Record<string, any>;
-      return {
-      ...i,
-      assignee: JSON.stringify(i.assignee),
-      category: JSON.stringify(i.category),
-      citizen: JSON.stringify(i.citizen),
-      component: JSON.stringify(i.component),
-      issue_sub_type: JSON.stringify(i.issue_sub_type),
-      issue_type: JSON.stringify(i.issue_type),
-      reporter: JSON.stringify(i.reporter),
-      sub_component: JSON.stringify(i.sub_component),
-      status: JSON.stringify(i.status),
-      };
-    }
-    return null;
-  }
-
 
   /**
    * Fetch all issues from a dynamic endpoint.
@@ -132,7 +111,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     const body = {
       escalate_flag: item.escalate_flag,
       reject_flag: item.reject_flag,
-      rating: item.rating,
+      rating: item.rating ?? undefined,
       escalation_reason: item.escalation_reason,
       research_result: item.research_result,
       status: item.status.id,

@@ -1,13 +1,12 @@
-import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { DatabaseProvider } from '@nozbe/watermelondb/react';
 import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
+import CustomLoadingSpinner from '../components/CustomLoadingSpinner/CustomLoadingSpinner';
 import HomeRouter from '../screens/Home/';
 import { syncServiceInstance } from '../services/shared/SyncService';
-import { DatabaseProvider } from '@nozbe/watermelondb/react';
 
 const Stack = createStackNavigator();
-const PrivateRoutes = () =>
-{
+const PrivateRoutes = () => {
   const [dbReady, setDbReady] = React.useState(!!syncServiceInstance.database);
 
   React.useEffect(() => {
@@ -23,9 +22,7 @@ const PrivateRoutes = () =>
     }
   }, []);
 
-  if (!dbReady) return (<View style={{flex: 1, justifyContent: 'center'}}>
-    <ActivityIndicator size="small" color="#24c38b" />
-  </View>);
+  if (!dbReady) return <CustomLoadingSpinner />;
   
   return (
     <DatabaseProvider database={syncServiceInstance.database}>

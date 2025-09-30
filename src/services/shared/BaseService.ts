@@ -1,8 +1,7 @@
 import NetInfo from '@react-native-community/netinfo';
 import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
-import type { Database, DirtyRaw, Model } from '@nozbe/watermelondb';
-import { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
+import type { Model } from '@nozbe/watermelondb';
 import { RawRecord } from '@nozbe/watermelondb';
 import { TABLE_NAMES } from '../../migrations/tableName';
 
@@ -109,43 +108,49 @@ export class BaseService<T> {
         null
       );
       const formattedRecords = newRecords.map((item) => this.localRepository.fromRemoteToLocal(item));
-      tableChanges.created = formattedRecords.map((record) => {
-        return { ...record, id: String(record.id) };
-      });
+      tableChanges.created = formattedRecords.map((record) => ({
+          ...record,
+          id: String(record.id) 
+         }
+      ));
     } catch (e) {
       console.error("Catch pulling created changes", e);
       tableChanges.created = []
     }
 
     // 2. Fetch updated records
-    try {
-      const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, lastPulledAt, null);
-      const formattedRecords = updatedRecords.map((item) =>
-        this.localRepository.fromRemoteToLocal(item)
-      );
-      tableChanges.updated = formattedRecords.map((record) => ({
-          ...record,
-          id:  String(record.id),
-        }
-      ));
 
-    } catch (error) {
-      console.error('Catch pulling updated changes', error);
-      tableChanges.updated = [];
+    if (lastPulledAt != null) {
+      try {
+        const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, lastPulledAt, null);
+        const formattedRecords = updatedRecords.map((item) =>
+          this.localRepository.fromRemoteToLocal(item)
+        );
+        tableChanges.updated = formattedRecords.map((record) => ({
+            ...record,
+            id:  String(record.id),
+          }
+        ));
+  
+      } catch (error) {
+        console.error('Catch pulling updated changes', error);
+        tableChanges.updated = [];
+      }
+  
+      // // 3. Fetch deleted records (soft deletes are highly recommended for this)
+      // const deletedRecords = await this.remoteRepository.fetchAll(
+      //   endPointType,
+      //   null,
+      //   null,
+      //   null,
+      //   null,
+      //   null,
+      //   lastPulledAt
+      // );
+  
+      // Return all changes and the timestamp for the next pull
+      
     }
-
-    // // 3. Fetch deleted records (soft deletes are highly recommended for this)
-    // const deletedRecords = await this.remoteRepository.fetchAll(
-    //   endPointType,
-    //   null,
-    //   null,
-    //   null,
-    //   null,
-    //   null,
-    //   lastPulledAt
-    // );
-
-    // Return all changes and the timestamp for the next pull
     return { changes, timestamp };
   }
 
@@ -161,7 +166,8 @@ export class BaseService<T> {
     if (tableChanges.created.length > 0) {
       console.log(`Pushing ${tableChanges.created.length} new records to ${tableName}`);
       for (const record of tableChanges.created) {
-        await this.remoteRepository.create(record);
+        const modelInterface = this.localRepository.fromLocalToRemote(record);
+        await this.remoteRepository.create(modelInterface);
       }
     }
 
@@ -169,7 +175,8 @@ export class BaseService<T> {
     if (tableChanges.updated.length > 0) {
       console.log(`Pushing ${tableChanges.updated.length} updated records to ${tableName}`);
       for (const record of tableChanges.updated) {
-        await this.remoteRepository.update(record.id, record);
+        const modelInterface = this.localRepository.fromLocalToRemote(record);
+        await this.remoteRepository.update(modelInterface.id, modelInterface);
       }
     }
 

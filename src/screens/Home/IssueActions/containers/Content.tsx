@@ -52,6 +52,7 @@ const PHONE_CALL_LINK = 'tel://+223';
 type Props = {
   currentIssue: any;
   navigation: any;
+  session: any;
   loading: boolean;
   statuses: IssueStatus[];
   eadl: any;
@@ -59,7 +60,7 @@ type Props = {
   getStatus: (statusName: keyof IssueStatus) => IssueStatus;
 };
 
-function Content({ currentIssue, navigation, loading, statuses = [], eadl, updateIssue, getStatus }: Props) {
+function Content({ session, currentIssue, navigation, loading, statuses = [], eadl, updateIssue, getStatus }: Props) {
   const [issue, setIssue] = useState(currentIssue);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
@@ -460,7 +461,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     if (loading) return;
     const isAssigned =
       issue.assignee?.id &&
-      (issue.reporter.id === issue.assignee.id || issue.assignee.id === eadl?._id);
+      (issue.reporter.id === issue.assignee.id || issue.assignee.id === session?.user_id);
     setIsIssueAssignedToMe(isAssigned);
 
     if (issue.citizen_type !== 1) {
