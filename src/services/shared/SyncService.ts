@@ -36,9 +36,6 @@ export class SyncService {
   }
 
   async initDB() {
-    console.log('INIT DB - Starting...');
-    console.log('Using database schema version:', schema.version);
-
     const adapter = new SQLiteAdapter({
       schema,
       migrations,
@@ -60,7 +57,6 @@ export class SyncService {
       ],
     });
 
-    console.log('INIT DB - Database initialized.');
   }
 
   removeAll() {
