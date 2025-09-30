@@ -4,7 +4,6 @@ import { TABLE_NAMES } from "../../migrations/tableName";
 import { Base } from "../Base";
 
 export interface IssueAttachment extends Base {
-  id: string;
   fileName: string;
   isAudio: boolean;
   localUrl: string;
