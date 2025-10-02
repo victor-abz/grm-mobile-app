@@ -18,7 +18,6 @@ class IssueAttachmentRemoteRepository extends BaseRemoteRepository<IssueAttachme
         const requestOptions = {
             url,
             method: 'POST',
-            params: new URLSearchParams({ page: '1', pageSize: '20' }),
             body: JSON.stringify(body),
         };
 
