@@ -7,12 +7,14 @@ import { colors } from '../../../../utils/colors';
 import { i18n } from "../../../../translations/i18n";
 import ListHeader from '../components/ListHeader';
 import moment from 'moment';
+import { getSessionData } from "../../../../store/ducks/authentication.duck";
 
 function Content({ issues, eadl, statuses }) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('reported');
   const [_issues, setIssues] = useState([]);
+  const [userId, setUserId] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment());
 
   const sortByCreationDateDesc = (data) => {
@@ -22,7 +24,10 @@ function Content({ issues, eadl, statuses }) {
   };
 
   useEffect(() => {
-    setIssues(issues);
+    getSessionData().then((sessionData) => {
+      setUserId(sessionData['user_id']);
+      setIssues(issues);
+    })
   }, []);
 
   useEffect(() => {
@@ -30,16 +35,16 @@ function Content({ issues, eadl, statuses }) {
     let foundStatus;
     switch (status) {
       case 'assigned':
-        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id);
+        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === userId);
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'reported':
-        filteredIssues = issues.filter((issue) => (issue.reporter && issue.reporter.id === eadl._id));
+        filteredIssues = issues.filter((issue) => (issue.reporter && issue.reporter.id === userId));
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'resolved':
         foundStatus = statuses.find((el) => el.final_status === true);
-        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id && issue.status.id === foundStatus.id);
+        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === userId && issue.status.id === foundStatus.id);
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       default:
@@ -76,7 +81,7 @@ function Content({ issues, eadl, statuses }) {
     const updateIssue = (updatedIssue) => {
       setIssues((prevIssues) => {
         const newIssues = prevIssues.map((issue) =>
-          issue._id === updatedIssue._id ? updatedIssue : issue
+          issue.id === updatedIssue.id ? updatedIssue : issue
         );
         return newIssues;
       });
@@ -175,7 +180,7 @@ function Content({ issues, eadl, statuses }) {
         data={_issues}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => item.id}
         extraData={selectedId}
       />
     </>

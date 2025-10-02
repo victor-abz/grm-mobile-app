@@ -7,10 +7,11 @@ import { styles } from './IssueSearch.style';
 import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
+import { useIssue } from "../../../hooks/issues/useIssue";
 
 function IssueSearch() {
   const customStyles = styles();
-  const [issues, setIssues] = useState();
+  const { issues, loadingIssueList } = useIssue();
   const { issueStatusList, loading } = useIssueStatus();
   const [eadl, setEadl] = useState(false);
   const { session } = useSelector((state) => state.get('authentication').toObject());
@@ -32,31 +33,6 @@ function IssueSearch() {
         });
     }
   }, [username]);
-
-  useEffect(() => {
-    // FETCH ISSUE CATEGORY
-    if (eadl) {
-      LocalGRMDatabase.find({
-        selector: {
-          type: 'issue',
-          '$or': [
-            {
-              'reporter.name': eadl.representative.name,
-            },
-            {
-              'assignee.name': eadl.representative.name
-            }
-          ]
-        },
-      })
-        .then((result) => {
-          setIssues(result?.docs);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  }, [eadl]);
 
   if (!issues)
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;

@@ -79,8 +79,22 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     }
   }
 
-  async fetchById(id: string): Promise<Issue> {
-    throw new Error('Method not implemented.');
+  async fetchById(id: string): Promise<Issue>  {
+    const url = `${this.baseUrl}/${id}`;
+    const requestOptions = {
+      url,
+      method: 'GET',
+    };
+    try {
+      const response = await request({
+        ...requestOptions,
+      });
+
+      const jsonData: any = response.data;
+      return jsonData.results;
+    } catch (error) {
+      console.error("Error at fetching issues from remote", error.message);
+    }
   }
 
   async update(id: string, item: Issue): Promise<Issue> {

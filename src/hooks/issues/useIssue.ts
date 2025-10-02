@@ -3,21 +3,22 @@ import * as IssueService from '../../services/issues/IssueService';
 import { Issue } from "../../models/issues/Issue";
 
 export function useIssue() {
-  const [issueList, setIssueList] = useState<Issue[]>()
-  const [loading, setLoading] = useState(false);
+  const [issues, setIssues] = useState<Issue[]>()
+  const [loadingIssues, setLoadingIssues] = useState(true);
     
   useEffect(() => {
-    fetchIssueList();
+    fetchIssueList().then(() => {
+      setLoadingIssues(false);
+    });
   }, []);
     
   const fetchIssueList = async () => {
-      setLoading(true)
-      if (!issueList) {
+      setLoadingIssues(true)
+
+      if (!issues) {
         const issuesList = await IssueService.fetchIssueList()
-        setIssueList(issuesList);
+        setIssues(issuesList);
       }
-      setLoading(false);
     }
-    
-    return [issueList, loading]
+    return { issues, loadingIssues }
 }
