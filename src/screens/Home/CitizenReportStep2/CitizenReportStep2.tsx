@@ -5,17 +5,23 @@ import { styles } from './CitizenReportStep2.styles';
 import { LocalGRMDatabase } from '../../../db/databaseManager';
 import { useIssueTypes } from "../../../hooks/issues/useIssueTypes";
 import { useIssueCategories } from "../../../hooks/issues/useIssueCategories";
+import { useIssueSubTypes } from '../../../hooks/issues/useIssueSubTypes';
 
 const CitizenReportStep2 = ({ route }) => {
   const { params } = route;
-  const { issueCategoriesList, loading } = useIssueCategories()
+  const { issueCategoriesList, loading } = useIssueCategories();
   const { issueTypesList } = useIssueTypes();
   const [issueSubTypes, setIssueSubTypes] = useState();
   const [issueComponents, setIssueComponents] = useState();
   const [issueSubComponents, setIssueSubComponents] = useState();
+  
+  
+  const { issueSubTypes } = useIssueSubTypes();
+  // FETCH ISSUE SUB TYPE
+  // FETCH ISSUE COMPONENT
+  // FETCH ISSUE SUB COMPONENT
 
   useEffect(() => {
-
     // FETCH ISSUE SUB TYPE
     LocalGRMDatabase.find({
       selector: { type: 'issue_sub_type' },
@@ -48,7 +54,6 @@ const CitizenReportStep2 = ({ route }) => {
       .catch((err) => {
         console.log(err);
       });
-
   }, []);
 
   const customStyles = styles();

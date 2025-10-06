@@ -75,8 +75,6 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @json('attachments', json => json) attachments;
   // @ts-ignore
-  @text('auto_increment_id') auto_increment_id;
-  // @ts-ignore
   @field('escalate_flag') escalate_flag;
   // @ts-ignore
   @field('reject_flag') reject_flag;
