@@ -9,6 +9,7 @@ import { IssueLocalModel } from "../../models/issues/Issue";
 import { IssueTypeLocalModel } from "../../models/issues/IssueType";
 import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
 import { IssueCommentLocalModel } from "../../models/issues/IssueComment";
+import { IssueAttachmentLocalModel } from "../../models/issues/IssueAttachment";
 
 const DB_NAME = "grm-db";
 
@@ -35,15 +36,15 @@ export class SyncService {
   }
 
   async initDB() {
-    console.log('INIT DB')
     const adapter = new SQLiteAdapter({
       schema,
       migrations,
       dbName: DB_NAME,
       onSetUpError: error => {
-        // Database failed to load -- offer the user to reload the app or log out
+        console.error("Database setup error:", error);
       }
     });
+
     this.database = new Database({
       adapter,
       modelClasses: [
@@ -51,7 +52,8 @@ export class SyncService {
         IssueLocalModel,
         IssueTypeLocalModel,
         IssueCategoryLocalModel,
-        IssueCommentLocalModel
+        IssueCommentLocalModel,
+        IssueAttachmentLocalModel,
       ],
     });
 
