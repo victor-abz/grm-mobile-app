@@ -61,7 +61,6 @@ const AuthProvider = ({ children }) => {
   const login = useCallback(
     async (username, password) => {
       try {
-        setIsLoading(true);
         const frappe = new FrappeApp(FRAPPE_BASE_URL);
         const auth = frappe.auth();
 
@@ -84,8 +83,6 @@ const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error('Login error:', error);
         return false;
-      } finally {
-        setIsLoading(false);
       }
     },
     [fetchUserInfo]
