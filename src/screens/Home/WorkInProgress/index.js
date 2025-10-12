@@ -1,19 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, Text } from 'react-native';
-import { Button } from 'react-native-paper';
-import { useDispatch } from 'react-redux';
-import { logout } from '../../../store/ducks/authentication.duck';
 
 export const WorkInProgress = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
   return (
     <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>{t('Work in Progress')}</Text>
-      <Button buttonColor="#24c38b" onPress={() => dispatch(logout())}>
-        {t('logout')}
-      </Button>
     </SafeAreaView>
   );
 };

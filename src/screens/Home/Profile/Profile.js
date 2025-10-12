@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
-import { useSelector } from 'react-redux';
+import { AuthContext } from '../../../providers/AuthProvider';
 import dataManager from '../../../services/DataManager';
 import { useFrappe } from '../../../providers/FrappeProvider';
 import Content from './containers/Content';
@@ -13,7 +13,8 @@ const Profile = () => {
   const [isOnline, setIsOnline] = useState(false);
   const [error, setError] = useState(null);
 
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { credentials } = useContext(AuthContext);
+  const username = credentials?.username;
   const { db, auth: _auth } = useFrappe();
 
   const checkNetworkStatus = useCallback(() => {

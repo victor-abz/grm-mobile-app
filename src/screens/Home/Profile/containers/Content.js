@@ -1,37 +1,37 @@
-import UserAvatar from '@muhzi/react-native-user-avatar';
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Text, View, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Button, TextInput, Portal, Dialog, HelperText, IconButton } from 'react-native-paper';
-import { useDispatch } from 'react-redux';
+import {
+  Button,
+  TextInput,
+  Portal,
+  Dialog,
+  HelperText,
+  IconButton,
+  Avatar,
+} from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
-import { logout } from '../../../../store/ducks/authentication.duck';
+import { AuthContext } from '../../../../providers/AuthProvider';
 import LanguageSelector from '../../../../translations/TranslationComponent';
 import { colors } from '../../../../utils/colors';
 import ProfileItem from '../components/ProfileItem';
 import { useFrappe } from '../../../../providers/FrappeProvider';
 import styles from './Content.style';
 
-// Create a wrapper component for UserAvatar to handle default props
-const ProfileAvatar = ({
-  size = 80,
-  src,
-  name,
-  backgroundColor = colors.primary,
-  textColor = 'white',
-}) => (
-  <UserAvatar
-    size={size}
-    src={src}
-    userName={name}
-    backgroundColor={backgroundColor}
-    textColor={textColor}
-  />
-);
+// Create a wrapper component using React Native Paper Avatar
+const ProfileAvatar = ({ size = 80, src, name }) => {
+  if (src) {
+    return <Avatar.Image size={size} source={{ uri: src }} />;
+  }
+
+  return (
+    <Avatar.Text size={size} label={name || '?'} style={{ backgroundColor: colors.primary }} />
+  );
+};
 
 const Content = ({ profileData, isOnline, error }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
+  const { logout } = useContext(AuthContext);
   const { auth } = useFrappe();
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -273,7 +273,14 @@ const Content = ({ profileData, isOnline, error }) => {
               { text: t('Cancel'), style: 'cancel' },
               {
                 text: t('Logout'),
-                onPress: () => dispatch(logout()),
+                onPress: async () => {
+                  try {
+                    await logout();
+                  } catch (logoutError) {
+                    console.error('Logout failed:', logoutError);
+                    Alert.alert(t('error'), t('Failed to logout. Please try again.'));
+                  }
+                },
                 style: 'destructive',
               },
             ]);

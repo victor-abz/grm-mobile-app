@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useContext } from 'react';
 import { ScrollView, View, Text, RefreshControl } from 'react-native';
 import { ActivityIndicator, Card, Button } from 'react-native-paper';
-import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { withObservables } from '@nozbe/watermelondb/react';
 import moment from 'moment';
@@ -11,6 +10,7 @@ import dataManager from '../../../services/DataManager';
 import watermelonManager from '../../../database/watermelonManager';
 import { colors } from '../../../utils/colors';
 import { logger } from '../../../utils/logger';
+import { AuthContext } from '../../../providers/AuthProvider';
 
 // Chart components
 import PieChartGrm from './components/PieChartGrm';
@@ -50,7 +50,8 @@ const Statistics = ({
   const [refreshing, setRefreshing] = useState(false);
   const [processedData, setProcessedData] = useState(null);
 
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { credentials } = useContext(AuthContext);
+  const username = credentials?.username;
 
   // Log screen load
   useEffect(() => {

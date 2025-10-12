@@ -21,10 +21,7 @@ import {
   useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
 import { ActivityIndicator, Button, Provider, TextInput } from 'react-native-paper';
-import { useDispatch } from 'react-redux';
 import styles from './SignUp.style';
-
-import { signUp } from '../../../store/ducks/authentication.duck';
 // import CodeInput from "react-native-code-input";
 
 import BigCheck from '../../../../assets/big-check.svg';
@@ -32,6 +29,7 @@ import CodeLogo from '../../../../assets/code_logo.svg';
 import SuccessLogo from '../../../../assets/success_logo.svg';
 import API from '../../../services/API';
 import { colors } from '../../../utils/colors';
+import { authTheme, authInputColors, authButtonColors } from '../../../utils/authTheme';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
 
@@ -68,19 +66,8 @@ const codeStyles = StyleSheet.create({
 });
 
 const CELL_COUNT = 6;
-const theme = {
-  roundness: 12,
-  colors: {
-    ...colors,
-    background: 'white',
-    placeholder: '#dedede',
-    text: '#707070',
-  },
-};
-
 const SignUp = ({ route: _route }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
   const [codeModal, setCodeModal] = React.useState(false);
   const [credentials, setCredentials] = React.useState();
   const [loading, setLoading] = React.useState(false);
@@ -102,9 +89,9 @@ const SignUp = ({ route: _route }) => {
   const [props, getCellOnLayoutHandler] = useClearByFocusCell({ value, setValue });
 
   const hideModal = () => setCodeModal(false);
-  const hideSuccessModal = (response) => {
+  const hideSuccessModal = () => {
     setSuccessModal(false);
-    dispatch(signUp(response, credentials));
+    // Note: SignUp flow now handled by AuthProvider, no Redux action needed
   };
   const onSignUp = (code) => {
     setLoading(true);
@@ -120,7 +107,7 @@ const SignUp = ({ route: _route }) => {
       setLoading(false);
       setSuccessModal(true);
       setTimeout(() => {
-        hideSuccessModal(response);
+        hideSuccessModal();
       }, 3000);
     });
     hideModal();
@@ -215,7 +202,7 @@ const SignUp = ({ route: _route }) => {
               style={[
                 styles.loginButton,
                 {
-                  backgroundColor: errors ? '#24c38b' : '#dedede',
+                  backgroundColor: authButtonColors.backgroundColor,
                   marginTop: '40%',
                 },
               ]}
@@ -226,7 +213,7 @@ const SignUp = ({ route: _route }) => {
                   ToastAndroid.show(`${t('error_message_for_code')}`, ToastAndroid.SHORT);
                 }
               }}
-              buttonColor="white"
+              textColor={authButtonColors.textColor}
             >
               {t('next')}
             </Button>
@@ -298,7 +285,7 @@ const SignUp = ({ route: _route }) => {
             </Text>
           </View>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.loginScreenContainer}>
+            <View>
               <View style={styles.formContainer}>
                 <View style={{ borderRadius: 10, marginBottom: 16 }}>
                   <Controller
@@ -317,12 +304,13 @@ const SignUp = ({ route: _route }) => {
                     }}
                     render={({ field }) => (
                       <TextInput
-                        theme={theme}
+                        theme={authTheme}
                         mode="outlined"
                         label={t('email')}
-                        placeholderTextColor={colors.placeholder}
+                        textColor={authInputColors.textColor}
+                        placeholderTextColor={authInputColors.placeholderColor}
                         style={styles.loginFormTextInput}
-                        left={<TextInput.Icon name="account" color="#24c38b" />}
+                        left={<TextInput.Icon icon="account" color={authInputColors.iconColor} />}
                         onBlur={field.onBlur}
                         onChangeText={field.onChange}
                         value={field.value}
@@ -334,16 +322,17 @@ const SignUp = ({ route: _route }) => {
                     control={control}
                     render={({ field }) => (
                       <TextInput
-                        theme={theme}
+                        theme={authTheme}
                         mode="outlined"
                         label={t('choose_password')}
-                        placeholderTextColor={colors.placeholder}
+                        textColor={authInputColors.textColor}
+                        placeholderTextColor={authInputColors.placeholderColor}
                         style={styles.loginFormTextInput}
                         left={
                           <TextInput.Icon
+                            icon={isPasswordSecure ? 'eye-off-outline' : 'eye-outline'}
                             onPress={() => setIsPasswordSecure(!isPasswordSecure)}
-                            name={isPasswordSecure ? 'eye-off-outline' : 'eye-outline'}
-                            color="#24c38b"
+                            color={authInputColors.iconColor}
                           />
                         }
                         value={field.value}
@@ -379,16 +368,15 @@ const SignUp = ({ route: _route }) => {
                 </View>
               </View>
               <Button
-                theme={theme}
                 style={[
                   styles.loginButton,
                   {
-                    backgroundColor: errors ? '#24c38b' : '#dedede',
+                    backgroundColor: authButtonColors.backgroundColor,
                     marginTop: '40%',
                   },
                 ]}
                 onPress={handleSubmit(onPressSignUp)}
-                buttonColor="white"
+                textColor={authButtonColors.textColor}
               >
                 {t('next')}
               </Button>

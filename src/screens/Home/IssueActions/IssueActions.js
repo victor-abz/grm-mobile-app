@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { SafeAreaView, ScrollView, View, Text } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
-import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { Q } from '@nozbe/watermelondb';
 import watermelonManager from '../../../database/watermelonManager';
 import { useData } from '../../../providers/DataProvider';
+import { AuthContext } from '../../../providers/AuthProvider';
 import { styles } from './IssueActions.styles';
 import Content from './containers/Content';
 
@@ -17,7 +17,8 @@ const IssueActions = ({ route, navigation, issue, statuses = [] }) => {
   const [loading, setLoading] = useState(true);
   const [userContext, setUserContext] = useState(null);
 
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { credentials } = useContext(AuthContext);
+  const username = credentials?.username;
   const { isDataInitialized, dataManager } = useData();
 
   // Get the issue from route params or from the observable

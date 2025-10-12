@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { SafeAreaView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
-import { useSelector } from 'react-redux';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { useData } from '../../../providers/DataProvider';
+import { AuthContext } from '../../../providers/AuthProvider';
 import watermelonManager from '../../../database/watermelonManager';
 import { colors } from '../../../utils/colors';
 import { logger } from '../../../utils/logger';
@@ -32,7 +32,8 @@ const IssueSearch = ({
   }, []);
 
   const customStyles = styles();
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { credentials } = useContext(AuthContext);
+  const username = credentials?.username;
   const { isDataInitialized, dataManager } = useData();
 
   const [userContext, setUserContext] = useState(null);

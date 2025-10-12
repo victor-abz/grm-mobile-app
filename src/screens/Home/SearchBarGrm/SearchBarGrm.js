@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
-import { useSelector } from 'react-redux';
 import withObservables from '@nozbe/with-observables';
 import watermelonManager from '../../../database/watermelonManager';
 import { DataContext } from '../../../providers/DataProvider';
+import { AuthContext } from '../../../providers/AuthProvider';
 import { colors } from '../../../utils/colors';
 import { styles } from './SearchBarGrm.style';
 import Content from './containers';
 
 const SearchBarGrm = ({ issues = [] }) => {
   const { dataManager } = useContext(DataContext);
+  const { credentials } = useContext(AuthContext);
+  const username = credentials?.username;
   const [loading, setLoading] = useState(true);
   const [eadl, setEadl] = useState(null);
-
-  const { username } = useSelector((state) => state.get('authentication').toObject());
 
   useEffect(() => {
     const loadData = async () => {

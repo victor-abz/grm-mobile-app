@@ -11,20 +11,10 @@ import {
 } from 'react-native';
 import { ActivityIndicator, Button, TextInput } from 'react-native-paper';
 import { AuthContext } from '../../../providers/AuthProvider';
-import { colors } from '../../../utils/colors';
+import { authTheme, authInputColors, authButtonColors } from '../../../utils/authTheme';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { logger } from '../../../utils/logger';
 import styles from './Login.style';
-
-const theme = {
-  roundness: 12,
-  colors: {
-    ...colors,
-    background: 'white',
-    placeholder: colors.placeholder,
-    text: '#707070',
-  },
-};
 
 const Login = () => {
   const { t } = useTranslation();
@@ -129,13 +119,14 @@ const Login = () => {
                     }}
                     render={({ field }) => (
                       <TextInput
-                        theme={theme}
+                        theme={authTheme}
                         autoCapitalize="none"
                         label={t('login_identifier')}
                         mode="outlined"
-                        placeholderTextColor={colors.placeholder}
+                        textColor={authInputColors.textColor}
+                        placeholderTextColor={authInputColors.placeholderColor}
                         style={styles.loginFormTextInput}
-                        left={<TextInput.Icon name="account" color="#24c38b" />}
+                        left={<TextInput.Icon icon="account" color={authInputColors.iconColor} />}
                         onBlur={field.onBlur}
                         onChangeText={field.onChange}
                         value={field.value}
@@ -160,16 +151,17 @@ const Login = () => {
                     }}
                     render={({ field }) => (
                       <TextInput
-                        theme={theme}
+                        theme={authTheme}
                         mode="outlined"
-                        placeholderTextColor={colors.placeholder}
                         label={t('password')}
+                        textColor={authInputColors.textColor}
+                        placeholderTextColor={authInputColors.placeholderColor}
                         style={styles.loginFormTextInput}
                         left={
                           <TextInput.Icon
+                            icon={isPasswordSecure ? 'eye-off-outline' : 'eye-outline'}
                             onPress={() => setIsPasswordSecure(!isPasswordSecure)}
-                            name={isPasswordSecure ? 'eye-off-outline' : 'eye-outline'}
-                            color="#24c38b"
+                            color={authInputColors.iconColor}
                           />
                         }
                         value={field.value}
@@ -193,11 +185,11 @@ const Login = () => {
                 style={[
                   styles.loginButton,
                   {
-                    backgroundColor: errors ? '#24c38b' : '#dedede',
+                    backgroundColor: authButtonColors.backgroundColor,
                   },
                 ]}
                 onPress={handleSubmit(onLoginPress)}
-                textColor="white"
+                textColor={authButtonColors.textColor}
               >
                 {t('login')}
               </Button>

@@ -1,55 +1,54 @@
 import { Dimensions } from 'react-native';
 
-const { width  } = Dimensions.get("screen");
+const { width } = Dimensions.get('screen');
 
 export default {
   containerView: {
     flex: 1,
 
-    backgroundColor: "white",
+    backgroundColor: 'white',
   },
   loginScreenContainer: {
     flex: 1,
-    justifyContent: "space-around",
+    justifyContent: 'space-around',
   },
   logoText: {
     fontSize: 40,
-    fontWeight: "800",
+    fontWeight: '800',
     marginTop: 130,
     marginBottom: 30,
-    textAlign: "center",
+    textAlign: 'center',
   },
   loginFormView: {
     flex: 1,
   },
   errorText: {
-    color: "red",
+    color: 'red',
     paddingLeft: 15,
     marginBottom: 10,
   },
   modalContainerStyle: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 20,
     margin: 20,
     flex: 0.5,
     borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   successModal: {
     flex: 1,
-    backgroundColor: "white",
-    alignItems: "center",
-    justifyContent: "space-evenly",
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
     marginBottom: 20,
     marginHorizontal: 20,
     borderRadius: 10,
   },
   loginFormTextInput: {
     borderRadius: 20,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     fontSize: 14,
-    color: "#707070",
     // overflow: "hidden",
     // height: 43,
     // borderRadius: 5,
@@ -71,26 +70,26 @@ export default {
     // color: "#dedede"
   },
   loginButton: {
-    alignSelf: "center",
+    alignSelf: 'center',
     width: width - 60,
     height: 47,
     borderWidth: 1,
     color: '#fff',
     fontSize: 16,
     fontFamily: 'Poppins_500Medium',
-    backgroundColor: "#dedede",
+    backgroundColor: '#dedede',
   },
   textHint: {
-    fontFamily: "Poppins_400Regular",
+    fontFamily: 'Poppins_400Regular',
     fontSize: 9,
-    fontWeight: "bold",
-    fontStyle: "normal",
+    fontWeight: 'bold',
+    fontStyle: 'normal',
     letterSpacing: 0,
-    textAlign: "left",
-    color: "#707070",
+    textAlign: 'left',
+    color: '#707070',
   },
   hintContainer: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   formContainer: {
     // alignItems: 'center',
@@ -98,6 +97,6 @@ export default {
   fbLoginButton: {
     height: 45,
     marginTop: 10,
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
   },
 };

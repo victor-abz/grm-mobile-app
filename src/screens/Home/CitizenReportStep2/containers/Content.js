@@ -34,7 +34,6 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { useSelector } from 'react-redux';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { AttachmentList } from '../../../../components/AttachmentList/AttachmentList';
 import watermelonManager from '../../../../database/watermelonManager';
@@ -114,8 +113,6 @@ const Content = ({ stepOneParams, categories = [], types = [], projectLinks = []
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
-
-  const { username: _username } = useSelector((state) => state.get('authentication').toObject());
 
   const projectId = stepOneParams?.selectedProject?.id || null;
 
