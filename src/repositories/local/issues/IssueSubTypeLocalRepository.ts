@@ -21,6 +21,7 @@ export class IssueSubTypeLocalRepository extends BaseLocalRepository<IssueSubTyp
       id: localModel.id,
       name: localModel.name,
       created_date: localModel.created_date,
+      parent: localModel.parent,
     };
   }
 }

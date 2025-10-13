@@ -3,5 +3,6 @@ export const enum TABLE_NAMES {
   issueCategory = 'issue_category',
   issueStatus = 'issue_status',
   issueType = 'issue_type',
-  issueSubType = 'issue_subtype'
+  issueSubType = 'issue_subtype',
+  issueSubComponent = 'issue_subcomponent'
 }

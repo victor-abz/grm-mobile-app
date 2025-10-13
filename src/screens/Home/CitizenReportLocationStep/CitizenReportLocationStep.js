@@ -11,25 +11,35 @@ function CitizenReportLocationStep({ route }) {
   const [uniqueRegion, setUniqueRegion] = useState();
 
   const { session } = useSelector((state) => state.get('authentication').toObject());
-  const username = session?.username ?? ''
-  
-  useEffect(() =>
-  {
+  const username = session?.username ?? '';
+ 
+  // fetch administrative levels
+  // fetch facilitator
+  // fetch administrative region from facilitator's unique region 
+
+  //
+  useEffect(() => {
     if (username) {
       LocalAdminLevelsDatabase.find({
+        // FACILITATOR
         selector: { 'representative.email': username },
         // fields: ["_id", "commune", "phases"],
       })
         .then((result) => {
-          if (result.docs[0] && result.docs[0]?.unique_region === 1) {
+          const facilitator = result.docs[0];
+          // if the facilitator has unique_region == true
+          // TODO: fetch facilitator
+
+          if (facilitator && facilitator?.unique_region === 1) {
             LocalCommunesDatabase.find({
-              selector: { administrative_id: result.docs[0].administrative_region },
+              // it looks like administrative_id is now just the id of the administrative_region
+              selector: { administrative_id: facilitator.administrative_region },
             }).then((regions) => {
               setUniqueRegion(regions.docs[0]);
-              console.log("unique region : "+ regions.docs[0]);
+              console.log('unique region : ' + regions.docs[0]);
             });
           }
-          console.log("no unique region : ");
+          console.log('no unique region : ');
           // handle result
         })
         .catch((err) => {
@@ -39,12 +49,12 @@ function CitizenReportLocationStep({ route }) {
   }, [username]);
 
   useEffect(() => {
-    // FETCH LOCATIONS
+    // FETCH administrative levels
     LocalCommunesDatabase.find({
       selector: { type: 'administrative_level' },
     }).then((result) => {
       setIssueCommunes(result?.docs);
-      console.log("issues communes : " + result?.docs[0]);
+      console.log('issues communes : ' + result?.docs[0]);
     });
   }, []);
 

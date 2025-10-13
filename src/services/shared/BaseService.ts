@@ -3,7 +3,6 @@ import { BaseLocalRepository } from '../../repositories/shared/BaseLocalReposito
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import type { Model } from '@nozbe/watermelondb';
 import { RawRecord } from '@nozbe/watermelondb';
-import { TABLE_NAMES } from '../../migrations/tableName';
 
 export class BaseService<T> {
   constructor(
