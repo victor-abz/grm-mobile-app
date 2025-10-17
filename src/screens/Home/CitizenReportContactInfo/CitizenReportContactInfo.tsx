@@ -1,37 +1,24 @@
-import { useEffect, useState } from "react";
-import { SafeAreaView } from "react-native";
-import { styles } from "./CitizenReportContactInfo.styles";
-import { LocalGRMDatabase } from "../../../db/databaseManager";
+import { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native';
+import { LocalGRMDatabase } from '../../../db/databaseManager';
+import { useIssueAges } from '../../../hooks/issues/useIssueAges';
+import { styles } from './CitizenReportContactInfo.styles';
 import Content from './containers/Content';
-import { useIssueAges } from "../../../hooks/issues/useIssueAges";
 
 const CitizenReportContactInfo = ({ route }) => {
   const customStyles = styles();
   const { params } = route;
-  const [issueAges, setIssueAges] = useState();
-  const [citizenGroups, setCitizenGroups] = useState();
-  const [citizenGroupsII, setCitizenGroupsII] = useState();
   const { issueAgesList } = useIssueAges();
-  
-  
-  // missing components enpoint
+  const [ citizenGroups, setCitizenGroups ] = useState();
+  const [ citizenGroupsII, setCitizenGroupsII ] = useState();
+
+  // const { citizenGroups } = useCitizenGroups()
+  // const { citizenGroupsII } = useCitizenGroupsII()
 
   useEffect(() => {
-    
-    //FETCH ISSUE AGE GROUP
-    LocalGRMDatabase.find({
-      selector: { type: "issue_age_group" },
-    })
-      .then(function (result) {
-        setIssueAges(result?.docs);
-      })
-      .catch(function (err) {
-        console.log("issue_age error :" + err);
-      });
-    
     //FETCH CITIZEN GROUP 1
     LocalGRMDatabase.find({
-      selector: { type: "issue_citizen_group" },
+      selector: { type: 'issue_citizen_group' },
     })
       .then(function (result) {
         setCitizenGroups(result?.docs);
@@ -39,31 +26,28 @@ const CitizenReportContactInfo = ({ route }) => {
       .catch(function (err) {
         console.log(err);
       });
-      
+
     //FETCH CITIZEN GROUP 2
-      LocalGRMDatabase.find({
-        selector: { type: "issue_citizen_group_2" },
+    LocalGRMDatabase.find({
+      selector: { type: 'issue_citizen_group_2' },
+    })
+      .then(function (result) {
+        setCitizenGroupsII(result?.docs);
       })
-        .then(function (result) {
-          setCitizenGroupsII(result?.docs);
-        })
-        .catch(function (err) {
-          console.log(err);
-        });
-    
-  }
-    ,
-    []);
-  
-  return(
-     <SafeAreaView style={customStyles.container}>
+      .catch(function (err) {
+        console.log(err);
+      });
+  }, []);
+
+  return (
+    <SafeAreaView style={customStyles.container}>
       <Content
-          stepOneParams={params.stepOneParams}
-          issueAges={issueAges}
-          citizenGroupsII={citizenGroupsII}
-          citizenGroups={citizenGroups}
+        stepOneParams={params.stepOneParams}
+        issueAges={issueAgesList}
+        citizenGroupsII={citizenGroupsII}
+        citizenGroups={citizenGroups}
       />
     </SafeAreaView>
-  )
-}
+  );
+};
 export default CitizenReportContactInfo;

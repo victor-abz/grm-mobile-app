@@ -1,10 +1,10 @@
 import request from '../../../utils/request';
 import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
-import { IssueSubComponent } from '../../../models/issues/IssueSubComponent';
+import { IssueComponent } from '../../../models/issues/IssueComponent';
 
-class IssueSubComponentRemoteRepository extends BaseRemoteRepository<IssueSubComponent> {
+class IssueComponentRemoteRepository extends BaseRemoteRepository<IssueComponent> {
   
-  create(item: IssueSubComponent): Promise<IssueSubComponent> {
+  create(item: IssueComponent): Promise<IssueComponent> {
     throw new Error('Method not implemented.');
   }
 
@@ -12,8 +12,8 @@ class IssueSubComponentRemoteRepository extends BaseRemoteRepository<IssueSubCom
     throw new Error('Method not implemented.');
   }
 
-  async fetchAll(): Promise<IssueSubComponent[]> {
-    const url = `/issues/subcomponents/`;
+  async fetchAll(): Promise<IssueComponent[]> {
+    const url = `/issues/components/`;
     const requestOptions = {
       url,
       method: 'GET',
@@ -25,20 +25,20 @@ class IssueSubComponentRemoteRepository extends BaseRemoteRepository<IssueSubCom
       });
 
       const jsonData: any = response.data;
-      const results: IssueSubComponent[] = jsonData.results ?? []
+      const results: IssueComponent[] = jsonData.results ?? []
       return results;
     } catch (error) {
       console.error(error.message);
     }
   }
 
-  fetchById(id: string): Promise<IssueSubComponent> {
+  fetchById(id: string): Promise<IssueComponent> {
     throw new Error('Method not implemented.');
   }
 
-  update(id: string, item: IssueSubComponent): Promise<IssueSubComponent> {
+  update(id: string, item: IssueComponent): Promise<IssueComponent> {
     throw new Error('Method not implemented.');
   }
 }
 
-export default IssueSubComponentRemoteRepository;
+export default IssueComponentRemoteRepository;

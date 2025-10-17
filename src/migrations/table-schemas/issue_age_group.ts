@@ -1,8 +1,8 @@
 import { tableSchema, TableSchema } from "@nozbe/watermelondb";
 import { TABLE_NAMES } from "../tableName";
 
-export const issueTypeTableSchema: TableSchema = tableSchema({
-  name:  TABLE_NAMES.issueType,
+export const issueAgeGroupTableSchema: TableSchema = tableSchema({
+  name:  TABLE_NAMES.issueAgeGroup,
   columns: [
     { name: 'created_date', type: 'number' },
     { name: 'deleted_date', type: 'number', isOptional: true },

@@ -1,6 +1,6 @@
 import { Map } from "immutable";
 import { createActions, handleActions } from "redux-actions";
-import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../db/databaseManager";
+import { logoutRemoteDBs, SyncToRemoteDatabase } from "../../db/databaseManager"; //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
 import {
   removeEncryptedValue,
   storeEncryptedData,

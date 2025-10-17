@@ -1,7 +1,6 @@
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 import { ContactMedium, ContactMethod, Issue, IssueLocalModel } from '../../../models/issues/Issue';
 import { TABLE_NAMES } from '../../../migrations/tableName';
-import moment from 'moment';
 
 export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   constructor() {
