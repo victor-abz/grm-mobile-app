@@ -1,5 +1,5 @@
-import { Model, Q } from '@nozbe/watermelondb';
-import { text, field, lazy } from '@nozbe/watermelondb/decorators';
+import { Model } from '@nozbe/watermelondb';
+import { text, field } from '@nozbe/watermelondb/decorators';
 import { TABLE_NAMES } from "../../migrations/tableName";
 import { Base } from "../Base";
 

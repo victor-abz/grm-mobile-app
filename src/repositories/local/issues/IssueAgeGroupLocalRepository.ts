@@ -1,22 +1,22 @@
 import { RawRecord } from '@nozbe/watermelondb';
 import { TABLE_NAMES } from "../../../migrations/tableName";
-import { IssueType, IssueTypeLocalModel } from "../../../models/issues/IssueType";
+import { IssueAgeGroup, IssueAgeGroupLocalModel } from "../../../models/issues/IssueAgeGroup";
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 
-export class IssueTypeLocalRepository extends BaseLocalRepository<IssueType> {
+export class IssueAgeGroupLocalRepository extends BaseLocalRepository<IssueAgeGroup> {
   constructor() {
-    super(TABLE_NAMES.issueType);
+    super(TABLE_NAMES.issueAgeGroup);
   }
 
-  fromRemoteToLocal(issueType: any): RawRecord {
+  fromRemoteToLocal(issueAgeGroup: any): RawRecord {
     
     const raw = {
-      ...issueType,
+      ...issueAgeGroup,
     };
     return raw
   }
 
-  fromLocalToRemote(localModel: IssueTypeLocalModel): IssueType {
+  fromLocalToRemote(localModel: IssueAgeGroupLocalModel): IssueAgeGroup {
     return {
       id: localModel.id,
       name: localModel.name,
