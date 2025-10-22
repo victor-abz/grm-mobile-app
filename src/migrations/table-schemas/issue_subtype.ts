@@ -1,7 +1,7 @@
 import { tableSchema, TableSchema } from "@nozbe/watermelondb";
 import { TABLE_NAMES } from "../tableName";
 
-export const issueTypeTableSchema: TableSchema = tableSchema({
+export const issueSubTypeTableSchema: TableSchema = tableSchema({
   name:  TABLE_NAMES.issueSubType,
   columns: [
     { name: 'created_date', type: 'number' },

@@ -49,7 +49,7 @@ function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII }) {
     if (issueAges) {
       setAges(issueAges);
     }
-  }, [citizenGroups, citizenGroupsII]);
+  }, [citizenGroups, citizenGroupsII, issueAges]);
 
   return (
     <ScrollView>
@@ -132,6 +132,11 @@ function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII }) {
               setPickerValue={setPickerGenderValue}
               setItems={setGenders}
             />
+
+            {/*  */}
+            {/* TODO:si en la lista tiene dos types, muestras dos dropdowns o mas dependiendo de los atributos types, cuantos existen */}
+            {/* */}
+
              {/* <CustomDropDownPicker
               schema={{
                 label: 'name',

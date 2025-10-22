@@ -14,11 +14,6 @@ export function useIssueSubTypes() {
 
       setLoading(true)
     if (!issueSubTypesList) {
-      // connected ? {
-      //     const results = 
-      //   } else {
-          
-      //   }
       const issuesSubTypesList = await IssueSubTypeService.fetchIssueSubTypesList();
         setIssueSubTypesList(issuesSubTypesList);
       }

@@ -7,7 +7,11 @@ import { synchronize } from "@nozbe/watermelondb/sync";
 import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
 import { IssueLocalModel } from "../../models/issues/Issue";
 import { IssueTypeLocalModel } from "../../models/issues/IssueType";
+import { IssueSubTypeLocalModel } from '../../models/issues/IssueSubType';
 import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
+import { IssueComponentLocalModel } from '../../models/issues/IssueComponent';
+import { IssueAgeGroupLocalModel } from '../../models/issues/IssueAgeGroup';
+import { IssueSubComponentLocalModel } from '../../models/issues/IssueSubComponent';
 
 const DB_NAME = "grm-db";
 
@@ -50,7 +54,11 @@ export class SyncService {
         IssueStatusLocalModel,
         IssueLocalModel,
         IssueTypeLocalModel,
+        IssueSubTypeLocalModel,
         IssueCategoryLocalModel,
+        IssueComponentLocalModel,
+        IssueAgeGroupLocalModel,
+        IssueSubComponentLocalModel,
       ],
     });
 
@@ -89,24 +97,35 @@ export class SyncService {
             const syncableChanges = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });            
             
             // Create unique issue list from remote lists
-            if (changes && changes.issue) {
+            if (
+              changes &&
+              changes.issue &&
+              syncableChanges.changes &&
+              syncableChanges.changes.issue
+            ) {
               const createdUniqueArray = Array.from(
                 new Map(
-                  [...changes.issue.created, ...syncableChanges.changes.issue.created]
-                    .map((item) => [item.id, item])
+                  [
+                    ...(changes.issue.created || []),
+                    ...(syncableChanges.changes.issue.created || [])
+                  ].map((item) => [item.id, item])
                 ).values()
               );
               const updatedUniqueArray = Array.from(
                 new Map(
-                  [...changes.issue.updated, ...syncableChanges.changes.issue.updated]
-                    .map((item) => [item.id, item])
-                  ).values()
+                  [
+                    ...(changes.issue.updated || []),
+                    ...(syncableChanges.changes.issue.updated || [])
+                  ].map((item) => [item.id, item])
+                ).values()
               );
               const deletedUniqueArray = Array.from(
                 new Map(
-                  [...changes.issue.deleted, ...syncableChanges.changes.issue.deleted]
-                    .map((item) => [item.id, item])
-                  ).values()
+                  [
+                    ...(changes.issue.deleted || []),
+                    ...(syncableChanges.changes.issue.deleted || [])
+                  ].map((item) => [item.id, item])
+                ).values()
               );
               
               changes = { ...changes, issue: { created: createdUniqueArray, updated: updatedUniqueArray, deleted: deletedUniqueArray } }
