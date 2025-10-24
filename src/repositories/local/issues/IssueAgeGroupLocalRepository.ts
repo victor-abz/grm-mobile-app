@@ -8,8 +8,7 @@ export class IssueAgeGroupLocalRepository extends BaseLocalRepository<IssueAgeGr
     super(TABLE_NAMES.issueAgeGroup);
   }
 
-  fromRemoteToLocal(issueAgeGroup: any): RawRecord {
-    
+  fromRemoteToLocal(issueAgeGroup: any): RawRecord {    
     const raw = {
       ...issueAgeGroup,
     };

@@ -71,9 +71,43 @@ export abstract class BaseLocalRepository<T> {
       await dbItem.markAsDeleted();
     });
   }
+  
+  async bulkCreate(entries: any[]): Promise<void> {
+    try {
+      const dbInstance = syncServiceInstance.database;
+      let operations = []
+  
+      await dbInstance.write(async () => { 
+        for (let index = 0; index < entries.length; index++) {
+          const element = entries[index];
+          operations.push(
+            dbInstance.get(this.tableName).prepareCreate((administrativeRegion) => {
+              Object.keys(administrativeRegion._raw).forEach((key) => {
+                console.log("CREATE ITEM LOGS");
+                console.log(administrativeRegion);
+                console.log(element);
+
+                if (key == 'id') {
+                  administrativeRegion._raw[key] == String(element[key])
+                }
+
+                if (key !== 'id' && key !== '_changed' && key !== '_status') {
+                  administrativeRegion._raw[key] = element[key];
+                }
+              });
+              administrativeRegion = element;
+            })
+          );
+        }
+        dbInstance.batch(operations);
+      })
+      
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
 
   // @ts-ignore
-  
   async upsert(newEntry: unknown): Promise<void> {
     const dbInstance = syncServiceInstance.database
 

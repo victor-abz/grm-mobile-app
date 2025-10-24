@@ -1,14 +1,24 @@
-import NetInfo from '@react-native-community/netinfo';
-import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
-import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import type { Model } from '@nozbe/watermelondb';
 import { RawRecord } from '@nozbe/watermelondb';
+import NetInfo from '@react-native-community/netinfo';
+import { TABLE_NAMES } from '../../migrations/tableName';
+import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
+import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 
 export class BaseService<T> {
   constructor(
     private localRepository: BaseLocalRepository<T>,
     private remoteRepository: BaseRemoteRepository<T>
-  ) {}
+  ) { }
+  
+  async bulkCreate(entries: T[]): Promise<void> {
+    // check if any conversion is needed 
+    // for (let index = 0; index < entries.length; index++) {
+    //   const element = entries[index];
+    //   this.localRepository.fromRemoteToLocal(element)
+    // }
+    this.localRepository.bulkCreate(entries)
+  }
 
   async upsert(item: Model): Promise<void> {
     const state = await NetInfo.fetch();
@@ -60,7 +70,13 @@ export class BaseService<T> {
     }
   }
 
-  async getAll(endpointType: string | null = null): Promise<T[]> {
+  async getAll(
+    endpointType: string | null = null,
+    fetchFromLocal: boolean | null = null,
+    page: number | null = null,
+    allPages: boolean | null = null,
+  ): Promise<T[]> {
+    
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
@@ -102,6 +118,8 @@ export class BaseService<T> {
         null,
         null,
         null,
+        null,
+        null,
         lastPulledAt,
         null,
         null
@@ -121,7 +139,7 @@ export class BaseService<T> {
 
     if (lastPulledAt != null) {
       try {
-        const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, lastPulledAt, null);
+        const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, null, null, lastPulledAt, null);
         const formattedRecords = updatedRecords.map((item) =>
           this.localRepository.fromRemoteToLocal(item)
         );

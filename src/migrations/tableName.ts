@@ -6,5 +6,6 @@ export const enum TABLE_NAMES {
   issueSubType = 'issue_subtype',
   issueSubComponent = 'issue_subcomponent',
   issueComponent = 'issue_component',
-  issueAgeGroup = 'issue_age_group'
+  issueAgeGroup = 'issue_age_group',
+  administrativeRegions = 'administrative_regions'
 }

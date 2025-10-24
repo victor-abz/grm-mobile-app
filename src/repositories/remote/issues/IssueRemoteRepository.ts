@@ -15,6 +15,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     endpointType: string | null,
     sortBy: string | null,
     sortOrder: SortOrder | null,
+    page: number | null,
     limit: number | null,
     created_date: EpochTimeStamp | null,
     updated_date: EpochTimeStamp | null,
@@ -24,7 +25,8 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
-    if (limit) params.limit = limit.toString();
+    if (page) params.page = page.toString();
+    if (limit) params.page_size = limit.toString();
     if (created_date) params.created_date = String(new Date(created_date).toISOString());
     if (updated_date) params.updated_date = String(new Date(updated_date).toISOString());
     if (deleted_date) params.deleted_date = String(new Date(deleted_date).toISOString());

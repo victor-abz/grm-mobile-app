@@ -2,20 +2,49 @@ import { DatabaseProvider } from '@nozbe/watermelondb/react';
 import { createStackNavigator } from '@react-navigation/stack';
 import React, { useEffect } from 'react';
 import CustomLoadingSpinner from '../components/CustomLoadingSpinner/CustomLoadingSpinner';
-import HomeRouter from '../screens/Home/';
+import HomeRouter from '../screens/Home';
 import { syncServiceInstance } from '../services/shared/SyncService';
+import { fetchAdministrativeRegions } from '../services/issues/AdministrativeRegionService';
+import { INITIAL_DATA_FETCHED_STORAGE_KEY } from '../utils/constants';
+import { getData, removeValue, storeData } from '../utils/storageManager';
+
+//[x] install, auto create 3 instances, auto update 1 from remote.
+//[x] manually update 1, check remote, check local. 
+//[x] (OFFLINE) manually update 1, check local, (CONNECT) check remote.
+//[x] (OFFLINE) manually update 1, auto update remote(same), (CONNECT) check remote, check local. watermelon change wins against remote
+//[x] check for empty pushChanges
 
 const Stack = createStackNavigator();
 const PrivateRoutes = () => {
   const [dbReady, setDbReady] = React.useState(!!syncServiceInstance.database);
+  const [loading, setLoading] = React.useState(true);
+
+   const fetchConstants = async () =>  {
+     const hasInitialData = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);
+     console.log("initial data", hasInitialData);
+    //  await removeValue(INITIAL_DATA_FETCHED_STORAGE_KEY);
+     if (!hasInitialData) {
+        try {
+          await fetchAdministrativeRegions(true);
+          await storeData(INITIAL_DATA_FETCHED_STORAGE_KEY, true);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
 
   useEffect(() => {
+    
     if (!syncServiceInstance.database) {
+    
       // Wait for the database to be initialized asynchronously
       const checkDb = setInterval(() => {
+    
+
         if (syncServiceInstance.database) {
           setDbReady(true);
           syncServiceInstance.syncAll();
+          fetchConstants();
           clearInterval(checkDb);
         }
       }, 100);

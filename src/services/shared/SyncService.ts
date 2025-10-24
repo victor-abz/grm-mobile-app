@@ -12,7 +12,8 @@ import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
 import { IssueComponentLocalModel } from '../../models/issues/IssueComponent';
 import { IssueAgeGroupLocalModel } from '../../models/issues/IssueAgeGroup';
 import { IssueSubComponentLocalModel } from '../../models/issues/IssueSubComponent';
-
+import { AdministrativeRegionLocalModel } from '../../models/issues/AdministrativeRegions';
+ 
 const DB_NAME = "grm-db";
 
 enablePromise(true);
@@ -59,9 +60,9 @@ export class SyncService {
         IssueComponentLocalModel,
         IssueAgeGroupLocalModel,
         IssueSubComponentLocalModel,
+        AdministrativeRegionLocalModel
       ],
     });
-
   }
 
   removeAll() {
@@ -85,7 +86,6 @@ export class SyncService {
     if (!this.database) {
       throw new Error("Database not initialized. Call initDB() first.");
     }
-
 
     return await synchronize({
       database: this.database,

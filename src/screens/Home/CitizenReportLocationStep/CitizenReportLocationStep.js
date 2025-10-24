@@ -1,23 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView, Text } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './CitizenReportLocationStep.styles';
 import { LocalAdminLevelsDatabase, LocalCommunesDatabase } from '../../../db/databaseManager';
+import { useAdministrativeRegions } from '../../../hooks/issues/useAdministrativeRegions';
 
 function CitizenReportLocationStep({ route }) {
   const { params } = route;
-  const [issueCommunes, setIssueCommunes] = useState();
-  const [uniqueRegion, setUniqueRegion] = useState();
-
+  const { administrativeRegionsList, loading } = useAdministrativeRegions(); //fetch from local
   const { session } = useSelector((state) => state.get('authentication').toObject());
   const username = session?.username ?? '';
- 
+
   // fetch administrative levels
   // fetch facilitator
   // fetch administrative region from facilitator's unique region 
 
-  //
   useEffect(() => {
     if (username) {
       LocalAdminLevelsDatabase.find({
@@ -46,17 +44,7 @@ function CitizenReportLocationStep({ route }) {
           console.log('ERROR FETCHING EADL', err);
         });
     }
-  }, [username]);
-
-  useEffect(() => {
-    // FETCH administrative levels
-    LocalCommunesDatabase.find({
-      selector: { type: 'administrative_level' },
-    }).then((result) => {
-      setIssueCommunes(result?.docs);
-      console.log('issues communes : ' + result?.docs[0]);
-    });
-  }, []);
+  }, [username]);  
 
   const customStyles = styles();
   return (
@@ -64,7 +52,7 @@ function CitizenReportLocationStep({ route }) {
       <Content
         stepOneParams={params.stepOneParams}
         stepTwoParams={params.stepTwoParams}
-        issueCommunes={issueCommunes}
+        issueCommunes={administrativeRegionsList}
         uniqueRegion={uniqueRegion}
       />
     </SafeAreaView>
