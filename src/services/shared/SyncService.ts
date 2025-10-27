@@ -1,7 +1,7 @@
 import { enablePromise } from 'react-native-sqlite-storage';
 import SQLiteAdapter from "@nozbe/watermelondb/adapters/sqlite";
 import { Database } from "@nozbe/watermelondb";
-import schema from "../../migrations/schemas";
+import schema from "../../migrations/appSchema";
 import migrations from "../../migrations/migrations";
 import { synchronize } from "@nozbe/watermelondb/sync";
 import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
@@ -41,7 +41,8 @@ export class SyncService {
       migrations,
       dbName: DB_NAME,
       onSetUpError: error => {
-        console.error("Database setup error:", error);
+        // Database failed to load -- offer the user to reload the app or log out
+        console.log("Watermelon Adapter set up Failed", error);
       }
     });
 
@@ -75,12 +76,15 @@ export class SyncService {
   }
 
   async syncAll(): Promise<void> {
+    console.log("SYNCING ALL");
+    
     if (!this.database) {
       throw new Error("Database not initialized. Call initDB() first.");
     }
 
+
     return await synchronize({
-        database: this.database,
+      database: this.database,
         pullChanges: async ({ lastPulledAt }) => {
           console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
           let changes = {};

@@ -8,6 +8,7 @@ import { i18n } from "../../../../translations/i18n";
 import { LocalGRMDatabase } from '../../../../db/databaseManager';
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
+import { useIssue } from '../../../../hooks/issues/useIssue';
 
 const SAMPLE_WORDS = ['lac', 'plaine', 'savane', 'colline'];
 const theme = {
@@ -23,6 +24,7 @@ const theme = {
 function Content({ issue, eadl }) {
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
+  const { createIssue } = useIssue();
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
@@ -32,7 +34,7 @@ function Content({ issue, eadl }) {
   //   return parseInt(last.id.split('-')[1]) + 1;
   // };
   const randomWord = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const submitIssue = () => {
+  const submitIssue = async () => {
     const isAssignee =
       issue.category?.assigned_department === eadl?.department &&
       issue.category?.administrative_level === eadl?.administrative_level;
@@ -102,18 +104,15 @@ function Content({ issue, eadl }) {
       },
       type: 'issue',
     };
-    createIssue(_issue);
-    // navigation.navigate("CitizenReportStep4");
-  };
-
-  const createIssue = (_issue) => {
-    LocalGRMDatabase.post(_issue)
-      .then((response) => {
-        navigation.navigate('CitizenReportStep4', { issue: _issue });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    console.log("CREATED ISSUE --->", createdIssue);
+    const createdIssue = await createIssue(_issue);
+    console.log("CREATED ISSUE --->", createdIssue);
+    
+    if (createdIssue) {
+      navigation.navigate('CitizenReportStep4', { issue: _issue });
+    } else { 
+      console.error('Issue creation failed');
+    }
   };
 
   useEffect(() => {

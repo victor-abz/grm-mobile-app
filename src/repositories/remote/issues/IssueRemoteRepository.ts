@@ -1,10 +1,68 @@
-import { config } from "../../../../config.dev";
-import { BaseRemoteRepository } from "../../shared/BaseRemoteRepository";
-import { Issue } from "../../../models/issues/Issue";
-import request from "../../../utils/request";
+import { config } from '../../../../config.dev';
+import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
+import { Issue, IssueLocalModel } from '../../../models/issues/Issue';
+import request from '../../../utils/request';
+import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
+
+  fromRemoteToLocal(issue: any, index): any {
+    if (issue && typeof issue === 'object') {
+      const i = issue as Record<string, any>;
+      return {
+        ...i,
+        assignee: JSON.stringify(i.assignee),
+        category: JSON.stringify(i.category),
+        citizen: JSON.stringify(i.citizen),
+        component: JSON.stringify(i.component),
+        issue_sub_type: JSON.stringify(i.issue_sub_type),
+        issue_type: JSON.stringify(i.issue_type),
+        reporter: JSON.stringify(i.reporter),
+        sub_component: JSON.stringify(i.sub_component),
+        status: JSON.stringify(i.status),
+      };
+    }
+    return null;
+  }
+
+  /**
+   * Fetch all issues from a dynamic endpoint.
+   * @param endpointType 'assignee' | 'reporter' | etc.
+   */
+  async fetchAll(
+    endpointType: string | null,
+    sortBy: string | null,
+    sortOrder: SortOrder | null,
+    limit: number | null,
+    created_date: string | null,
+    update_date: string | null,
+    deleted_date: string | null
+  ): Promise<Issue[]> {
+    const params: Record<string, string> = {};
+
+    if (sortBy) params.sortBy = sortBy;
+    if (sortOrder) params.sortOrder = sortOrder;
+    if (limit) params.limit = limit.toString();
+    if (created_date) params.created_date = created_date;
+    if (update_date) params.update_date = update_date;
+    if (deleted_date) params.deleted_date = deleted_date;
+
+    const url = `${this.baseUrl}/${endpointType}/`;
+
+    try {
+      const response = await request({
+        url,
+        method: 'GET',
+        params: new URLSearchParams(params),
+      });
+
+      const jsonData: any = response.data;
+      return jsonData.results ?? [];
+    } catch (error) {
+      return Promise.reject({ message: error.message });
+    }
+  }
 
   async create(item: Issue): Promise<Issue> {
     const body = {
@@ -19,13 +77,15 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       administrative_region: item.administrative_region.id,
       reporter: item.reporter.id,
       assignee: item.assignee.id,
-      citizen: {
-        name: item.citizen.name,
-        type: item.citizen.type,
-        age_group: item.citizen.age_group.id,
-        group: item.citizen.group.id,
-        group_2: item.citizen.group_2.id,
-      },
+      citizen: item.citizen
+        ? {
+            name: item.citizen.name,
+            type: item.citizen.type,
+            age_group: item.citizen.age_group.id,
+            group: item.citizen.group.id,
+            group_2: item.citizen.group_2.id,
+          }
+        : null,
       component: item.component.id,
       sub_component: item.sub_component.id,
       contact_medium: item.contact_medium,
@@ -50,9 +110,9 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       });
 
       const jsonData: any = response.data;
-      return jsonData.results;
+      return jsonData;
     } catch (error) {
-      console.error("Error creating issue at remote", error.message);
+      console.error('Error creating issue at remote', error.message);
     }
   }
 
@@ -60,26 +120,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     throw new Error('Method not implemented.');
   }
 
-  async fetchAll(): Promise<Issue[]> {
-    const url = `${this.baseUrl}/list/`;
-    const requestOptions = {
-      url,
-      method: 'GET',
-      params: new URLSearchParams({ page: '1', pageSize: '20' }),
-    };
-    try {
-      const response = await request({
-        ...requestOptions,
-      });
-
-      const jsonData: any = response.data;
-      return jsonData.results;
-    } catch (error) {
-      console.error("Error at fetching issues from remote", error.message);
-    }
-  }
-
-  async fetchById(id: string): Promise<Issue>  {
+  async fetchById(id: string): Promise<Issue> {
     const url = `${this.baseUrl}/${id}`;
     const requestOptions = {
       url,
@@ -93,11 +134,43 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       const jsonData: any = response.data;
       return jsonData.results;
     } catch (error) {
-      console.error("Error at fetching issues from remote", error.message);
+      console.error('Error at fetching issues from remote', error.message);
     }
   }
 
+  // Partially update an issue. Only specific fields can be modified.
+  // Access Control:
+  // Only users who are either the reporter or assignee of the issue can access this endpoint.
   async update(id: string, item: Issue): Promise<Issue> {
-    throw new Error('Method not implemented.');
+    const url = `${this.baseUrl}/${id}/update/`;
+
+    console.log('UPDATE: ', item);
+
+    const body = {
+      escalate_flag: item.escalate_flag,
+      reject_flag: item.reject_flag,
+      rating: item.rating,
+      escalation_reason: item.escalation_reason,
+      research_result: item.research_result,
+      status: item.status.id,
+    };
+    console.log('PATCH BODY', body);
+
+    const requestOptions = {
+      url,
+      method: 'PATCH',
+      data: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    };
+
+    try {
+      const response = await request({
+        ...requestOptions,
+      });
+      const jsonData: any = response.data;
+      return jsonData;
+    } catch (error) {
+      console.error('Error updating issue at remote', error.message);
+    }
   }
 }

@@ -2,7 +2,7 @@ import NetInfo, { NetInfoSubscription } from '@react-native-community/netinfo';
 import { issueCategorySyncable } from '../services/issues/IssueCategoryService';
 import { syncServiceInstance } from "../services/shared/SyncService";
 import { issueStatusSyncable } from "../services/issues/IssueStatusService";
-import { issueSyncable } from "../services/issues/IssueService";
+import { assigneeIssueListSyncable, reporterIssueListSyncable } from "../services/issues/IssueService";
 import { issueTypeSyncable } from '../services/issues/IssueTypeService';
 
 let stableConnectionTimer: NodeJS.Timeout | null = null;
@@ -12,14 +12,11 @@ const stableConnectionTimmer = 15 * 60 * 1000;
 
 export function registerServices(): void {
   syncServiceInstance.removeAll();
-  // @ts-ignore
   syncServiceInstance.register(issueStatusSyncable);
-  // @ts-ignore
-  syncServiceInstance.register(issueCategorySyncable)
-  // @ts-ignore
-  syncServiceInstance.register(issueTypeSyncable)
-  // @ts-ignore
-  syncServiceInstance.register(issueSyncable);
+  syncServiceInstance.register(issueCategorySyncable);
+  syncServiceInstance.register(issueTypeSyncable);
+  syncServiceInstance.register(assigneeIssueListSyncable);
+  syncServiceInstance.register(reporterIssueListSyncable);
 }
 
 async function setupConnectionWatcher(): Promise<void> {
@@ -33,6 +30,7 @@ async function setupConnectionWatcher(): Promise<void> {
       stableConnectionTimer = setTimeout(async () => {
         console.log('[Sync] Triggering sync after stable connection.');
         await syncServiceInstance.syncAll();
+        
       }, stableConnectionTimmer);
 
     } else {

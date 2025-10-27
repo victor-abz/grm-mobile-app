@@ -297,6 +297,7 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAttachmentCollapsed}>
           <View style={styles.collapsibleContent}>
+
             { issue.attachments?.map((attachment) => {
                 return (
                   <View style={{ flexDirection: 'row', maxWidth: '100%' , justifyContent: 'center'}}>

@@ -9,11 +9,11 @@ import ListHeader from '../components/ListHeader';
 import moment from 'moment';
 import { getSessionData } from "../../../../store/ducks/authentication.duck";
 
-function Content({ issues, eadl, statuses }) {
+function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('reported');
-  const [_issues, setIssues] = useState([]);
+  const [displayedIssues, setDisplayedIssues] = useState([]);
   const [userId, setUserId] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment());
 
@@ -26,7 +26,6 @@ function Content({ issues, eadl, statuses }) {
   useEffect(() => {
     getSessionData().then((sessionData) => {
       setUserId(sessionData['user_id']);
-      setIssues(issues);
     })
   }, []);
 
@@ -35,23 +34,23 @@ function Content({ issues, eadl, statuses }) {
     let foundStatus;
     switch (status) {
       case 'assigned':
-        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === userId);
+        filteredIssues = assigneeIssueList ?? []
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'reported':
-        filteredIssues = issues.filter((issue) => (issue.reporter && issue.reporter.id === userId));
+        filteredIssues = reporterIssueList ?? []
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'resolved':
         foundStatus = statuses.find((el) => el.final_status === true);
-        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === userId && issue.status.id === foundStatus.id);
+        filteredIssues = [...assigneeIssueList.filter((issue) => issue.assignee && issue.assignee.id === userId && issue.status.id === foundStatus.id), ...reporterIssueList.filter((issue) => issue.assignee && issue.assignee.id === userId && issue.status.id === foundStatus.id)]
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       default:
-        filteredIssues = _issues.map((issue) => issue);
-    }
-    setIssues(filteredIssues);
-  }, [status]);
+        filteredIssues = displayedIssues.map((issue) => issue);
+      }
+    setDisplayedIssues(filteredIssues);
+  }, [status, assigneeIssueList, reporterIssueList]);
 
   function Item({ item, onPress, backgroundColor, textColor }) {
     return (
@@ -98,7 +97,7 @@ function Content({ issues, eadl, statuses }) {
     const backgroundColor = item.id === selectedId ? '#6e3b6e' : '#f9c2ff';
     const color = item.id === selectedId ? 'white' : 'black';
     const updateIssue = (updatedIssue) => {
-      setIssues((prevIssues) => {
+      setDisplayedIssues((prevIssues) => {
         const newIssues = prevIssues.map((issue) =>
           issue.id === updatedIssue.id ? updatedIssue : issue
         );
@@ -196,10 +195,10 @@ function Content({ issues, eadl, statuses }) {
       </ToggleButton.Row>
       <FlatList
         style={{ flex: 1 }}
-        data={_issues}
+        data={displayedIssues}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         extraData={selectedId}
       />
     </>

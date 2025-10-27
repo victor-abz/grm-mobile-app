@@ -14,4 +14,6 @@ export const issueStatusTableSchema: TableSchema = tableSchema({
         { name: 'sync_date', type: 'number', isOptional: true },
         { name: 'updated_date', type: 'number' },
       ],
-    });
+});
+    
+// date column names should end with _at, relations should be named as field_id

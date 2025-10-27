@@ -28,8 +28,13 @@ export interface Citizen extends Base {
 }
 
 export interface Issue extends Base {
-  administrative_region: Base,
-  assignee: Base,
+  administrative_region: Base;
+  assignee: Base;
+  escalate_flag: boolean;
+  reject_flag: boolean;
+  rating?: number;
+  escalation_reason?: string;
+  research_result?: string;
   attachments: Array<IssueAttachment>,
   auto_increment_id: string,
   category: Base,
@@ -38,51 +43,63 @@ export interface Issue extends Base {
   confirmed: boolean,
   contact_medium: ContactMedium,
   contact_information: {
-    type: ContactMethod,
-    contact: string
-  },
-  contact_method: ContactMethod,
-  description: string,
-  id: string,
-  intake_date: Date,
-  issue_date?: Date | null,
-  issue_location_id: number,
-  issue_sub_type: Base,
-  issue_type: Base,
-  internal_code: string,
-  location_description: string,
-  ongoing_issue: boolean,
-  reporter: Base,
-  resolution_date?: Date | null,
-  title: string,
-  tracking_code: string,
-  sub_component: Base,
-  status: Base,
+    type: ContactMethod;
+    contact: string;
+  };
+  contact_method: ContactMethod;
+  description: string;
+  id: string;
+  intake_date: Date;
+  issue_date?: Date | null;
+  issue_location_id: number;
+  issue_sub_type: Base;
+  issue_type: Base;
+  internal_code: string;
+  location_description: string;
+  ongoing_issue: boolean;
+  reporter: Base;
+  resolution_date?: Date | null;
+  title: string;
+  tracking_code: string;
+  sub_component: Base;
+  status: Base;
 }
 
 export class IssueLocalModel extends Model {
   static table = TABLE_NAMES.issue;
 
   // @ts-ignore
-  @json('administrative_region') administrative_region;
+  @json('administrative_region', json => json) administrative_region;
   // @ts-ignore
-  @json('assignee') assignee;
+  @json('assignee', json => json) assignee;
   // @ts-ignore
-  @json('attachments') attachments;
+  @json('attachments', json => json) attachments;
   // @ts-ignore
   @text('auto_increment_id') auto_increment_id;
   // @ts-ignore
-  @json('category') category;
+  @field('escalate_flag') escalate_flag;
   // @ts-ignore
-  @json('citizen') citizen;
+  @field('reject_flag') reject_flag;
   // @ts-ignore
-  @json('component') component;
+  @field('rating') rating;
+  // @ts-ignore
+  @text('escalation_reason') escalation_reason;
+  // @ts-ignore
+  @text('research_result') research_result;
+  // @ts-ignore
+  @text('auto_increment_id') auto_increment_id;
+  // @ts-ignore
+  @json('category', json => json) category;
+  // @ts-ignore
+  @json('citizen', json => json) citizen;
+  // @ts-ignore
+  @json('component', json => json) component;
   // @ts-ignore
   @field('confirmed') confirmed;
   // @ts-ignore
   @text('contact_medium') contact_medium;
   // @ts-ignore
-  @json('contact_information') contact_information;
+  @json('contact_information', json => json) contact_information;
   // @ts-ignore
   @text('contact_method') contact_method;
   // @ts-ignore
@@ -96,9 +113,9 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @field('issue_location_id') issue_location_id;
   // @ts-ignore
-  @json('issue_sub_type') issue_sub_type;
+  @json('issue_sub_type', json => json) issue_sub_type;
   // @ts-ignore
-  @json('issue_type') issue_type;
+  @json('issue_type', json => json) issue_type;
   // @ts-ignore
   @text('internal_code') internal_code;
   // @ts-ignore
@@ -108,15 +125,15 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @field('ongoing_issue') ongoing_issue;
   // @ts-ignore
-  @json('reporter') reporter;
+  @json('reporter', json => json) reporter;
   // @ts-ignore
   @text('resolution_date') resolution_date;
   // @ts-ignore
   @text('title') title;
-    // @ts-ignore
+  // @ts-ignore
   @text('tracking_code') tracking_code;
   // @ts-ignore
-  @json('sub_component') sub_component;
+  @json('sub_component', json => json) sub_component;
   // @ts-ignore
-  @json('status') status;
+  @json('status', json => json) status;
 }
