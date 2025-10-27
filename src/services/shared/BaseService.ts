@@ -4,7 +4,6 @@ import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteReposi
 import type { Database, DirtyRaw, Model } from '@nozbe/watermelondb';
 import { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
 import { RawRecord } from '@nozbe/watermelondb';
-import { TABLE_NAMES } from '../../migrations/tableName';
 
 export class BaseService<T> {
   constructor(
@@ -66,10 +65,9 @@ export class BaseService<T> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
-        return await this.remoteRepository.fetchAll(endpointType, null, null, null, null, null, parentId);
+        return await this.remoteRepository.fetchAll(endpointType, null, null, null, null, null, null, parentId);
       } catch (err) {
-        console.warn('[BaseService] Remote sync failed. Will retry later.', err);
-        console.log('[BaseService] Remote sync failed. Will retry later.', err);
+        console.warn('[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval', err);
         return await this.localRepository.getAll(null, null, null, null, parentId);
       }
     } else {

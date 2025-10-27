@@ -65,8 +65,8 @@ export function useIssue() {
   const fetchAssigneeIssueList = async () => { 
     setLoading(true)
     if (!assigneeIssueList) {
-      const issuesList = await IssueService.fetchIssueList('assignee'); 
-      const filteredList = issuesList.filter((issue) => issue.assignee ? session.user_id == issue.assignee.id : false) 
+      const issuesList = await IssueService.fetchIssueList('assignee');
+      const filteredList = issuesList.filter((issue) => issue.assignee ? session.user_id == issue.assignee.id : false)
       setAssigneeIssueList(filteredList);
     }
   }

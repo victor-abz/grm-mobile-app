@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import HomeRouter from '../screens/Home/';
 import { syncServiceInstance } from '../services/shared/SyncService';
