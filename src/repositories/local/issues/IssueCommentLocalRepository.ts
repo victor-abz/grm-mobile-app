@@ -1,11 +1,19 @@
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 import { TABLE_NAMES } from "../../../migrations/tableName";
 import { IssueComment, IssueCommentLocalModel } from "../../../models/issues/IssueComment";
+import { RawRecord } from '@nozbe/watermelondb/RawRecord';
 
 export class IssueCommentLocalRepository extends BaseLocalRepository<IssueComment> {
   constructor() {
     super(TABLE_NAMES.issueComment);
   }
+
+  fromRemoteToLocal(issueComment: any): RawRecord {
+        const raw = {
+          ...issueComment,
+        };
+        return raw
+      }
 
   fromLocalToRemote(localModel: IssueCommentLocalModel): IssueComment {
     return {
