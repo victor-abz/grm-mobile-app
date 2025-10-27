@@ -25,7 +25,7 @@ const PrivateRoutes = () =>
     }
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     let syncAllInterval;
 
     // Guard: clear any existing interval before setting a new one

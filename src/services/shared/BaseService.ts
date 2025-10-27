@@ -113,7 +113,7 @@ export class BaseService<T> {
 
     if (lastPulledAt != null) {
       try {
-        const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, lastPulledAt, null);
+        const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, lastPulledAt, null, null);
         const formattedRecords = updatedRecords.map((item) =>
           this.localRepository.fromRemoteToLocal(item)
         );
