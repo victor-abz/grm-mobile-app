@@ -1,8 +1,8 @@
 import { Base } from "../Base";
-import { Attachment } from "../Attachment";
 import { Model } from "@nozbe/watermelondb";
 import { json, text, field } from "@nozbe/watermelondb/decorators";
 import { TABLE_NAMES } from "../../migrations/tableName";
+import { IssueAttachment } from "./IssueAttachment";
 
 
 export enum ContactMedium {
@@ -35,13 +35,13 @@ export interface Issue extends Base {
   rating?: number;
   escalation_reason?: string;
   research_result?: string;
-  attachments: Array<Attachment>;
-  auto_increment_id: string;
-  category: Base;
-  citizen: Citizen;
-  component: Base;
-  confirmed: boolean;
-  contact_medium: ContactMedium;
+  attachments: Array<IssueAttachment>,
+  auto_increment_id: string,
+  category: Base,
+  citizen: Citizen,
+  component: Base,
+  confirmed: boolean,
+  contact_medium: ContactMedium,
   contact_information: {
     type: ContactMethod;
     contact: string;

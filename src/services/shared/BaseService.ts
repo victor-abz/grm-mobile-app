@@ -3,7 +3,6 @@ import { BaseLocalRepository } from '../../repositories/shared/BaseLocalReposito
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import type { Model } from '@nozbe/watermelondb';
 import { RawRecord } from '@nozbe/watermelondb';
-import { TABLE_NAMES } from '../../migrations/tableName';
 
 export class BaseService<T> {
   constructor(
@@ -61,26 +60,17 @@ export class BaseService<T> {
     }
   }
 
-  async getAll(endpointType: string | null = null): Promise<T[]> {
+  async getAll(parentId: string | null, endpointType: string | null = null): Promise<T[]> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
-        return await this.remoteRepository.fetchAll(endpointType, null, null, null, null, null, null);
+        return await this.remoteRepository.fetchAll(endpointType, null, null, null, null, null, null, parentId);
       } catch (err) {
-       
-        const results = await this.localRepository.getAll(null, null, null, null);
-       
-        return results
+        console.warn('[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval', err);
+        return await this.localRepository.getAll(null, null, null, null, parentId);
       }
     } else {
-      try {
-        const localRepositoryResults = await this.localRepository.getAll(null, null, null, null);
-        
-        
-        return localRepositoryResults; 
-      } catch (error) {
-      
-      }
+      return await this.localRepository.getAll(null, null, null, null, parentId);
     }
   }
 
@@ -93,8 +83,8 @@ export class BaseService<T> {
 
     const timestamp = Date.now();
     const tableChanges = changes[tableName];
+
     //remove extra statuses , test status id match, convert ids to remote ids
-    
 
     // // 1. Fetch newly created records
     try {
@@ -104,6 +94,7 @@ export class BaseService<T> {
         null,
         null,
         lastPulledAt,
+        null,
         null,
         null
       );

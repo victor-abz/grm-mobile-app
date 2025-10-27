@@ -1,15 +1,17 @@
-import { DatabaseProvider } from '@nozbe/watermelondb/react';
+
+import React from 'react';
+import { Text } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import React, { useEffect } from 'react';
-import CustomLoadingSpinner from '../components/CustomLoadingSpinner/CustomLoadingSpinner';
 import HomeRouter from '../screens/Home/';
 import { syncServiceInstance } from '../services/shared/SyncService';
+import { DatabaseProvider } from '@nozbe/watermelondb/react';
 
 const Stack = createStackNavigator();
-const PrivateRoutes = () => {
+const PrivateRoutes = () =>
+{
   const [dbReady, setDbReady] = React.useState(!!syncServiceInstance.database);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!syncServiceInstance.database) {
       // Wait for the database to be initialized asynchronously
       const checkDb = setInterval(() => {
@@ -60,6 +62,7 @@ const PrivateRoutes = () => {
       </Stack.Navigator>
     </DatabaseProvider>
   );
+
 };
 
 export default PrivateRoutes;

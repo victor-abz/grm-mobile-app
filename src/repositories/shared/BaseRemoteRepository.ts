@@ -13,7 +13,8 @@ export abstract class BaseRemoteRepository<T> {
     limit: number | null,
     created_date: EpochTimeStamp | null,
     updated_date: EpochTimeStamp | null,
-    deleted_date: EpochTimeStamp | null
+    deleted_date: EpochTimeStamp | null,
+    parentId: string | null,
   ): Promise<T[]>;
 
   abstract fetchById(id: string): Promise<T>;
