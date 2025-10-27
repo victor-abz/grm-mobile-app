@@ -7,12 +7,14 @@ import { colors } from '../../../../utils/colors';
 import { i18n } from "../../../../translations/i18n";
 import ListHeader from '../components/ListHeader';
 import moment from 'moment';
+import { getSessionData } from "../../../../store/ducks/authentication.duck";
 
 function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('reported');
   const [_issues, setIssues] = useState([]);
+  const [userId, setUserId] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment());
 
   const sortByCreationDateDesc = (data) => {
@@ -21,27 +23,33 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
     });
   };
 
+  useEffect(() => {
+    getSessionData().then((sessionData) => {
+      setUserId(sessionData['user_id']);
+      setIssues(issues);
+    })
+  }, []);
 
   useEffect(() => {
     let filteredIssues = [];
     let foundStatus;
-      switch (status) {
-        case 'assigned':
-          filteredIssues = assigneeIssueList ?? []
-          filteredIssues = sortByCreationDateDesc(filteredIssues);
-          break;
-        case 'reported':
-          filteredIssues = reporterIssueList ?? []
-          filteredIssues = sortByCreationDateDesc(filteredIssues);
-          break;
-        case 'resolved':
-          foundStatus = statuses.find((el) => el.final_status === true);
-          filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === eadl._id && issue.status.id === foundStatus.id);
-          filteredIssues = sortByCreationDateDesc(filteredIssues);
-          break;
-        default:   
-          filteredIssues = _issues.map((issue) => issue);
-    }
+    switch (status) {
+      case 'assigned':
+        filteredIssues = assigneeIssueList ?? []
+        filteredIssues = sortByCreationDateDesc(filteredIssues);
+        break;
+      case 'reported':
+        filteredIssues = reporterIssueList ?? []
+        filteredIssues = sortByCreationDateDesc(filteredIssues);
+        break;
+      case 'resolved':
+        foundStatus = statuses.find((el) => el.final_status === true);
+        filteredIssues = issues.filter((issue) => issue.assignee && issue.assignee.id === userId && issue.status.id === foundStatus.id);
+        filteredIssues = sortByCreationDateDesc(filteredIssues);
+        break;
+      default:
+        filteredIssues = _issues.map((issue) => issue);
+      }
     setIssues(filteredIssues);
   }, [status, assigneeIssueList, reporterIssueList]);
 
@@ -49,18 +57,37 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
     return (
       <TouchableOpacity onPress={onPress} style={[styles.item]}>
         <View style={styles.itemContainer}>
-          <View>
-            <Text style={[styles.title]}>{item.issue_type?.name} - {i18n.t('label_reference')} {item.tracking_code}</Text>
-            <Text style={[styles.subTitle]} numberOfLines={1}>{item.description}</Text>
+          <View style={styles.content}>
+            <Text style={[styles.title]}>
+              {item.issue_type?.name} - {i18n.t('label_reference')} {item.tracking_code}
+            </Text>
+            <Text style={[styles.subTitle]} numberOfLines={1}>
+              {item.description}
+            </Text>
             <Text style={[styles.subTitle]}>
-              {item.citizen}, {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')},{' '}
+              {item.citizen}
+              {item.citizen && item.intake_date && ','}{' '}
+              {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')}
+              {item.intake_date && ','}{' '}
               {item.intake_date && currentDate.diff(item.intake_date, 'days')} {i18n.t('days_ago')}
             </Text>
             <Text style={styles.subTitle}>
-              {i18n.t('status_label')}: <Text style={{ color: ((item.status?.id === 1 || item.status?.id === 2) ? colors.inProgress : colors.primary) }}>{item.status?.name}</Text>
+              {i18n.t('status_label')}:{' '}
+              <Text
+                style={{
+                  color:
+                    item.status?.id === 1 || item.status?.id === 2
+                      ? colors.inProgress
+                      : colors.primary,
+                }}
+              >
+                {item.status?.name}
+              </Text>
             </Text>
           </View>
-          <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />
+          <View style={styles.proceedIconContainer}>
+            <MaterialCommunityIcons name="chevron-right-circle" size={24} color={colors.primary} />
+          </View>
         </View>
         {/* <Text style={[styles.title]}>{item.description}</Text> */}
       </TouchableOpacity>
@@ -73,7 +100,7 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
     const updateIssue = (updatedIssue) => {
       setIssues((prevIssues) => {
         const newIssues = prevIssues.map((issue) =>
-          issue._id === updatedIssue._id ? updatedIssue : issue
+          issue.id === updatedIssue.id ? updatedIssue : issue
         );
         return newIssues;
       });
@@ -189,6 +216,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  content: { flex: 10, paddingRight: 10, justifyContent: 'center' },
+  proceedIconContainer: { flexShrink: 0, justifyContent: 'center', alignItems: 'flex-end' },
   item: {
     flex: 1,
     padding: 20,

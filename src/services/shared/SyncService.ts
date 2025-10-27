@@ -8,7 +8,8 @@ import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
 import { IssueLocalModel } from "../../models/issues/Issue";
 import { IssueTypeLocalModel } from "../../models/issues/IssueType";
 import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
-import { SyncDatabaseChangeSet } from '@nozbe/watermelondb/sync';
+import { IssueCommentLocalModel } from "../../models/issues/IssueComment";
+import { IssueAttachmentLocalModel } from "../../models/issues/IssueAttachment";
 
 const DB_NAME = "grm-db";
 
@@ -35,7 +36,6 @@ export class SyncService {
   }
 
   async initDB() {
-    console.log('INIT DB')
     const adapter = new SQLiteAdapter({
       schema,
       migrations,
@@ -45,6 +45,7 @@ export class SyncService {
         console.log("Watermelon Adapter set up Failed", error);
       }
     });
+
     this.database = new Database({
       adapter,
       modelClasses: [
@@ -52,6 +53,8 @@ export class SyncService {
         IssueLocalModel,
         IssueTypeLocalModel,
         IssueCategoryLocalModel,
+        IssueCommentLocalModel,
+        IssueAttachmentLocalModel,
       ],
     });
 

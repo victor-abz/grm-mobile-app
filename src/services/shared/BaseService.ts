@@ -62,26 +62,18 @@ export class BaseService<T> {
     }
   }
 
-  async getAll(endpointType: string | null = null): Promise<T[]> {
+  async getAll(parentId: string | null, endpointType: string | null = null): Promise<T[]> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
-        return await this.remoteRepository.fetchAll(endpointType, null, null, null, null, null, null);
+        return await this.remoteRepository.fetchAll(endpointType, null, null, null, null, null, parentId);
       } catch (err) {
-       
-        const results = await this.localRepository.getAll(null, null, null, null);
-       
-        return results
+        console.warn('[BaseService] Remote sync failed. Will retry later.', err);
+        console.log('[BaseService] Remote sync failed. Will retry later.', err);
+        return await this.localRepository.getAll(null, null, null, null, parentId);
       }
     } else {
-      try {
-        const localRepositoryResults = await this.localRepository.getAll(null, null, null, null);
-        
-        
-        return localRepositoryResults; 
-      } catch (error) {
-      
-      }
+      return await this.localRepository.getAll(null, null, null, null, parentId);
     }
   }
 
@@ -94,22 +86,16 @@ export class BaseService<T> {
  
     const timestamp = Date.now();
     const tableChanges = changes[tableName];
+
     //remove extra statuses , test status id match, convert ids to remote ids
 
     // // 1. Fetch newly created records
-    const newRecords = await this.remoteRepository.fetchAll(
-      endPointType,
-      null,
-      null,
-      null,
-      lastPulledAt,
-      null,
-      null
-    );
+    const newRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, lastPulledAt, null, null, null);
 
     const rawRecords = newRecords.map((item) => this.localRepository.fromRemoteToLocal(item));
     console.log('formatted records', rawRecords[0]);
     // response log: {"administrative_region": {"administrative_id": "1", "name": "sample administrative region"}, "assignee": "{\"id\":4,\"name\":\"Comité village Representative\"}", "category": "{\"id\":1,\"name\":\"sample category\"}", "citizen": undefined, "component": undefined, "id": 432432, "intake_date": "2025-08-19T00:51:27.330758Z", "issue_sub_type": undefined, "issue_type": "{\"id\":1,\"name\":\"type 1\"}", "reporter": "{\"id\":5,\"name\":\"Test Representative\"}", "status": "{\"id\":4,\"name\":\"Sample status 4\",\"final_status\":false,\"initial_status\":false,\"rejected_status\":true,\"open_status\":false}", "sub_component": undefined, "tracking_code": "string"}
+
     // @ts-ignore
     tableChanges.created = rawRecords.map((record) => {
       return { ...record, id: String(record.id) };
