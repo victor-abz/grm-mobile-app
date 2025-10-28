@@ -26,11 +26,13 @@ const Router = ({ theme }) => {
     return state.get("authentication").toObject();
   });
 
-  const getDBConfig = async () =>
+  const getSession = async () =>
   {
+    
+    
     const _session = await getSessionData();
-    if (_session) {
 
+    if (_session) {
       //
       //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       let dbCredentials;
@@ -51,8 +53,6 @@ const Router = ({ theme }) => {
       //
       //
 
-      await initialSync();
-
       dispatch(init(
         _session,
         { email: username }, dbCredentials  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
@@ -61,8 +61,23 @@ const Router = ({ theme }) => {
     setLoading(false);
   };
 
+  useEffect(() =>
+  {
+
+      const checkSessionAndSync = async () => {
+        if (!syncServiceInstance.database && session?.token) {
+          await initialSync();
+          setLoading(false);
+        } else {
+          setLoading(false);
+        }
+      };
+      checkSessionAndSync();
+    
+  }, [session])
+  
   useEffect(() => {
-    getDBConfig();
+    getSession();
     const handleAppStateChange = (nextAppState) => {
       if (
         appState.current.match(/inactive|background/) &&
@@ -70,7 +85,7 @@ const Router = ({ theme }) => {
       ) {
         // App has come to the foreground, resume syncs
         try {
-          getDBConfig();
+          getSession();
         } catch (err) {
           console.warn('Error resuming syncs:', err);
         }

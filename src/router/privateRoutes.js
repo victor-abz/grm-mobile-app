@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Text } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -16,6 +17,7 @@ const PrivateRoutes = () =>
       const checkDb = setInterval(() => {
         if (syncServiceInstance.database) {
           setDbReady(true);
+          syncServiceInstance.syncAll();
           clearInterval(checkDb);
         }
       }, 100);
@@ -23,24 +25,44 @@ const PrivateRoutes = () =>
     }
   }, []);
 
-  if (!dbReady) return <><Text>Loading database...</Text></>;
-    return (
-      <DatabaseProvider database={syncServiceInstance.database}>
-        <Stack.Navigator>
-          {/* //* Home */}
-          <Stack.Screen
-            options={{
-              headerShown: false,
-            }}
-            name="Main"
-            component={HomeRouter}
-          />
-          {/* /* Along with these would come any other route that wouldn't fit inside
+  React.useEffect(() => {
+    let syncAllInterval;
+
+    // Guard: clear any existing interval before setting a new one
+    if (dbReady) {
+      const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+      syncAllInterval = setInterval(() => {
+        syncServiceInstance.syncAll();
+      }, SYNC_INTERVAL_MS);
+    }
+
+    return () => {
+      if (syncAllInterval) {
+        clearInterval(syncAllInterval);
+      }
+    };
+  }, [dbReady]);
+
+  if (!dbReady) return <CustomLoadingSpinner />;
+  
+  return (
+    <DatabaseProvider database={syncServiceInstance.database}>
+      <Stack.Navigator>
+        {/* //* Home */}
+        <Stack.Screen
+          options={{
+            headerShown: false,
+          }}
+          name="Main"
+          component={HomeRouter}
+        />
+        {/* /* Along with these would come any other route that wouldn't fit inside
       the bottom tab navigator, meaning any view which doesn't display the tabs
       at the bottom of the screen. */}
-        </Stack.Navigator>
-      </DatabaseProvider>
-    );
+      </Stack.Navigator>
+    </DatabaseProvider>
+  );
+
 };
 
 export default PrivateRoutes;

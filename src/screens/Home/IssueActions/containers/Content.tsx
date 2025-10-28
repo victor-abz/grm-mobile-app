@@ -52,6 +52,7 @@ const PHONE_CALL_LINK = 'tel://+223';
 type Props = {
   currentIssue: any;
   navigation: any;
+  session: any;
   loading: boolean;
   statuses: IssueStatus[];
   eadl: any;
@@ -59,7 +60,7 @@ type Props = {
   getStatus: (statusName: keyof IssueStatus) => IssueStatus;
 };
 
-function Content({ currentIssue, navigation, loading, statuses = [], eadl, updateIssue, getStatus }: Props) {
+function Content({ session, currentIssue, navigation, loading, statuses = [], eadl, updateIssue, getStatus }: Props) {
   const [issue, setIssue] = useState(currentIssue);
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
@@ -460,7 +461,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
     if (loading) return;
     const isAssigned =
       issue.assignee?.id &&
-      (issue.reporter.id === issue.assignee.id || issue.assignee.id === eadl?._id);
+      (issue.reporter.id === issue.assignee.id || issue.assignee.id === session?.user_id);
     setIsIssueAssignedToMe(isAssigned);
 
     if (issue.citizen_type !== 1) {
@@ -488,6 +489,7 @@ function Content({ currentIssue, navigation, loading, statuses = [], eadl, updat
           whatsApp,
           _showDialog,
           isAcceptEnabled,
+          isIssueAssignedToMe,
           _showRejectDialog,
           rejectedDialog,
           hasActionsOrResolved,
@@ -607,6 +609,7 @@ function renderHeaderAndActions(
   whatsApp: () => void,
   _showDialog: () => void,
   isAcceptEnabled: boolean,
+  isIssueAssignedToMe: boolean,
   _showRejectDialog: () => void,
   rejectedDialog: boolean,
   hasActionsOrResolved: boolean,
@@ -676,12 +679,12 @@ function renderHeaderAndActions(
         <ActionButton
           label={i18n.t('accept_issue')}
           onShowDialog={_showDialog}
-          isEnabled={isAcceptEnabled}
+          isEnabled={isAcceptEnabled && isIssueAssignedToMe}
         />
         <ActionButton
           label={i18n.t('reject_issue')}
           onShowDialog={_showRejectDialog}
-          isEnabled={!hasActionsOrResolved || isAcceptEnabled}
+          isEnabled={(!hasActionsOrResolved || isAcceptEnabled) && isIssueAssignedToMe}
         />
         <ActionButton
           label={i18n.t('record_steps_taken')}
@@ -691,7 +694,7 @@ function renderHeaderAndActions(
         <ActionButton
           label={i18n.t('record_resolution')}
           onShowDialog={_showRecordResolutionDialog}
-          isEnabled={isRecordResolutionEnabled}
+          isEnabled={isRecordResolutionEnabled && isIssueAssignedToMe}
         />
       </View>
       <ActionButton

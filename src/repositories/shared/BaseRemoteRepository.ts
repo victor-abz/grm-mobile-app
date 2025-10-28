@@ -11,9 +11,9 @@ export abstract class BaseRemoteRepository<T> {
     sortBy: string | null,
     sortOrder: SortOrder | null,
     limit: number | null,
-    createdAt: string | null,
-    updatedAt: string | null,
-    deletedAt: string | null,
+    created_date: EpochTimeStamp | null,
+    updated_date: EpochTimeStamp | null,
+    deleted_date: EpochTimeStamp | null,
     parentId: string | null,
   ): Promise<T[]>;
 

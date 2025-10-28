@@ -7,8 +7,6 @@ import { IssueStatus } from '../../models/issues/IssueStatus';
 import { TABLE_NAMES } from "../../migrations/tableName";
 import { Syncable } from '../shared/SyncService';
 
-console.log("REPOSITORY DEFINITION");
-
 const localRepository = new IssueStatusLocalRepository();
 const remoteRepository = new IssueStatusRemoteRepository();
   
