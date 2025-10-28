@@ -13,7 +13,10 @@ import { IssueComponentLocalModel } from '../../models/issues/IssueComponent';
 import { IssueAgeGroupLocalModel } from '../../models/issues/IssueAgeGroup';
 import { IssueSubComponentLocalModel } from '../../models/issues/IssueSubComponent';
 import { AdministrativeRegionLocalModel } from '../../models/issues/AdministrativeRegions';
- 
+import { IssueCommentLocalModel } from "../../models/issues/IssueComment";
+import { IssueAttachmentLocalModel } from "../../models/issues/IssueAttachment";
+
+
 const DB_NAME = "grm-db";
 
 enablePromise(true);
@@ -39,7 +42,6 @@ export class SyncService {
   }
 
   async initDB() {
-    console.log('INIT DB')
     const adapter = new SQLiteAdapter({
       schema,
       migrations,
@@ -49,9 +51,11 @@ export class SyncService {
         console.log("Watermelon Adapter set up Failed", error);
       }
     });
+
     this.database = new Database({
       adapter,
       modelClasses: [
+        AdministrativeRegionLocalModel,
         IssueStatusLocalModel,
         IssueLocalModel,
         IssueTypeLocalModel,
@@ -60,7 +64,8 @@ export class SyncService {
         IssueComponentLocalModel,
         IssueAgeGroupLocalModel,
         IssueSubComponentLocalModel,
-        AdministrativeRegionLocalModel
+        IssueCommentLocalModel,
+        IssueAttachmentLocalModel,
       ],
     });
   }

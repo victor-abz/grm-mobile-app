@@ -7,6 +7,7 @@ import { Button, Dialog, Paragraph, Portal, Divider } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
 import RecordingCard from '../../GRM/components/RecordingCard';
+import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
 
 const theme = {
   roundness: 12,
@@ -19,11 +20,11 @@ const theme = {
 };
 
 function Content({ issue }) {
-  const [comments, setComments] = useState([]);
+  const { comments, loading } = useIssueComments(issue.id);
   useEffect(() => {
-    if (issue?.comments) {
+    if (comments) {
       // console.log("History-updated comments :", issues.comments);
-      setComments([...issue.comments].sort((a, b) => new Date(b.due_at) - new Date(a.due_at)));
+      comments.sort((a, b) => new Date(b.due_at) - new Date(a.due_at));
     }
   }, [issue]);
 
@@ -53,7 +54,7 @@ function Content({ issue }) {
 
   return (
     <View style={styles.container}>
-      {comments.length > 0 && (
+      {comments?.length > 0 && (
         <FlatList
           ItemSeparatorComponent={() => <Divider />}
           ListHeaderComponent={() => <Text style={styles.title}>{i18n.t('activity_label')}</Text>}

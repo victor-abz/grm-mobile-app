@@ -7,6 +7,25 @@ import config from '../../../../config';
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
 
+  fromRemoteToLocal(issue: any, index): any {
+    if (issue && typeof issue === 'object') {
+      const i = issue as Record<string, any>;
+      return {
+        ...i,
+        assignee: JSON.stringify(i.assignee),
+        category: JSON.stringify(i.category),
+        citizen: JSON.stringify(i.citizen),
+        component: JSON.stringify(i.component),
+        issue_sub_type: JSON.stringify(i.issue_sub_type),
+        issue_type: JSON.stringify(i.issue_type),
+        reporter: JSON.stringify(i.reporter),
+        sub_component: JSON.stringify(i.sub_component),
+        status: JSON.stringify(i.status),
+      };
+    }
+    return null;
+  }
+
   /**
    * Fetch all issues from a dynamic endpoint.
    * @param endpointType 'assignee' | 'reporter' | etc.
@@ -41,7 +60,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       });
 
       const jsonData: any = response.data;
-      return jsonData.results ?? []
+      return jsonData.results ?? [];
     } catch (error) {
       return Promise.reject({ message: error.message });
     }
@@ -60,13 +79,15 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       administrative_region: item.administrative_region.id,
       reporter: item.reporter.id,
       assignee: item.assignee.id,
-      citizen: item.citizen ? {
-        name: item.citizen.name,
-        type: item.citizen.type,
-        age_group: item.citizen.age_group.id,
-        group: item.citizen.group.id,
-        group_2: item.citizen.group_2.id,
-      } : null,
+      citizen: item.citizen
+        ? {
+            name: item.citizen.name,
+            type: item.citizen.type,
+            age_group: item.citizen.age_group.id,
+            group: item.citizen.group.id,
+            group_2: item.citizen.group_2.id,
+          }
+        : null,
       component: item.component.id,
       sub_component: item.sub_component.id,
       contact_medium: item.contact_medium,
@@ -101,7 +122,21 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   }
 
   async fetchById(id: string): Promise<Issue> {
-    throw new Error('Method not implemented.');
+    const url = `${this.baseUrl}/${id}`;
+    const requestOptions = {
+      url,
+      method: 'GET',
+    };
+    try {
+      const response = await request({
+        ...requestOptions,
+      });
+
+      const jsonData: any = response.data;
+      return jsonData.results;
+    } catch (error) {
+      console.error('Error at fetching issues from remote', error.message);
+    }
   }
 
   // Partially update an issue. Only specific fields can be modified.
@@ -123,7 +158,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       url,
       method: 'PATCH',
       data: JSON.stringify(body),
-      headers: {'Content-Type': 'application/json'}
+      headers: { 'Content-Type': 'application/json' },
     };
 
     try {

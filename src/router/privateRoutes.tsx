@@ -1,4 +1,3 @@
-import { DatabaseProvider } from '@nozbe/watermelondb/react';
 import { createStackNavigator } from '@react-navigation/stack';
 import React, { useEffect } from 'react';
 import CustomLoadingSpinner from '../components/CustomLoadingSpinner/CustomLoadingSpinner';
@@ -6,7 +5,8 @@ import HomeRouter from '../screens/Home';
 import { syncServiceInstance } from '../services/shared/SyncService';
 import { fetchAdministrativeRegions } from '../services/issues/AdministrativeRegionService';
 import { INITIAL_DATA_FETCHED_STORAGE_KEY } from '../utils/constants';
-import { getData, removeValue, storeData } from '../utils/storageManager';
+import { getData, storeData } from '../utils/storageManager';
+import { DatabaseProvider } from '@nozbe/watermelondb/react';
 
 //[x] install, auto create 3 instances, auto update 1 from remote.
 //[x] manually update 1, check remote, check local. 
@@ -15,7 +15,8 @@ import { getData, removeValue, storeData } from '../utils/storageManager';
 //[x] check for empty pushChanges
 
 const Stack = createStackNavigator();
-const PrivateRoutes = () => {
+const PrivateRoutes = () =>
+{
   const [dbReady, setDbReady] = React.useState(!!syncServiceInstance.database);
   const [loading, setLoading] = React.useState(true);
 
@@ -34,7 +35,6 @@ const PrivateRoutes = () => {
     }
 
   useEffect(() => {
-    
     if (!syncServiceInstance.database) {
     
       // Wait for the database to be initialized asynchronously
@@ -52,7 +52,7 @@ const PrivateRoutes = () => {
     }
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     let syncAllInterval;
 
     // Guard: clear any existing interval before setting a new one
@@ -89,6 +89,7 @@ const PrivateRoutes = () => {
       </Stack.Navigator>
     </DatabaseProvider>
   );
+
 };
 
 export default PrivateRoutes;
