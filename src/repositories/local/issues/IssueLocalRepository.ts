@@ -61,18 +61,42 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
       intake_date: new Date(localModel.intake_date),
       issue_date: localModel.issue_date ? new Date(localModel.issue_date) : null,
       resolution_date: localModel.resolution_date ? new Date(localModel.resolution_date) : null,
-      administrative_region: parseJson(localModel.administrative_region),
-      assignee: parseJson(localModel.assignee),
-      attachments: parseJson(localModel.attachments),
-      category: parseJson(localModel.category),
-      citizen: parseJson(localModel.citizen),
-      component: parseJson(localModel.component),
-      contact_information: parseJson(localModel.contact_information),
-      issue_sub_type: parseJson(localModel.issue_sub_type),
-      issue_type: parseJson(localModel.issue_type),
-      reporter: parseJson(localModel.reporter),
-      sub_component: parseJson(localModel.sub_component),
-      status: parseJson(localModel.status),
+      administrative_region: typeof localModel.administrative_region === 'string'
+        ? parseJson(localModel.administrative_region)
+        : localModel.administrative_region,
+      assignee: typeof localModel.assignee === 'string'
+        ? parseJson(localModel.assignee)
+        : localModel.assignee,
+      attachments: typeof localModel.attachments === 'string'
+        ? parseJson(localModel.attachments)
+        : localModel.attachments,
+      category: typeof localModel.category === 'string'
+        ? parseJson(localModel.category)
+        : localModel.category,
+      citizen: typeof localModel.citizen === 'string'
+        ? parseJson(localModel.citizen)
+        : localModel.citizen,
+      component: typeof localModel.component === 'string'
+        ? parseJson(localModel.component)
+        : localModel.component,
+      contact_information: typeof localModel.contact_information === 'string'
+        ? parseJson(localModel.contact_information)
+        : localModel.contact_information,
+      issue_sub_type: typeof localModel.issue_sub_type === 'string'
+        ? parseJson(localModel.issue_sub_type)
+        : localModel.issue_sub_type,
+      issue_type: typeof localModel.issue_type === 'string'
+        ? parseJson(localModel.issue_type)
+        : localModel.issue_type,
+      reporter: typeof localModel.reporter === 'string'
+        ? parseJson(localModel.reporter)
+        : localModel.reporter,
+      sub_component: typeof localModel.sub_component === 'string'
+        ? parseJson(localModel.sub_component)
+        : localModel.sub_component,
+      status: typeof localModel.status === 'string'
+        ? parseJson(localModel.status)
+        : localModel.status,
     };
   }
 }

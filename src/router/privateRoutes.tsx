@@ -7,41 +7,80 @@ import { fetchAdministrativeRegions } from '../services/issues/AdministrativeReg
 import { INITIAL_DATA_FETCHED_STORAGE_KEY } from '../utils/constants';
 import { getData, storeData } from '../utils/storageManager';
 import { DatabaseProvider } from '@nozbe/watermelondb/react';
+import { fetchFacilitatorProfile } from '../services/authService';
+import { useDispatch } from 'react-redux';
+import { setProfile } from '../store/ducks/authentication.duck';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { colors } from '../utils/colors';
+import { Button } from 'react-native-paper';
+import { i18n } from '../translations/i18n';
+
+const { width } = Dimensions.get('screen');
+
+const theme = {
+  roundness: 12,
+  colors: {
+    ...colors,
+    background: 'white',
+    placeholder: '#dedede',
+    text: '#707070',
+  },
+};
 
 //[x] install, auto create 3 instances, auto update 1 from remote.
-//[x] manually update 1, check remote, check local. 
+//[x] manually update 1, check remote, check local.
 //[x] (OFFLINE) manually update 1, check local, (CONNECT) check remote.
 //[x] (OFFLINE) manually update 1, auto update remote(same), (CONNECT) check remote, check local. watermelon change wins against remote
 //[x] check for empty pushChanges
 
 const Stack = createStackNavigator();
-const PrivateRoutes = () =>
-{
+const PrivateRoutes = () => {
+  const dispatch = useDispatch();
   const [dbReady, setDbReady] = React.useState(!!syncServiceInstance.database);
-  const [loading, setLoading] = React.useState(true);
+  const [profileLoaded, setProfileLoaded] = React.useState(false);
+  const [profileError, setProfileError] = React.useState<Error | null>(null);
 
-   const fetchConstants = async () =>  {
-     const hasInitialData = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);
-     console.log("initial data", hasInitialData);
+  const fetchConstants = async () => {
+    const hasInitialData = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);
     //  await removeValue(INITIAL_DATA_FETCHED_STORAGE_KEY);
-     if (!hasInitialData) {
-        try {
-          await fetchAdministrativeRegions(true);
-          await storeData(INITIAL_DATA_FETCHED_STORAGE_KEY, true);
-        } catch (error) {
-          console.error(error);
-        }
+    if (!hasInitialData) {
+      try {
+        const FETCH_ALL_PAGES = true;
+        await fetchAdministrativeRegions(FETCH_ALL_PAGES);
+        await storeData(INITIAL_DATA_FETCHED_STORAGE_KEY, true);
+      } catch (error) {
+        console.error(error);
       }
     }
+  };
+
+  const loadFacilitatorProfile = async () => {
+
+    const facilitatorProfileResponse = await fetchFacilitatorProfile();
+    if (facilitatorProfileResponse.error) {
+      console.error(facilitatorProfileResponse.error);
+      setProfileError(facilitatorProfileResponse.error);
+    } else {
+      dispatch(setProfile(facilitatorProfileResponse));    
+      setProfileLoaded(true);
+     }
+  };
 
   useEffect(() => {
+    const loadProfile = async () => {
+      await loadFacilitatorProfile();
+    };
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
+    if (!profileLoaded) return;
+
     if (!syncServiceInstance.database) {
-    
       // Wait for the database to be initialized asynchronously
       const checkDb = setInterval(() => {
-    
-
         if (syncServiceInstance.database) {
+          
           setDbReady(true);
           syncServiceInstance.syncAll();
           fetchConstants();
@@ -49,10 +88,14 @@ const PrivateRoutes = () =>
         }
       }, 100);
       return () => clearInterval(checkDb);
+    } else {
+      setDbReady(true);
+      syncServiceInstance.syncAll();
+      fetchConstants();
     }
-  }, []);
+  }, [profileLoaded]);
 
-useEffect(() => {
+  useEffect(() => {
     let syncAllInterval;
 
     // Guard: clear any existing interval before setting a new one
@@ -70,8 +113,35 @@ useEffect(() => {
     };
   }, [dbReady]);
 
-  if (!dbReady) return <CustomLoadingSpinner />;
+  if (profileError)
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        
+        <Text style={{ marginVertical: 16, color: "red" }}>
+          Failed to load profile. Please try again.
+        </Text>
+        <Button
+          theme={theme}
+          style={[
+            styles.reloadButton,
+            {
+              backgroundColor: '#24c38b',
+            },
+          ]}
+          color="white"
+          onPress={() => {
+            setProfileError(null);
+            setProfileLoaded(false);
+            loadFacilitatorProfile();
+          }}
+        >
+          {i18n.t('reload')}
+        </Button>
+      </View>
+    );
   
+  if (!dbReady) return <CustomLoadingSpinner />;
+
   return (
     <DatabaseProvider database={syncServiceInstance.database}>
       <Stack.Navigator>
@@ -89,7 +159,19 @@ useEffect(() => {
       </Stack.Navigator>
     </DatabaseProvider>
   );
-
 };
 
 export default PrivateRoutes;
+
+const styles = StyleSheet.create({
+  reloadButton: {
+    alignSelf: 'center',
+    width: width - 60,
+    height: 47,
+    borderWidth: 1,
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: 'Poppins_500Medium',
+    backgroundColor: '#dedede',
+  },
+});

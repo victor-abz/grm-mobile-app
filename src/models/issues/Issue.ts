@@ -22,8 +22,8 @@ export interface CitizenGroup extends Base {
 }
 export interface Citizen extends Base {
     age_group: Base,
-    group: CitizenGroup,
-    group_2: CitizenGroup,
+    group: number,
+    group_2: number,
     type: string,
 }
 
@@ -42,10 +42,7 @@ export interface Issue extends Base {
   component: Base,
   confirmed: boolean,
   contact_medium: ContactMedium,
-  contact_information: {
-    type: ContactMethod;
-    contact: string;
-  };
+  contact_information: string;
   contact_method: ContactMethod;
   description: string;
   id: string;

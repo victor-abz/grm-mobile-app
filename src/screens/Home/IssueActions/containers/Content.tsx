@@ -1,4 +1,28 @@
 import React, { useState, useEffect } from 'react';
+
+//TODO:
+
+// [x] connect updateIssue with remote,
+// [x] rename dialog params,
+// [x] Add missing fields to local issue schema
+// [x] Test local correct saving, 
+// [x] verify search list being updated
+// [x] verify patch with id as string created by watermelon
+// [x] check new way of saving statuses within a PATCH, just an id
+// [ ] test sync after re-connection
+// [ ] sub type will be changed to global
+// [ ] reporter can edit - rating
+// [ ] assignee can edit - status - check Policy
+// reporter rating , appeal, comentar
+// assignee acceptar, rechazar, cerrar, comentar.
+// todo editar de los
+
+// campos de fecha vacio no los toma en getCurrentPositionAsync, formato incorrecto da error
+
+// assignee status, reporter Rating. 
+
+// import { withObservables } from '@nozbe/watermelondb/react';
+
 import moment from 'moment';
 import {
   KeyboardAvoidingView,
@@ -62,6 +86,17 @@ type Props = {
 
 function Content({ session, currentIssue, navigation, loading, statuses = [], eadl, updateIssue, getStatus }: Props) {
   const [issue, setIssue] = useState(currentIssue);
+  
+  // const [issue, setIssue] = useState({
+  //   ...currentIssue,
+  //   // status: { name: 'Créé', id: 1 }
+  //   status: { name: 'Ouv', id: 4 },
+  //   reject_flag: true,
+  //   assignee: { id: 2 },
+  //   reporter: { id: 2 },
+  //   // status: { name: 'Ouv', id: 2 }
+  // });
+  
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
 
@@ -128,6 +163,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
   const updateActionButtons = () => {
     function _isAcceptEnabled(x) {
       
+      console.log("IS ISSUE ASSIGNED TO ME?", isIssueAssignedToMe);
 
       if (x.initial_status && isIssueAssignedToMe) {
         return compareIdsEquivalence(issue.status?.id, x.id);
@@ -675,6 +711,10 @@ function renderHeaderAndActions(
       <View
         style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}
       >
+        <Paragraph>
+          {JSON.stringify(!hasActionsOrResolved)} {JSON.stringify(isAcceptEnabled)}
+        </Paragraph>
+
         {/* Actions */}
         <ActionButton
           label={i18n.t('accept_issue')}

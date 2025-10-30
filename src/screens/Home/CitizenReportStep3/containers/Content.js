@@ -20,10 +20,12 @@ const theme = {
   },
 };
 
-function Content({ issue, eadl }) {
+function Content({ issue, session }) {
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
-  const { createIssue } = useIssue();
+  const { createIssue } = useIssue(false);
+
+
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
@@ -33,49 +35,39 @@ function Content({ issue, eadl }) {
   //   return parseInt(last.id.split('-')[1]) + 1;
   // };
   const randomWord = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const submitIssue = async () => {
-    const isAssignee =
-      issue.category?.assigned_department === eadl?.department &&
-      issue.category?.administrative_level === eadl?.administrative_level;
+  
+  
+  const submitIssue = async () =>
+  {
+    
     // submit params
     const randomCodeNumber = Math.floor(Math.random() * 1000);
     // const newId = incrementId();
     const _issue = {
-      internal_code: '',
-      tracking_code: `${randomWord(SAMPLE_WORDS)}${randomCodeNumber}`,
-      auto_increment_id: '',
+      tracking_code: `${randomWord(SAMPLE_WORDS)}${randomCodeNumber}`,    
       title: issue.issueSummary,
       description: issue.additionalDetails,
       attachments: [
         ...(issue?.attachment ? [issue.attachment] : []),
         ...(issue?.recording ? [issue.recording] : []),
       ],
-      status: {
-        name: i18n.t('open'),
-        id: 2,
+      status: 2, // Open status
+      reporter: session.user_id,
+      // citizen_age_group: issue.ageGroup,
+      // citizen: issue.name ?? '',
+      citizen: {
+        name: issue.name ?? '',
+        age_group: issue.ageGroup,
+        type: issue.citizen_type,
+        group: issue.citizen_group,
+        group_2: issue.citizen_group_2,
       },
-      confirmed: true,
-      assignee: isAssignee ? { id: eadl._id, name: eadl.representative?.name } : '',
-      reporter: {
-        id: eadl._id,
-        name: eadl.representative.name,
-      },
-      citizen_age_group: issue.ageGroup,
-      citizen: issue.name ?? '',
       contact_medium: issue.typeOfPerson,
       citizen_type: issue.citizen_type,
       citizen_group: issue.citizen_group,
       citizen_group_2: issue.citizen_group_2,
-      location_info: {
-        issue_location: issue.issueLocation, // already referenced at administrative_region, to be removed.
-        location_description: issue.locationDescription, //e.g. pasó en la esquina de la calle frank 19
-      },
+      location_description: issue.locationDescription, //e.g. pasó en la esquina de la calle frank 19
       administrative_region: issue.issueLocation,
-      // category: {
-      //   id: 1,
-      //   name: "Environmental",
-      //   confidentiality_level: "Confidential",
-      // },
       category: issue.category,
       issue_type: issue.issueType,
       issue_sub_type: issue.issueSubType,
@@ -92,18 +84,9 @@ function Content({ issue, eadl }) {
       issue_date: issue.date,
       ongoing_issue: issue.ongoingEvent,
       comments: [],
-      contact_information: {
-        type: issue.methodOfContact,
-        contact: issue.contactInfo,
-      },
-      commune: {
-        code: eadl.commune,
-        name: eadl.name,
-        prefecture: '',
-      },
-      type: 'issue',
+      contact_information: `${issue.methodOfContact} - ${issue.contactInfo}`,
     };
-    console.log("CREATED ISSUE --->", createdIssue);
+
     const createdIssue = await createIssue(_issue);
     console.log("CREATED ISSUE --->", createdIssue);
     

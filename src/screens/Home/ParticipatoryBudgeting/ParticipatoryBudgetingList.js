@@ -12,7 +12,7 @@ const ParticipatoryBudgetingList = () => {
   const [eadl, setEadl] = useState();
   const { session } = useSelector((state) => state.get('authentication').toObject());
   const username = session?.username ?? ''
-  
+  //fetch  user + facilitator
   useEffect(() => {
     if (username) {
       LocalAdminLevelsDatabase.find({

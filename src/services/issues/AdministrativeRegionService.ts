@@ -10,13 +10,13 @@ const remoteRepository = new AdministrativeRegionRemoteRepository();
 
 const administrativeRegionService = new BaseService<AdministrativeRegion>(localRepository, remoteRepository);
 
-export async function fetchAdministrativeRegions(fetchAll: boolean): Promise<AdministrativeRegion[] | null> {
+export async function fetchAdministrativeRegions(fetchAllPages: boolean): Promise<AdministrativeRegion[] | null> {
   try {
-    // removeValue(INITIAL_DATA_FETCHED_STORAGE_KEY)
-    const fetchFromLocal = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);
-    const response = await administrativeRegionService.getAll(null, fetchFromLocal, null, fetchAll);
+    const fetchFromLocal = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);    
+    const response = await administrativeRegionService.getAll(null, null, fetchFromLocal, null, fetchAllPages);
     if (!fetchFromLocal) {
       await administrativeRegionService.bulkCreate(response); 
+      //Turn off sync global loading
     }
     return response;
 

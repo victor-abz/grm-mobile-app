@@ -26,7 +26,7 @@ export async function createIssue(issue: Issue): Promise<Issue | null> {
     const newIssue = await issueService.upsert(issue)
     console.log(newIssue);
     
-    return null
+    return newIssue;
   } catch (error) {
     console.error('Error syncing issues:', error);
   }

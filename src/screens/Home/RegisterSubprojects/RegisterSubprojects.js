@@ -20,6 +20,8 @@ import { colors } from "../../../utils/colors";
 import { LocalAdminLevelsDatabase } from "../../../db/databaseManager";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
+//upsert eadl (user or facilitator) bp_projects
+
 moment.locale("fr");
 
 function RegisterSubprojects() {

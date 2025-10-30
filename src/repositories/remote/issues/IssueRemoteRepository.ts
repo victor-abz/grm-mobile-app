@@ -2,29 +2,11 @@ import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { Issue } from '../../../models/issues/Issue';
 import request from '../../../utils/request';
 import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
-import config from '../../../../config';
+
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
-  private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
-
-  fromRemoteToLocal(issue: any, index): any {
-    if (issue && typeof issue === 'object') {
-      const i = issue as Record<string, any>;
-      return {
-        ...i,
-        assignee: JSON.stringify(i.assignee),
-        category: JSON.stringify(i.category),
-        citizen: JSON.stringify(i.citizen),
-        component: JSON.stringify(i.component),
-        issue_sub_type: JSON.stringify(i.issue_sub_type),
-        issue_type: JSON.stringify(i.issue_type),
-        reporter: JSON.stringify(i.reporter),
-        sub_component: JSON.stringify(i.sub_component),
-        status: JSON.stringify(i.status),
-      };
-    }
-    return null;
-  }
+  // private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
+  private baseUrl = `http://localhost:8000/issues`;
 
   /**
    * Fetch all issues from a dynamic endpoint.
@@ -36,6 +18,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     sortOrder: SortOrder | null,
     page: number | null,
     limit: number | null,
+    allPages: boolean | null,
     created_date: EpochTimeStamp | null,
     updated_date: EpochTimeStamp | null,
     deleted_date: EpochTimeStamp | null
@@ -70,26 +53,32 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     const body = {
       title: item.title,
       description: item.description,
-      status: item.status.id,
-      category: item.category.id,
-      issue_type: item.issue_type.id,
-      issue_sub_type: item.issue_sub_type.id,
+      status: item.status.id ?? item.status,
+      category: item.category ? (item.category.id ?? item.category) : null,
+      issue_type: item.issue_type ? (item.issue_type.id ?? item.issue_type) : null,
+      issue_sub_type: item.issue_sub_type ? (item.issue_sub_type.id ?? item.issue_sub_type) : null,
       issue_location: item.issue_location_id,
       intake_date: item.intake_date,
-      administrative_region: item.administrative_region.id,
-      reporter: item.reporter.id,
-      assignee: item.assignee.id,
+      administrative_region: item.administrative_region
+        ? (item.administrative_region.id ?? item.administrative_region)
+        : null,
+      reporter: item.reporter ? (item.reporter.id ?? item.reporter) : null,
+      assignee: item.assignee ? (item.assignee.id ?? item.assignee) : null,
       citizen: item.citizen
         ? {
             name: item.citizen.name,
             type: item.citizen.type,
-            age_group: item.citizen.age_group.id,
-            group: item.citizen.group.id,
-            group_2: item.citizen.group_2.id,
+            age_group: item.citizen.age_group
+              ? (item.citizen.age_group.id ?? item.citizen.age_group)
+              : null, // coming from local db or creation form
+            group: item.citizen.group ? (item.citizen.group.id ?? item.citizen.group) : null, // coming from local db or creation form
+            group_2: item.citizen.group_2
+              ? (item.citizen.group_2.id ?? item.citizen.group_2)
+              : null, // coming from local db or creation form
           }
         : null,
-      component: item.component.id,
-      sub_component: item.sub_component.id,
+      component: item.component ? (item.component.id ?? item.component) : null,
+      sub_component: item.sub_component ? (item.sub_component.id ?? item.sub_component) : null,
       contact_medium: item.contact_medium,
       contact_method: item.contact_method,
       contact_information: item.contact_information,
@@ -102,7 +91,8 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     const requestOptions = {
       url,
       method: 'POST',
-      body: JSON.stringify(body),
+      data: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
     };
 
     try {
@@ -145,6 +135,9 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   async update(id: string, item: Issue): Promise<Issue> {
     const url = `${this.baseUrl}/${id}/update/`;
 
+    console.log(JSON.stringify(item, null, 2));
+    
+
     const body = {
       escalate_flag: item.escalate_flag,
       reject_flag: item.reject_flag,
@@ -160,6 +153,51 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       data: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
     };
+
+    // [
+    //   {
+    //     id: '432532',
+    //     _status: 'updated',
+    //     _changed: 'status,reject_flag',
+
+    //     citizen: '',
+    //     contact_information: null,
+    //     confirmed: false,
+    //     contact_medium: '',
+    //     contact_method: null,
+    //     component: '',
+    //     created_date: 0,
+    //     deleted_date: null,
+    //     description: '',
+    //     escalated_date: null,
+    //     intake_date: null,
+    //     issue_location: '',
+    //     issue_type: '{"id":1,"name":"type 1"}',
+    //     issue_sub_type: null,
+    //     location_description: null,
+    //     ongoing_issue: false,
+    //     reporter: '{"id":3,"name":" "}',
+    //     resolution_date: null,
+    //     administrative_region: '{"administrative_id":"1","name":"sample administrative region"}',
+    //     assignee: '{"id":4,"name":"Comité village Representative"}',
+    //     category: '{"id":1,"name":"sample category"}',
+    //     status:
+    //       '{"id":"4","name":"Sample status 4","created_date":0,"final_status":false,"initial_status":false,"rejected_status":true,"open_status":false}',
+    //     sub_component: null,
+    //     title: '',
+    //     tracking_code: 'string',
+    //     internal_code: '',
+    //     sync_date: null,
+    //     updated_date: 0,
+    //     escalate_flag: false,
+    //     reject_flag: true,
+    //     rating: null,
+    //     escalation_reason: null,
+    //     research_result: null,
+    //   },
+    // ];
+
+    // JSON.parse({id: '4',name: 'Sample status 4',created_date: 0,final_status: false,initial_status: false,rejected_status: true,open_status: false});
 
     try {
       const response = await request({

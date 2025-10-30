@@ -10,6 +10,14 @@ import { ImageBackground } from "react-native";
 import TagIcon from "../../../../../assets/tag_solid.svg";
 import { LocalAdminLevelsDatabase } from "../../../../db/databaseManager";
 
+//ask about eadl.phases (being updated)
+//if phase.tasks.filter(
+      // ({ status }) => status === "completed"
+// ).length; > 0
+// 
+// phase.closed_at = date now()
+// else null
+
 moment.locale("fr");
 
 function Content({ eadl, phase }) {

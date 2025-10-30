@@ -36,8 +36,8 @@ function IssueActions({ route, navigation }) {
   }, [username]);
 
   useEffect(() => {
-    console.log("### ISSUE STATUSES LIST", issueStatusList);
-    
+    console.log('### ISSUE STATUSES LIST', issueStatusList);
+
     if (statusListLoading) {
       setLoading(true);
     } else {

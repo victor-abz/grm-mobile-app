@@ -26,6 +26,9 @@ import { baseURL } from "../../../../services/authService";
 import CustomDropDownPicker from "../../../../components/CustomDropDownPicker/CustomDropDownPicker";
 import * as ImageManipulator from "expo-image-manipulator";
 
+//update phases that contain tasks that contains attachments, 
+// location, bp_amount, closed_at, notes, task status
+
 moment.locale("fr");
 const screenWidth = Dimensions.get("window").width;
 

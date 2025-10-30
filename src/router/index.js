@@ -4,7 +4,7 @@ import PrivateRoutes from "./privateRoutes";
 import PublicRoutes from "./publicRoutes";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState, View } from "react-native";
-import { init, getSessionData, logout } from "../store/ducks/authentication.duck";
+import { init, getSessionData, logout, getProfileData } from "../store/ducks/authentication.duck";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -31,6 +31,7 @@ const Router = ({ theme }) => {
     
     
     const _session = await getSessionData();
+    const profile = await getProfileData();
 
     if (_session) {
       //
@@ -55,6 +56,7 @@ const Router = ({ theme }) => {
 
       dispatch(init(
         _session,
+        profile,
         { email: username }, dbCredentials  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       ));
     }

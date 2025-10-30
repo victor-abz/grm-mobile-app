@@ -40,6 +40,9 @@ export const styles = StyleSheet.create({
     elevation: 3,
     maxHeight: 275,
   },
+  searchContainer: {
+    borderColor: "#dedede",
+  },
   dropdownStyle: {
     borderColor: "#dedede",
     elevation: 3,

@@ -10,10 +10,14 @@ function Profile()
 {
   const [eadl, setEadl] = useState(false);
   const [issues, setIssues] = useState();
-  const {issueStatusList, loading} = useIssueStatus();
+  const { issueStatusList, loading } = useIssueStatus();
   const [department, setDepartment] = useState(false);
   const { session } = useSelector((state) => state.get('authentication').toObject());
-  const username = session?.username ?? ''
+  const username = session?.username ?? '';
+
+  //fetch user + facilitator
+  // FETCH DEPARTMENT INFO
+  // FETCH issues (is assignee + is reporter)
 
   useEffect(() => {
     if (username) {
@@ -35,7 +39,7 @@ function Profile()
       LocalGRMDatabase.find({
         selector: {
           type: 'issue_department',
-          'id': eadl.department,
+          id: eadl.department,
         },
       })
         .then((result) => {
@@ -48,10 +52,7 @@ function Profile()
       LocalGRMDatabase.find({
         selector: {
           type: 'issue',
-          '$or': [
-            {'reporter.id': eadl._id},
-            {'assignee.id': eadl._id}
-          ]
+          $or: [{ 'reporter.id': eadl._id }, { 'assignee.id': eadl._id }],
         },
       })
         .then((result) => {
@@ -62,7 +63,6 @@ function Profile()
         });
     }
   }, [eadl]);
-
 
   return (
     <SafeAreaView style={styles.container}>

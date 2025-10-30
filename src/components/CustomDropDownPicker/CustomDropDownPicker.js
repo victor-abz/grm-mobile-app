@@ -16,6 +16,7 @@ function CustomDropDownPicker({
   },
   setPickerValue,
   setItems,
+  searchable,
   placeholder,
   onChangeValue,
   schema,
@@ -44,6 +45,7 @@ function CustomDropDownPicker({
         dropDownDirection="BOTTOM"
         zIndexInverse={zIndexInverse}
         schema={schema}
+        searchable={!!searchable}
         disabled={disabled}
         onOpen={() => {
           onOpen();
@@ -64,6 +66,8 @@ function CustomDropDownPicker({
         dropDownContainerStyle={styles.dropdownContainer}
         textStyle={styles.dropdownText}
         labelStyle={styles.dropdownLabel}
+        searchContainerStyle={styles.searchContainer}
+        searchTextInputStyle={styles.searchContainer}
         itemSeparator
         onChangeValue={onChangeValue}
         itemSeparatorStyle={{

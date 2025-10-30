@@ -25,7 +25,7 @@ const theme = {
   },
 };
 
-export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueRegion }) {
+export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueRegion }) { 
   const navigation = useNavigation();
   const [communes, setCommunes] = useState(issueCommunes);
   const [commune1, setCommune1] = useState(null);
@@ -33,7 +33,7 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
   const [pickersState, setPickersState] = useState([]);
   const [additionalDetails, setAdditionalDetails] = useState(null);
   const [initialized, setInitialized] = useState(false);
-  const [communesPickers, setCommunesPickers] = useState([]);
+  const [communesSubPickers, setCommunesSubPickers] = useState([]);
 
   useEffect(() => {
     if (issueCommunes && !initialized) {
@@ -42,8 +42,6 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
     }
   }, [issueCommunes]);
 
-  useEffect(() => {}, [pickersState]);
-
   const handler = (selectedAdministrativeId, _index) => {
     let communesCopy = communes.slice();
     let updatedPickers = [];
@@ -51,41 +49,46 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
     if (_index !== undefined) index = _index + 1;
 
     // Filter communes by parent (administrative ID)
-    communesCopy = communesCopy.filter((x) => x.parent_id === selectedAdministrativeId);
+    communesCopy = communesCopy.filter((x) => String(x.parent) === String(selectedAdministrativeId));
 
     if (communesCopy.length > 0) {
-      if (communesPickers[index]) {
+      if (communesSubPickers[index]) {
         // If picker exist at position -> Replace picker content
-        updatedPickers = [...communesPickers];
+        updatedPickers = [...communesSubPickers];
         updatedPickers[index] = selectedAdministrativeId;
       } else {
         // Otherwise -> Add new picker
-        updatedPickers = [...communesPickers, selectedAdministrativeId];
+        updatedPickers = [...communesSubPickers, selectedAdministrativeId];
       }
-      setCommunesPickers(updatedPickers);
+      setCommunesSubPickers(updatedPickers);
     } else {
       // Remove next pickers/selected values and stop
-      updatedPickers = [...communesPickers];
+      updatedPickers = [...communesSubPickers];
       if (index === undefined) {
         updatedPickers = [];
         setPickersState([]);
       } else {
-        updatedPickers.splice(index, communesPickers.length - index);
+        updatedPickers.splice(index, communesSubPickers.length - index);
       }
-      setCommunesPickers(updatedPickers);
+      setCommunesSubPickers(updatedPickers);
     }
   };
 
   const handlePickCommune = useCallback(debounce(handler, 100), [
-    communesPickers,
+    communesSubPickers,
     communes,
     pickersState,
   ]);
 
   const filterCommunes = (parent) => {
     let _communes = communes.slice();
-    _communes = _communes.filter((commune) => commune.parent_id === parent);
-    console.log("filter communes : "+_communes.docs) 
+      
+    _communes = parent ? _communes.filter((commune) => String(commune.parent) === String(parent)) : _communes;
+    _communes = _communes.map(({ parent, ...rest }) => ({
+      ...rest,
+      parentRegion: parent,
+    }));
+    console.log("filter communes : ", _communes) 
     return _communes;
   };
   return (
@@ -96,14 +99,14 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
           <Text style={styles.stepDescription}>{i18n.t('step_location_description')}</Text>
           <Text style={styles.stepNote}>{i18n.t('step_location_body')}</Text>
         </View>
-
         {!uniqueRegion && communes && (
           <View key="firstLevel">
             <CustomDropDownPicker
               schema={{
                 label: 'name',
-                value: 'administrative_id',
+                value: 'id',
               }}
+              searchable={true}
               placeholder={i18n.t('step_location_dropdown_placeholder')}
               value={commune1}
               disabled={!!uniqueRegion}
@@ -119,12 +122,14 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
             />
           </View>
         )}
-        {communesPickers.map((parent, index) => (
+
+        {/* Rendered after picking one from above */}
+        {communesSubPickers.map((parent, index) => (
           <View style={{ zIndex: 1000 + index }} key={{ index }}>
             <CustomDropDownPicker
               schema={{
                 label: 'name',
-                value: 'administrative_id',
+                value: 'id',
               }}
               disabled={!!uniqueRegion}
               placeholder={i18n.t('step_location_dropdown_placeholder')}
@@ -154,7 +159,7 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
                 height: 100,
                 justifyContent: 'flex-start',
                 textAlignVertical: 'top',
-                fontSize: 14
+                fontSize: 14,
               },
             ]}
             placeholder={i18n.t('step_2_placeholder_3')}
@@ -194,8 +199,8 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
                 stepTwoParams,
                 stepLocationParams: {
                   issueLocation: {
-                    administrative_id:
-                      uniqueRegion?.administrative_id ?? location?.administrative_id,
+                    id:
+                      uniqueRegion?.id ?? location?.id,
                     name: uniqueRegion?.name ?? location?.name,
                   },
                   locationDescription: additionalDetails,

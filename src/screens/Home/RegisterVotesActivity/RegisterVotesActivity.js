@@ -25,6 +25,8 @@ import { LinearGradient } from "expo-linear-gradient";
 const window = Dimensions.get("window");
 moment.locale("fr");
 
+//upsert eadl bp_projects
+
 function RegisterVotesActivity() {
   const { params } = useRoute();
   const { eadl, update } = params;

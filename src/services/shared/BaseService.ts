@@ -3,6 +3,7 @@ import { RawRecord } from '@nozbe/watermelondb';
 import NetInfo from '@react-native-community/netinfo';
 import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
+import { TABLE_NAMES } from '../../migrations/tableName';
 
 export class BaseService<T> {
   constructor(
@@ -23,19 +24,24 @@ export class BaseService<T> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
+        console.log('Try to create on remote, if fails due to existence, update instead', item);
+        
         const modelInterface = this.localRepository.fromLocalToRemote(item);
         // Try to create on remote, if fails due to existence, update instead
+        console.log("model interface:", modelInterface);
         
         let createdResponse;
         let updatedResponse;
         
         try {
           createdResponse = await this.remoteRepository.create(modelInterface);
-         
+          
+          console.log("Remote Create successful");
         } catch (createErr: any) {
           // If already exists, update instead
-         
+          console.log("Couldn't create, procceed with Update");
           updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
+          console.log(updatedResponse ? "Remote Update successful" : "Failed to update remotely");
         }
         // @ts-ignore
         item.syncAt = new Date();
@@ -43,34 +49,44 @@ export class BaseService<T> {
         
         if (createdResponse) {
           // TODO: Use newly created id from backend response to upsert
+          console.log("CREATED RESPONSE - (Currently not being used as an entry to watermelon)", createdResponse);
             if (createdResponse.data) {
             createdResponse.data.syncAt = JSON.stringify(new Date());
             }
-          const formattedItem = this.localRepository.fromRemoteToLocal(createdResponse.data)
-            await this.localRepository.upsert(item);
+          // const formattedItem = this.localRepository.fromRemoteToLocal(createdResponse.data)
+          return await this.localRepository.upsert(item);
           
         } else if (updatedResponse) {
+          //TODO: Use newly created id in new sub-items from backend response to upsert
             if (updatedResponse.data) {
               updatedResponse.data.syncAt = JSON.stringify(new Date());
             }
-          await this.localRepository.upsert(item);
+          
+          
+            console.log(
+              'UPDATED RESPONSE - (Currently not being used as an entry to watermelon)',
+              updatedResponse.data
+            );
+          
+          return await this.localRepository.upsert(item);
         } else {
-          await this.localRepository.upsert(item);
-        }
-        console.log("Succesfully Updated Watermelon DB");
+          console.log("Nothing in response from the backend to upsert locally, proceeding to use local modified item:", item);
         
+          return await this.localRepository.upsert(item);
+        }        
 
       } catch (err) {
         console.warn('[BaseService] Remote sync failed. Will retry later.', err);
       }
     } else {
       // Offline: upsert locally
-      await this.localRepository.upsert(item);
+     
+      return await this.localRepository.upsert(item);
     }
   }
 
   async getAll(
-    parentId: string | null,
+    parentId: string | null = null,
     endpointType: string | null = null,
     fetchFromLocal: boolean | null = null,
     page: number | null = null,
@@ -78,7 +94,11 @@ export class BaseService<T> {
   ): Promise<T[]> {
     
     const state = await NetInfo.fetch();
-    if (state.isConnected) {
+    if (this.localRepository.tableName == TABLE_NAMES.issue)
+      
+      console.log('GET ALL [BaseService] Fetch All');
+      
+    if (state.isConnected && !fetchFromLocal) {
       try {
         return await this.remoteRepository.fetchAll(endpointType, null, null, page, null, allPages, null, null, null, parentId);
       } catch (err) {
@@ -116,6 +136,8 @@ export class BaseService<T> {
         null,
         null
       );
+
+      // fetch only once if without date support at list endpoint
       const formattedRecords = newRecords.map((item) => this.localRepository.fromRemoteToLocal(item));
       tableChanges.created = formattedRecords.map((record) => ({
           ...record,
@@ -168,7 +190,10 @@ export class BaseService<T> {
 
   async pushChanges({ changes, lastPulledAt }): Promise<void> {
     const tableName = this.localRepository.tableName;
+    console.log("tablename",tableName);
+    
     const tableChanges = changes[tableName];
+    console.log("table changes",tableChanges);
 
     if (!tableChanges) {
       return;
@@ -176,6 +201,8 @@ export class BaseService<T> {
 
     // Handle created records
     if (tableChanges.created.length > 0) {
+      console.log(tableChanges.created.map((value) => value.id));
+      console.log(tableChanges.created);
       console.log(`Pushing ${tableChanges.created.length} new records to ${tableName}`);
       for (const record of tableChanges.created) {
         const modelInterface = this.localRepository.fromLocalToRemote(record);
@@ -185,7 +212,7 @@ export class BaseService<T> {
 
     // Handle updated records
     if (tableChanges.updated.length > 0) {
-      console.log(`Pushing ${tableChanges.updated.length} updated records to ${tableName}`);
+      console.log(`Pushing ${tableChanges.updated.length} updated records to ${tableName}`);    
       for (const record of tableChanges.updated) {
         const modelInterface = this.localRepository.fromLocalToRemote(record);
         await this.remoteRepository.update(modelInterface.id, modelInterface);

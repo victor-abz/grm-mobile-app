@@ -5,7 +5,7 @@ import { useDatabase } from '@nozbe/watermelondb/react';
 import { useSelector } from 'react-redux';
 import { TABLE_NAMES } from '../../migrations/tableName';
 
-export function useIssue() {
+export function useIssue(fetchIssues: boolean = true) {
   const [assigneeIssueList, setAssigneeIssueList] = useState<Issue[]>()
   const database = useDatabase();
   const { session } = useSelector((state) => {
@@ -16,6 +16,7 @@ export function useIssue() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!fetchIssues) return;
     refetch();
   }, []);
   

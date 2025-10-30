@@ -1,4 +1,5 @@
 import config from "../../config";
+import request from "../utils/request";
 
 const baseURL = config.API_AUTH_BASE_URL || '';
 export { baseURL };
@@ -40,7 +41,26 @@ export async function fetchAuthCredentials(data) {
     } catch (error) {
       return { error: 'Failed to fetch authentication credentials' };
     }
+}
+  
+export async function fetchFacilitatorProfile(data) {
+  const url = `/authentication/facilitator-profile/`;
+  const requestOptions = {
+    url,
+    method: 'GET',
+  };
+  try {
+    const response = await request({
+      ...requestOptions,
+    });
+    const jsonData = response.data;
+    return jsonData;
+  } catch (error) {
+    console.error(error.message);
+    return { error: 'Failed to fetch facilitator profile' } 
   }
+}
+
 
 export async function getCouchDBCredentials(data) {
   const myHeaders = new Headers();

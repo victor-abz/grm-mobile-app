@@ -16,7 +16,6 @@ import RecordingCard from "../../GRM/components/RecordingCard";
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
 import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
 
-
 const theme = {
   roundness: 12,
   colors: {

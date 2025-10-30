@@ -6,6 +6,7 @@ import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 
 class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
     private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
+    
     async create(item: IssueComment): Promise<IssueComment> {
         const body = {
             comment: item.comment,
@@ -40,7 +41,9 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
         endpointType: string | null,
         sortBy: string | null,
         sortOrder: SortOrder | null,
+        page: number | null,
         limit: number | null,
+        allPages: boolean | null,
         created_date: EpochTimeStamp | null,
         updated_date: EpochTimeStamp | null,
         deleted_date: EpochTimeStamp | null,

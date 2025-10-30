@@ -17,7 +17,13 @@ const theme = {
   },
 };
 
-function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII }) {
+const ConfidentialityChoices = Object.freeze({
+  CONFIDENTIAL: 'keep_name_confidential',
+  INDIVIDUAL: 'on_behalf_of_someone',
+  ORGANIZATION: 'organization_behalf_someone',
+});
+
+function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII = [] }) {
   const navigation = useNavigation();
   const [name, setName] = useState('');
   const [checked, setChecked] = useState(false);
@@ -85,22 +91,28 @@ function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII }) {
             value={confidentialValue}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-              <RadioButton.Android value={1} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>
-                {i18n.t('step_2_keep_name_confidential')}{' '}
-              </Text>
+              <RadioButton.Android
+                value={ConfidentialityChoices.CONFIDENTIAL}
+                uncheckedColor="#dedede"
+                color={colors.primary}
+              />
+              <Text style={styles.radioLabel}>{i18n.t('step_2_keep_name_confidential')} </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-              <RadioButton.Android value={2} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>
-                {i18n.t('step_2_on_behalf_of_someone')}{' '}
-              </Text>
+              <RadioButton.Android
+                value={ConfidentialityChoices.INDIVIDUAL}
+                uncheckedColor="#dedede"
+                color={colors.primary}
+              />
+              <Text style={styles.radioLabel}>{i18n.t('step_2_on_behalf_of_someone')} </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-              <RadioButton.Android value={3} uncheckedColor="#dedede" color={colors.primary} />
-              <Text style={styles.radioLabel}>
-                {i18n.t('step_2_organization_behalf_someone')}{' '}
-              </Text>
+              <RadioButton.Android
+                value={ConfidentialityChoices.ORGANIZATION}
+                uncheckedColor="#dedede"
+                color={colors.primary}
+              />
+              <Text style={styles.radioLabel}>{i18n.t('step_2_organization_behalf_someone')} </Text>
             </View>
           </RadioButton.Group>
         </View>
@@ -177,7 +189,7 @@ function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII }) {
                       ageGroup: selectedAge,
                       citizen_type: confidentialValue,
                       citizen_group: selectedCitizenGroup,
-                      // citizen_group_2: selectedCitizenGroupII,
+                      citizen_group_2: selectedCitizenGroup,
                       gender: pickerGenderValue,
                       filledOnSomebodyElseBehalf: checked,
                     },

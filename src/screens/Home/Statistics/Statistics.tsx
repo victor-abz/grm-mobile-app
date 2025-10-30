@@ -26,6 +26,14 @@ function Statistics() {
   const { session } = useSelector((state: RootStateOrAny) => state.get('authentication').toObject());
   const username = session?.username ?? ''
 
+  //fetch issue_age_group
+  //fetch issue_citizen_group_1
+  //fetch issue_citizen_group_2
+  //fetch issue_component
+  //fetch issue_subcomponent
+  //fetch reported issues
+  
+
   useEffect(() => {
 
     // Getting issue_age_group

@@ -21,6 +21,8 @@ function Content({ issues, eadl, department, statuses }) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
+  //fetch user photo
+
   useEffect(() => {
     if (eadl) {
       if (eadl.representative.photo && eadl.representative.photo.includes('https://')) {
