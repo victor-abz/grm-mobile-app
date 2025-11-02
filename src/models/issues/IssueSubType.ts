@@ -15,5 +15,6 @@ export class IssueSubTypeLocalModel extends Model {
   // @ts-ignore
   @text('name') name;
   // @ts-ignore
-  @json('parent', (json) => json) parent;
+  @json('parent', (json) => json) parent; // TODO: update relation to issue_type
 }
+  

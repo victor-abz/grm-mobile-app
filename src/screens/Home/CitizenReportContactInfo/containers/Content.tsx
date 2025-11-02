@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Text, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, ScrollView, Text, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { Button, TextInput, RadioButton } from 'react-native-paper';
 import { i18n } from "../../../../translations/i18n";
 import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
+import { ConfidentialityChoices } from '../../../../utils/constants';
 
 const theme = {
   roundness: 12,
@@ -17,14 +19,16 @@ const theme = {
   },
 };
 
-const ConfidentialityChoices = Object.freeze({
-  CONFIDENTIAL: 'keep_name_confidential',
-  INDIVIDUAL: 'on_behalf_of_someone',
-  ORGANIZATION: 'organization_behalf_someone',
-});
+// type RootStackParamList = {
+//   CitizenReportStep2: {
+//     stepOneParams: any;
+//   };
+//   // Add other routes if needed
+// };
 
-function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII = [] }) {
+function Content({ stepOneParams, issueAges, citizenGroups }) {
   const navigation = useNavigation();
+
   const [name, setName] = useState('');
   const [checked, setChecked] = useState(false);
   const [contactMethodError, setContactMethodError] = React.useState();
@@ -33,9 +37,15 @@ function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII = []
   const [selectedAge, setSelectedAge] = useState(null);
   const [confidentialValue, setConfidentialValue] = useState(null);
   const [selectedCitizenGroup, setSelectedCitizenGroup] = useState(null);
-  const [selectedCitizenGroupII, setSelectedCitizenGroupII] = useState(null);
   const [_citizenGroups, setCitizenGroups] = useState(citizenGroups ?? []);
-  const [_citizenGroupsII, setCitizenGroupsII] = useState(citizenGroupsII ?? []);
+  // State for each dropdown's selected value
+  const [dropdownValues, setDropdownValues] = useState({});
+  // Combine both citizenGroups arrays if needed, or use one as source
+  const allGroups = [...(_citizenGroups || [])];
+  // Get unique types
+  const types = Array.from(new Set(allGroups.map((g) => g.type)));
+
+
   const [ages, setAges] = useState(issueAges ?? []);
   const [pickerGenderValue, setPickerGenderValue] = useState(null);
   const [genders, setGenders] = useState([
@@ -49,13 +59,11 @@ function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII = []
     if (citizenGroups) {
       setCitizenGroups(citizenGroups);
     }
-    if (citizenGroupsII) {
-      setCitizenGroupsII(citizenGroupsII);
-    }
+
     if (issueAges) {
       setAges(issueAges);
     }
-  }, [citizenGroups, citizenGroupsII, issueAges]);
+  }, [citizenGroups, issueAges]);
 
   return (
     <ScrollView>
@@ -145,36 +153,39 @@ function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII = []
               setItems={setGenders}
             />
 
-            {/*  */}
-            {/* TODO:si en la lista tiene dos types, muestras dos dropdowns o mas dependiendo de los atributos types, cuantos existen */}
-            {/* */}
+            {(() => {
+              // Helper to update dropdown value
+              const handleDropdownChange = (type, value) => {
+                setDropdownValues((prev) => ({ ...prev, [type]: value() }));
+              };
 
-             {/* <CustomDropDownPicker
-              schema={{
-                label: 'name',
-                value: 'id',
-              }}
-              zIndex={2000}
-              zIndexInverse={3000}
-              placeholder={i18n.t('contact_step_placeholder_5')}
-              value={selectedCitizenGroup}
-              items={_citizenGroups}
-              setPickerValue={setSelectedCitizenGroup}
-              setItems={setCitizenGroups}
-            /> */}
-           {/* <CustomDropDownPicker
-              schema={{
-                label: 'name',
-                value: 'id',
-              }}
-              placeholder={i18n.t('contact_step_placeholder_6')}
-              value={selectedCitizenGroupII}
-              zIndex={4000}
-              zIndexInverse={4000}
-              items={_citizenGroupsII}
-              setPickerValue={setSelectedCitizenGroupII}
-              setItems={setCitizenGroupsII}
-            /> */}
+              // Render a dropdown for each unique type
+              return types.map((type, index) => (
+                <>
+                  <Text style={[styles.stepNote, { paddingHorizontal: 50 }]}>
+                    {type
+                      .split(/[_\s]+/)
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ')
+                    }
+                  </Text>
+                  <CustomDropDownPicker
+                    key={type}
+                    schema={{
+                      label: 'name',
+                      value: 'id',
+                    }}
+                    zIndex={2000 - index * 100} // adjust zIndex for stacking
+                    zIndexInverse={3000 + index * 100}
+                    placeholder={i18n.t(`contact_step_placeholder_${5 + index}`)}
+                    value={dropdownValues[type]}
+                    items={allGroups.filter((g) => g.type === type)}
+                    setPickerValue={(val) => handleDropdownChange(type, val)}
+                    setItems={() => {}} // no-op or implement if needed
+                  />
+                </>
+              ));
+            })()}
             <View style={{ paddingHorizontal: 50 }}>
               <Button
                 theme={theme}
@@ -188,8 +199,8 @@ function Content({ stepOneParams, issueAges, citizenGroups, citizenGroupsII = []
                       name,
                       ageGroup: selectedAge,
                       citizen_type: confidentialValue,
-                      citizen_group: selectedCitizenGroup,
-                      citizen_group_2: selectedCitizenGroup,
+                      citizen_group: dropdownValues[types[0]],
+                      citizen_group_2: dropdownValues[types[1]],
                       gender: pickerGenderValue,
                       filledOnSomebodyElseBehalf: checked,
                     },

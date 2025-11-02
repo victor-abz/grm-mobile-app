@@ -16,7 +16,7 @@ function CustomDropDownPicker({
   },
   setPickerValue,
   setItems,
-  searchable,
+  searchable = false,
   placeholder,
   onChangeValue,
   schema,

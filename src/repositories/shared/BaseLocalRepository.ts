@@ -87,10 +87,6 @@ export abstract class BaseLocalRepository<T> {
           operations.push(
             dbInstance.get(this.tableName).prepareCreate((administrativeRegion) => {
               Object.keys(administrativeRegion._raw).forEach((key) => {
-                console.log("CREATE ITEM LOGS");
-                console.log(administrativeRegion);
-                console.log(element);
-
                 if (key == 'id') {
                   administrativeRegion._raw[key] = String(element[key])
                 }

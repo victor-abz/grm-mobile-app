@@ -17,6 +17,8 @@ export class BaseService<T> {
     //   const element = entries[index];
     //   this.localRepository.fromRemoteToLocal(element)
     // }
+
+    //TODO: ADD GLOBAL LOADING
     this.localRepository.bulkCreate(entries)
   }
 

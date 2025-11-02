@@ -84,7 +84,8 @@ function Content({ issue, session }) {
       issue_date: issue.date,
       ongoing_issue: issue.ongoingEvent,
       comments: [],
-      contact_information: `${issue.methodOfContact} - ${issue.contactInfo}`,
+      contact_method: issue.methodOfContact,
+      contact_information: issue.contactInfo,
     };
 
     const createdIssue = await createIssue(_issue);

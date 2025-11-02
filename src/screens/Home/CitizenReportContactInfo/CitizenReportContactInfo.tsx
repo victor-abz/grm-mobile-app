@@ -45,7 +45,6 @@ const CitizenReportContactInfo = ({ route }) => {
       <Content
         stepOneParams={params.stepOneParams}
         issueAges={issueAgesList}
-        citizenGroupsII={[]}
         citizenGroups={issueCitizenGroupsList}
       />
     </SafeAreaView>
