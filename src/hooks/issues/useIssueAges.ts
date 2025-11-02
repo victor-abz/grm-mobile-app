@@ -4,7 +4,7 @@ import type { IssueAgeGroup } from "../../models/issues/IssueAgeGroup";
 
 export function useIssueAges() {
   const [issueAgesList, setIssueAgesList] = useState<IssueAgeGroup[]>()
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchIssueAgesList();

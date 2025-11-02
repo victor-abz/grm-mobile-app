@@ -8,12 +8,13 @@ import { INITIAL_DATA_FETCHED_STORAGE_KEY } from '../utils/constants';
 import { getData, storeData } from '../utils/storageManager';
 import { DatabaseProvider } from '@nozbe/watermelondb/react';
 import { fetchFacilitatorProfile } from '../services/authService';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setProfile } from '../store/ducks/authentication.duck';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../utils/colors';
 import { Button } from 'react-native-paper';
 import { i18n } from '../translations/i18n';
+
 
 const { width } = Dimensions.get('screen');
 
@@ -39,7 +40,8 @@ const PrivateRoutes = () => {
   const [dbReady, setDbReady] = React.useState(!!syncServiceInstance.database);
   const [profileLoaded, setProfileLoaded] = React.useState(false);
   const [profileError, setProfileError] = React.useState<Error | null>(null);
-
+  const { profile } = useSelector((state: any) => state.get("authentication").toObject());
+ 
   const fetchConstants = async () => {
     const hasInitialData = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);
     //  await removeValue(INITIAL_DATA_FETCHED_STORAGE_KEY);
@@ -56,14 +58,21 @@ const PrivateRoutes = () => {
 
   const loadFacilitatorProfile = async () => {
 
+    // Try to get facilitatorProfile from redux state first
+    if (profile) {
+      setProfileLoaded(true);
+      return;
+    }
+
+    // Otherwise, fetch from API as before
     const facilitatorProfileResponse = await fetchFacilitatorProfile();
     if (facilitatorProfileResponse.error) {
       console.error(facilitatorProfileResponse.error);
       setProfileError(facilitatorProfileResponse.error);
     } else {
-      dispatch(setProfile(facilitatorProfileResponse));    
+      dispatch(setProfile(facilitatorProfileResponse));
       setProfileLoaded(true);
-     }
+    }
   };
 
   useEffect(() => {
@@ -118,7 +127,7 @@ const PrivateRoutes = () => {
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         
         <Text style={{ marginVertical: 16, color: "red" }}>
-          Failed to load profile. Please try again.
+          Something wrong has occurred. Please try again.
         </Text>
         <Button
           theme={theme}

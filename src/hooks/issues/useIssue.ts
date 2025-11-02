@@ -13,7 +13,7 @@ export function useIssue(fetchIssues: boolean = true) {
   });
   
   const [reporterIssueList, setReporterIssueList] = useState<Issue[]>()
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!fetchIssues) return;

@@ -4,7 +4,7 @@ import type { IssueCitizenGroup } from '../../models/issues/IssueCitizenGroup';
 
 export function useIssueCitizenGroups() {
   const [issueCitizenGroupsList, setIssueCitizenGroupsList] = useState<IssueCitizenGroup[]>();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchIssueCitizenGroupsList();

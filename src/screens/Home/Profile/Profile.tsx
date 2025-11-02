@@ -1,73 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 import Content from './containers';
 import { styles } from './Profile.style';
+import { useIssue } from '../../../hooks/issues/useIssue';
+import { ActivityIndicator } from 'react-native-paper';
+import { colors } from '../../../utils/colors';
 
-function Profile()
-{
-  const [eadl, setEadl] = useState(false);
-  const [issues, setIssues] = useState();
+function Profile() {
   const { issueStatusList, loading } = useIssueStatus();
-  const [department, setDepartment] = useState(false);
-  const { session } = useSelector((state) => state.get('authentication').toObject());
-  const username = session?.username ?? '';
+  const { profile, session } = useSelector((state) => state.get('authentication').toObject());
+  const { assigneeIssueList, reporterIssueList, loading: issueListLoading } = useIssue(true);
 
-  //fetch user + facilitator
-  // FETCH DEPARTMENT INFO
-  // FETCH issues (is assignee + is reporter)
-
-  useEffect(() => {
-    if (username) {
-      LocalAdminLevelsDatabase.find({
-        selector: { 'representative.email': username },
-      })
-        .then((result) => {
-          setEadl(result.docs[0]);
-        })
-        .catch((err) => {
-          console.log('ERROR FETCHING EADL', err);
-        });
-    }
-  }, [username]);
-
-  useEffect(() => {
-    if (eadl) {
-      // FETCH DEPARTMENT INFO
-      LocalGRMDatabase.find({
-        selector: {
-          type: 'issue_department',
-          id: eadl.department,
-        },
-      })
-        .then((result) => {
-          setDepartment(result?.docs[0]);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-
-      LocalGRMDatabase.find({
-        selector: {
-          type: 'issue',
-          $or: [{ 'reporter.id': eadl._id }, { 'assignee.id': eadl._id }],
-        },
-      })
-        .then((result) => {
-          setIssues(result?.docs);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  }, [eadl]);
+  if (issueListLoading)
+    return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        <Content issues={issues} eadl={eadl} department={department} statuses={issueStatusList} />
+        <Content
+          issues={[
+            ...new Map(
+              [...assigneeIssueList, ...reporterIssueList].map((issue) => [issue.id, issue])
+            ).values(),
+          ]}
+          session={session}
+          profile={profile}
+          department={profile.department}
+          statuses={issueStatusList}
+        />
       </ScrollView>
     </SafeAreaView>
   );

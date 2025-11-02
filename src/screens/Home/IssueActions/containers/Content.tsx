@@ -79,12 +79,11 @@ type Props = {
   session: any;
   loading: boolean;
   statuses: IssueStatus[];
-  eadl: any;
   updateIssue: (issue: Issue) => Promise<Issue>;
   getStatus: (statusName: keyof IssueStatus) => IssueStatus;
 };
 
-function Content({ session, currentIssue, navigation, loading, statuses = [], eadl, updateIssue, getStatus }: Props) {
+function Content({ session, currentIssue, navigation, loading, statuses = [], updateIssue, getStatus }: Props) {
   const [issue, setIssue] = useState(currentIssue);
   
   // const [issue, setIssue] = useState({
@@ -263,7 +262,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
         //   ...(prevIssue.comments ?? []),
         //   {
         //     name: prevIssue.reporter.name,
-        //     id: eadl._id,
+        //     id: session?.user_id,
         //     comment: reason,
         //     due_at: moment().toNow(),
         //     attachment: attachment.uri
@@ -297,7 +296,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
       setIssue((prevIssue) => {
         const updatedIssue = updateIssueWithComments(prevIssue, prevIssue.status, {
           name: prevIssue.reporter.name,
-          id: eadl._id,
+          id: session?.user_id,
           comment: i18n.t('issue_was_rated'),
           due_at: moment(),
         });
@@ -315,7 +314,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
     setIssue((prevIssue) => {
       const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
         name: prevIssue.reporter.name,
-        id: eadl._id,
+        id: session?.user_id,
         comment: i18n.t('issue_was_appealed'),
         due_at: moment(),
       });
@@ -341,7 +340,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
         //   {
         //     //check if can be replaced with create response
         //     name: prevIssue.reporter.name,
-        //     id: eadl._id,
+        //     id: session?.user_id,
         //     comment: escalateComment,
         //     due_at: moment(),
         //     attachment: attachment.uri
@@ -375,7 +374,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
     setIssue((prevIssue) => {
       const updatedIssue = updateIssueWithComments(prevIssue, issue.status, {
         name: prevIssue.reporter.name,
-        id: eadl._id,
+        id: session?.user_id,
         comment,
         due_at: moment(),
         attachment: attachment.uri
@@ -452,7 +451,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
         //   ...prevIssue.comments,
         //   {
         //     name: prevIssue.reporter.name,
-        //     id: eadl._id,
+        //     id: session?.user_id,
         //     comment: i18n.t('issue_was_resolved'),
         //     due_at: moment(),
         //     attachment: attachment.uri

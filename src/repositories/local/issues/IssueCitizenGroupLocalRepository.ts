@@ -19,7 +19,9 @@ export class IssueCitizenGroupLocalRepository extends BaseLocalRepository<IssueC
     return {
       id: localModel.id,
       name: localModel.name,
+      type: localModel.type,
       created_date: localModel.created_date,
+      updated_date: localModel.updated_date,
     };
   }
 }

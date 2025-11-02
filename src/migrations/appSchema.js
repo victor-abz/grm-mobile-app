@@ -10,6 +10,7 @@ import { issueAgeGroupTableSchema } from "./table-schemas/issue_age_group";
 import { administrativeRegionTableSchema } from './table-schemas/administrative_region';
 import { issueCommentTableSchema } from './table-schemas/issue_comment';
 import { issueAttachmentTableSchema } from './table-schemas/issue_attachment';
+import { issueCitizenGroupTableSchema } from './table-schemas/issue_citizen_group';
 
 export default appSchema({
   version: 1,
@@ -23,6 +24,7 @@ export default appSchema({
     issueSubComponentTableSchema,
     issueComponentTableSchema,
     issueAgeGroupTableSchema,
+    issueCitizenGroupTableSchema,
     issueCommentTableSchema,
     issueAttachmentTableSchema,
   ],

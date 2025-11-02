@@ -9,7 +9,7 @@ import ListHeader from '../components/ListHeader';
 import moment from 'moment';
 import { getSessionData } from "../../../../store/ducks/authentication.duck";
 
-function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
+function Content({ assigneeIssueList, reporterIssueList, statuses }) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('reported');

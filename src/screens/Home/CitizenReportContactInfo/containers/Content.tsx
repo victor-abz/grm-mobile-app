@@ -40,10 +40,6 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
   const [_citizenGroups, setCitizenGroups] = useState(citizenGroups ?? []);
   // State for each dropdown's selected value
   const [dropdownValues, setDropdownValues] = useState({});
-  // Combine both citizenGroups arrays if needed, or use one as source
-  const allGroups = [...(_citizenGroups || [])];
-  // Get unique types
-  const types = Array.from(new Set(allGroups.map((g) => g.type)));
 
 
   const [ages, setAges] = useState(issueAges ?? []);
@@ -154,20 +150,24 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
             />
 
             {(() => {
+              // Combine both citizenGroups arrays if needed, or use one as source
+              const allGroups = [...(_citizenGroups || [])];
+              // Get unique types
+              const types = Array.from(new Set(allGroups.map((g) => g.type)));
               // Helper to update dropdown value
               const handleDropdownChange = (type, value) => {
                 setDropdownValues((prev) => ({ ...prev, [type]: value() }));
               };
 
               // Render a dropdown for each unique type
-              return types.map((type, index) => (
+                if (!types.length || types[0] === undefined) return null;
+                return types.map((type, index) => (
                 <>
                   <Text style={[styles.stepNote, { paddingHorizontal: 50 }]}>
                     {type
                       .split(/[_\s]+/)
                       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                      .join(' ')
-                    }
+                      .join(' ')}
                   </Text>
                   <CustomDropDownPicker
                     key={type}

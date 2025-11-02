@@ -15,6 +15,7 @@ import { IssueSubComponentLocalModel } from '../../models/issues/IssueSubCompone
 import { AdministrativeRegionLocalModel } from '../../models/issues/AdministrativeRegions';
 import { IssueCommentLocalModel } from "../../models/issues/IssueComment";
 import { IssueAttachmentLocalModel } from "../../models/issues/IssueAttachment";
+import { IssueCitizenGroupLocalModel } from '../../models/issues/IssueCitizenGroup';
 
 
 const DB_NAME = "grm-db";
@@ -66,6 +67,7 @@ export class SyncService {
         IssueSubComponentLocalModel,
         IssueCommentLocalModel,
         IssueAttachmentLocalModel,
+        IssueCitizenGroupLocalModel
       ],
     });
   }

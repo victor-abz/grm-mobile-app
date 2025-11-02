@@ -90,7 +90,7 @@ export class BaseService<T> {
   async getAll(
     parentId: string | null = null,
     endpointType: string | null = null,
-    fetchFromLocal: boolean | null = null,
+    forceFetchFromLocal: boolean | null = null,
     page: number | null = null,
     allPages: boolean | null = null,
   ): Promise<T[]> {
@@ -100,11 +100,17 @@ export class BaseService<T> {
       
       console.log('GET ALL [BaseService] Fetch All');
       
-    if (state.isConnected && !fetchFromLocal) {
+    if (state.isConnected && !forceFetchFromLocal) {
       try {
-        return await this.remoteRepository.fetchAll(endpointType, null, null, page, null, allPages, null, null, null, parentId);
+        const remoteResult = await this.remoteRepository.fetchAll(endpointType, null, null, page, null, allPages, null, null, null, parentId);
+        if (Array.isArray(remoteResult)) {
+          return remoteResult;
+        } else {
+          console.warn('[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval');
+          return await this.localRepository.getAll(null, null, null, null, parentId);
+        }
       } catch (err) {
-        console.warn('[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval', err);
+        console.warn('[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval. Reason: ', err);
         return await this.localRepository.getAll(null, null, null, null, parentId);
       }
     } else {

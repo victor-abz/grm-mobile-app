@@ -3,7 +3,9 @@ import { text } from '@nozbe/watermelondb/decorators';
 import { TABLE_NAMES } from "../../migrations/tableName";
 import { Base } from "../Base";
 
-export interface IssueCitizenGroup extends Base {}
+export interface IssueCitizenGroup extends Base {
+  type: string,
+}
 
 export class IssueCitizenGroupLocalModel extends Model {
   static table = TABLE_NAMES.issueCitizenGroup;

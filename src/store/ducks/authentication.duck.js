@@ -97,9 +97,10 @@ export const { init, login, signUp, setProfile, logout } = createActions({
 
 const authentication = handleActions(
   {
-    [init]: (draft, { payload: { session, username, password } }) => {
+    [init]: (draft, { payload: { session, profile, username, password } }) => {
       return draft.withMutations((state) => {
         state.set('session', session);
+        state.set('profile', profile);
         state.set('username', username); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
         state.set('userPassword', password); //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       });
