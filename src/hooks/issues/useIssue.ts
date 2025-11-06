@@ -67,7 +67,11 @@ export function useIssue(fetchIssues: boolean = true) {
     setLoading(true)
     if (!assigneeIssueList) {
       const issuesList = await IssueService.fetchIssueList('assignee');
-      const filteredList = issuesList.filter((issue) => issue.assignee ? session.user_id == issue.assignee.id : false)
+      const filteredList = issuesList.filter((issue) =>
+        issue.assignee
+          ? (session.user_id == issue?.assignee?.id || session.user_id == issue.assignee)
+          : false
+      );
       setAssigneeIssueList(filteredList);
     }
   }
@@ -76,7 +80,11 @@ export function useIssue(fetchIssues: boolean = true) {
     setLoading(true);
     if (!reporterIssueList) {
       const issuesList = await IssueService.fetchIssueList('reporter');
-      const filteredList = issuesList.filter((issue) => issue.reporter ? session.user_id == issue.reporter.id : false);
+      const filteredList = issuesList.filter((issue) =>
+        issue.reporter
+          ? (session.user_id == issue?.reporter?.id || session.user_id == issue.reporter)
+          : false
+      );
       setReporterIssueList(filteredList);
     }
   }

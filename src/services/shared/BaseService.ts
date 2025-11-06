@@ -4,6 +4,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import { TABLE_NAMES } from '../../migrations/tableName';
+import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 
 export class BaseService<T> {
   constructor(
@@ -41,7 +42,7 @@ export class BaseService<T> {
           console.log("Remote Create successful");
         } catch (createErr: any) {
           // If already exists, update instead
-          console.log("Couldn't create, procceed with Update");
+          console.log("Couldn't create, procceed with Update", createErr);
           updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
           console.log(updatedResponse ? "Remote Update successful" : "Failed to update remotely");
         }
@@ -63,7 +64,6 @@ export class BaseService<T> {
             if (updatedResponse.data) {
               updatedResponse.data.syncAt = JSON.stringify(new Date());
             }
-          
           
             console.log(
               'UPDATED RESPONSE - (Currently not being used as an entry to watermelon)',
@@ -93,6 +93,8 @@ export class BaseService<T> {
     forceFetchFromLocal: boolean | null = null,
     page: number | null = null,
     allPages: boolean | null = null,
+    sortBy: string = null,
+    sortOrder: SortOrder = null
   ): Promise<T[]> {
     
     const state = await NetInfo.fetch();
@@ -107,18 +109,18 @@ export class BaseService<T> {
           return remoteResult;
         } else {
           console.warn('[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval');
-          return await this.localRepository.getAll(null, null, null, null, parentId);
+          return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
         }
       } catch (err) {
         console.warn('[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval. Reason: ', err);
-        return await this.localRepository.getAll(null, null, null, null, parentId);
+        return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
       }
     } else {
-      return await this.localRepository.getAll(null, null, null, null, parentId);
+      return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
     }
   }
 
-  async pullChanges({ tableName, lastPulledAt, schema, endPointType = null }): Promise<{
+  async pullChanges({ tableName, lastPulledAt, schema, endPointType = null, forceFetchAllPages = null }): Promise<{
     changes: { [key: string]: { deleted: any[]; created: RawRecord[]; updated: any[] } };
     timestamp: number;
   }> {
@@ -138,7 +140,7 @@ export class BaseService<T> {
         null,
         null,
         null,
-        null,
+        forceFetchAllPages,
         lastPulledAt,
         null,
         null,
@@ -162,7 +164,18 @@ export class BaseService<T> {
     if (lastPulledAt != null) {
       try {
 
-        const updatedRecords = await this.remoteRepository.fetchAll(endPointType, null, null, null, null, null, null, lastPulledAt, null, null);
+        const updatedRecords = await this.remoteRepository.fetchAll(
+          endPointType,
+          null,
+          null,
+          null,
+          null,
+          forceFetchAllPages,
+          null,
+          lastPulledAt,
+          null,
+          null
+        );
 
 
         const formattedRecords = updatedRecords.map((item) =>

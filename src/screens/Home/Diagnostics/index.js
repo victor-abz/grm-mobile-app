@@ -4,6 +4,7 @@ import { Text } from "react-native-paper";
 import { colors } from "../../../utils/colors";
 import { useDatabase } from '@nozbe/watermelondb/react';
 import { syncServiceInstance } from "../../../services/shared/SyncService";
+import { TABLE_NAMES } from "../../../migrations/tableName";
 
 export function Diagnostics() {
   // const {issueCategoriesList, loading} = useIssueCategories()
@@ -54,43 +55,8 @@ export function Diagnostics() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.form}>
+        <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Upcoming feature.</Text>
 
-        <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-          Upcoming feature.
-        </Text>
-
-        <TouchableOpacity onPress={() =>
-        {
-          // syncServiceInstance.syncAll();
-          // const dbInstance = syncServiceInstance.database;
-          console.log('DIAGNOSTICS DEBUG WATERMELON ');
-          database
-            .get('issue_status')
-            .query()
-            .fetch()
-            .then((data) => {
-              console.log('UPDATED ITEM FROM WATERMELON ', data);
-            });
-        }}>
-          <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-            Press to test DB Sync {_issue}
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() =>
-        {
-          // syncServiceInstance.syncAll();
-          // const dbInstance = syncServiceInstance.database;
-          syncServiceInstance.syncAll()
-        }}>
-          <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-            Press to syncAll()
-          </Text>
-        </TouchableOpacity>
-        <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-          {/* {issueCategoriesList ? JSON.stringify(issueCategoriesList) : ""} */}
-          {/* {issueStatusList ? JSON.stringify(issueStatusList) : ""} */}
-        </Text>
       </View>
     </SafeAreaView>
   );

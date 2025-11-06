@@ -5,7 +5,7 @@ import List from '../components/List';
 import SearchBar from '../components/SearchBar';
 import { ActivityIndicator } from 'react-native-paper';
 
-function Content({ issues, eadl }) {
+function Content({ issues }) {
   const navigation = useNavigation();
   const [searchPhrase, setSearchPhrase] = useState('');
   const [clicked, setClicked] = useState(false);
@@ -26,7 +26,6 @@ function Content({ issues, eadl }) {
           <List
             searchPhrase={searchPhrase}
             data={issues}
-            eadl={eadl}
             navigation={navigation}
             setClicked={setClicked}
           />

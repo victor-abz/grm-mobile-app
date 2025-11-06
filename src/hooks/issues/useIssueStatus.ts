@@ -7,11 +7,9 @@ import { Issue } from '../../models/issues/Issue';
 
 export function useIssueStatus() {
   const [issueStatusList, setIssueStatusList] = useState<IssueStatus[]>();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('LAUNCH FETCH');
-
     fetchIssueStatusList();
   }, []);
 
@@ -21,19 +19,22 @@ export function useIssueStatus() {
     
     return issueStatusList.find((x) => x[statusName] === true);
   };
+  
+  const getStatusById = (statusId: string) => {
+    
+    if (!issueStatusList) return;
+    
+    return issueStatusList.find((x) => x.id === statusId);
+  };
 
   const fetchIssueStatusList = async () => {
     setLoading(true);
     if (!issueStatusList) {
-      console.log('Before fetch');
-
       const issuesStatusList = await IssueStatusService.fetchIssueStatusList();
-      console.log('Setting hook issue statuses list as:', issuesStatusList);
-      console.log('After fetch');
       setIssueStatusList(issuesStatusList);
     }
     setLoading(false);
   };
 
-  return { issueStatusList, loading, getStatus };
+  return { issueStatusList, loading, getStatus, getStatusById};
 }

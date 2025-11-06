@@ -13,6 +13,8 @@ export class IssueSubTypeLocalModel extends Model {
   // @ts-ignore
   @text('created_date') created_date;
   // @ts-ignore
+  @text('updated_date') updated_date;
+  // @ts-ignore
   @text('name') name;
   // @ts-ignore
   @json('parent', (json) => json) parent; // TODO: update relation to issue_type

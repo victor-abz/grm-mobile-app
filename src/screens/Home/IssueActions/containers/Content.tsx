@@ -494,9 +494,10 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
 
   useEffect(() => {
     if (loading) return;
+    const reporterId = issue.reporter?.id ?? issue.reporter;
     const isAssigned =
       issue.assignee?.id &&
-      (issue.reporter.id === issue.assignee.id || issue.assignee.id === session?.user_id);
+      (reporterId === issue.assignee.id || issue.assignee.id === session?.user_id);
     setIsIssueAssignedToMe(isAssigned);
 
     if (issue.citizen_type !== 1) {

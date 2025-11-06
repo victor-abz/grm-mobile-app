@@ -139,7 +139,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
     return _category;
   };
 
-  const filterSubType = () => {
+  const filterSubTypes = () => {
     if (!selectedIssueType) return [];
 
     // Rename 'parent' key from objects to 'parentType' to prevent key conflicts in dropdown library
@@ -147,17 +147,18 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
       ...rest,
       parentType: parent,
     }));
-    return renamedSubTypes.filter((obj) => obj.parentType.id === selectedIssueType.id);
+    
+    return renamedSubTypes.filter((obj) => {
+      if (!obj?.parentType || !selectedIssueType?.id) return false;
+      return String(obj.parentType.id) === String(selectedIssueType.id);
+    });
   };
 
   useEffect(() => {
-    setFilteredSubTypes(selectedIssueType ? filterSubType() : []);
-    setPickerSubType(null); // Optionally reset picker value when type changes
+    setFilteredSubTypes(selectedIssueType ? filterSubTypes() : []);
+    setPickerSubType(null);
   }, [selectedIssueType, subTypes]);
 
-  const filterCategory = () => {
-    return categories.filter((obj) => obj.parent_id === selectedIssueSubType.id);
-  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -211,7 +212,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
     })();
   }, []);
 
-  const filterSubComponent = () => {
+  const filterSubComponents = () => {
     if (!selectedIssueComponent) return [];
 
     // Rename 'parent' key from objects to 'parentComponent' to prevent key conflicts in dropdown library
@@ -220,13 +221,16 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
       parentComponent: parent,
     }));
     return renamedSubComponents.filter(
-      (obj) => obj.parentComponent.id === selectedIssueComponent.id
+      (obj) => {
+         if (!obj?.parentComponent || !selectedIssueComponent?.id) return false;
+         return String(obj.parentComponent.id) === String(selectedIssueComponent.id);
+      }
     );
   };
 
   useEffect(() => {
-    setFilteredSubComponents(selectedIssueComponent ? filterSubComponent() : []);
-    setPickerSubComponent(null); // Optionally reset picker value when component changes
+    setFilteredSubComponents(selectedIssueComponent ? filterSubComponents() : []);
+    setPickerSubComponent(null); 
   }, [selectedIssueComponent, subComponents]);
 
   const showToast = (message) => {

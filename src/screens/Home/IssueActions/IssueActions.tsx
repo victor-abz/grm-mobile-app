@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
 import CustomLoadingSpinner from '../../../components/CustomLoadingSpinner/CustomLoadingSpinner';
-import { LocalAdminLevelsDatabase } from '../../../db/databaseManager';
 import { useIssue } from '../../../hooks/issues/useIssue';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 import Content from './containers/Content';

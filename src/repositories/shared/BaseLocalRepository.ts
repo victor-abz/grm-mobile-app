@@ -85,17 +85,17 @@ export abstract class BaseLocalRepository<T> {
         for (let index = 0; index < entries.length; index++) {
           const element = entries[index];
           operations.push(
-            dbInstance.get(this.tableName).prepareCreate((administrativeRegion) => {
-              Object.keys(administrativeRegion._raw).forEach((key) => {
+            dbInstance.get(this.tableName).prepareCreate((tableElementPlaceholder) => {
+              Object.keys(tableElementPlaceholder._raw).forEach((key) => {
                 if (key == 'id') {
-                  administrativeRegion._raw[key] = String(element[key])
+                  tableElementPlaceholder._raw[key] = String(element[key])
                 }
 
                 if (key !== 'id' && key !== '_changed' && key !== '_status') {
-                  administrativeRegion._raw[key] = element[key];
+                  tableElementPlaceholder._raw[key] = element[key];
                 }
               });
-              administrativeRegion = element;
+              tableElementPlaceholder = element;
             })
           );
         }
@@ -130,7 +130,7 @@ export abstract class BaseLocalRepository<T> {
         console.warn(error);
         console.log('Could not update locally, attempting to create locally...');
         try {
-          await dbInstance.get(this.tableName).create((updatableItem) => {
+          await dbInstance.get(this.tableName).create((tableElementPlaceholder) => {
 
             Object.keys(newEntry).forEach((key) => {
               // Check if the value is an object (and not null or an array)
@@ -141,14 +141,14 @@ export abstract class BaseLocalRepository<T> {
               ) {
                 // Handle nested object keys if needed
                 // Object.keys(newEntry[key]).forEach((nestedKey) => {
-                updatableItem._raw[key] = JSON.stringify(newEntry[key]);
+                tableElementPlaceholder._raw[key] = JSON.stringify(newEntry[key]);
            
                 // });
               } else {
                 if (key !== 'id') {
-                  updatableItem._raw[key] = newEntry[key];
+                  tableElementPlaceholder._raw[key] = newEntry[key];
                 } else if (newEntry.id) {
-                  updatableItem._raw.id = String(newEntry.id);
+                  tableElementPlaceholder._raw.id = String(newEntry.id);
                 }
               }
             });

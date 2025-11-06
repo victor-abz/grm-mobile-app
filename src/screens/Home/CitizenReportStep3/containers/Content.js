@@ -38,8 +38,7 @@ function Content({ issue, session }) {
   
   
   const submitIssue = async () =>
-  {
-    
+  {  
     // submit params
     const randomCodeNumber = Math.floor(Math.random() * 1000);
     // const newId = incrementId();
@@ -51,6 +50,7 @@ function Content({ issue, session }) {
         ...(issue?.attachment ? [issue.attachment] : []),
         ...(issue?.recording ? [issue.recording] : []),
       ],
+      
       status: 2, // Open status
       reporter: session.user_id,
       // citizen_age_group: issue.ageGroup,
@@ -73,14 +73,11 @@ function Content({ issue, session }) {
       issue_sub_type: issue.issueSubType,
       component: issue.issueComponent,
       sub_component: issue.issueSubComponent,
-      //   type: {
-      //   id: 1,
-      //   name: "Complaint",
-      // },
-      created_date: new Date(),
+      created_date: new Date().toISOString(),
+      updated_date: new Date().toISOString(),
       resolution_days: 0,
       resolution_date: '',
-      intake_date: new Date(),
+      intake_date: new Date().toISOString(),
       issue_date: issue.date,
       ongoing_issue: issue.ongoingEvent,
       comments: [],
@@ -108,6 +105,7 @@ function Content({ issue, session }) {
       }
     })();
   }, []);
+
   return (
     <ScrollView>
       <View style={{ padding: 23 }}>

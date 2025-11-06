@@ -35,18 +35,63 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
 
     const url = `${this.baseUrl}/${endpointType}/`;
 
-    try {
-      const response = await request({
-        url,
-        method: 'GET',
-        params: new URLSearchParams(params),
-      });
+    if (allPages) {
+      try {
+        let issuesList: Issue[] = [];
+        let lastPage = false;
 
-      const jsonData: any = response.data;
-      return jsonData.results ?? [];
-    } catch (error) {
-      return Promise.reject({ message: error.message });
+        let _url = url;
+
+        while (!lastPage) {
+          const requestOptions = {
+            url: _url,
+            method: 'GET',
+            params: new URLSearchParams(params),
+          };
+
+          const response = await request({
+            ...requestOptions,
+          });
+
+          if (
+            response &&
+            response.data &&
+            response.data.results &&
+            Array.isArray(response.data.results)
+          ) {
+            issuesList = issuesList.concat(response.data.results);
+            if (!response.data.next) {
+              lastPage = true;
+            } else {
+              _url = response.data.next.substring(response.data.next.indexOf('/issues'));
+            }
+          } else {
+            lastPage = true;
+          }
+        }
+
+        const results: Issue[] = issuesList ?? [];
+        return results;
+      } catch (error) {
+        console.error(error.message);
+      }
+      
+    } else {
+      try {
+        const response = await request({
+          url,
+          method: 'GET',
+          params: new URLSearchParams(params),
+        });
+  
+        const jsonData: any = response.data;
+        return jsonData.results ?? [];
+      } catch (error) {
+        return Promise.reject({ message: error.message });
+      }
+      
     }
+
   }
 
   async create(item: Issue): Promise<Issue> {
@@ -135,9 +180,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   async update(id: string, item: Issue): Promise<Issue> {
     const url = `${this.baseUrl}/${id}/update/`;
 
-    console.log(JSON.stringify(item, null, 2));
-    
-
     const body = {
       escalate_flag: item.escalate_flag,
       reject_flag: item.reject_flag,
@@ -153,51 +195,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       data: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
     };
-
-    // [
-    //   {
-    //     id: '432532',
-    //     _status: 'updated',
-    //     _changed: 'status,reject_flag',
-
-    //     citizen: '',
-    //     contact_information: null,
-    //     confirmed: false,
-    //     contact_medium: '',
-    //     contact_method: null,
-    //     component: '',
-    //     created_date: 0,
-    //     deleted_date: null,
-    //     description: '',
-    //     escalated_date: null,
-    //     intake_date: null,
-    //     issue_location: '',
-    //     issue_type: '{"id":1,"name":"type 1"}',
-    //     issue_sub_type: null,
-    //     location_description: null,
-    //     ongoing_issue: false,
-    //     reporter: '{"id":3,"name":" "}',
-    //     resolution_date: null,
-    //     administrative_region: '{"administrative_id":"1","name":"sample administrative region"}',
-    //     assignee: '{"id":4,"name":"Comité village Representative"}',
-    //     category: '{"id":1,"name":"sample category"}',
-    //     status:
-    //       '{"id":"4","name":"Sample status 4","created_date":0,"final_status":false,"initial_status":false,"rejected_status":true,"open_status":false}',
-    //     sub_component: null,
-    //     title: '',
-    //     tracking_code: 'string',
-    //     internal_code: '',
-    //     sync_date: null,
-    //     updated_date: 0,
-    //     escalate_flag: false,
-    //     reject_flag: true,
-    //     rating: null,
-    //     escalation_reason: null,
-    //     research_result: null,
-    //   },
-    // ];
-
-    // JSON.parse({id: '4',name: 'Sample status 4',created_date: 0,final_status: false,initial_status: false,rejected_status: true,open_status: false});
 
     try {
       const response = await request({

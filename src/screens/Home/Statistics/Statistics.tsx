@@ -1,147 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
-import { RootStateOrAny, useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './Statistics.style';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
-import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 import { useIssueCategories } from '../../../hooks/issues/useIssueCategories';
 import { useIssueTypes } from "../../../hooks/issues/useIssueTypes";
+import { useIssueSubComponents } from '../../../hooks/issues/useIssueSubComponents';
+import { useIssueComponents } from '../../../hooks/issues/useIssueComponents';
+import { useIssueCitizenGroups } from '../../../hooks/issues/useCitizenGroups';
+import { useIssueAges } from '../../../hooks/issues/useIssueAges';
+import { useIssue } from '../../../hooks/issues/useIssue';
+import type { Issue } from '../../../models/issues/Issue';
 
 
 function Statistics() {
   const customStyles = styles();
-  const [issues, setIssues] = useState();
   const { issueTypesList } = useIssueTypes();
-  const [ageGroup, setAgeGroup] = useState();
-  const [citizenGroup1, setCitizenGroup1] = useState();
-  const [citizenGroup2, setCitizenGroup2] = useState();
-  const {issueStatusList, loading: issueStatusLoading} = useIssueStatus();
-  const {issueCategoriesList, loading: issueCategoriesLoading} = useIssueCategories();
-  const [issueComponent, setIssueComponent] = useState();
-  const [issueSubComponent, setIssueSubComponent] = useState();
-  const [eadl, setEadl] = useState(false);
-  const { session } = useSelector((state: RootStateOrAny) => state.get('authentication').toObject());
-  const username = session?.username ?? ''
+  const { issueCategoriesList, loading: issueCategoriesLoading } = useIssueCategories();
+  const { issueCitizenGroupsList, loading: issueCitizenGroupsLoading } = useIssueCitizenGroups();
+  const { issueComponentsList, loading: issueComponentsLoading } = useIssueComponents();
+  const { issueSubComponentsList, loading: issueSubComponentsLoading } = useIssueSubComponents();
+  const { issueAgesList, loading: issueAgesLoading } = useIssueAges();
 
-  //fetch issue_age_group
-  //fetch issue_citizen_group_1
-  //fetch issue_citizen_group_2
-  //fetch issue_component
-  //fetch issue_subcomponent
-  //fetch reported issues
+  const [issues, setIssues] = useState<Issue[]>();
+  const { assigneeIssueList, reporterIssueList } = useIssue();
   
-
   useEffect(() => {
-
-    // Getting issue_age_group
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_age_group' },
-    })
-      .then((result) => {
-        setAgeGroup(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue age group. ${JSON.stringify(err)}`);
-      });
-
-    // Getting issue_citizen_group_1
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_citizen_group_1' },
-    })
-      .then((result) => {
-        setCitizenGroup1(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue citizen group 1. ${JSON.stringify(err)}`);
-      });
-
-    // Getting issue_citizen_group_2
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_citizen_group_2' },
-    })
-      .then((result) => {
-        setCitizenGroup2(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue citizen group 2. ${JSON.stringify(err)}`);
-      });
-
-    // Getting issue_component
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_component' },
-    })
-      .then((result) => {
-        setIssueComponent(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue component. ${JSON.stringify(err)}`);
-      });
-
-    // Getting issue_sub_component
-    LocalGRMDatabase.find({
-      selector: { type: 'issue_sub_component' },
-    })
-      .then((result) => {
-        setIssueSubComponent(result.docs);
-      })
-      .catch((err) => {
-        alert(`Unable to retrieve issue sub component. ${JSON.stringify(err)}`);
-      });
-  }, []);
-
-  useEffect(() => {
-    if (username) {
-      LocalAdminLevelsDatabase.find({
-        selector: { 'representative.email': username },
-        // fields: ["_id", "commune", "phases"],
-      })
-        .then((result) => {
-          setEadl(result.docs[0]);
-
-          // handle result
-        })
-        .catch((err) => {
-          console.log('ERROR FETCHING EADL', err);
-        });
+    if (assigneeIssueList && reporterIssueList) {
+      const combined = [...assigneeIssueList, ...reporterIssueList];
+      const uniqueIssues = Array.from(
+        new Map(combined.map((issue) => [issue.id, issue])).values()
+      );
+      setIssues(uniqueIssues);
     }
-  }, [username]);
+  }, [assigneeIssueList, reporterIssueList]);
 
-  useEffect(() => {
-    // FETCH ISSUE CATEGORY
-    if (eadl) {
-      LocalGRMDatabase.find({
-        selector: {
-          type: 'issue',
-          'reporter.id': eadl._id,
-          //'reporter.name': eadl.representative.name,
-        },
-      })
-        .then((result) => {
-          setIssues(result?.docs);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  }, [eadl]);
-
-  if (!issues)
+  if (
+    !issues ||
+    issueCategoriesLoading ||
+    issueCitizenGroupsLoading ||
+    issueComponentsLoading ||
+    issueSubComponentsLoading ||
+    issueAgesLoading
+  )
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
+  
   return (
     <SafeAreaView style={customStyles.container}>
       <ScrollView>
-        <Content issues={issues} eadl={eadl}
-                 statuses={issueStatusList}
-                 ageGroup={ageGroup}
-                 citizenGroup1={citizenGroup1}
-                 citizenGroup2={citizenGroup2}
-                 issueType={issueTypesList}
-                 issueCategory={issueCategoriesList}
-                 issueComponent={issueComponent}
-                 issueSubComponent={issueSubComponent}
+        <Content
+          issues={issues}
+          ageGroup={issueAgesList}
+          citizenGroup1={issueCitizenGroupsList}
+          citizenGroup2={issueCitizenGroupsList}
+          issueType={issueTypesList}
+          issueCategory={issueCategoriesList}
+          issueComponent={issueComponentsList}
+          issueSubComponent={issueSubComponentsList}
         />
       </ScrollView>
     </SafeAreaView>

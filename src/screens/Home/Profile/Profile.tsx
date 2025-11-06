@@ -9,11 +9,11 @@ import { ActivityIndicator } from 'react-native-paper';
 import { colors } from '../../../utils/colors';
 
 function Profile() {
-  const { issueStatusList, loading } = useIssueStatus();
+  const { issueStatusList, loading: issueStatusesLoading } = useIssueStatus();
   const { profile, session } = useSelector((state) => state.get('authentication').toObject());
   const { assigneeIssueList, reporterIssueList, loading: issueListLoading } = useIssue(true);
 
-  if (issueListLoading)
+  if (issueListLoading || issueStatusesLoading)
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
 
   return (

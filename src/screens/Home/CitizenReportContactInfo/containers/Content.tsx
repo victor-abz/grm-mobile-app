@@ -38,9 +38,9 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
   const [confidentialValue, setConfidentialValue] = useState(null);
   const [selectedCitizenGroup, setSelectedCitizenGroup] = useState(null);
   const [_citizenGroups, setCitizenGroups] = useState(citizenGroups ?? []);
+
   // State for each dropdown's selected value
   const [dropdownValues, setDropdownValues] = useState({});
-
 
   const [ages, setAges] = useState(issueAges ?? []);
   const [pickerGenderValue, setPickerGenderValue] = useState(null);
@@ -60,6 +60,11 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
       setAges(issueAges);
     }
   }, [citizenGroups, issueAges]);
+
+  // Combine both citizenGroups arrays if needed, or use one as source
+  const allGroups = [...(_citizenGroups || [])];
+  // Get unique types
+  const types = Array.from(new Set(allGroups.map((g) => g.type)));  
 
   return (
     <ScrollView>
@@ -150,18 +155,14 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
             />
 
             {(() => {
-              // Combine both citizenGroups arrays if needed, or use one as source
-              const allGroups = [...(_citizenGroups || [])];
-              // Get unique types
-              const types = Array.from(new Set(allGroups.map((g) => g.type)));
               // Helper to update dropdown value
               const handleDropdownChange = (type, value) => {
                 setDropdownValues((prev) => ({ ...prev, [type]: value() }));
               };
 
               // Render a dropdown for each unique type
-                if (!types.length || types[0] === undefined) return null;
-                return types.map((type, index) => (
+              if (!types.length || types[0] === undefined) return null;
+              return types.map((type, index) => (
                 <>
                   <Text style={[styles.stepNote, { paddingHorizontal: 50 }]}>
                     {type

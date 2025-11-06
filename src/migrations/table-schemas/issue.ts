@@ -13,8 +13,8 @@ export const issueTableSchema: TableSchema = tableSchema({
     { name: 'contact_medium', type: 'string' },
     { name: 'contact_method', type: 'string', isOptional: true },
     { name: 'component', type: 'string' },
-    { name: 'created_date', type: 'number' }, // DEFAULT CURRENT_TIMESTAMP
-    { name: 'deleted_date', type: 'number', isOptional: true },
+    { name: 'created_date', type: 'string' }, // DEFAULT CURRENT_TIMESTAMP
+    { name: 'deleted_date', type: 'string', isOptional: true },
     { name: 'description', type: 'string' },
     { name: 'escalated_date', type: 'string', isOptional: true },
     { name: 'intake_date', type: 'number', isOptional: true }, // DEFAULT CURRENT_TIMESTAMP
@@ -31,7 +31,7 @@ export const issueTableSchema: TableSchema = tableSchema({
     { name: 'tracking_code', type: 'string' },
     { name: 'internal_code', type: 'string' },
     { name: 'sync_date', type: 'number', isOptional: true },
-    { name: 'updated_date', type: 'number' },
+    { name: 'updated_date', type: 'string' },
     { name: 'escalate_flag', type: 'boolean' }, // DEFAULT FALSE
     { name: 'reject_flag', type: 'boolean' }, // DEFAULT FALSE
     { name: 'rating', type: 'number', isOptional: true },

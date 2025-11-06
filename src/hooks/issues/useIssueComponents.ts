@@ -4,7 +4,7 @@ import type { IssueComponent } from "../../models/issues/IssueComponent";
 
 export function useIssueComponents() {
   const [issueComponentsList, setIssueComponentsList] = useState<IssueComponent[]>()
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchIssueComponentsList();

@@ -2,7 +2,7 @@
   "expo": {
     "name": "MGP-BJ",
     "description": "Mécanisme de Gestion de Plainte",
-    "slug": "grm-app",
+    "slug": "grm",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -55,7 +55,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "c92cc584-53fe-4be4-9eeb-8f2034a73d5f"
+        "projectId": "504abdaf-f635-4f75-935c-5c96d4a482b8"
       }
     }
   }

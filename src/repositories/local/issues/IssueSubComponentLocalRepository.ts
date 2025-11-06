@@ -1,19 +1,22 @@
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 import { TABLE_NAMES } from "../../../migrations/tableName";
 import { IssueSubComponent, IssueSubComponentLocalModel } from "../../../models/issues/IssueSubComponent";
-import { RawRecord } from '@nozbe/watermelondb';
 
 export class IssueSubComponentLocalRepository extends BaseLocalRepository<IssueSubComponent> {
   constructor() {
     super(TABLE_NAMES.issueSubComponent);
   }
 
-  fromRemoteToLocal(issueSubComponent: any): RawRecord {
-    
-    const raw = {
-      ...issueSubComponent,
-    };
-    return raw
+  fromRemoteToLocal(issueSubComponent: any): any {
+    if (issueSubComponent && typeof issueSubComponent === 'object') {
+      const i = issueSubComponent as Record<string, any>;
+
+      return {
+        ...i,
+        parent: JSON.stringify(i.parent),
+      };
+    }
+    return null;
   }
 
   fromLocalToRemote(localModel: IssueSubComponentLocalModel): IssueSubComponent {
@@ -21,8 +24,9 @@ export class IssueSubComponentLocalRepository extends BaseLocalRepository<IssueS
       id: localModel.id,
       name: localModel.name,
       created_date: localModel.created_date,
+      updated_date: localModel.updated_date,
       parent: localModel.parent,
-      description: localModel.description
+      description: localModel.description,
     };
   }
 }

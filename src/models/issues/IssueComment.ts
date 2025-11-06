@@ -16,7 +16,7 @@ export class IssueCommentLocalModel extends Model {
   // @ts-ignore
   @text('comment_text') comment_text;
   // @ts-ignore
-  @field('created_date') created_date;
+  @text('created_date') created_date;
   // @ts-ignore
   @field('deleted_date') deleted_date;
   // @ts-ignore

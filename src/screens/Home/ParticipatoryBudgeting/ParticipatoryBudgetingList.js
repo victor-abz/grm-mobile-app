@@ -1,3 +1,6 @@
+// TODO: This file may be unused. Review its usage and remove if not needed. check stack tree until "Dashboard"
+//
+//
 import React, { useEffect, useState } from "react";
 import { SafeAreaView, ActivityIndicator } from "react-native";
 import Content from "./containers/Content";

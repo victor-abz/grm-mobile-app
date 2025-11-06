@@ -1,0 +1,63 @@
+import React from 'react';
+import { SafeAreaView } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
+import Content from './containers';
+import { styles } from './IssueSearch.style';
+import { colors } from '../../../utils/colors';
+import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
+
+import { useIssue } from '../../../hooks/issues/useIssue';
+import { useSelector } from 'react-redux';
+
+function IssueSearch() {
+  const customStyles = styles();
+  const { assigneeIssueList, reporterIssueList, loading: issueListLoading } = useIssue();
+  const { issueStatusList, loading, getStatusById } = useIssueStatus();
+  const { session, profile } = useSelector((state) => state.get('authentication').toObject());
+
+  if (issueListLoading) return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
+
+  if (assigneeIssueList) {
+    assigneeIssueList.forEach((item, index) => {
+      const element = { ...item };
+
+      if (typeof element.assignee === 'string' && element.assignee === session.user_id) {
+        element.assignee = { id: session.user_id, name: profile?.user?.name };
+      }
+      if (typeof element.reporter === 'string' && element.reporter === session.user_id) {
+        element.reporter = { id: session.user_id, name: profile?.user?.name };
+      }
+      if (typeof element.status === 'string') {
+        element.status = getStatusById(element.status);
+      }
+
+      assigneeIssueList[index] = element;
+    });
+  }
+  
+  if (reporterIssueList) {
+    reporterIssueList.forEach((item, index) => {
+      const element = { ...item };
+
+      if (typeof element.assignee === 'string' && element.assignee === session.user_id) {
+        element.assignee = { id: session.user_id, name: profile?.user?.name };
+      }
+      if (typeof element.reporter === 'string' && element.reporter === session.user_id) {
+        element.reporter = { id: session.user_id, name: profile?.user?.name };
+      }
+      if (typeof element.status === 'string') {
+        element.status = getStatusById(element.status);
+      }
+
+      reporterIssueList[index] = element;
+    });
+  }
+
+  return (
+    <SafeAreaView style={customStyles.container}>
+      <Content assigneeIssueList={assigneeIssueList} reporterIssueList={reporterIssueList} statuses={issueStatusList} />
+    </SafeAreaView>
+  );
+}
+
+export default IssueSearch;

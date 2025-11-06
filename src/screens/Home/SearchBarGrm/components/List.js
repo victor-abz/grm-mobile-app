@@ -35,7 +35,7 @@ const Item = ({ item, onPress }) => {
   );
 };
 
-const searchFilter = (issue, searchPhrase, eadl) => {
+const searchFilter = (issue, searchPhrase) => {
   if (issue) {
     // ((issues.assignee && issues.assignee.id === eadl?._id) ||
     // (issues.reporter && issues.reporter.id === eadl?._id)) &&
@@ -48,7 +48,7 @@ const searchFilter = (issue, searchPhrase, eadl) => {
 // the filter
 const List = (props) => {
   const renderItem = ({ item }) => {
-    if (searchFilter(item, props.searchPhrase, props.eadl, props.updateIssue)) {
+    if (searchFilter(item, props.searchPhrase)) {
       return <Item item={item}
                    onPress={() =>
                      props.navigation.navigate('IssueDetailTabs', {

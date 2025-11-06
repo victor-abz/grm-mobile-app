@@ -4,7 +4,7 @@ import type { IssueSubComponent } from "../../models/issues/IssueSubComponent";
 
 export function useIssueSubComponents() {
   const [issueSubComponentsList, setIssueSubComponentsList] = useState<IssueSubComponent[]>()
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchIssueSubComponentsList();
@@ -12,7 +12,7 @@ export function useIssueSubComponents() {
 
   const fetchIssueSubComponentsList = async () => {
 
-      setLoading(true)
+    setLoading(true)
     if (!issueSubComponentsList) {
       const issuesSubComponentsList = await IssueSubComponentService.fetchIssueSubComponentsList();
         setIssueSubComponentsList(issuesSubComponentsList);
