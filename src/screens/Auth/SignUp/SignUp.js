@@ -54,7 +54,7 @@ function SignUp({ route }) {
   const hideModal = () => setCodeModal(false);
   const hideSuccessModal = (response) => {
     setSuccessModal(false);
-    dispatch(signUp(response, credentials));
+    dispatch(signUp(response));
   };
   const onSignUp = async (code) => {
     setLoading(true);

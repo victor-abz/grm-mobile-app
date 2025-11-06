@@ -61,24 +61,6 @@ export async function fetchFacilitatorProfile(data) {
   }
 }
 
-
-export async function getCouchDBCredentials(data) {
-  const myHeaders = new Headers();
-  myHeaders.append('Content-Type', 'application/json');
-  const requestOptions = {
-    method: 'POST',
-    headers: myHeaders,
-    body: JSON.stringify(data),
-  };
-  try {
-    const response = await fetch(`${baseURL}/authentication/obtain-auth-credentials/`, requestOptions)
-    const result = handleErrors(response)      
-    return await result.json();
-  } catch (error) {
-    return { error: 'Failed to fetch authentication credentials' };
-  }
-}
-
 export async function checkToken()
 {
   const myHeaders = new Headers();

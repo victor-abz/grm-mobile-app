@@ -4,7 +4,7 @@ import PrivateRoutes from "./privateRoutes";
 import PublicRoutes from "./publicRoutes";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState, View } from "react-native";
-import { init, getSessionData, logout, getProfileData } from "../store/ducks/authentication.duck";
+import { init, getSessionData, getProfileData } from "../store/ducks/authentication.duck";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -14,7 +14,6 @@ import {
 } from "@expo-google-fonts/poppins";
 import { syncServiceInstance } from "../services/shared/SyncService";
 import { initialSync } from "../utils/networkMonitor";
-import { getEncryptedData } from "../utils/storageManager";
 
 const Router = ({ theme }) => {
   const dispatch = useDispatch();
@@ -29,35 +28,13 @@ const Router = ({ theme }) => {
   const getSession = async () =>
   {
     
-    
     const _session = await getSessionData();
     const profile = await getProfileData();
 
     if (_session) {
-      //
-      //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
-      let dbCredentials;
-      let username;
-      try {
-        username = await getEncryptedData(`username`);
-        dbCredentials = await getEncryptedData(
-          `dbCredentials_${username.replace("@", "")}`
-        );
-      } catch (error) {
-        console.error(error);
-
-        dispatch(logout());
-        setLoading(false);
-        console.warn("Proceeding fetch Couchdb credentials from remote - locally not available");
-        return;
-      }
-      //
-      //
-
       dispatch(init(
         _session,
         profile,
-        { email: username }, dbCredentials  //TODO: Delete after migrating to the new services, used for debugging purposes with old data.
       ));
     }
     setLoading(false);

@@ -3,7 +3,6 @@ import { SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers/Content';
 import { styles } from './CitizenReportLocationStep.styles';
-import { LocalAdminLevelsDatabase, LocalCommunesDatabase } from '../../../db/databaseManager';
 import { useAdministrativeRegions } from '../../../hooks/issues/useAdministrativeRegions';
 
 function CitizenReportLocationStep({ route }) {

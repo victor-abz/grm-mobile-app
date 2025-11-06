@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+// TODO: This file may be unused. Review its usage and remove if not needed. check stack tree until "Dashboard"
+//
+//
+import React, { useState } from 'react';
 import {
   View,
   FlatList,
@@ -10,20 +13,20 @@ import {
   TextInput,
   Alert,
   Dimensions,
-} from "react-native";
-import { Divider, Modal } from "react-native-paper";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { styles } from "./RegisterVotesActivity.style";
-import moment from "moment";
-import "moment/locale/fr";
-import CustomGreenButton from "../../../components/CustomGreenButton/CustomGreenButton";
-import { colors } from "../../../utils/colors";
-import { LocalAdminLevelsDatabase } from "../../../db/databaseManager";
-import { useRoute } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
+} from 'react-native';
+import { Divider, Modal } from 'react-native-paper';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { styles } from './RegisterVotesActivity.style';
+import moment from 'moment';
+import 'moment/locale/fr';
+import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreenButton';
+import { colors } from '../../../utils/colors';
+// import { LocalAdminLevelsDatabase } from "../../../db/databaseManager";
+import { useRoute } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const window = Dimensions.get("window");
-moment.locale("fr");
+const window = Dimensions.get('window');
+moment.locale('fr');
 
 //upsert eadl bp_projects
 
@@ -44,18 +47,19 @@ function RegisterVotesActivity() {
   };
 
   const upsertTasks = () => {
-    LocalAdminLevelsDatabase.upsert(eadl._id, function (doc) {
-      doc = eadl;
-      return doc;
-    })
-      .then(function (res) {
-        setTimeout(() => update(), 500);
-        dismissModal();
-      })
-      .catch(function (err) {
-        console.log("Error", err);
-        // error
-      });
+    //
+    // LocalAdminLevelsDatabase.upsert(eadl._id, function (doc) {
+    //   doc = eadl;
+    //   return doc;
+    // })
+    //   .then(function (res) {
+    //     setTimeout(() => update(), 500);
+    //     dismissModal();
+    //   })
+    //   .catch(function (err) {
+    //     console.log("Error", err);
+    //     // error
+    //   });
   };
 
   const doSave = () => {
@@ -69,12 +73,12 @@ function RegisterVotesActivity() {
   };
 
   const onSaveProject = async () => {
-    Alert.alert("Attention", "Êtes-vous sûr de vouloir modifier les votes?", [
-      { text: "Non", style: "cancel" },
+    Alert.alert('Attention', 'Êtes-vous sûr de vouloir modifier les votes?', [
+      { text: 'Non', style: 'cancel' },
       {
-        text: "Oui",
+        text: 'Oui',
         onPress: async () => await doSave(),
-        style: "yes",
+        style: 'yes',
       },
     ]);
   };
@@ -92,26 +96,20 @@ function RegisterVotesActivity() {
             <View style={styles.cardContainer}>
               <View>
                 <View style={styles.cardHeader}>
-                  <View style={{ flexDirection: "row", flex: 1 }}>
+                  <View style={{ flexDirection: 'row', flex: 1 }}>
                     <Text numberOfLines={2} style={styles.cardNameText}>
                       {item.subproject_name}
                     </Text>
                   </View>
                 </View>
                 <View style={{ marginVertical: 10, marginLeft: 10 }}>
-                  <Text style={styles.cardDescriptionText}>
-                    {item.subproject_description}
-                  </Text>
+                  <Text style={styles.cardDescriptionText}>{item.subproject_description}</Text>
                 </View>
-                <Divider
-                  style={{ marginVertical: 8, backgroundColor: "#f6f6f6" }}
-                />
+                <Divider style={{ marginVertical: 8, backgroundColor: '#f6f6f6' }} />
                 <View style={styles.cardFooter}>
                   <View style={styles.cardVotesContainer}>
-                    <Text
-                      style={[styles.cardVotesText, { color: colors.primary }]}
-                    >
-                      {"9,835,717.59"} GNF
+                    <Text style={[styles.cardVotesText, { color: colors.primary }]}>
+                      {'9,835,717.59'} GNF
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -132,15 +130,13 @@ function RegisterVotesActivity() {
                         styles.cardVotesContainer,
                         {
                           backgroundColor: colors.primary,
-                          alignItems: "center",
-                          justifyContent: "center",
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           paddingHorizontal: 30,
                         },
                       ]}
                     >
-                      <Text style={[styles.cardVotesText, { color: "white" }]}>
-                        ENREGISTER
-                      </Text>
+                      <Text style={[styles.cardVotesText, { color: 'white' }]}>ENREGISTER</Text>
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -155,10 +151,7 @@ function RegisterVotesActivity() {
         visible={registerVotesModal}
         contentContainerStyle={{ padding: 20 }}
       >
-        <KeyboardAvoidingView
-          enabled
-          behavior={Platform.OS === "android" ? undefined : "position"}
-        >
+        <KeyboardAvoidingView enabled behavior={Platform.OS === 'android' ? undefined : 'position'}>
           <View style={styles.modalContainerStyle}>
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -168,8 +161,8 @@ function RegisterVotesActivity() {
             >
               <View
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
                 }}
               >
                 <Text style={styles.modalTitle}>Votes</Text>
@@ -185,7 +178,7 @@ function RegisterVotesActivity() {
               <LinearGradient
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                colors={["#7488f5", "#a3fffb"]}
+                colors={['#7488f5', '#a3fffb']}
                 style={styles.voteGenreLabel}
               >
                 <Text style={styles.modalFieldTitle}>Homme</Text>
@@ -198,9 +191,9 @@ function RegisterVotesActivity() {
                 <View style={styles.votesInput}>
                   <TextInput
                     value={voteYM}
-                    keyboardType={"numeric"}
+                    keyboardType={'numeric'}
                     onChangeText={(text) => setvoteYM(text)}
-                    placeholder={"Votes"}
+                    placeholder={'Votes'}
                     style={styles.votesTextInput}
                   />
                 </View>
@@ -212,9 +205,9 @@ function RegisterVotesActivity() {
                 <View style={styles.votesInput}>
                   <TextInput
                     value={voteMM}
-                    keyboardType={"numeric"}
+                    keyboardType={'numeric'}
                     onChangeText={(text) => setvoteMM(text)}
-                    placeholder={"Votes"}
+                    placeholder={'Votes'}
                     style={styles.votesTextInput}
                   />
                 </View>
@@ -226,9 +219,9 @@ function RegisterVotesActivity() {
                 <View style={styles.votesInput}>
                   <TextInput
                     value={voteOM}
-                    keyboardType={"numeric"}
+                    keyboardType={'numeric'}
                     onChangeText={(text) => setvoteOM(text)}
-                    placeholder={"Votes"}
+                    placeholder={'Votes'}
                     style={styles.votesTextInput}
                   />
                 </View>
@@ -236,7 +229,7 @@ function RegisterVotesActivity() {
               <LinearGradient
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                colors={["#9858ff", "#ff8bf2"]}
+                colors={['#9858ff', '#ff8bf2']}
                 style={styles.voteGenreLabel}
               >
                 <Text style={styles.modalFieldTitle}>Femme</Text>
@@ -249,9 +242,9 @@ function RegisterVotesActivity() {
                 <View style={styles.votesInput}>
                   <TextInput
                     value={voteYF}
-                    keyboardType={"numeric"}
+                    keyboardType={'numeric'}
                     onChangeText={(text) => setvoteYF(text)}
-                    placeholder={"Votes"}
+                    placeholder={'Votes'}
                     style={styles.votesTextInput}
                   />
                 </View>
@@ -263,9 +256,9 @@ function RegisterVotesActivity() {
                 <View style={styles.votesInput}>
                   <TextInput
                     value={voteMF}
-                    keyboardType={"numeric"}
+                    keyboardType={'numeric'}
                     onChangeText={(text) => setvoteMF(text)}
-                    placeholder={"Votes"}
+                    placeholder={'Votes'}
                     style={styles.votesTextInput}
                   />
                 </View>
@@ -277,9 +270,9 @@ function RegisterVotesActivity() {
                 <View style={styles.votesInput}>
                   <TextInput
                     value={voteOF}
-                    keyboardType={"numeric"}
+                    keyboardType={'numeric'}
                     onChangeText={(text) => setvoteOF(text)}
-                    placeholder={"Votes"}
+                    placeholder={'Votes'}
                     style={styles.votesTextInput}
                   />
                 </View>

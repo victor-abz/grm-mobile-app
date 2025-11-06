@@ -7,9 +7,9 @@ import UserAvatar from '@muhzi/react-native-user-avatar';
 import ProfileItem from '../components/ProfileItem';
 import { logout } from '../../../../store/ducks/authentication.duck';
 import { Button } from 'react-native-paper';
-import { ResourceUrl } from '../../../../db/databaseManager';
 import SmallCard from '../components/SmallCard';
 import { colors } from '../../../../utils/colors';
+import { baseURL } from '../../../../services/authService';
 
 function Content({ issues, session, profile, department, statuses }) {
   const [photo, setPhoto] = useState(null);
@@ -26,7 +26,7 @@ function Content({ issues, session, profile, department, statuses }) {
       setPhoto(
       profile.user.photo.startsWith('https://')
         ? profile.user.photo
-        : `${ResourceUrl}${profile.user.photo}`
+        : `${baseURL}${profile.user.photo}`
       );
     }
   }, [profile]);
