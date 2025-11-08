@@ -20,12 +20,10 @@ const theme = {
   },
 };
 
-function Content({ issue, session }) {
+function Content({ issue, session, profile }) {
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
   const { createIssue } = useIssue(false);
-
-
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
@@ -36,23 +34,19 @@ function Content({ issue, session }) {
   // };
   const randomWord = (arr) => arr[Math.floor(Math.random() * arr.length)];
   
-  
   const submitIssue = async () =>
   {  
-    // submit params
     const randomCodeNumber = Math.floor(Math.random() * 1000);
-    // const newId = incrementId();
     const _issue = {
-      tracking_code: `${randomWord(SAMPLE_WORDS)}${randomCodeNumber}`,    
+      tracking_code: `${randomWord(SAMPLE_WORDS)}${randomCodeNumber}`,
       title: issue.issueSummary,
       description: issue.additionalDetails,
       attachments: [
         ...(issue?.attachment ? [issue.attachment] : []),
         ...(issue?.recording ? [issue.recording] : []),
       ],
-      
-      status: 2, // Open status
-      reporter: session.user_id,
+      status: issue.status,
+      reporter: { id: session.user_id, name: profile?.user?.name },
       // citizen_age_group: issue.ageGroup,
       // citizen: issue.name ?? '',
       citizen: {

@@ -4,7 +4,7 @@ import type { IssueSubType } from "../../models/issues/IssueSubType";
 
 export function useIssueSubTypes() {
   const [issueSubTypesList, setIssueSubTypesList] = useState<IssueSubType[]>()
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchIssueSubTypesList();

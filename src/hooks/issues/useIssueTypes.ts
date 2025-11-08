@@ -4,7 +4,7 @@ import type { IssueType } from "../../models/issues/IssueType";
 
 export function useIssueTypes() {
   const [issueTypesList, setIssueTypesList] = useState<IssueType[]>()
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchIssueTypesList();

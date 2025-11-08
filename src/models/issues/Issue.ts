@@ -20,11 +20,17 @@ export enum ContactMethod {
 export interface CitizenGroup extends Base {
   type: string
 }
+
 export interface Citizen extends Base {
     age_group: Base,
     group: number,
     group_2: number,
     type: string,
+}
+
+export interface AdministrativeRegion extends Base {
+  parent: Base;
+  administrative_level: number
 }
 
 export interface Issue extends Base {

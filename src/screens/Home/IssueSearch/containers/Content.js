@@ -77,8 +77,8 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
             <Text style={[styles.subTitle]} numberOfLines={1}>
               {item.description}
             </Text>
-            <Text style={[styles.subTitle]}>
-              {item.citizen}
+            <Text style={[styles.subTitle]}> 
+              {item.citizen?.name}
               {item.citizen && item.created_date && ','}{' '}
               {item.created_date && moment(item.created_date).format('DD-MMM-YYYY')}
               {item.created_date && ','}{' '}
@@ -89,7 +89,7 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
               <Text
                 style={{
                   color:
-                    item.status?.id === 1 || item.status?.id === 2
+                    String(item.status?.id) === String(1) || String(item.status?.id) === String(2)
                       ? colors.inProgress
                       : colors.primary,
                 }}
