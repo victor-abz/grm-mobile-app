@@ -28,7 +28,7 @@ export type Syncable = {
     timestamp: number
   }>;
    pushChanges({ changes, lastPulledAt }): Promise<void>;
-   tableName: string
+  tableName: string,
 }
 
 export class SyncService {
@@ -88,21 +88,26 @@ export class SyncService {
   }
 
   async syncAll(): Promise<void> {
-    console.log("SYNCING ALL");
-    
+    console.log('SYNCING ALL');
     if (!this.database) {
-      throw new Error("Database not initialized. Call initDB() first.");
+      throw new Error('Database not initialized. Call initDB() first.');
     }
 
-    return await synchronize({
-      database: this.database,
+    try {
+      await synchronize({
+        database: this.database,
         pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
-          console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
-          let changes = {};          
+          // console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
+          let changes = {};
+          console.log('From DB LAST PULLED:', new Date(lastPulledAt).toISOString());
+
           const timestamp = Date.now();
           for (const syncable of this.syncables) {
-            const syncableChanges = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });            
-            
+            const syncableChanges = await syncable.pullChanges({
+              tableName: syncable.tableName,
+              lastPulledAt,
+            });
+
             // Create unique issue list from remote lists
             if (
               changes &&
@@ -114,7 +119,7 @@ export class SyncService {
                 new Map(
                   [
                     ...(changes.issue.created || []),
-                    ...(syncableChanges.changes.issue.created || [])
+                    ...(syncableChanges.changes.issue.created || []),
                   ].map((item) => [item.id, item])
                 ).values()
               );
@@ -122,28 +127,43 @@ export class SyncService {
                 new Map(
                   [
                     ...(changes.issue.updated || []),
-                    ...(syncableChanges.changes.issue.updated || [])
-                  ].map((item) => [item.id, item])
-                ).values()
-              );
-              const deletedUniqueArray = Array.from(
-                new Map(
-                  [
-                    ...(changes.issue.deleted || []),
-                    ...(syncableChanges.changes.issue.deleted || [])
+                    ...(syncableChanges.changes.issue.updated || []),
                   ].map((item) => [item.id, item])
                 ).values()
               );
               
-              changes = { ...changes, issue: { created: createdUniqueArray, updated: updatedUniqueArray, deleted: deletedUniqueArray } }
-              
+              const deletedUniqueArray = [
+                ...(changes.issue.deleted || []),
+                ...(syncableChanges.changes.issue.deleted || []),
+              ];
+
+              changes = {
+                ...changes,
+                issue: {
+                  created: createdUniqueArray,
+                  updated: updatedUniqueArray,
+                  deleted: deletedUniqueArray,
+                },
+              };
             } else {
-              changes = { ...syncableChanges.changes, ...changes }
+              changes = { ...syncableChanges.changes, ...changes };
             }
             
           }
           console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
+          
+          const hasData = Object.values(changes ?? {}).some((table) =>
+            Object.values(table ?? {}).some(
+              (arr: unknown) => Array.isArray(arr) && (arr as unknown[]).length > 0
+            )
+          );
+          
+          // Keep using old timestamp.
+          // if (!hasData) return { changes, timestamp: lastPulledAt };
+          if (!hasData) return;
 
+          // Otherwise, set a new one.
+          console.log(new Date(timestamp).toISOString());
 
           return { changes, timestamp };
         },
@@ -153,10 +173,14 @@ export class SyncService {
             await syncable.pushChanges({ changes, lastPulledAt });
           }
           console.log(`🍉 Changes pushed successfully.`);
-
-        }
+        },
+        sendCreatedAsUpdated: true,
       });
+    } catch (error) {
+      console.log('Sync All error: ', error);
     }
+
+  }
 
 }
 

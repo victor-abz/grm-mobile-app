@@ -34,7 +34,7 @@ export async function createIssue(issue: Issue): Promise<Issue | null> {
     
     return newIssue;
   } catch (error) {
-    console.error('Error syncing issues:', error);
+    console.error('Error creating Issue:', error);
   }
 }
 
@@ -52,13 +52,23 @@ export async function updateIssue(issue: Issue): Promise<Issue | null> {
 export const reporterIssueListSyncable: Syncable = {
   pushChanges: ({ changes, lastPulledAt }) => issueService.pushChanges({ changes, lastPulledAt }),
   pullChanges: ({ tableName, lastPulledAt }) =>
-    issueService.pullChanges({ tableName, lastPulledAt, endPointType: 'reporter', forceFetchAllPages: true }),
+    issueService.pullChanges({
+      tableName,
+      lastPulledAt,
+      endPointType: 'reporter',
+      forceFetchAllPages: true,
+    }),
   tableName: TABLE_NAMES.issue,
 };
 
 export const assigneeIssueListSyncable: Syncable = {
-  pushChanges: ({ changes, lastPulledAt }) => issueService.pushChanges({ changes, lastPulledAt }),
+  pushChanges: ({ changes, lastPulledAt }) => new Promise((res, reject) => res()),
   pullChanges: ({ tableName, lastPulledAt }) =>
-    issueService.pullChanges({ tableName, lastPulledAt, endPointType: 'assignee', forceFetchAllPages: true }),
+    issueService.pullChanges({
+      tableName,
+      lastPulledAt,
+      endPointType: 'assignee',
+      forceFetchAllPages: true,
+    }),
   tableName: TABLE_NAMES.issue,
 };

@@ -14,6 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import RecordingCard from "../../GRM/components/RecordingCard";
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
 import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
+import { ConfidentialityChoices } from '../../../../utils/constants';
 
 const theme = {
   roundness: 12,
@@ -99,14 +100,16 @@ function Content({ issue }) {
 
   return (
     <ScrollView ref={scrollViewRef} contentContainerStyle={{ alignItems: 'center', padding: 20 }}>
-      <View key={"content"} style={styles.infoContainer}>
+      <View key={'content'} style={styles.infoContainer}>
         <View style={{ flexDirection: 'row' }}>
-          <View style={{ marginBottom: 10, justifyContent: 'flex-end', flex: 1, flexDirection: 'row' }}>
+          <View
+            style={{ marginBottom: 10, justifyContent: 'flex-end', flex: 1, flexDirection: 'row' }}
+          >
             <Text style={[styles.text, { fontSize: 12, color: colors.primary }]}>
               {' '}
-              {issue.created_date &&
-              moment(issue.created_date).format('DD-MMM-YYYY')} {issue.created_date &&
-            currentDate.diff(issue.created_date, 'days')} {i18n.t('days_ago')}
+              {issue.created_date && moment(issue.created_date).format('DD-MMM-YYYY')}{' '}
+              {issue.created_date && currentDate.diff(issue.created_date, 'days')}{' '}
+              {i18n.t('days_ago')}
             </Text>
           </View>
         </View>
@@ -123,7 +126,11 @@ function Content({ issue }) {
             <Text style={styles.subtitle}>
               {i18n.t('type')}{' '}
               <Text style={[styles.text]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.issue_type?.name ?? i18n.t('information_not_available')}
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.issue_type?.name ?? i18n.t('information_not_available'))}
               </Text>
             </Text>
             {/* <Text style={styles.subtitle}>
@@ -133,13 +140,21 @@ function Content({ issue }) {
             </Text> */}
             <Text style={styles.subtitle}>
               {i18n.t('name')}
-              <Text
-                style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen}</Text>
+              <Text style={styles.text}>
+                {' '}
+                {issue.citizen && (issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL) && !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : issue?.citizen?.name ?? ""}
+              </Text>
             </Text>
             <Text style={styles.subtitle}>
               {i18n.t('age')}{' '}
-              <Text
-                style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_age_group?.name ?? i18n.t('information_not_available')}</Text>
+              <Text style={styles.text}>
+                {' '}
+                {issue.citizen && (issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL) && !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.citizen_age_group?.name ?? i18n.t('information_not_available'))}
+              </Text>
             </Text>
             {/* <View>
               <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('profession')}{' '}</Text>
@@ -154,19 +169,29 @@ function Content({ issue }) {
               </Text>
             </View> */}
             <View>
-              <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('sub_type')}{' '}</Text>
-              <Text style={[styles.text, {marginBottom: 5}]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.issue_sub_type?.name ?? i18n.t('information_not_available')}
+              <Text style={[styles.subtitle, { marginBottom: 0 }]}>{i18n.t('sub_type')} </Text>
+              <Text style={[styles.text, { marginBottom: 5 }]}>
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.issue_sub_type?.name ?? i18n.t('information_not_available'))}
               </Text>
             </View>
             <View>
-              <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('category')}{' '}</Text>
-              <Text  style={[styles.text, {marginBottom: 5}]}>{issue.category?.name ?? i18n.t('information_not_available')}</Text>
+              <Text style={[styles.subtitle, { marginBottom: 0 }]}>{i18n.t('category')} </Text>
+              <Text style={[styles.text, { marginBottom: 5 }]}>
+                {issue.category?.name ?? i18n.t('information_not_available')}
+              </Text>
             </View>
             <Text style={styles.subtitle}>
               {i18n.t('location')}{' '}
               <Text style={styles.text}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.administrative_region?.name ?? i18n.t('information_not_available')}
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.administrative_region?.name ?? i18n.t('information_not_available'))}
               </Text>
             </Text>
             <Text style={styles.subtitle}>
@@ -176,10 +201,11 @@ function Content({ issue }) {
           </View>
         </View>
 
-        <CustomSeparator/>
+        <CustomSeparator />
         <TouchableOpacity
           onPress={() => setIsComponentCollapsed(!isComponentCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('component')}</Text>
           <MaterialCommunityIcons
             name={isComponentCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -191,8 +217,14 @@ function Content({ issue }) {
           <View style={styles.collapsibleContent}>
             <Text style={styles.subtitle}>
               {i18n.t('component')}{' '}
-              <Text
-                style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.component?.name ?? i18n.t('information_not_available')}</Text>
+              <Text style={styles.text}>
+                {' '}
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.component?.name ?? i18n.t('information_not_available'))}
+              </Text>
             </Text>
             {/* <Text style={styles.subtitle}>
               {i18n.t('sub_component')}{' '}
@@ -202,10 +234,11 @@ function Content({ issue }) {
 
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
         <TouchableOpacity
           onPress={() => setIsDescriptionCollapsed(!isDescriptionCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('description_label')}</Text>
           <MaterialCommunityIcons
             name={isDescriptionCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -215,16 +248,15 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isDescriptionCollapsed}>
           <View style={styles.collapsibleContent}>
-            <Text style={styles.collapsibleTextArea}>
-              {issue.description}
-            </Text>
+            <Text style={styles.collapsibleTextArea}>{issue.description}</Text>
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
 
         <TouchableOpacity
           onPress={() => setIsDecisionCollapsed(!isDecisionCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('decision')}</Text>
           <MaterialCommunityIcons
             name={isDecisionCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -239,11 +271,12 @@ function Content({ issue }) {
             </Text>
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
 
         <TouchableOpacity
           onPress={() => setIsSatisfactionCollapsed(!isSatisfactionCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('satisfaction')}</Text>
           <MaterialCommunityIcons
             name={isSatisfactionCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -254,16 +287,15 @@ function Content({ issue }) {
         <Collapsible collapsed={isSatisfactionCollapsed}>
 
           <View style={styles.collapsibleContent}>
-            <Text style={styles.collapsibleTextArea}>
-              {i18n.t('information_not_available')}
-            </Text>
+            <Text style={styles.collapsibleTextArea}>{i18n.t('information_not_available')}</Text>
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
 
         <TouchableOpacity
           onPress={() => setIsAppealCollapsed(!isAppealCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('appeal_reason')}</Text>
           <MaterialCommunityIcons
             name={isAppealCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -273,16 +305,15 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAppealCollapsed}>
           <View style={styles.collapsibleContent}>
-            <Text style={styles.collapsibleTextArea}>
-              {i18n.t('information_not_available')}
-            </Text>
+            <Text style={styles.collapsibleTextArea}>{i18n.t('information_not_available')}</Text>
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
 
         <TouchableOpacity
           onPress={() => setIsAttachmentCollapsed(!isAttachmentCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('attachments_label')}</Text>
           <MaterialCommunityIcons
             name={isAttachmentCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -292,35 +323,33 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAttachmentCollapsed}>
           <View style={styles.collapsibleContent}>
-
-            { issue.attachments?.map((attachment) => {
-                return (
-                  <View style={{ flexDirection: 'row', maxWidth: '100%' , justifyContent: 'center'}}>
-                    {(!attachment.isAudio && attachment.local_url) && (
-                      <ImagePreviewCard
-                        uri={attachment.local_url}
-                        id={attachment.id}
-                        showRemove={false}
-                      />
-                    )}
-                    {(attachment.isAudio) && (
-                      <RecordingCard mode="playback" initialURI={attachment.local_url}/>
-                    )}
-                  </View>
-                )
-              })
-            }
+            {issue.attachments?.map((attachment) => {
+              return (
+                <View style={{ flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
+                  {!attachment.isAudio && attachment.local_url && (
+                    <ImagePreviewCard
+                      uri={attachment.local_url}
+                      id={attachment.id}
+                      showRemove={false}
+                    />
+                  )}
+                  {attachment.isAudio && (
+                    <RecordingCard mode="playback" initialURI={attachment.local_url} />
+                  )}
+                </View>
+              );
+            })}
           </View>
         </Collapsible>
 
-
-        <CustomSeparator/>
+        <CustomSeparator />
         <Button
           theme={theme}
           style={{ alignSelf: 'center', margin: 24 }}
           labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
           mode="contained"
-          onPress={onAddComment}>
+          onPress={onAddComment}
+        >
           {i18n.t('back')}
         </Button>
       </View>
