@@ -91,7 +91,7 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
           <RadioButton.Group
             onValueChange={(newValue) => {
               if (newValue === confidentialValue) {
-                setConfidentialValue(0);
+                setConfidentialValue(ConfidentialityChoices.CONFIDENTIAL);
               } else {
                 setConfidentialValue(newValue);
               }

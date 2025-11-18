@@ -108,8 +108,8 @@ export abstract class BaseLocalRepository<T> {
   }
 
   // @ts-ignore
-  async upsert(newEntry: unknown): Promise<any> {
-    const dbInstance = syncServiceInstance.database
+  async upsert(newEntry: unknown, configurableId?: string | number): Promise<any> {
+    const dbInstance = syncServiceInstance.database;
 
     return await dbInstance.write(async () => {
       let dbItem: Model;
@@ -131,7 +131,9 @@ export abstract class BaseLocalRepository<T> {
         console.log('Could not update locally, attempting to create locally...');
         try {
           await dbInstance.get(this.tableName).create((tableElementPlaceholder) => {
-
+            if (configurableId) {
+              tableElementPlaceholder._raw.id = String(configurableId);
+            }
             Object.keys(newEntry).forEach((key) => {
               // Check if the value is an object (and not null or an array)
               if (

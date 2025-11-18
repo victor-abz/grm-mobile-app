@@ -31,7 +31,6 @@ export async function fetchIssueList(endpointType: string): Promise<Issue[] | nu
 export async function createIssue(issue: Issue): Promise<Issue | null> {
   try {
     const newIssue = await issueService.upsert(issue);
-    
     return newIssue;
   } catch (error) {
     console.error('Error creating Issue:', error);
@@ -41,8 +40,6 @@ export async function createIssue(issue: Issue): Promise<Issue | null> {
 export async function updateIssue(issue: Issue): Promise<Issue | null> {
   try {
     const updatedIssue = await issueService.upsert(issue);
-    console.log(updatedIssue);
-
     return updatedIssue;
   } catch (error) {
     console.error('Error Updating Issue:', error);

@@ -66,8 +66,8 @@ export class BaseService<T> {
           if (createdResponse.data) {
             createdResponse.data.syncAt = JSON.stringify(new Date());
           }
-          // const formattedItem = this.localRepository.fromRemoteToLocal(createdResponse.data)
-          return await this.localRepository.upsert(item);
+          
+          return await this.localRepository.upsert(item, createdResponse?.data?.id);
         } else if (updatedResponse) {
           //TODO: Use newly created id in new sub-items from backend response to upsert
           if (updatedResponse.data) {
