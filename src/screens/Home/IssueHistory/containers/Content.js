@@ -6,7 +6,7 @@ import { i18n } from "../../../../translations/i18n";
 import { Button, Dialog, Paragraph, Portal, Divider } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
-import RecordingCard from '../../GRM/components/RecordingCard';
+// import RecordingCard from '../../GRM/components/RecordingCard';
 import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
 
 const theme = {

@@ -1,17 +1,22 @@
 import type { Model } from '@nozbe/watermelondb';
-import { RawRecord } from '@nozbe/watermelondb';
+import { Q, RawRecord } from '@nozbe/watermelondb';
 import NetInfo from '@react-native-community/netinfo';
 import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
-import { TABLE_NAMES } from '../../migrations/tableName';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
+import { syncServiceInstance } from './SyncService';
+export type WatermelonId = string;
+export type CreatedResponseWithBackendId = unknown;
 
 export class BaseService<T> {
-  createdRecordsPushed: [unknown, string][] = [];
+  createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][] = [];
+
   constructor(
     private localRepository: BaseLocalRepository<T>,
     private remoteRepository: BaseRemoteRepository<T>
-  ) {}
+  ) {
+    
+  }
 
   async bulkCreate(entries: T[]): Promise<void> {
     // check if any conversion is needed
@@ -24,6 +29,45 @@ export class BaseService<T> {
     this.localRepository.bulkCreate(entries);
   }
 
+  async replaceParentIdProperty(idsToReplace: [CreatedResponseWithBackendId, WatermelonId][]) {
+    try {
+      const replacedItems: Model[] = [];
+
+      for (let index = 0; index < idsToReplace.length; index++) {
+
+        const parent = idsToReplace[index];
+
+        // 1. Get all children with the old parent_id
+
+        const dbInstance = syncServiceInstance.database;
+        const children = await dbInstance
+          .get(this.localRepository.tableName)
+          .query(Q.where('parent_id', Q.eq(parent[1])))
+          .fetch();
+
+        // 2. Update each child to use the new parent_id
+        
+        for (const child of children) {
+
+          const item = await this.localRepository.update(
+                child,
+                {
+                  parent_id: parent[0]?.data?.id,
+                  // synced_at: Date.now(),
+                  // status
+                },
+                'created'
+              )
+            
+          replacedItems.push(item)
+        }
+      }
+
+      return replacedItems
+    } catch (error) {
+      return { error: `Error updating parent ID's. Reason: ${error} ` };
+    }
+  }
   async upsert(item: Model): Promise<void> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
@@ -34,8 +78,8 @@ export class BaseService<T> {
         // Try to create on remote, if fails due to existence, update instead
         console.log('model interface:', modelInterface);
 
-        let createdResponse;
-        let updatedResponse;
+        let createdResponse: Awaited<T>;
+        let updatedResponse: Awaited<T>;
 
         try {
           createdResponse = await this.remoteRepository.create(modelInterface);
@@ -63,10 +107,11 @@ export class BaseService<T> {
             'CREATED RESPONSE - (Currently not being used as an entry to watermelon)',
             createdResponse
           );
+
           if (createdResponse.data) {
             createdResponse.data.syncAt = JSON.stringify(new Date());
           }
-          
+
           return await this.localRepository.upsert(item, createdResponse?.data?.id);
         } else if (updatedResponse) {
           //TODO: Use newly created id in new sub-items from backend response to upsert
@@ -108,8 +153,6 @@ export class BaseService<T> {
     sortOrder: SortOrder = null
   ): Promise<T[]> {
     const state = await NetInfo.fetch();
-    if (this.localRepository.tableName == TABLE_NAMES.issue)
-      console.log('GET ALL [BaseService] Fetch All');
 
     if (state.isConnected && !forceFetchFromLocal) {
       try {
@@ -150,94 +193,119 @@ export class BaseService<T> {
     schema,
     endPointType = null,
     forceFetchAllPages = null,
+    parentIds = null,
   }): Promise<{
     changes: { [key: string]: { deleted: any[]; created: RawRecord[]; updated: any[] } };
     timestamp: number;
+    createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][];
   }> {
+    
+    let timestamp = Date.now()
+    
+    // LIST PARENT IDS TO FETCH EVERY PAGE AND HYDRATE THE APP WITH ATTACHMENTS. OTHERWISE,
+    // BUILD A HANDLER TO FETCH THEM WHEN CONNECTIVITY IS AVAILABLE
+    const { changes, createdRecordsPostPushedWithNewBackendIDs} = await this.buildChangesObject(
+      tableName,
+      endPointType,
+      forceFetchAllPages,
+      lastPulledAt,
+      (parentIds = parentIds ?? null)
+    );
+
+    return {
+      changes,
+      timestamp,
+      createdRecordsPostPushedWithNewBackendIDs,
+    };
+  }
+
+  private async buildChangesObject(
+    tableName: string,
+    endPointType: any,
+    forceFetchAllPages: any,
+    lastPulledAt: any,
+    parentIds?: { created: any[]; updated: any[]; deleted: string[] }
+  ) {
+    
+    // endpoints to skip id-replacement (items not being created locally)
+    const disallowedEndpointTypes = ['assignee'];
+    const isEndpointTypeAllowed = !disallowedEndpointTypes.includes(
+      String(endPointType ?? '').toLowerCase()
+    );
     let changes = {};
     changes[tableName] = { created: [], updated: [], deleted: [] };
-
-    const timestamp = Date.now();
     const tableChanges = changes[tableName];
+    let syncPullFailed = false;
+    let createdRecordsPostPushedWithNewBackendIDs = [];
+    
+    // 1. Fetch newly created records
+    
+    if (parentIds) {
+      // Parent IDs available - Pulling sub-items
 
-
-    // // 1. Fetch newly created records
-    try {
-      const newRecords = await this.remoteRepository.fetchAll(
-        endPointType,
-        null,
-        null,
-        null,
-        null,
-        forceFetchAllPages,
-        lastPulledAt,
-        null,
-        null,
-        null
-      );
-
-     
-      const formattedRecords = newRecords.map((item) =>
-        this.localRepository.fromRemoteToLocal(item)
-      );
-
-      // Saving at updated due to the sendCreatedAsUpdated flag
-      tableChanges.updated = formattedRecords.map((record) => ({
-        ...record,
-        id: String(record.id),
-      }));
-    } catch (e) {
-      console.error('Catch pulling created changes', e);
-      tableChanges.updated = [];
-    }
-
-    // 2. Fetch updated records
-
-    if (lastPulledAt != null) {
       try {
-        const updatedRecords = await this.remoteRepository.fetchAll(
-          endPointType,
-          null,
-          null,
-          null,
-          null,
-          forceFetchAllPages,
-          null,
-          lastPulledAt,
-          null,
-          null
+        let newRecords = [];
+        let updatedRecords = [];
+        for (const parent of parentIds.created) {
+          newRecords = await this.remoteRepository.fetchAll(
+            endPointType,
+            null,
+            null,
+            null,
+            null,
+            forceFetchAllPages,
+            lastPulledAt,
+            null,
+            null,
+            parent.id ?? null
+          );
+        }
+
+        const createdFormattedRecords = newRecords.map((item) =>
+          this.localRepository.fromRemoteToLocal(item)
         );
 
-        const formattedRecords = updatedRecords.map((item) =>
+        // Saving at updated due to the sendCreatedAsUpdated flag
+        tableChanges.updated = createdFormattedRecords.map((record) => ({
+          ...record,
+          id: String(record.id),
+        }));
+
+        for (const parent of parentIds.updated) {
+          updatedRecords = await this.remoteRepository.fetchAll(
+            endPointType,
+            null,
+            null,
+            null,
+            null,
+            forceFetchAllPages,
+            null,
+            lastPulledAt,
+            null,
+            parent.id ?? null
+          );
+        }
+
+        const updatedFormattedRecords = updatedRecords.map((item) =>
           this.localRepository.fromRemoteToLocal(item)
         );
 
         // tableChanges.updated = []
         tableChanges.updated = [
           ...tableChanges.updated,
-          ...formattedRecords.map((record) => ({
+          ...updatedFormattedRecords.map((record) => ({
             ...record,
             id: String(record.id),
           })),
         ];
       } catch (error) {
-        console.error('Catch pulling updated changes', error);
-        
+        console.error('Error pulling sub-items changes (created) Reason: ', error);
+        // tableChanges.updated = [];
+        syncPullFailed = true;
       }
- 
-      // Replace local element's ID with the newly created backend ID
-      let itemsToDelete= [];
-      
-      if (this.createdRecordsPushed.length > 0 && endPointType == 'reporter') {
-        itemsToDelete = this.getItemsToDelete()
-        
-        this.createdRecordsPushed = [];  
-      } 
-        
-      tableChanges.deleted = [...itemsToDelete];
 
-    
       // // 3. Fetch deleted records (soft deletes are highly recommended for this)
+
       // const deletedRecords = await this.remoteRepository.fetchAll(
       //   endPointType,
       //   null,
@@ -247,50 +315,173 @@ export class BaseService<T> {
       //   null,
       //   lastPulledAt
       // );
+
+      // Replace local element's ID with the newly created backend ID
+
+      for (const parent of parentIds.deleted) {
+        let itemsToDeleteWithWatermelonIds = [];
+
+        //TODO: check if,  "handle if previous failed" exists,
+
+        if (
+          !syncPullFailed &&
+          this.createdRecordsPostPushedWithNewBackendIDs.length > 0 &&
+          isEndpointTypeAllowed
+        ) {
+          createdRecordsPostPushedWithNewBackendIDs =
+            this.createdRecordsPostPushedWithNewBackendIDs;
+          itemsToDeleteWithWatermelonIds = this.getItemsToDelete();
+
+          this.createdRecordsPostPushedWithNewBackendIDs = [];
+        }
+
+        tableChanges.deleted = [...itemsToDeleteWithWatermelonIds];
+      }
+
       // Return all changes and the timestamp for the next pull
+      return { changes };
+    } else {
+      // Parent IDs unavailable - Pulling parents
+      try {
+        const newRecords = await this.remoteRepository.fetchAll(
+          endPointType,
+          null,
+          null,
+          null,
+          null,
+          forceFetchAllPages,
+          lastPulledAt,
+          null,
+          null,
+          null
+        );
+
+        const formattedRecords = newRecords.map((item) =>
+          this.localRepository.fromRemoteToLocal(item)
+        );
+
+        // Saving at updated due to the sendCreatedAsUpdated flag
+        tableChanges.updated = formattedRecords.map((record) => ({
+          ...record,
+          id: String(record.id),
+        }));
+      } catch (e) {
+        console.error('Catch pulling created changes', e);
+        tableChanges.updated = [];
+        syncPullFailed = true;
+      }
+
+      // 2. Fetch updated records
+      if (lastPulledAt != null) {
+        try {
+          const updatedRecords = await this.remoteRepository.fetchAll(
+            endPointType,
+            null,
+            null,
+            null,
+            null,
+            forceFetchAllPages,
+            null,
+            lastPulledAt,
+            null,
+            null
+          );
+
+          const formattedRecords = updatedRecords.map((item) =>
+            this.localRepository.fromRemoteToLocal(item)
+          );
+
+          // tableChanges.updated = []
+          tableChanges.updated = [
+            ...tableChanges.updated,
+            ...formattedRecords.map((record) => ({
+              ...record,
+              id: String(record.id),
+            })),
+          ];
+        } catch (error) {
+          console.error('Catch pulling updated changes', error);
+          syncPullFailed = true;
+        }
+
+        // // 3. Fetch deleted records (soft deletes are highly recommended for this)
+        // const deletedRecords = await this.remoteRepository.fetchAll(
+        //   endPointType,
+        //   null,
+        //   null,
+        //   null,
+        //   null,
+        //   null,
+        //   lastPulledAt
+        // );
+
+        // Replace local element's ID with the newly created backend ID
+        let itemsToDeleteWithWatermelonIds = [];
+
+        //TODO: handle if previous failed,
+        //TODO: handle others rather than 'reporter' endpoint
+        if (
+          !syncPullFailed &&
+          this.createdRecordsPostPushedWithNewBackendIDs.length > 0 &&
+          isEndpointTypeAllowed
+        ) {
+          createdRecordsPostPushedWithNewBackendIDs =
+            this.createdRecordsPostPushedWithNewBackendIDs;
+          itemsToDeleteWithWatermelonIds = this.getItemsToDelete();
+
+          this.createdRecordsPostPushedWithNewBackendIDs = [];
+        }
+
+        tableChanges.deleted = [...itemsToDeleteWithWatermelonIds];
+
+        // Return all changes and the timestamp for the next pull
+      }
+
+      return { changes, createdRecordsPostPushedWithNewBackendIDs };
     }
-    return { changes, timestamp };
   }
 
   getItemsToDelete(): string[] {
-    let itemsToDelete = []
-    
-    for (const element of this.createdRecordsPushed) {
+    let itemsToDelete = [];
+
+    for (const element of this.createdRecordsPostPushedWithNewBackendIDs) {
       itemsToDelete = [...itemsToDelete, element[1]];
     }
-    
+
     return itemsToDelete;
   }
 
   async pushChanges({ changes, lastPulledAt }): Promise<void> {
     const tableName = this.localRepository.tableName;
-    
+
     const tableChanges = changes[tableName];
-    
+
     if (!tableChanges) {
       return;
     }
 
     // Handle created records
     if (tableChanges.created.length > 0) {
-      
       console.log(`Pushing ${tableChanges.created.length} new records to ${tableName}`);
       for (const record of tableChanges.created) {
-        
         // Prepare the  record to be handled by the remote repository
         const modelInterface = this.localRepository.fromLocalToRemote(record);
-        
+
         // Create the element remotely
         try {
           const createdResponse = await this.remoteRepository.create(modelInterface);
-          
+
           if (!createdResponse) {
             throw new Error('Error creating element at remote while syncing');
-          }       
-          
+          }
+
+          console.log('CREATED', tableChanges.created);
+
           // Register the new local and server ids to be replaced on the next pull
-          this.createdRecordsPushed = [...this.createdRecordsPushed, [createdResponse, record.id]];
-          
+          this.createdRecordsPostPushedWithNewBackendIDs = [
+            ...this.createdRecordsPostPushedWithNewBackendIDs,
+            [createdResponse, record.id],
+          ];
         } catch (error) {
           throw new Error('Error creating element at remote while syncing. Reason: ', error);
         }

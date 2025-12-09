@@ -8,6 +8,7 @@ import { i18n } from "../../../../translations/i18n";
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { useIssue } from '../../../../hooks/issues/useIssue';
+import { useIssueAttachments } from '../../../../hooks/issues/useIssueAttachments';
 
 const SAMPLE_WORDS = ['lac', 'plaine', 'savane', 'colline'];
 const theme = {
@@ -24,6 +25,7 @@ function Content({ issue, session, profile }) {
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
   const { createIssue } = useIssue(false);
+  const { createAttachment } = useIssueAttachments();
 
   const _hideDialog = () => setShowDialog(false);
   const _showDialog = () => setShowDialog(true);
@@ -80,7 +82,27 @@ function Content({ issue, session, profile }) {
     };
 
     const createdIssue = await createIssue(_issue);
-    console.log("CREATED ISSUE --->", createdIssue);
+ 
+    const attachments = [
+      ...(issue?.attachment ? [issue.attachment] : []),
+      ...(issue?.recording ? [issue.recording] : []),
+    ];
+
+    if (attachments) {
+      for (let index = 0; index < attachments.length; index++) {
+        const element = attachments[index];
+         await createAttachment({
+           file_name: element.name,
+           is_audio: element.isAudio,
+           local_url: element.local_url,
+           url: '',
+           parent_id: createdIssue.id,
+           id: '',
+           created_date: '',
+           name: element.name,
+         });
+      }
+    }
     
     if (createdIssue) {
       navigation.navigate('CitizenReportStep4', { issue: _issue });

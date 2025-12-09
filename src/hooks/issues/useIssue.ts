@@ -7,12 +7,12 @@ import { TABLE_NAMES } from '../../migrations/tableName';
 
 export function useIssue(fetchIssues: boolean = true) {
   const [assigneeIssueList, setAssigneeIssueList] = useState<Issue[]>()
+  const [reporterIssueList, setReporterIssueList] = useState<Issue[]>()
   const database = useDatabase();
   const { session } = useSelector((state) => {
       return state.get("authentication").toObject();
   });
   
-  const [reporterIssueList, setReporterIssueList] = useState<Issue[]>()
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

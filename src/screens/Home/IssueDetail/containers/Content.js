@@ -26,7 +26,7 @@ const theme = {
   },
 };
 
-function Content({ issue }) {
+function Content({ issue, attachments }) {
   const parentId = issue.id;
   const { comments, loading} = useIssueComments(parentId);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
@@ -142,16 +142,20 @@ function Content({ issue }) {
               {i18n.t('name')}
               <Text style={styles.text}>
                 {' '}
-                {issue.citizen && (issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL) && !isIssueAssignedToMe
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
                   ? i18n.t('confidential')
-                  : issue?.citizen?.name ?? ""}
+                  : (issue?.citizen?.name ?? '')}
               </Text>
             </Text>
             <Text style={styles.subtitle}>
               {i18n.t('age')}{' '}
               <Text style={styles.text}>
                 {' '}
-                {issue.citizen && (issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL) && !isIssueAssignedToMe
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
                   ? i18n.t('confidential')
                   : (issue.citizen_age_group?.name ?? i18n.t('information_not_available'))}
               </Text>
@@ -323,18 +327,23 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAttachmentCollapsed}>
           <View style={styles.collapsibleContent}>
-            {issue.attachments?.map((attachment) => {
+            {attachments?.map((attachment) =>
+            {
+                const isAudio =
+                typeof (attachment.file === 'string' || attachment.local_url === 'string') &&
+                  /\.(mp3|wav|m4a|aac|ogg|oga|flac|amr|3gp)(\?.*)?$/i.test(attachment.file ?? attachment.local_url);
+            
               return (
                 <View style={{ flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
-                  {!attachment.isAudio && attachment.local_url && (
+                  {!isAudio && (attachment.file || attachment.local_url) && (
                     <ImagePreviewCard
-                      uri={attachment.local_url}
+                      uri={attachment.file ?? attachment.local_url}
                       id={attachment.id}
                       showRemove={false}
                     />
                   )}
-                  {attachment.isAudio && (
-                    <RecordingCard mode="playback" initialURI={attachment.local_url} />
+                  {isAudio && (
+                    <RecordingCard mode="playback" initialURI={attachment.file ?? attachment.local_url} />
                   )}
                 </View>
               );

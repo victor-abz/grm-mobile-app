@@ -1,7 +1,9 @@
 import { Model, Q } from '@nozbe/watermelondb';
 import { reader, writer } from '@nozbe/watermelondb/decorators';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
-import { syncServiceInstance } from '../../services/shared/SyncService';
+import { SyncService, syncServiceInstance } from '../../services/shared/SyncService';
+import { CreatedResponseWithBackendId, WatermelonId } from '../../services/shared/BaseService';
+import { SyncStatus } from '@nozbe/watermelondb/Model';
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
@@ -26,6 +28,28 @@ export abstract class BaseLocalRepository<T> {
       await dbItem.destroyPermanently();
     });
   }
+  @writer
+  async update(item: Model, values: Record<string, any>, status?: SyncStatus) {
+    try {
+      const updatedRecord = await item.update((record) => {
+      
+      if (status) record._raw._status = status;
+      
+      console.log("RECORD PLACEHOLDER", record);
+      
+      Object.entries(values).forEach(([key, value]) => {
+        // (record)[key] = value;
+        (record._raw as any)[key] = value;
+      });
+
+      record._notifyChanged();
+    });
+    
+      return updatedRecord;
+    } catch (e) {
+      console.error("Error at update method: ", e);
+    }
+  }
 
   // @ts-ignore
   async getAll(
@@ -42,7 +66,7 @@ export abstract class BaseLocalRepository<T> {
       sortOrder = Q.desc;
     }
     if (!limit) {
-      limit = 100;
+      limit = 200;
     }
 
     let queryClauses: QueryClause[] = [Q.sortBy(sortBy, sortOrder), Q.take(limit)];
@@ -54,8 +78,9 @@ export abstract class BaseLocalRepository<T> {
       queryClauses.push(Q.where('parent_id', Q.eq(parentId)));
     }
 
-    const dbInstance = syncServiceInstance.database
+    const dbInstance = syncServiceInstance.database;
     const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
+
     return results.map((result) => this.fromLocalToRemote(result));
   }
 
@@ -75,20 +100,20 @@ export abstract class BaseLocalRepository<T> {
       await dbItem.markAsDeleted();
     });
   }
-  
+
   async bulkCreate(entries: any[]): Promise<void> {
     try {
       const dbInstance = syncServiceInstance.database;
-      let operations = []
-  
-      await dbInstance.write(async () => { 
+      let operations = [];
+
+      await dbInstance.write(async () => {
         for (let index = 0; index < entries.length; index++) {
           const element = entries[index];
           operations.push(
             dbInstance.get(this.tableName).prepareCreate((tableElementPlaceholder) => {
               Object.keys(tableElementPlaceholder._raw).forEach((key) => {
                 if (key == 'id') {
-                  tableElementPlaceholder._raw[key] = String(element[key])
+                  tableElementPlaceholder._raw[key] = String(element[key]);
                 }
 
                 if (key !== 'id' && key !== '_changed' && key !== '_status') {
@@ -100,8 +125,7 @@ export abstract class BaseLocalRepository<T> {
           );
         }
         dbInstance.batch(operations);
-      })
-      
+      });
     } catch (error) {
       throw new Error(error);
     }
@@ -124,40 +148,43 @@ export abstract class BaseLocalRepository<T> {
         });
         console.log('Item successfully updated');
         console.log('Succesfully Updated Watermelon DB');
-        return newEntry;
+        return dbItem;
       } catch (error) {
         // If not found, create new
         console.warn(error);
         console.log('Could not update locally, attempting to create locally...');
         try {
-          await dbInstance.get(this.tableName).create((tableElementPlaceholder) => {
-            if (configurableId) {
-              tableElementPlaceholder._raw.id = String(configurableId);
-            }
-            Object.keys(newEntry).forEach((key) => {
-              // Check if the value is an object (and not null or an array)
-              if (
-                newEntry[key] &&
-                typeof newEntry[key] === 'object'
-                // && !Array.isArray(newEntry[key])
-              ) {
-                // Handle nested object keys if needed
-                // Object.keys(newEntry[key]).forEach((nestedKey) => {
-                tableElementPlaceholder._raw[key] = JSON.stringify(newEntry[key]);
-           
-                // });
-              } else {
-                if (key !== 'id') {
-                  tableElementPlaceholder._raw[key] = newEntry[key];
-                } else if (newEntry.id) {
-                  tableElementPlaceholder._raw.id = String(newEntry.id);
-                }
+          const createdInstance = await dbInstance
+            .get(this.tableName)
+            .create((tableElementPlaceholder) => {
+              if (configurableId) {
+                tableElementPlaceholder._raw.id = String(configurableId);
+                tableElementPlaceholder._raw._status = 'synced'
               }
+              Object.keys(newEntry).forEach((key) => {
+                // Check if the value is an object (and not null or an array)
+                if (
+                  newEntry[key] &&
+                  typeof newEntry[key] === 'object'
+                  // && !Array.isArray(newEntry[key])
+                ) {
+                  // Handle nested object keys if needed
+                  // Object.keys(newEntry[key]).forEach((nestedKey) => {
+                  tableElementPlaceholder._raw[key] = JSON.stringify(newEntry[key]);
+
+                  // });
+                } else {
+                  if (key !== 'id') {
+                    tableElementPlaceholder._raw[key] = newEntry[key];
+                  } else if (newEntry.id) {
+                    tableElementPlaceholder._raw.id = String(newEntry.id);
+                  }
+                }
+              });
             });
-          });
-          console.log('Item successfully created');
+          console.log('Item Successfully Created');
           console.log('Succesfully Updated Watermelon DB');
-          return newEntry;
+          return createdInstance;
         } catch (e) {
           console.log('Could not create locally. Reason:', e);
           return;

@@ -64,7 +64,7 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
       resolution_date: localModel.resolution_date ? new Date(localModel.resolution_date) : null,
       administrative_region:
         typeof localModel.administrative_region === 'string' &&
-        localModel.issue_type.trim().startsWith('{')
+        localModel.administrative_region.trim().startsWith('{')
           ? parseJson(localModel.administrative_region)
           : localModel.administrative_region,
       assignee:

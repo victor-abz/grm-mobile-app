@@ -9,6 +9,7 @@ import { issueSubComponentSyncable } from '../services/issues/IssueSubComponentS
 import { issueComponentSyncable } from '../services/issues/IssueComponentService';
 import { issueSubTypeSyncable } from '../services/issues/IssueSubTypeService';
 import { issueCitizenGroupListSyncable } from '../services/issues/IssueCitizenGroupService';
+import { issueAttachmentSyncable } from '../services/issues/IssueAttachmentService';
 
 let stableConnectionTimer: NodeJS.Timeout | null = null;
 let initialSyncListener: NetInfoSubscription | null = null;
@@ -27,6 +28,9 @@ export function registerServices(): void {
   syncServiceInstance.register(issueComponentSyncable);
   syncServiceInstance.register(issueSubTypeSyncable);
   syncServiceInstance.register(issueCitizenGroupListSyncable);
+  
+  // SUB SYNCABLES CURRENTLY DISABLED
+  // syncServiceInstance.registerChildSyncables(issueAttachmentSyncable);
 }
 
 async function setupConnectionWatcher(): Promise<void> {
