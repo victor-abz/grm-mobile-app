@@ -6,7 +6,7 @@ import { Base } from "../Base";
 export interface IssueAttachment extends Base {
   id: string;
   file_name: string;
-  is_audio: boolean;
+  is_audio?: boolean;
   local_url: string;
   url?: string;
   parent_id: string,
@@ -20,9 +20,9 @@ export class IssueAttachmentLocalModel extends Model {
   // @ts-ignore
   @field('deleted_date') deleted_date;
   // @ts-ignore
-  @text('local_url') local_url;
+  @text('local_url') local_url: string;
   // @ts-ignore
-  @text('url') url;
+  @text('url') url: string;
   // @ts-ignore
   @field('is_audio') is_audio;
   // @ts-ignore

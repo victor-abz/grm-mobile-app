@@ -59,12 +59,32 @@ class IssueAttachmentRemoteRepository extends BaseRemoteRepository<IssueAttachme
     deletedAt: EpochTimeStamp | null,
     parentId: string | null
   ): Promise<IssueAttachment[]> {
+      
+    const params: Record<string, string> = {};
+
+    if (endpointType) params.endpoint_type = endpointType;
+    if (sortBy) params.sort_by = sortBy;
+    if (sortOrder) params.sort_order = String(sortOrder);
+    if (page != null) params.page = String(page);
+    if (limit != null) params.pageSize = String(limit);
+
+    if (allPages) params.pageSize = params.pageSize || '1000';
+
+    if (createdAt) params.created_at = new Date(createdAt).toISOString();
+    if (updatedAt) params.updated_at = new Date(updatedAt).toISOString();
+    if (deletedAt) params.deleted_at = new Date(deletedAt).toISOString();
+
+    // Convert to URLSearchParams for the request
+    const queryParams = new URLSearchParams(params);
+      
     const url = `${this.baseUrl}/${parentId}/attachments/`;
+    
     const requestOptions = {
       url,
       method: 'GET',
-      params: new URLSearchParams({ page: '1', pageSize: '20' }),
+      params: new URLSearchParams(queryParams),
     };
+      
     try {
       const response = await request({
         ...requestOptions,

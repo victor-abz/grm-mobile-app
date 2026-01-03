@@ -26,9 +26,9 @@ const theme = {
   },
 };
 
-function Content({ issue, attachments }) {
+function Content({ issue, attachments, refetchAttachment }) {
   const parentId = issue.id;
-  const { comments, loading} = useIssueComments(parentId);
+  const { comments, loading } = useIssueComments(parentId);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
   const [newComment, setNewComment] = useState();
@@ -98,6 +98,18 @@ function Content({ issue, attachments }) {
     upsertNewComment();
   };
 
+  const onAttachmentRetry = async (attachmentId) => {
+    try {
+      if (typeof attachmentId == 'string') {
+        await refetchAttachment(attachmentId);
+      } else {
+        await refetchAttachment(String(attachmentId));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <ScrollView ref={scrollViewRef} contentContainerStyle={{ alignItems: 'center', padding: 20 }}>
       <View key={'content'} style={styles.infoContainer}>
@@ -122,7 +134,6 @@ function Content({ issue, attachments }) {
           }}
         >
           <View style={{ flex: 1 }}>
-
             <Text style={styles.subtitle}>
               {i18n.t('type')}{' '}
               <Text style={[styles.text]}>
@@ -235,7 +246,6 @@ function Content({ issue, attachments }) {
               <Text
                 style={styles.text}> {issues.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issues.sub_component?.name ?? i18n.t('information_not_available')}</Text>
             </Text> */}
-
           </View>
         </Collapsible>
         <CustomSeparator />
@@ -289,7 +299,6 @@ function Content({ issue, attachments }) {
           />
         </TouchableOpacity>
         <Collapsible collapsed={isSatisfactionCollapsed}>
-
           <View style={styles.collapsibleContent}>
             <Text style={styles.collapsibleTextArea}>{i18n.t('information_not_available')}</Text>
           </View>
@@ -327,23 +336,31 @@ function Content({ issue, attachments }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAttachmentCollapsed}>
           <View style={styles.collapsibleContent}>
-            {attachments?.map((attachment) =>
-            {
-                const isAudio =
+            {attachments?.map((attachment) => {
+              const isAudio =
                 typeof (attachment.file === 'string' || attachment.local_url === 'string') &&
-                  /\.(mp3|wav|m4a|aac|ogg|oga|flac|amr|3gp)(\?.*)?$/i.test(attachment.file ?? attachment.local_url);
-            
+                /\.(mp3|wav|m4a|aac|ogg|oga|flac|amr|3gp)(\?.*)?$/i.test(
+                  attachment.file ?? attachment.local_url
+                );
+
               return (
                 <View style={{ flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
-                  {!isAudio && (attachment.file || attachment.local_url) && (
+                  {!isAudio && (attachment.file || attachment.local_url || attachment.url) && (
                     <ImagePreviewCard
-                      uri={attachment.file ?? attachment.local_url}
+                      onRetry={() => onAttachmentRetry(attachment.id)}
+                      uri={
+                        attachment.file ??
+                        (attachment.local_url ? attachment.local_url : attachment.url)
+                      }
                       id={attachment.id}
                       showRemove={false}
                     />
                   )}
                   {isAudio && (
-                    <RecordingCard mode="playback" initialURI={attachment.file ?? attachment.local_url} />
+                    <RecordingCard
+                      mode="playback"
+                      initialURI={attachment.file ?? attachment.local_url}
+                    />
                   )}
                 </View>
               );

@@ -28,9 +28,7 @@ export function registerServices(): void {
   syncServiceInstance.register(issueComponentSyncable);
   syncServiceInstance.register(issueSubTypeSyncable);
   syncServiceInstance.register(issueCitizenGroupListSyncable);
-  
-  // SUB SYNCABLES CURRENTLY DISABLED
-  // syncServiceInstance.registerChildSyncables(issueAttachmentSyncable);
+  syncServiceInstance.registerChildSyncables(issueAttachmentSyncable);
 }
 
 async function setupConnectionWatcher(): Promise<void> {

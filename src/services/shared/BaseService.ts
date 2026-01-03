@@ -5,17 +5,39 @@ import { BaseLocalRepository } from '../../repositories/shared/BaseLocalReposito
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { syncServiceInstance } from './SyncService';
+import { TABLE_NAMES } from '../../migrations/tableName';
+import { deleteAsync } from 'expo-file-system';
+import { SyncStatus } from '@nozbe/watermelondb/Model';
 export type WatermelonId = string;
 export type CreatedResponseWithBackendId = unknown;
 
 export class BaseService<T> {
   createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][] = [];
+  private isFile: boolean;
 
   constructor(
     private localRepository: BaseLocalRepository<T>,
     private remoteRepository: BaseRemoteRepository<T>
   ) {
-    
+    this.isFile = this.checkIfFile();
+  }
+
+  private getPathFieldName(): string {
+    switch (this.localRepository.tableName) {
+      case TABLE_NAMES.issueAttachment:
+        return 'local_url';
+      default:
+        return '';
+    }
+  }
+
+  private checkIfFile(): boolean {
+    switch (this.localRepository.tableName) {
+      case TABLE_NAMES.issueAttachment:
+        return true;
+      default:
+        return false;
+    }
   }
 
   async bulkCreate(entries: T[]): Promise<void> {
@@ -29,12 +51,14 @@ export class BaseService<T> {
     this.localRepository.bulkCreate(entries);
   }
 
-  async replaceParentIdProperty(idsToReplace: [CreatedResponseWithBackendId, WatermelonId][]) {
+  async replaceParentIdProperty(
+    idsToReplace: [CreatedResponseWithBackendId, WatermelonId][],
+    status: SyncStatus = 'updated'
+  ) {
     try {
       const replacedItems: Model[] = [];
 
       for (let index = 0; index < idsToReplace.length; index++) {
-
         const parent = idsToReplace[index];
 
         // 1. Get all children with the old parent_id
@@ -46,28 +70,46 @@ export class BaseService<T> {
           .fetch();
 
         // 2. Update each child to use the new parent_id
-        
-        for (const child of children) {
 
+        for (const child of children) {
           const item = await this.localRepository.update(
-                child,
-                {
-                  parent_id: parent[0]?.data?.id,
-                  // synced_at: Date.now(),
-                  // status
-                },
-                'created'
-              )
-            
-          replacedItems.push(item)
+            child,
+            {
+              parent_id: parent[0]?.data?.id,
+            },
+            status
+          );
+
+          replacedItems.push(item);
         }
+        console.log('Successfully replaced parent ids');
       }
 
-      return replacedItems
+      return replacedItems;
     } catch (error) {
       return { error: `Error updating parent ID's. Reason: ${error} ` };
     }
   }
+
+  /**
+   * Upsert an item both locally and (when possible) remotely.
+   *
+   * Behavior:
+   * - Converts the WatermelonDB model to the remote payload using localRepository.fromLocalToRemote.
+   * - If online: tries to create on the remote; on create failure (already exists or error) it falls back to update.
+   * - On successful remote create/update it stamps sync metadata and upserts the local record.
+   *   - When a remote create returns a new backend id (response.data.id), that id is passed to localRepository.upsert
+   *     so the local record can be reconciled with the server id.
+   * - If offline or remote operations fail, the method upserts the item locally so it can be synced later.
+   *
+   * Expectations / Notes:
+   * - remoteRepository.create/update should return an object with .data.id when a server id is available.
+   * - localRepository.upsert accepts a WatermelonDB Model and an optional backend id to reconcile ids.
+   * - This method sets a sync timestamp on the model before calling local upsert.
+   *
+   * @param item WatermelonDB Model instance to upsert
+   * @returns Promise<void>
+   */
   async upsert(item: Model): Promise<void> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
@@ -168,6 +210,7 @@ export class BaseService<T> {
           null,
           parentId
         );
+
         if (Array.isArray(remoteResult)) {
           return remoteResult;
         } else {
@@ -193,23 +236,20 @@ export class BaseService<T> {
     schema,
     endPointType = null,
     forceFetchAllPages = null,
-    parentIds = null,
+    parentChanges = null,
   }): Promise<{
     changes: { [key: string]: { deleted: any[]; created: RawRecord[]; updated: any[] } };
     timestamp: number;
     createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][];
   }> {
-    
-    let timestamp = Date.now()
-    
-    // LIST PARENT IDS TO FETCH EVERY PAGE AND HYDRATE THE APP WITH ATTACHMENTS. OTHERWISE,
-    // BUILD A HANDLER TO FETCH THEM WHEN CONNECTIVITY IS AVAILABLE
-    const { changes, createdRecordsPostPushedWithNewBackendIDs} = await this.buildChangesObject(
+    let timestamp = Date.now();
+
+    const { changes, createdRecordsPostPushedWithNewBackendIDs } = await this.buildChangesObject(
       tableName,
       endPointType,
       forceFetchAllPages,
       lastPulledAt,
-      (parentIds = parentIds ?? null)
+      (parentChanges = parentChanges ?? null)
     );
 
     return {
@@ -224,9 +264,8 @@ export class BaseService<T> {
     endPointType: any,
     forceFetchAllPages: any,
     lastPulledAt: any,
-    parentIds?: { created: any[]; updated: any[]; deleted: string[] }
+    parentChanges?: { created: any[]; updated: any[]; deleted: string[] }
   ) {
-    
     // endpoints to skip id-replacement (items not being created locally)
     const disallowedEndpointTypes = ['assignee'];
     const isEndpointTypeAllowed = !disallowedEndpointTypes.includes(
@@ -237,33 +276,45 @@ export class BaseService<T> {
     const tableChanges = changes[tableName];
     let syncPullFailed = false;
     let createdRecordsPostPushedWithNewBackendIDs = [];
-    
+
     // 1. Fetch newly created records
-    
-    if (parentIds) {
+
+    if (parentChanges) {
       // Parent IDs available - Pulling sub-items
 
       try {
         let newRecords = [];
         let updatedRecords = [];
-        for (const parent of parentIds.created) {
-          newRecords = await this.remoteRepository.fetchAll(
-            endPointType,
-            null,
-            null,
-            null,
-            null,
-            forceFetchAllPages,
-            lastPulledAt,
-            null,
-            null,
-            parent.id ?? null
-          );
+        for (const parent of parentChanges.created) {
+          newRecords = [
+            ...newRecords,
+            [
+              await this.remoteRepository.fetchAll(
+                endPointType,
+                null,
+                null,
+                null,
+                null,
+                forceFetchAllPages,
+                lastPulledAt, // created_date
+                null,
+                null,
+                parent.id ?? null
+              ),
+              parent.id ?? null,
+            ],
+          ];
         }
 
-        const createdFormattedRecords = newRecords.map((item) =>
-          this.localRepository.fromRemoteToLocal(item)
-        );
+        const createdFormattedRecords = newRecords.map((item) => {
+          const parentId = item[1];
+          const subItemsList = item[0];
+          for (let index = 0; index < subItemsList.length; index++) {
+            const element = subItemsList[index];
+
+            return this.localRepository.fromRemoteToLocal(element, parentId);
+          }
+        });
 
         // Saving at updated due to the sendCreatedAsUpdated flag
         tableChanges.updated = createdFormattedRecords.map((record) => ({
@@ -271,29 +322,43 @@ export class BaseService<T> {
           id: String(record.id),
         }));
 
-        for (const parent of parentIds.updated) {
-          updatedRecords = await this.remoteRepository.fetchAll(
-            endPointType,
-            null,
-            null,
-            null,
-            null,
-            forceFetchAllPages,
-            null,
-            lastPulledAt,
-            null,
-            parent.id ?? null
-          );
+        for (const parent of parentChanges.updated) {
+          updatedRecords = [
+            ...updatedRecords,
+            [
+              await this.remoteRepository.fetchAll(
+                endPointType,
+                null,
+                null,
+                null,
+                null,
+                forceFetchAllPages,
+                null,
+                lastPulledAt,
+                null,
+                parent.id ?? null
+              ),
+              parent.id ?? null,
+            ],
+          ];
         }
 
-        const updatedFormattedRecords = updatedRecords.map((item) =>
-          this.localRepository.fromRemoteToLocal(item)
-        );
+        const updatedFormattedRecords = updatedRecords.map((item) => {
+          const parentId = item[1];
+          const subItemsList = item[0];
+          let formattedSubItems = [];
+          for (let index = 0; index < subItemsList.length; index++) {
+            const element = subItemsList[index];
+            formattedSubItems.push(this.localRepository.fromRemoteToLocal(element, parentId));
+          }
+
+          return formattedSubItems;
+        });
 
         // tableChanges.updated = []
         tableChanges.updated = [
           ...tableChanges.updated,
-          ...updatedFormattedRecords.map((record) => ({
+          ...updatedFormattedRecords.flat().map((record) => ({
             ...record,
             id: String(record.id),
           })),
@@ -318,7 +383,7 @@ export class BaseService<T> {
 
       // Replace local element's ID with the newly created backend ID
 
-      for (const parent of parentIds.deleted) {
+      for (const parent of parentChanges.deleted) {
         let itemsToDeleteWithWatermelonIds = [];
 
         //TODO: check if,  "handle if previous failed" exists,
@@ -336,6 +401,19 @@ export class BaseService<T> {
         }
 
         tableChanges.deleted = [...itemsToDeleteWithWatermelonIds];
+      }
+      // tableChanges.deleted - fetch old wm items, get cache local path and delete file
+
+      if (this.isFile) {
+        for (const deleted of tableChanges.deleted) {
+          try {
+            const itemToDelete: Awaited<T> = await this.localRepository.findOne(deleted);
+            const fieldName: string = this.getPathFieldName();
+            await deleteAsync(itemToDelete[fieldName]);
+          } catch (error) {
+            console.error(error);
+          }
+        }
       }
 
       // Return all changes and the timestamp for the next pull
@@ -356,12 +434,12 @@ export class BaseService<T> {
           null
         );
 
-        const formattedRecords = newRecords.map((item) =>
+        const createdFormattedRecords = newRecords.map((item) =>
           this.localRepository.fromRemoteToLocal(item)
         );
 
         // Saving at updated due to the sendCreatedAsUpdated flag
-        tableChanges.updated = formattedRecords.map((record) => ({
+        tableChanges.updated = createdFormattedRecords.map((record) => ({
           ...record,
           id: String(record.id),
         }));
@@ -387,14 +465,14 @@ export class BaseService<T> {
             null
           );
 
-          const formattedRecords = updatedRecords.map((item) =>
+          const updatedFormattedRecords = updatedRecords.map((item) =>
             this.localRepository.fromRemoteToLocal(item)
           );
 
           // tableChanges.updated = []
           tableChanges.updated = [
             ...tableChanges.updated,
-            ...formattedRecords.map((record) => ({
+            ...updatedFormattedRecords.map((record) => ({
               ...record,
               id: String(record.id),
             })),

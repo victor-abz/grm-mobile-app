@@ -6,12 +6,16 @@ import { useIssueAttachments } from "../../../hooks/issues/useIssueAttachments";
 
 const IssueDetail = ({ route }) => {
   const { params } = route;
-  const { issueAttachmentsList } = useIssueAttachments(params.item.id)
+  const { issueAttachmentsList, refetchAttachment } = useIssueAttachments(params.item.id);
   const customStyles = styles();
 
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content issue={params.item} attachments={issueAttachmentsList} />
+      <Content
+        issue={params.item}
+        attachments={issueAttachmentsList}
+        refetchAttachment={refetchAttachment}
+      />
     </SafeAreaView>
   );
 };

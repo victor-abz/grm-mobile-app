@@ -52,7 +52,7 @@ export interface Issue extends Base {
   contact_method: ContactMethod;
   description: string;
   id: string;
-  intake_date: Date;
+  intake_date: string;
   issue_date?: Date | null;
   issue_location_id: number;
   issue_sub_type: Base;

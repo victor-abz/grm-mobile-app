@@ -1,8 +1,7 @@
 import { Model, Q } from '@nozbe/watermelondb';
-import { reader, writer } from '@nozbe/watermelondb/decorators';
+import { writer } from '@nozbe/watermelondb/decorators';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
-import { SyncService, syncServiceInstance } from '../../services/shared/SyncService';
-import { CreatedResponseWithBackendId, WatermelonId } from '../../services/shared/BaseService';
+import { syncServiceInstance } from '../../services/shared/SyncService';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
 
 export type Mapper<T> = {
@@ -15,7 +14,7 @@ type QueryClause = Q.Where | Q.SortBy | Q.Take;
 export abstract class BaseLocalRepository<T> {
   constructor(public tableName: string) {}
 
-  abstract fromRemoteToLocal(item: any): any;
+  abstract fromRemoteToLocal(item: any, parentId?: string | number): any;
 
   abstract fromLocalToRemote(localModel: Model): T;
 
@@ -28,27 +27,28 @@ export abstract class BaseLocalRepository<T> {
       await dbItem.destroyPermanently();
     });
   }
-  @writer
-  async update(item: Model, values: Record<string, any>, status?: SyncStatus) {
-    try {
-      const updatedRecord = await item.update((record) => {
-      
-      if (status) record._raw._status = status;
-      
-      console.log("RECORD PLACEHOLDER", record);
-      
-      Object.entries(values).forEach(([key, value]) => {
-        // (record)[key] = value;
-        (record._raw as any)[key] = value;
-      });
 
-      record._notifyChanged();
+  // @ts-ignore
+  async update(dbItem: Model, values: Record<string, any>, status?: SyncStatus) {
+    const dbInstance = syncServiceInstance.database;
+
+    return await dbInstance.write(async () => {
+      try {
+        const updatedRecord = await dbItem.update((record) => {
+          if (status) record._raw._status = status;
+
+          Object.entries(values).forEach(([key, value]) => {
+            // (record)[key] = value;
+            (record._raw as any)[key] = value;
+          });
+
+          record._notifyChanged();
+        });
+        return updatedRecord;
+      } catch (e) {
+        console.error('Error at update method: ', e);
+      }
     });
-    
-      return updatedRecord;
-    } catch (e) {
-      console.error("Error at update method: ", e);
-    }
   }
 
   // @ts-ignore
@@ -68,12 +68,10 @@ export abstract class BaseLocalRepository<T> {
     if (!limit) {
       limit = 200;
     }
-
     let queryClauses: QueryClause[] = [Q.sortBy(sortBy, sortOrder), Q.take(limit)];
     if (lastPulledAt) {
       queryClauses.push(Q.where('created_date', Q.gte(lastPulledAt)));
     }
-
     if (parentId) {
       queryClauses.push(Q.where('parent_id', Q.eq(parentId)));
     }
@@ -81,14 +79,49 @@ export abstract class BaseLocalRepository<T> {
     const dbInstance = syncServiceInstance.database;
     const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
 
-    return results.map((result) => this.fromLocalToRemote(result));
+   
+    const formattedResults = results.map((result) => this.fromLocalToRemote(result));
+    console.log(formattedResults.length);
+    return formattedResults
   }
 
   // @ts-ignore
-  @reader
+  async getAllRaw(
+    sortBy: string | null,
+    sortOrder: SortOrder | null,
+    limit: number | null,
+    lastPulledAt: string | null,
+    parentId: string | null
+  ): Promise<Model[]> {
+    if (!sortBy) sortBy = 'created_date';
+    if (!sortOrder) sortOrder = Q.desc;
+    if (!limit) limit = 200;
+    let queryClauses: QueryClause[] = [];
+    
+    if (parentId) {
+      queryClauses.push(Q.where('parent_id', Q.eq(String(parentId))));
+    }
+    const dbInstance = syncServiceInstance.database;
+    const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
+    return results;
+  }
+
+  // @ts-ignore
+  async findOneRaw(
+    id: string | null
+  ): Promise<Model> {
+    const dbInstance = syncServiceInstance.database;
+    const result: Model = await dbInstance.get(this.tableName).find(id);
+    return result;
+  }
+
+  // @ts-ignore
   async findOne(id: string): Promise<T> {
     const dbInstance = syncServiceInstance.database;
-    return this.fromLocalToRemote(await dbInstance.get(this.tableName).find(id));
+    const itemModel = await dbInstance.read(
+      async () => await dbInstance.get(this.tableName).find(id)
+    );
+    return this.fromLocalToRemote(itemModel);
   }
 
   // @ts-ignore
@@ -141,7 +174,8 @@ export abstract class BaseLocalRepository<T> {
         dbItem = await dbInstance.get(this.tableName).find(String(newEntry.id));
         await dbItem.update((_item) => {
           Object.keys(_item._raw).forEach((key) => {
-            if (key !== 'id' && key !== '_changed' && key !== '_status') {
+         
+            if (key !== 'id' && key !== '_changed' && key !== '_status' && newEntry[key]) {
               _item[key] = newEntry[key];
             }
           });
@@ -159,7 +193,7 @@ export abstract class BaseLocalRepository<T> {
             .create((tableElementPlaceholder) => {
               if (configurableId) {
                 tableElementPlaceholder._raw.id = String(configurableId);
-                tableElementPlaceholder._raw._status = 'synced'
+                tableElementPlaceholder._raw._status = 'synced';
               }
               Object.keys(newEntry).forEach((key) => {
                 // Check if the value is an object (and not null or an array)
