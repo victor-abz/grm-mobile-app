@@ -1,4 +1,28 @@
 import React, { useState, useEffect } from 'react';
+
+//TODO:
+
+// [x] connect updateIssue with remote,
+// [x] rename dialog params,
+// [x] Add missing fields to local issue schema
+// [x] Test local correct saving, 
+// [x] verify search list being updated
+// [x] verify patch with id as string created by watermelon
+// [x] check new way of saving statuses within a PATCH, just an id
+// [ ] test sync after re-connection
+// [ ] sub type will be changed to global
+// [ ] reporter can edit - rating
+// [ ] assignee can edit - status - check Policy
+// reporter rating , appeal, comentar
+// assignee acceptar, rechazar, cerrar, comentar.
+// todo editar de los
+
+// campos de fecha vacio no los toma en getCurrentPositionAsync, formato incorrecto da error
+
+// assignee status, reporter Rating. 
+
+// import { withObservables } from '@nozbe/watermelondb/react';
+
 import moment from 'moment';
 import {
   KeyboardAvoidingView,
@@ -10,7 +34,7 @@ import {
   View,
 } from 'react-native';
 import { Button, IconButton, Paragraph } from 'react-native-paper';
-import { Issue } from '../../../../models/issues/Issue';
+import { ContactMethod, Issue } from '../../../../models/issues/Issue';
 import { IssueStatus } from '../../../../models/issues/IssueStatus';
 import { i18n } from '../../../../translations/i18n';
 import { colors } from '../../../../utils/colors';
@@ -55,13 +79,23 @@ type Props = {
   session: any;
   loading: boolean;
   statuses: IssueStatus[];
-  eadl: any;
   updateIssue: (issue: Issue) => Promise<Issue>;
   getStatus: (statusName: keyof IssueStatus) => IssueStatus;
 };
 
-function Content({ session, currentIssue, navigation, loading, statuses = [], eadl, updateIssue, getStatus }: Props) {
+function Content({ session, currentIssue, navigation, loading, statuses = [], updateIssue, getStatus }: Props) {
   const [issue, setIssue] = useState(currentIssue);
+  
+  // const [issue, setIssue] = useState({
+  //   ...currentIssue,
+  //   // status: { name: 'Créé', id: 1 }
+  //   status: { name: 'Ouv', id: 4 },
+  //   reject_flag: true,
+  //   assignee: { id: 2 },
+  //   reporter: { id: 2 },
+  //   // status: { name: 'Ouv', id: 2 }
+  // });
+  
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
 
@@ -128,6 +162,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
   const updateActionButtons = () => {
     function _isAcceptEnabled(x) {
       
+      console.log("IS ISSUE ASSIGNED TO ME?", isIssueAssignedToMe);
 
       if (x.initial_status && isIssueAssignedToMe) {
         return compareIdsEquivalence(issue.status?.id, x.id);
@@ -163,7 +198,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
   };
 
   const whatsApp = () => {
-    Linking.openURL(WHATSAPP_LINK + issue.contact_information.contact)
+    Linking.openURL(WHATSAPP_LINK + issue.contact_information)
       .then((value) => {
         console.log('whatsapp result: ', value);
       })
@@ -173,7 +208,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
   };
 
   const phoneCall = () => {
-    Linking.openURL(PHONE_CALL_LINK + issue.contact_information.contact)
+    Linking.openURL(PHONE_CALL_LINK + issue.contact_information)
       .then((value) => {
         console.log('phone_call result: ', value);
       })
@@ -227,7 +262,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
         //   ...(prevIssue.comments ?? []),
         //   {
         //     name: prevIssue.reporter.name,
-        //     id: eadl._id,
+        //     id: session?.user_id,
         //     comment: reason,
         //     due_at: moment().toNow(),
         //     attachment: attachment.uri
@@ -261,7 +296,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
       setIssue((prevIssue) => {
         const updatedIssue = updateIssueWithComments(prevIssue, prevIssue.status, {
           name: prevIssue.reporter.name,
-          id: eadl._id,
+          id: session?.user_id,
           comment: i18n.t('issue_was_rated'),
           due_at: moment(),
         });
@@ -279,7 +314,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
     setIssue((prevIssue) => {
       const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
         name: prevIssue.reporter.name,
-        id: eadl._id,
+        id: session?.user_id,
         comment: i18n.t('issue_was_appealed'),
         due_at: moment(),
       });
@@ -305,7 +340,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
         //   {
         //     //check if can be replaced with create response
         //     name: prevIssue.reporter.name,
-        //     id: eadl._id,
+        //     id: session?.user_id,
         //     comment: escalateComment,
         //     due_at: moment(),
         //     attachment: attachment.uri
@@ -339,7 +374,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
     setIssue((prevIssue) => {
       const updatedIssue = updateIssueWithComments(prevIssue, issue.status, {
         name: prevIssue.reporter.name,
-        id: eadl._id,
+        id: session?.user_id,
         comment,
         due_at: moment(),
         attachment: attachment.uri
@@ -416,7 +451,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
         //   ...prevIssue.comments,
         //   {
         //     name: prevIssue.reporter.name,
-        //     id: eadl._id,
+        //     id: session?.user_id,
         //     comment: i18n.t('issue_was_resolved'),
         //     due_at: moment(),
         //     attachment: attachment.uri
@@ -459,9 +494,10 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], ea
 
   useEffect(() => {
     if (loading) return;
+    const reporterId = issue.reporter?.id ?? issue.reporter;
     const isAssigned =
       issue.assignee?.id &&
-      (issue.reporter.id === issue.assignee.id || issue.assignee.id === session?.user_id);
+      (reporterId === issue.assignee.id || issue.assignee.id === session?.user_id);
     setIsIssueAssignedToMe(isAssigned);
 
     if (issue.citizen_type !== 1) {
@@ -649,16 +685,16 @@ function renderHeaderAndActions(
         </Button>
 
         {/* THROUGH THOSE BUTTONS OYU CAN MAKE A WHATSAPP CALL, PHONE CALL AND SEND EMAIL TO THE COMPLAINER */}
-        {issue.contact_information && issue.contact_information.contact !== '*' && (
+        {issue.contact_information && issue.contact_information !== '*' && (
           <>
-            {issue.contact_information.type === 'phone_number' ? (
+            {issue.contact_method === ContactMethod.PHONE_NUMBER ? (
               <IconButton
                 icon="phone"
                 color={colors.primary}
                 size={35}
                 onPress={() => phoneCall()}
               />
-            ) : issue.contact_information.type === 'whatsapp' ? (
+            ) : issue.contact_method === ContactMethod.WHATSAPP ? (
               <IconButton
                 icon="whatsapp"
                 color={colors.primary}
@@ -675,6 +711,10 @@ function renderHeaderAndActions(
       <View
         style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}
       >
+        <Paragraph>
+          {JSON.stringify(!hasActionsOrResolved)} {JSON.stringify(isAcceptEnabled)}
+        </Paragraph>
+
         {/* Actions */}
         <ActionButton
           label={i18n.t('accept_issue')}

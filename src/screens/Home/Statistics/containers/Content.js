@@ -6,8 +6,7 @@ import moment from 'moment';
 import PieChartGrm from '../components/PieChartGrm';
 import BarChartGrm from '../components/BarChartGrm';
 
-function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup2, issueType, issueCategory, issueComponent, issueSubComponent }) {
-  console.log ("stats issues : ", issues);
+function Content({ issues, ageGroup: ageGroups, citizenGroup1, citizenGroup2, issueType, issueCategory, issueComponent, issueSubComponent }) {
   const [_issues, setIssues] = useState([]);
 
   const [dataAgeGroup, setDataAgeGroup] = useState([]);
@@ -44,7 +43,7 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
 
     // Age group data initialization
     const _dataAgeGroup = [];
-    ageGroup.forEach(value => {
+    ageGroups.forEach(value => {
       _dataAgeGroup.push({
         code: value.id,
         name: value.name,
@@ -258,12 +257,12 @@ function Content({ issues, eadl, statuses, ageGroup, citizenGroup1, citizenGroup
           <PieChartGrm data={dataIssueComponent} />
         </View>
 
-        {/* <View>
+        <View>
           <View style={styles.container}>
             <Text style={styles.statisticsText}>{i18n.t('stat_nb_issue_by_issue_sub_component')}</Text>
           </View>
           <PieChartGrm data={dataIssueSubComponent} />
-        </View> */}
+        </View>
       </View>
     </View>
   );

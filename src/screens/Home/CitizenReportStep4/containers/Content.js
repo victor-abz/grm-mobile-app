@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ScrollView, Text, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from 'react-native-paper';
 import { useBackHandler } from '@react-native-community/hooks';
-import { i18n } from "../../../../translations/i18n";
+import { i18n } from '../../../../translations/i18n';
 import { styles } from './Content.styles';
 import LockImage from '../../../../../assets/lock.svg';
 import { colors } from '../../../../utils/colors';
@@ -24,12 +24,23 @@ const theme = {
 function Content({ issue }) {
   const navigation = useNavigation();
 
-  useBackHandler(
-    () =>
-      // navigation.navigate("GRM")
-      // handle it
-      true
-  );
+  // Disable native Android back button
+  useBackHandler(() => true);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('gestureStart', (e) => {
+      e.preventDefault();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // Disable header back button
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => null,
+      gestureEnabled: false,
+    });
+  }, [navigation]);
 
   return (
     <ScrollView>
@@ -59,41 +70,6 @@ function Content({ issue }) {
         {issue.tracking_code}
       </Text>
       <View style={{ alignSelf: 'center' }}>
-        {/* <View */}
-        {/*  style={{ */}
-        {/*    flexDirection: "row", */}
-        {/*    justifyContent: "center", */}
-        {/*    marginBottom: 23, */}
-        {/*  }} */}
-        {/* > */}
-        {/*  <Button */}
-        {/*    theme={theme} */}
-        {/*    style={{ */}
-        {/*      alignSelf: "center", */}
-        {/*      marginRight: 7, */}
-        {/*      backgroundColor: "#dedede", */}
-        {/*    }} */}
-        {/*    labelStyle={{ color: "white", fontFamily: "Poppins_500Medium" }} */}
-        {/*    mode="contained" */}
-        {/*    onPress={() => console.log("Pressed")} */}
-        {/*  > */}
-        {/*    {i18n.t("step_4_short_code")} */}
-        {/*  </Button> */}
-        {/*  <Button */}
-        {/*    theme={theme} */}
-        {/*    style={{ */}
-        {/*      alignSelf: "center", */}
-        {/*      marginLeft: 7, */}
-        {/*      backgroundColor: "#dedede", */}
-        {/*    }} */}
-        {/*    labelStyle={{ color: "white", fontFamily: "Poppins_500Medium" }} */}
-        {/*    mode="contained" */}
-        {/*    onPress={() => console.log("Pressed")} */}
-        {/*  > */}
-        {/*    {i18n.t("step_4_two_word_code")} */}
-        {/*  </Button> */}
-        {/* </View> */}
-
         <Button
           theme={theme}
           labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}

@@ -3,53 +3,26 @@ import { SafeAreaView, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import Content from './containers';
 import { styles } from './SearchBarGrm.style';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
+import { useIssue } from '../../../hooks/issues/useIssue';
 
 function SearchBarGrm() {
-  const [eadl, setEadl] = useState(false);
-  const [issues, setIssues] = useState();
-  const { session } = useSelector((state) => state.get('authentication').toObject());
-  const username = session?.username ?? ''
-  
-  useEffect(() => {
-    if (username) {
-      LocalAdminLevelsDatabase.find({
-        selector: { 'representative.email': username },
-      })
-        .then((result) => {
-          setEadl(result.docs[0]);
-        })
-        .catch((err) => {
-          console.log('ERROR FETCHING EADL', err);
-        });
-    }
-  }, [username]);
+  const [issues, setIssues] = useState();  
+  const { assigneeIssueList, reporterIssueList} = useIssue()
 
   useEffect(() => {
-    if (eadl) {
-      LocalGRMDatabase.find({
-        selector: {
-          type: 'issue',
-          '$or': [
-            {'reporter.id': eadl._id},
-            {'assignee.id': eadl._id}
-          ]
-        },
-      })
-        .then((result) => {
-          setIssues(result?.docs);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
+    if (assigneeIssueList && reporterIssueList) {
+      const combined = [...assigneeIssueList, ...reporterIssueList];
+      const uniqueIssues = Array.from(
+        new Map(combined.map(issue => [issue.id, issue])).values()
+      );
+      setIssues(uniqueIssues);
     }
-  }, [eadl]);
-
+  }, [assigneeIssueList, reporterIssueList]);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        <Content issues={issues} eadl={eadl} />
+        <Content issues={issues} />
       </ScrollView>
     </SafeAreaView>
   );

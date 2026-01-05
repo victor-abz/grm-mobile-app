@@ -8,14 +8,12 @@ import { useBackHandler } from '@react-native-community/hooks';
 import CustomSeparator from '../../../../components/CustomSeparator/CustomSeparator';
 import { i18n } from "../../../../translations/i18n";
 import { Button } from 'react-native-paper';
-import { LocalGRMDatabase } from '../../../../db/databaseManager';
 import { citizenTypes } from '../../../../utils/utils';
 import Collapsible from 'react-native-collapsible';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import RecordingCard from "../../GRM/components/RecordingCard";
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
 import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
-
 
 const theme = {
   roundness: 12,
@@ -69,10 +67,7 @@ function Content({ issue }) {
   }, []);
 
   const upsertNewComment = () => {
-    LocalGRMDatabase.upsert(issue._id, (doc) => {
-      doc = issue;
-      return doc;
-    });
+    // TODO: Upsert or check if this empty comment is needed. Add new comment into issue.
   };
 
   const onAddComment = () => {
@@ -109,9 +104,9 @@ function Content({ issue }) {
           <View style={{ marginBottom: 10, justifyContent: 'flex-end', flex: 1, flexDirection: 'row' }}>
             <Text style={[styles.text, { fontSize: 12, color: colors.primary }]}>
               {' '}
-              {issue.issue_date &&
-              moment(issue.issue_date).format('DD-MMM-YYYY')} {issue.issue_date &&
-            currentDate.diff(issue.issue_date, 'days')} {i18n.t('days_ago')}
+              {issue.created_date &&
+              moment(issue.created_date).format('DD-MMM-YYYY')} {issue.created_date &&
+            currentDate.diff(issue.created_date, 'days')} {i18n.t('days_ago')}
             </Text>
           </View>
         </View>

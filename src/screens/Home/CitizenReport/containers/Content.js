@@ -29,7 +29,7 @@ function Content() {
   const [dropdownDisabled, setDropdownDisabled] = React.useState(true);
   const [contactMethodError, setContactMethodError] = React.useState();
   const [contactInfo, setContactInfo] = React.useState("");
-  const [pickerValue, setPickerValue] = useState("email");
+  const [pickerValue, setPickerValue] = useState("phone_number");
   const [items, setItems] = useState([
     { label: i18n.t("step_1_method_1"), value: "phone_number" },
     { label: i18n.t("step_1_method_2"), value: "whatsapp" },

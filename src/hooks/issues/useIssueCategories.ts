@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import * as IssueCategoryService from '../../services/issues/IssueCategoryService';
-import { IssueCategory } from '../../models/IssueCategory';
+import type { IssueCategory } from '../../models/issues/IssueCategory';
 
 export function useIssueCategories() {
   const [issueCategoriesList, setIssueCategoriesList] = useState<IssueCategory[]>()
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchIssueCategoriesList();

@@ -9,7 +9,7 @@ import ListHeader from '../components/ListHeader';
 import moment from 'moment';
 import { getSessionData } from "../../../../store/ducks/authentication.duck";
 
-function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
+function Content({ assigneeIssueList, reporterIssueList, statuses }) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('reported');
@@ -31,7 +31,7 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
 
   useEffect(() => {
     let filteredIssues = [];
-    let foundStatus;
+    let resolvedStatus;
     switch (status) {
       case 'assigned':
         filteredIssues = assigneeIssueList ?? []
@@ -42,17 +42,31 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'resolved':
-        foundStatus = statuses.find((el) => el.final_status === true);
-        filteredIssues = [...assigneeIssueList.filter((issue) => issue.assignee && issue.assignee.id === userId && issue.status.id === foundStatus.id), ...reporterIssueList.filter((issue) => issue.assignee && issue.assignee.id === userId && issue.status.id === foundStatus.id)]
+        resolvedStatus = statuses.find((el) => el.final_status === true);
+        filteredIssues = [
+          ...assigneeIssueList.filter(
+            (issue) =>
+              issue.assignee &&
+              (issue.assignee.id === userId || issue.assignee === userId) &&
+              issue.status.id === resolvedStatus.id
+          ),
+          ...reporterIssueList.filter(
+            (issue) =>
+              issue.assignee &&
+              (issue.assignee.id === userId || issue.assignee === userId) &&
+              issue.status.id === resolvedStatus.id
+          ),
+        ];
         filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       default:
         filteredIssues = displayedIssues.map((issue) => issue);
-      }
+    }
+  
     setDisplayedIssues(filteredIssues);
   }, [status, assigneeIssueList, reporterIssueList]);
 
-  function Item({ item, onPress, backgroundColor, textColor }) {
+  function Item({ item, onPress }) {
     return (
       <TouchableOpacity onPress={onPress} style={[styles.item]}>
         <View style={styles.itemContainer}>
@@ -65,10 +79,10 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
             </Text>
             <Text style={[styles.subTitle]}>
               {item.citizen}
-              {item.citizen && item.intake_date && ','}{' '}
-              {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')}
-              {item.intake_date && ','}{' '}
-              {item.intake_date && currentDate.diff(item.intake_date, 'days')} {i18n.t('days_ago')}
+              {item.citizen && item.created_date && ','}{' '}
+              {item.created_date && moment(item.created_date).format('DD-MMM-YYYY')}
+              {item.created_date && ','}{' '}
+              {item.created_date && currentDate.diff(item.created_date, 'days')} {i18n.t('days_ago')}
             </Text>
             <Text style={styles.subTitle}>
               {i18n.t('status_label')}:{' '}
@@ -96,7 +110,9 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
   const renderItem = ({ item }) => {
     const backgroundColor = item.id === selectedId ? '#6e3b6e' : '#f9c2ff';
     const color = item.id === selectedId ? 'white' : 'black';
-    const updateIssue = (updatedIssue) => {
+    
+    const updateIssue = (updatedIssue) =>
+    {
       setDisplayedIssues((prevIssues) => {
         const newIssues = prevIssues.map((issue) =>
           issue.id === updatedIssue.id ? updatedIssue : issue
@@ -109,11 +125,12 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
       <Item
         item={item}
         onPress={() =>
+        { 
           navigation.navigate('IssueDetailTabs', {
             item,
             updateIssue,
             merge: true,
-          })
+          })}
         }
         backgroundColor={{ backgroundColor }}
         textColor={{ color }}
@@ -130,7 +147,7 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
         style={{ justifyContent: 'space-between', padding: 10 }}
         onValueChange={(value) => {
           if (value) {
-            setStatus(value)
+            setStatus(value);
           }
         }}
         value={status}
@@ -138,16 +155,18 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: (status === 'reported' ? colors.disabled : colors.white),
+            backgroundColor: status === 'reported' ? colors.disabled : colors.white,
             borderBottomColor: status === 'reported' ? colors.primary : colors.white,
-            borderBottomWidth: 3
+            borderBottomWidth: 3,
           }}
           icon={() => (
             <View>
-              <Text style={{
-                color: status === 'reported' ? colors.primary : colors.secondary,
-                fontWeight: status === 'reported' ? 'bold' : 'normal',
-              }}>
+              <Text
+                style={{
+                  color: status === 'reported' ? colors.primary : colors.secondary,
+                  fontWeight: status === 'reported' ? 'bold' : 'normal',
+                }}
+              >
                 {i18n.t('reported')}
               </Text>
             </View>
@@ -157,16 +176,18 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: (status === 'assigned' ? colors.disabled : colors.white),
+            backgroundColor: status === 'assigned' ? colors.disabled : colors.white,
             borderBottomColor: status === 'assigned' ? colors.primary : colors.white,
-            borderBottomWidth: 3
+            borderBottomWidth: 3,
           }}
           icon={() => (
             <View>
-              <Text style={{
-                color: status === 'assigned' ? colors.primary : colors.secondary,
-                fontWeight: status === 'assigned' ? 'bold' : 'normal',
-              }}>
+              <Text
+                style={{
+                  color: status === 'assigned' ? colors.primary : colors.secondary,
+                  fontWeight: status === 'assigned' ? 'bold' : 'normal',
+                }}
+              >
                 {i18n.t('assigned')}
               </Text>
             </View>
@@ -176,16 +197,18 @@ function Content({ assigneeIssueList, reporterIssueList, eadl, statuses }) {
         <ToggleButton
           style={{
             flex: 1,
-            backgroundColor: (status === 'resolved' ? colors.disabled : colors.white),
+            backgroundColor: status === 'resolved' ? colors.disabled : colors.white,
             borderBottomColor: status === 'resolved' ? colors.primary : colors.white,
-            borderBottomWidth: 3
+            borderBottomWidth: 3,
           }}
           icon={() => (
             <View>
-              <Text style={{
-                color: status === 'resolved' ? colors.primary : colors.secondary,
-                fontWeight: status === 'resolved' ? 'bold' : 'normal',
-              }}>
+              <Text
+                style={{
+                  color: status === 'resolved' ? colors.primary : colors.secondary,
+                  fontWeight: status === 'resolved' ? 'bold' : 'normal',
+                }}
+              >
                 {i18n.t('resolved')}
               </Text>
             </View>

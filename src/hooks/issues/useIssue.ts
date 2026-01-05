@@ -5,7 +5,7 @@ import { useDatabase } from '@nozbe/watermelondb/react';
 import { useSelector } from 'react-redux';
 import { TABLE_NAMES } from '../../migrations/tableName';
 
-export function useIssue() {
+export function useIssue(fetchIssues: boolean = true) {
   const [assigneeIssueList, setAssigneeIssueList] = useState<Issue[]>()
   const database = useDatabase();
   const { session } = useSelector((state) => {
@@ -13,9 +13,10 @@ export function useIssue() {
   });
   
   const [reporterIssueList, setReporterIssueList] = useState<Issue[]>()
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!fetchIssues) return;
     refetch();
   }, []);
   
@@ -66,7 +67,11 @@ export function useIssue() {
     setLoading(true)
     if (!assigneeIssueList) {
       const issuesList = await IssueService.fetchIssueList('assignee');
-      const filteredList = issuesList.filter((issue) => issue.assignee ? session.user_id == issue.assignee.id : false)
+      const filteredList = issuesList.filter((issue) =>
+        issue.assignee
+          ? (session.user_id == issue?.assignee?.id || session.user_id == issue.assignee)
+          : false
+      );
       setAssigneeIssueList(filteredList);
     }
   }
@@ -75,7 +80,11 @@ export function useIssue() {
     setLoading(true);
     if (!reporterIssueList) {
       const issuesList = await IssueService.fetchIssueList('reporter');
-      const filteredList = issuesList.filter((issue) => issue.reporter ? session.user_id == issue.reporter.id : false);
+      const filteredList = issuesList.filter((issue) =>
+        issue.reporter
+          ? (session.user_id == issue?.reporter?.id || session.user_id == issue.reporter)
+          : false
+      );
       setReporterIssueList(filteredList);
     }
   }

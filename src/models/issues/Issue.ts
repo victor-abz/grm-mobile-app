@@ -1,6 +1,6 @@
 import { Base } from "../Base";
 import { Model } from "@nozbe/watermelondb";
-import { json, text, field } from "@nozbe/watermelondb/decorators";
+import { json, text, field, date } from "@nozbe/watermelondb/decorators";
 import { TABLE_NAMES } from "../../migrations/tableName";
 import { IssueAttachment } from "./IssueAttachment";
 
@@ -22,8 +22,8 @@ export interface CitizenGroup extends Base {
 }
 export interface Citizen extends Base {
     age_group: Base,
-    group: CitizenGroup,
-    group_2: CitizenGroup,
+    group: number,
+    group_2: number,
     type: string,
 }
 
@@ -42,10 +42,7 @@ export interface Issue extends Base {
   component: Base,
   confirmed: boolean,
   contact_medium: ContactMedium,
-  contact_information: {
-    type: ContactMethod;
-    contact: string;
-  };
+  contact_information: string;
   contact_method: ContactMethod;
   description: string;
   id: string;
@@ -69,13 +66,11 @@ export class IssueLocalModel extends Model {
   static table = TABLE_NAMES.issue;
 
   // @ts-ignore
-  @json('administrative_region', json => json) administrative_region;
+  @json('administrative_region', (json) => json) administrative_region;
   // @ts-ignore
-  @json('assignee', json => json) assignee;
+  @json('assignee', (json) => json) assignee;
   // @ts-ignore
-  @json('attachments', json => json) attachments;
-  // @ts-ignore
-  @text('auto_increment_id') auto_increment_id;
+  @json('attachments', (json) => json) attachments;
   // @ts-ignore
   @field('escalate_flag') escalate_flag;
   // @ts-ignore
@@ -89,21 +84,23 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @text('auto_increment_id') auto_increment_id;
   // @ts-ignore
-  @json('category', json => json) category;
+  @json('category', (json) => json) category;
   // @ts-ignore
-  @json('citizen', json => json) citizen;
+  @json('citizen', (json) => json) citizen;
   // @ts-ignore
-  @json('component', json => json) component;
+  @json('component', (json) => json) component;
   // @ts-ignore
   @field('confirmed') confirmed;
   // @ts-ignore
   @text('contact_medium') contact_medium;
   // @ts-ignore
-  @json('contact_information', json => json) contact_information;
+  @json('contact_information', (json) => json) contact_information;
   // @ts-ignore
   @text('contact_method') contact_method;
   // @ts-ignore
   @text('created_date') created_date;
+  // @ts-ignore
+  @text('updated_date') updated_date;
   // @ts-ignore
   @text('description') description;
   // @ts-ignore
@@ -113,9 +110,9 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @field('issue_location_id') issue_location_id;
   // @ts-ignore
-  @json('issue_sub_type', json => json) issue_sub_type;
+  @json('issue_sub_type', (json) => json) issue_sub_type;
   // @ts-ignore
-  @json('issue_type', json => json) issue_type;
+  @json('issue_type', (json) => json) issue_type;
   // @ts-ignore
   @text('internal_code') internal_code;
   // @ts-ignore
@@ -125,7 +122,7 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @field('ongoing_issue') ongoing_issue;
   // @ts-ignore
-  @json('reporter', json => json) reporter;
+  @json('reporter', (json) => json) reporter;
   // @ts-ignore
   @text('resolution_date') resolution_date;
   // @ts-ignore
@@ -133,7 +130,7 @@ export class IssueLocalModel extends Model {
   // @ts-ignore
   @text('tracking_code') tracking_code;
   // @ts-ignore
-  @json('sub_component', json => json) sub_component;
+  @json('sub_component', (json) => json) sub_component;
   // @ts-ignore
-  @json('status', json => json) status;
+  @json('status', (json) => json) status;
 }

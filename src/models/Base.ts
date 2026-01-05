@@ -1,8 +1,8 @@
 export interface Base {
-  created_date: Date,
-  deleted_date?: Date | null,
+  created_date: string,
+  deleted_date?: string | null,
   id: string,
   name: string,
-  sync_date?: Date | null,
-  updated_date?: Date | null
+  sync_date?: string | null,
+  updated_date?: string | null
 }

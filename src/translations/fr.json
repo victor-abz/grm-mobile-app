@@ -1,4 +1,7 @@
 {
+  //Common
+  "reload": "recharger",
+
   //Headers
   "citizen_input_header": "Nouvel enregistrement",
   //Onboarding

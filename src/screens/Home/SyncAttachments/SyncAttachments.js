@@ -1,10 +1,13 @@
+// TODO: This file may be unused. Review its usage and remove if not needed. check stack tree until "Dashboard"
+//
+//
 import React, { useState, useEffect } from 'react';
 import { View, Platform, Modal, Text } from 'react-native';
 import axios from 'axios';
 import { ActivityIndicator, Snackbar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { getInfoAsync } from 'expo-file-system';
-import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
+// import { LocalAdminLevelsDatabase, LocalGRMDatabase } from '../../../db/databaseManager';
 import { colors } from '../../../utils/colors';
 import ImagesList from './components/ImagesList';
 import { getEncryptedData } from '../../../utils/storageManager';
@@ -12,7 +15,7 @@ import CustomGreenButton from '../../../components/CustomGreenButton/CustomGreen
 import SyncImage from '../../../../assets/sync-image.svg';
 import CheckCircle from '../../../../assets/check-circle.svg';
 import { baseURL } from '../../../services/authService';
-import { i18n } from "../../../translations/i18n";
+import { i18n } from '../../../translations/i18n';
 
 const FILE_READ_ERROR = 'Cannot read all the files.';
 
@@ -52,8 +55,8 @@ function SyncAttachments({ navigation }) {
           formData,
           {
             headers: {
-              'Content-Type': 'multipart/form-data'
-            }
+              'Content-Type': 'multipart/form-data',
+            },
           }
         );
         return {};
@@ -67,9 +70,7 @@ function SyncAttachments({ navigation }) {
   };
 
   const syncImages = async () => {
-    const dbConfig = await getEncryptedData(
-      `dbCredentials_${username.replace('@', '')}`
-    );
+    const dbConfig = await getEncryptedData(`dbCredentials_${username.replace('@', '')}`);
     setLoading(true);
     let isError = false;
     for (let i = 0; i < attachments.length; i++) {
@@ -85,75 +86,75 @@ function SyncAttachments({ navigation }) {
   };
 
   async function fetchContentRouting() {
-    LocalAdminLevelsDatabase.find({
-      selector: { 'representative.email': username },
-      // fields: ["_id", "phases"],
-    })
-      .then((result) => {
-        const phases = result?.docs[0]?.phases;
-        const docId = result?.docs[0]?._id;
-        const attachmentsArray = [];
-        for (let i = 0; i < phases.length; i+=1) {
-          const phaseOrdinal = phases[i]?.ordinal;
-          const tasks = phases[i]?.tasks;
-          for (let j = 0; j < tasks?.length; j+=1) {
-            const taskOrdinal = tasks[j]?.ordinal;
-            const taskAttachments = tasks[j]?.attachments;
-            for (let k = 0; k < taskAttachments?.length; k+=1) {
-              const attachment = taskAttachments[k];
-              attachmentsArray.push({
-                attachment,
-                phaseOrdinal,
-                taskOrdinal,
-                docId,
-              });
-            }
-          }
-        }
+    // LocalAdminLevelsDatabase.find({
+    //   selector: { 'representative.email': username },
+    //   // fields: ["_id", "phases"],
+    // })
+    //   .then((result) => {
+    //     const phases = result?.docs[0]?.phases;
+    //     const docId = result?.docs[0]?._id;
+    //     const attachmentsArray = [];
+    //     for (let i = 0; i < phases.length; i += 1) {
+    //       const phaseOrdinal = phases[i]?.ordinal;
+    //       const tasks = phases[i]?.tasks;
+    //       for (let j = 0; j < tasks?.length; j += 1) {
+    //         const taskOrdinal = tasks[j]?.ordinal;
+    //         const taskAttachments = tasks[j]?.attachments;
+    //         for (let k = 0; k < taskAttachments?.length; k += 1) {
+    //           const attachment = taskAttachments[k];
+    //           attachmentsArray.push({
+    //             attachment,
+    //             phaseOrdinal,
+    //             taskOrdinal,
+    //             docId,
+    //           });
+    //         }
+    //       }
+    //     }
 
-        // fetch EADL
-        const issuesAttachments = [];
-        LocalAdminLevelsDatabase.find({
-          selector: { 'representative.email': username },
-          // fields: ["_id", "commune", "phases"],
-        })
-          .then((eadl) => {
-            // FETCH GRM ISSUES
-            LocalGRMDatabase.find({
-              selector: {
-                type: 'issue',
-                'reporter.name': eadl.docs[0].representative.name,
-              },
-            }).then((res) => {
-              for (let i = 0; i < res.docs.length; i+=1) {
-                const docsAttachments = res.docs[i]?.attachments;
-                for (let k = 0; k < docsAttachments?.length; k+=1) {
-                  issuesAttachments.push({
-                    attachment: docsAttachments[k],
-                    docId: res?.docs[i]?._id,
-                    tracking_code: res?.docs[i]?.tracking_code,
-                  });
-                }
-                // console.log(res.docs[i].attachments)
-              }
-              setAttachments([...attachmentsArray.flat(2), ...issuesAttachments]);
-              setLoading(false);
-            });
+    //     // fetch EADL
+    //     const issuesAttachments = [];
+    //     LocalAdminLevelsDatabase.find({
+    //       selector: { 'representative.email': username },
+    //       // fields: ["_id", "commune", "phases"],
+    //     })
+    //       .then((eadl) => {
+    //         // FETCH GRM ISSUES
+    //         LocalGRMDatabase.find({
+    //           selector: {
+    //             type: 'issue',
+    //             'reporter.name': eadl.docs[0].representative.name,
+    //           },
+    //         }).then((res) => {
+    //           for (let i = 0; i < res.docs.length; i += 1) {
+    //             const docsAttachments = res.docs[i]?.attachments;
+    //             for (let k = 0; k < docsAttachments?.length; k += 1) {
+    //               issuesAttachments.push({
+    //                 attachment: docsAttachments[k],
+    //                 docId: res?.docs[i]?._id,
+    //                 tracking_code: res?.docs[i]?.tracking_code,
+    //               });
+    //             }
+    //             // console.log(res.docs[i].attachments)
+    //           }
+    //           setAttachments([...attachmentsArray.flat(2), ...issuesAttachments]);
+    //           setLoading(false);
+    //         });
 
-            // handle result
-          })
-          .catch((err) => {
-            console.error(err);
-            setLoading(false);
-          });
+    //         // handle result
+    //       })
+    //       .catch((err) => {
+    //         console.error(err);
+    //         setLoading(false);
+    //       });
 
-        // handle result
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
-    setLoading(false);
+    //     // handle result
+    //   })
+    //   .catch((err) => {
+    //     console.error(err);
+    //     setLoading(false);
+    //   });
+    // setLoading(false);
   }
 
   useEffect(() => {
@@ -198,7 +199,7 @@ function SyncAttachments({ navigation }) {
               width: '100%',
               height: 36,
               borderRadius: 7,
-              textTransform: 'uppercase'
+              textTransform: 'uppercase',
             }}
             textStyle={{
               fontFamily: 'Poppins_500Medium',
@@ -218,28 +219,28 @@ function SyncAttachments({ navigation }) {
       {loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />
       ) : (
-          <View>
-            <CustomGreenButton
-              onPress={syncImages}
-              buttonStyle={{
-                height: 36,
-                borderRadius: 7,
-                marginHorizontal: '5%',
-                width: '90%',
-                marginBottom: 10,
-              }}
-              textStyle={{
-                fontFamily: 'Poppins_500Medium',
-                fontSize: 14,
-                lineHeight: 21,
-                letterSpacing: 0,
-                textAlign: 'right',
-                color: '#ffffff',
-              }}
-            >
-              {i18n.t('synchronize')}
-            </CustomGreenButton>
-          </View>
+        <View>
+          <CustomGreenButton
+            onPress={syncImages}
+            buttonStyle={{
+              height: 36,
+              borderRadius: 7,
+              marginHorizontal: '5%',
+              width: '90%',
+              marginBottom: 10,
+            }}
+            textStyle={{
+              fontFamily: 'Poppins_500Medium',
+              fontSize: 14,
+              lineHeight: 21,
+              letterSpacing: 0,
+              textAlign: 'right',
+              color: '#ffffff',
+            }}
+          >
+            {i18n.t('synchronize')}
+          </CustomGreenButton>
+        </View>
       )}
       <Snackbar visible={errorVisible} duration={3000} onDismiss={onDismissSnackBar}>
         {FILE_READ_ERROR}

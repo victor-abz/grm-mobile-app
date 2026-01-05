@@ -1,9 +1,7 @@
-import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
+import { RawRecord } from '@nozbe/watermelondb';
 import { TABLE_NAMES } from "../../../migrations/tableName";
 import { IssueType, IssueTypeLocalModel } from "../../../models/issues/IssueType";
-import { RawRecord } from '@nozbe/watermelondb';
-import { sanitizedRaw } from '@nozbe/watermelondb/RawRecord';
-import { issueTypeTableSchema } from '../../../migrations/table-schemas/issue_type';
+import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 
 export class IssueTypeLocalRepository extends BaseLocalRepository<IssueType> {
   constructor() {

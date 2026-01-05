@@ -4,6 +4,11 @@ import { syncServiceInstance } from "../services/shared/SyncService";
 import { issueStatusSyncable } from "../services/issues/IssueStatusService";
 import { assigneeIssueListSyncable, reporterIssueListSyncable } from "../services/issues/IssueService";
 import { issueTypeSyncable } from '../services/issues/IssueTypeService';
+import { issueAgeGroupListSyncable } from '../services/issues/IssueAgeGroupService';
+import { issueSubComponentSyncable } from '../services/issues/IssueSubComponentService';
+import { issueComponentSyncable } from '../services/issues/IssueComponentService';
+import { issueSubTypeSyncable } from '../services/issues/IssueSubTypeService';
+import { issueCitizenGroupListSyncable } from '../services/issues/IssueCitizenGroupService';
 
 let stableConnectionTimer: NodeJS.Timeout | null = null;
 let initialSyncListener: NetInfoSubscription | null = null;
@@ -17,6 +22,11 @@ export function registerServices(): void {
   syncServiceInstance.register(issueTypeSyncable);
   syncServiceInstance.register(assigneeIssueListSyncable);
   syncServiceInstance.register(reporterIssueListSyncable);
+  syncServiceInstance.register(issueAgeGroupListSyncable);
+  syncServiceInstance.register(issueSubComponentSyncable);
+  syncServiceInstance.register(issueComponentSyncable);
+  syncServiceInstance.register(issueSubTypeSyncable);
+  syncServiceInstance.register(issueCitizenGroupListSyncable);
 }
 
 async function setupConnectionWatcher(): Promise<void> {
