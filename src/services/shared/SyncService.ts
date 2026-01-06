@@ -1,9 +1,9 @@
 import { enablePromise } from 'react-native-sqlite-storage';
 import SQLiteAdapter from "@nozbe/watermelondb/adapters/sqlite";
-import { Database } from "@nozbe/watermelondb";
+import { Database, DirtyRaw, Model } from "@nozbe/watermelondb";
 import schema from "../../migrations/appSchema";
 import migrations from "../../migrations/migrations";
-import { synchronize } from "@nozbe/watermelondb/sync";
+import { SyncDatabaseChangeSet, synchronize } from "@nozbe/watermelondb/sync";
 import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
 import { IssueLocalModel } from "../../models/issues/Issue";
 import { IssueTypeLocalModel } from "../../models/issues/IssueType";
@@ -16,30 +16,65 @@ import { AdministrativeRegionLocalModel } from '../../models/issues/Administrati
 import { IssueCommentLocalModel } from "../../models/issues/IssueComment";
 import { IssueAttachmentLocalModel } from "../../models/issues/IssueAttachment";
 import { IssueCitizenGroupLocalModel } from '../../models/issues/IssueCitizenGroup';
-
+import type { CreatedResponseWithBackendId, WatermelonId } from './BaseService';
+import { TABLE_NAMES } from '../../migrations/tableName';
+import { fetchIssueList } from '../issues/IssueService';
+import { SyncStatus } from '@nozbe/watermelondb/Model';
 
 const DB_NAME = "grm-db";
 
 enablePromise(true);
 
 export type Syncable = {
-   pullChanges({ tableName, lastPulledAt }): Promise<{
-    changes: { tableName: { deleted: any[]; created: any[]; updated: any[] } };
-    timestamp: number
+  replaceParentIds?(
+    idsToReplace: [CreatedResponseWithBackendId, WatermelonId][],
+    status?: SyncStatus
+  ): Promise<Model[]>;
+  pullChanges({
+    tableName,
+    lastPulledAt,
+    parentChanges: [],
+  }: {
+    tableName: string;
+    lastPulledAt: any;
+    parentChanges?: { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] };
+  }): Promise<{
+    changes: {
+      issue: { tableName: { deleted: any[]; created: any[]; updated: any[] } };
+      tableName: { deleted: any[]; created: any[]; updated: any[] };
+    };
+    timestamp: number;
+    createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][];
   }>;
-   pushChanges({ changes, lastPulledAt }): Promise<void>;
-   tableName: string
-}
+  pushChanges({ changes, lastPulledAt }): Promise<void>;
+  tableName: string;
+  fetchAllParents?(tableName: string): Promise<Model[]>
+};
 
 export class SyncService {
   database: Database | null = null; // 💡 Store the database instance here
+  createdRecordsPostPushedWithNewBackendIDsPerTable: {
+    [key: string]: [CreatedResponseWithBackendId, WatermelonId][];
+  } = {};
+  firstSync = false
+  isSyncFinished = true
+
+  
+  private pushedParentChanges: any;
+  private markedTimestamp: number;
+  private pulledParentsChanges: SyncDatabaseChangeSet = null;
 
   constructor(
-    private syncables: Syncable[] = []
-  ) { }
+    private syncables: Syncable[] = [],
+    private childSyncables: Syncable[] = []
+  ) {}
 
   register(syncable: Syncable) {
     this.syncables.push(syncable);
+  }
+
+  registerChildSyncables(syncable: Syncable) {
+    this.childSyncables.push(syncable);
   }
 
   async initDB() {
@@ -47,10 +82,10 @@ export class SyncService {
       schema,
       migrations,
       dbName: DB_NAME,
-      onSetUpError: error => {
+      onSetUpError: (error) => {
         // Database failed to load -- offer the user to reload the app or log out
-        console.log("Watermelon Adapter set up Failed", error);
-      }
+        console.log('Watermelon Adapter set up Failed', error);
+      },
     });
 
     this.database = new Database({
@@ -67,13 +102,14 @@ export class SyncService {
         IssueSubComponentLocalModel,
         IssueCommentLocalModel,
         IssueAttachmentLocalModel,
-        IssueCitizenGroupLocalModel
+        IssueCitizenGroupLocalModel,
       ],
     });
   }
 
   removeAll() {
     this.syncables = [];
+    this.childSyncables = [];
   }
 
   async runMigrations(db, fromVersion, toVersion) {
@@ -88,76 +124,296 @@ export class SyncService {
   }
 
   async syncAll(): Promise<void> {
-    console.log("SYNCING ALL");
-    
+    console.log('SYNCING ALL');
     if (!this.database) {
-      throw new Error("Database not initialized. Call initDB() first.");
+      throw new Error('Database not initialized. Call initDB() first.');
     }
 
-    return await synchronize({
-      database: this.database,
+    if (!this.isSyncFinished) {
+      throw new Error('Sync in progress.');
+    }
+
+    this.isSyncFinished = false;
+
+    try {
+      await synchronize({
+        database: this.database,
         pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
-          console.log(`🍉 Pulling with lastPulledAt = ${lastPulledAt}`);
-          let changes = {};          
+          this.pulledParentsChanges = {};
+
+          if (!lastPulledAt) {
+            this.firstSync = true;
+          }
+
+          console.log('From DB LAST PULLED:', new Date(lastPulledAt).toISOString());
+
           const timestamp = Date.now();
+
+          this.markedTimestamp = timestamp;
+
           for (const syncable of this.syncables) {
-            const syncableChanges = await syncable.pullChanges({ tableName: syncable.tableName, lastPulledAt });            
-            
+            const syncableChanges = await syncable.pullChanges({
+              tableName: syncable.tableName,
+              lastPulledAt,
+            });
+            // Keep temporarily replaced records with new backend ID
+            // TODO: handle assignee - reporter
+            this.createdRecordsPostPushedWithNewBackendIDsPerTable = {
+              ...this.createdRecordsPostPushedWithNewBackendIDsPerTable,
+              [syncable.tableName]: syncableChanges.createdRecordsPostPushedWithNewBackendIDs,
+            };
+
             // Create unique issue list from remote lists
             if (
-              changes &&
-              changes.issue &&
+              this.pulledParentsChanges &&
+              this.pulledParentsChanges.issue &&
               syncableChanges.changes &&
               syncableChanges.changes.issue
             ) {
               const createdUniqueArray = Array.from(
                 new Map(
                   [
-                    ...(changes.issue.created || []),
-                    ...(syncableChanges.changes.issue.created || [])
+                    ...(this.pulledParentsChanges.issue.created || []),
+                    ...(syncableChanges.changes.issue.created || []),
                   ].map((item) => [item.id, item])
                 ).values()
               );
+
               const updatedUniqueArray = Array.from(
                 new Map(
                   [
-                    ...(changes.issue.updated || []),
-                    ...(syncableChanges.changes.issue.updated || [])
+                    ...(this.pulledParentsChanges.issue.updated || []),
+                    ...(syncableChanges.changes.issue.updated || []),
                   ].map((item) => [item.id, item])
                 ).values()
               );
-              const deletedUniqueArray = Array.from(
-                new Map(
-                  [
-                    ...(changes.issue.deleted || []),
-                    ...(syncableChanges.changes.issue.deleted || [])
-                  ].map((item) => [item.id, item])
-                ).values()
-              );
-              
-              changes = { ...changes, issue: { created: createdUniqueArray, updated: updatedUniqueArray, deleted: deletedUniqueArray } }
-              
+
+              const deletedUniqueArray = [
+                ...(this.pulledParentsChanges.issue.deleted || []),
+                ...(syncableChanges.changes.issue.deleted || []),
+              ];
+
+              this.pulledParentsChanges = {
+                ...this.pulledParentsChanges,
+                issue: {
+                  created: createdUniqueArray,
+                  updated: updatedUniqueArray,
+                  deleted: deletedUniqueArray,
+                },
+              };
             } else {
-              changes = { ...syncableChanges.changes, ...changes }
+              this.pulledParentsChanges = {
+                ...syncableChanges.changes,
+                ...this.pulledParentsChanges,
+              };
             }
-            
           }
+
           console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
 
+          const hasData = Object.values(this.pulledParentsChanges ?? {}).some((table) =>
+            Object.values(table ?? {}).some(
+              (arr: unknown) => Array.isArray(arr) && (arr as unknown[]).length > 0
+            )
+          );
 
-          return { changes, timestamp };
+          // if (!hasData) return { changes, timestamp: lastPulledAt };
+          if (!hasData) {
+            this.pulledParentsChanges = null;
+            return;
+          }
+
+          // Otherwise, set a new one.
+          console.log(new Date(timestamp).toISOString());
+
+          return { changes: this.pulledParentsChanges, timestamp };
         },
+
         pushChanges: async ({ changes, lastPulledAt }) => {
+          console.log('Pushing CHANGES: ', JSON.stringify(changes, null, 2));
           console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
+
+          this.pushedParentChanges = changes;
+
           for (const syncable of this.syncables) {
             await syncable.pushChanges({ changes, lastPulledAt });
           }
-          console.log(`🍉 Changes pushed successfully.`);
 
-        }
+          console.log(`🍉 Changes pushed successfully.`);
+        },
+        sendCreatedAsUpdated: true,
       });
+    } catch (error) {
+      this.isSyncFinished = true;
+      console.log('Sync All error: ', error);
     }
 
+
+    // Update locally and manually push changes of child syncables with their BE generated parent_ids and mark them as synced
+    try {
+      if (this.pushedParentChanges) {
+        for (const syncable of this.childSyncables) {
+          const parentTableName = getParentTableName(syncable.tableName);
+
+          const replacedItems: Model[] = await syncable.replaceParentIds(
+            this.createdRecordsPostPushedWithNewBackendIDsPerTable[parentTableName],
+            'synced'
+          );
+
+          console.log('replaced items', replacedItems);
+
+          // Ensure we have a place for this table's changes
+          const tableChanges = this.pushedParentChanges?.[syncable.tableName] ?? {
+            created: [],
+            updated: [],
+            deleted: [],
+          };
+
+          console.log('table changes', tableChanges);
+
+          const updateParentIdFor = (arr: any[] = []) =>
+            arr.map((record: any) => {
+              const match = replacedItems.find((r: any) => {
+                const rid = typeof r.id === 'string' ? r.id : r._raw?.id;
+                return rid === record.id;
+              });
+
+              if (!match) return record;
+
+              // Try to obtain the new parent id from the Model's raw or properties
+              const newParentId =
+                match._raw?.parent_id ??
+                match._raw?.parentId ??
+                (match as any).parent_id ??
+                (match as any).parentId;
+
+              if (newParentId == null) return record;
+
+              return { ...record, parent_id: newParentId };
+            });
+
+          this.pushedParentChanges[syncable.tableName] = {
+            ...tableChanges,
+            created: updateParentIdFor(tableChanges.created),
+            updated: updateParentIdFor(tableChanges.updated),
+          };
+
+          console.log(this.pushedParentChanges);
+
+          // update this.changesToPush with the upper replaceParentIds executed()
+          await syncable.pushChanges({
+            changes: this.pushedParentChanges,
+            lastPulledAt: this.markedTimestamp,
+          });
+
+          this.pushedParentChanges = null;
+        }
+      }
+    } catch (error) {
+      this.isSyncFinished = true;
+      console.error('Error pushing updated sub items with parent ids', error);
+    }
+    if (this.pulledParentsChanges || this.firstSync) {
+      try {
+        await synchronize({
+          database: this.database,
+          pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
+            let changes = {};
+
+            console.log('SUB-ITEMS - From DB LAST PULLED:', new Date(lastPulledAt).toISOString());
+
+            const timestamp = Date.now();
+
+            for (const syncable of this.childSyncables) {
+              let allParents: {
+                created: any[];
+                updated: any[];
+                deleted: string[];
+              };
+
+              if (this.firstSync) {
+                const _allParents = await getAllParents(syncable.tableName);
+                allParents = { created: [], updated: _allParents, deleted: [] };
+              }
+
+              const syncableChanges = await syncable.pullChanges({
+                tableName: syncable.tableName,
+                lastPulledAt,
+                parentChanges:
+                  allParents ??
+                  this.pulledParentsChanges[getParentTableName(syncable.tableName)],
+              });
+
+              changes = { ...syncableChanges.changes, ...changes };
+
+              // Empty old IDs array at 'tableName' key
+              this.createdRecordsPostPushedWithNewBackendIDsPerTable[syncable.tableName] = [];
+            }
+
+            // Reset parent changes
+            this.pulledParentsChanges = null;
+
+            console.log(`🍉 Sub items Changes pulled successfully. Timestamp: ${timestamp}`);
+
+            const hasData = Object.values(changes ?? {}).some((table) =>
+              Object.values(table ?? {}).some(
+                (arr: unknown) => Array.isArray(arr) && (arr as unknown[]).length > 0
+              )
+            );
+
+            console.log('Have sub items data? ', hasData);
+
+            // Keep using old timestamp.
+            // if (!hasData) return { changes, timestamp: lastPulledAt };
+            if (!hasData) return;
+
+            // Otherwise, set a new one.
+            console.log(new Date(this.markedTimestamp).toISOString());
+            return { changes, timestamp: this.markedTimestamp };
+          },
+
+          // To be used for delete attachments, for example
+          pushChanges: async ({ changes, lastPulledAt }) => {
+            console.log('Pushing Child Syncables: ', JSON.stringify(changes, null, 2));
+            console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
+
+            for (const syncable of this.childSyncables) {
+              await syncable.pushChanges({ changes, lastPulledAt });
+            }
+
+            console.log(`🍉 Changes pushed successfully.`);
+          },
+          sendCreatedAsUpdated: true,
+        });
+      } catch (error) {
+        this.isSyncFinished = true;
+        console.log('Sync All error: ', error);
+      }
+
+      // if error on first sync - handle
+      this.isSyncFinished = true;
+      this.firstSync = false;
+    }
+  }
 }
 
 export const syncServiceInstance = new SyncService();
+
+function getParentTableName(childTableName: string): string {
+  switch (childTableName) {
+    case TABLE_NAMES.issueAttachment: 
+      return TABLE_NAMES.issue
+    case TABLE_NAMES.issueComment:
+      return TABLE_NAMES.issue
+  }
+}
+
+async function getAllParents(childTableName: string): Promise<any[]> {
+  switch (childTableName) {
+    case TABLE_NAMES.issueAttachment:
+      return await fetchIssueList('reporter');
+    case TABLE_NAMES.issueComment:
+      return await fetchIssueList('reporter');
+  }
+}
+

@@ -14,6 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import RecordingCard from "../../GRM/components/RecordingCard";
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
 import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
+import { ConfidentialityChoices } from '../../../../utils/constants';
 
 const theme = {
   roundness: 12,
@@ -25,9 +26,9 @@ const theme = {
   },
 };
 
-function Content({ issue }) {
+function Content({ issue, attachments, refetchAttachment }) {
   const parentId = issue.id;
-  const { comments, loading} = useIssueComments(parentId);
+  const { comments, loading } = useIssueComments(parentId);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
   const [newComment, setNewComment] = useState();
@@ -97,16 +98,30 @@ function Content({ issue }) {
     upsertNewComment();
   };
 
+  const onAttachmentRetry = async (attachmentId) => {
+    try {
+      if (typeof attachmentId == 'string') {
+        await refetchAttachment(attachmentId);
+      } else {
+        await refetchAttachment(String(attachmentId));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <ScrollView ref={scrollViewRef} contentContainerStyle={{ alignItems: 'center', padding: 20 }}>
-      <View key={"content"} style={styles.infoContainer}>
+      <View key={'content'} style={styles.infoContainer}>
         <View style={{ flexDirection: 'row' }}>
-          <View style={{ marginBottom: 10, justifyContent: 'flex-end', flex: 1, flexDirection: 'row' }}>
+          <View
+            style={{ marginBottom: 10, justifyContent: 'flex-end', flex: 1, flexDirection: 'row' }}
+          >
             <Text style={[styles.text, { fontSize: 12, color: colors.primary }]}>
               {' '}
-              {issue.created_date &&
-              moment(issue.created_date).format('DD-MMM-YYYY')} {issue.created_date &&
-            currentDate.diff(issue.created_date, 'days')} {i18n.t('days_ago')}
+              {issue.created_date && moment(issue.created_date).format('DD-MMM-YYYY')}{' '}
+              {issue.created_date && currentDate.diff(issue.created_date, 'days')}{' '}
+              {i18n.t('days_ago')}
             </Text>
           </View>
         </View>
@@ -119,11 +134,14 @@ function Content({ issue }) {
           }}
         >
           <View style={{ flex: 1 }}>
-
             <Text style={styles.subtitle}>
               {i18n.t('type')}{' '}
               <Text style={[styles.text]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.issue_type?.name ?? i18n.t('information_not_available')}
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.issue_type?.name ?? i18n.t('information_not_available'))}
               </Text>
             </Text>
             {/* <Text style={styles.subtitle}>
@@ -133,13 +151,25 @@ function Content({ issue }) {
             </Text> */}
             <Text style={styles.subtitle}>
               {i18n.t('name')}
-              <Text
-                style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen}</Text>
+              <Text style={styles.text}>
+                {' '}
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue?.citizen?.name ?? '')}
+              </Text>
             </Text>
             <Text style={styles.subtitle}>
               {i18n.t('age')}{' '}
-              <Text
-                style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.citizen_age_group?.name ?? i18n.t('information_not_available')}</Text>
+              <Text style={styles.text}>
+                {' '}
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.citizen_age_group?.name ?? i18n.t('information_not_available'))}
+              </Text>
             </Text>
             {/* <View>
               <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('profession')}{' '}</Text>
@@ -154,19 +184,29 @@ function Content({ issue }) {
               </Text>
             </View> */}
             <View>
-              <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('sub_type')}{' '}</Text>
-              <Text style={[styles.text, {marginBottom: 5}]}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.issue_sub_type?.name ?? i18n.t('information_not_available')}
+              <Text style={[styles.subtitle, { marginBottom: 0 }]}>{i18n.t('sub_type')} </Text>
+              <Text style={[styles.text, { marginBottom: 5 }]}>
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.issue_sub_type?.name ?? i18n.t('information_not_available'))}
               </Text>
             </View>
             <View>
-              <Text style={[styles.subtitle, {marginBottom: 0}]}>{i18n.t('category')}{' '}</Text>
-              <Text  style={[styles.text, {marginBottom: 5}]}>{issue.category?.name ?? i18n.t('information_not_available')}</Text>
+              <Text style={[styles.subtitle, { marginBottom: 0 }]}>{i18n.t('category')} </Text>
+              <Text style={[styles.text, { marginBottom: 5 }]}>
+                {issue.category?.name ?? i18n.t('information_not_available')}
+              </Text>
             </View>
             <Text style={styles.subtitle}>
               {i18n.t('location')}{' '}
               <Text style={styles.text}>
-                {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.administrative_region?.name ?? i18n.t('information_not_available')}
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.administrative_region?.name ?? i18n.t('information_not_available'))}
               </Text>
             </Text>
             <Text style={styles.subtitle}>
@@ -176,10 +216,11 @@ function Content({ issue }) {
           </View>
         </View>
 
-        <CustomSeparator/>
+        <CustomSeparator />
         <TouchableOpacity
           onPress={() => setIsComponentCollapsed(!isComponentCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('component')}</Text>
           <MaterialCommunityIcons
             name={isComponentCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -191,21 +232,27 @@ function Content({ issue }) {
           <View style={styles.collapsibleContent}>
             <Text style={styles.subtitle}>
               {i18n.t('component')}{' '}
-              <Text
-                style={styles.text}> {issue.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issue.component?.name ?? i18n.t('information_not_available')}</Text>
+              <Text style={styles.text}>
+                {' '}
+                {issue.citizen &&
+                issue.citizen.type === ConfidentialityChoices.CONFIDENTIAL &&
+                !isIssueAssignedToMe
+                  ? i18n.t('confidential')
+                  : (issue.component?.name ?? i18n.t('information_not_available'))}
+              </Text>
             </Text>
             {/* <Text style={styles.subtitle}>
               {i18n.t('sub_component')}{' '}
               <Text
                 style={styles.text}> {issues.citizen_type === 1 && !isIssueAssignedToMe ? i18n.t('confidential') : issues.sub_component?.name ?? i18n.t('information_not_available')}</Text>
             </Text> */}
-
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
         <TouchableOpacity
           onPress={() => setIsDescriptionCollapsed(!isDescriptionCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('description_label')}</Text>
           <MaterialCommunityIcons
             name={isDescriptionCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -215,16 +262,15 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isDescriptionCollapsed}>
           <View style={styles.collapsibleContent}>
-            <Text style={styles.collapsibleTextArea}>
-              {issue.description}
-            </Text>
+            <Text style={styles.collapsibleTextArea}>{issue.description}</Text>
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
 
         <TouchableOpacity
           onPress={() => setIsDecisionCollapsed(!isDecisionCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('decision')}</Text>
           <MaterialCommunityIcons
             name={isDecisionCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -239,11 +285,12 @@ function Content({ issue }) {
             </Text>
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
 
         <TouchableOpacity
           onPress={() => setIsSatisfactionCollapsed(!isSatisfactionCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('satisfaction')}</Text>
           <MaterialCommunityIcons
             name={isSatisfactionCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -252,18 +299,16 @@ function Content({ issue }) {
           />
         </TouchableOpacity>
         <Collapsible collapsed={isSatisfactionCollapsed}>
-
           <View style={styles.collapsibleContent}>
-            <Text style={styles.collapsibleTextArea}>
-              {i18n.t('information_not_available')}
-            </Text>
+            <Text style={styles.collapsibleTextArea}>{i18n.t('information_not_available')}</Text>
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
 
         <TouchableOpacity
           onPress={() => setIsAppealCollapsed(!isAppealCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('appeal_reason')}</Text>
           <MaterialCommunityIcons
             name={isAppealCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -273,16 +318,15 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAppealCollapsed}>
           <View style={styles.collapsibleContent}>
-            <Text style={styles.collapsibleTextArea}>
-              {i18n.t('information_not_available')}
-            </Text>
+            <Text style={styles.collapsibleTextArea}>{i18n.t('information_not_available')}</Text>
           </View>
         </Collapsible>
-        <CustomSeparator/>
+        <CustomSeparator />
 
         <TouchableOpacity
           onPress={() => setIsAttachmentCollapsed(!isAttachmentCollapsed)}
-          style={styles.collapsibleTrigger}>
+          style={styles.collapsibleTrigger}
+        >
           <Text style={styles.subtitle}>{i18n.t('attachments_label')}</Text>
           <MaterialCommunityIcons
             name={isAttachmentCollapsed ? 'chevron-down-circle' : 'chevron-up-circle'}
@@ -292,35 +336,46 @@ function Content({ issue }) {
         </TouchableOpacity>
         <Collapsible collapsed={isAttachmentCollapsed}>
           <View style={styles.collapsibleContent}>
+            {attachments?.map((attachment) => {
+              const isAudio =
+                typeof (attachment.file === 'string' || attachment.local_url === 'string') &&
+                /\.(mp3|wav|m4a|aac|ogg|oga|flac|amr|3gp)(\?.*)?$/i.test(
+                  attachment.file ?? attachment.local_url
+                );
 
-            { issue.attachments?.map((attachment) => {
-                return (
-                  <View style={{ flexDirection: 'row', maxWidth: '100%' , justifyContent: 'center'}}>
-                    {(!attachment.isAudio && attachment.local_url) && (
-                      <ImagePreviewCard
-                        uri={attachment.local_url}
-                        id={attachment.id}
-                        showRemove={false}
-                      />
-                    )}
-                    {(attachment.isAudio) && (
-                      <RecordingCard mode="playback" initialURI={attachment.local_url}/>
-                    )}
-                  </View>
-                )
-              })
-            }
+              return (
+                <View style={{ flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
+                  {!isAudio && (attachment.file || attachment.local_url || attachment.url) && (
+                    <ImagePreviewCard
+                      onRetry={() => onAttachmentRetry(attachment.id)}
+                      uri={
+                        attachment.file ??
+                        (attachment.local_url ? attachment.local_url : attachment.url)
+                      }
+                      id={attachment.id}
+                      showRemove={false}
+                    />
+                  )}
+                  {isAudio && (
+                    <RecordingCard
+                      mode="playback"
+                      initialURI={attachment.file ?? attachment.local_url}
+                    />
+                  )}
+                </View>
+              );
+            })}
           </View>
         </Collapsible>
 
-
-        <CustomSeparator/>
+        <CustomSeparator />
         <Button
           theme={theme}
           style={{ alignSelf: 'center', margin: 24 }}
           labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
           mode="contained"
-          onPress={onAddComment}>
+          onPress={onAddComment}
+        >
           {i18n.t('back')}
         </Button>
       </View>

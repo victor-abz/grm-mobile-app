@@ -48,6 +48,7 @@ import RecordResolutionDialog from '../components/RecordResolutionDialog';
 import RecordStepsDialog from '../components/RecordStepsDialog';
 import RejectDialog from '../components/RejectDialog';
 import { styles } from './Content.styles';
+import { ConfidentialityChoices } from '../../../../utils/constants';
 
 type ConfirmationDialogType =
   | 'record_steps'
@@ -162,8 +163,6 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
   const updateActionButtons = () => {
     function _isAcceptEnabled(x) {
       
-      console.log("IS ISSUE ASSIGNED TO ME?", isIssueAssignedToMe);
-
       if (x.initial_status && isIssueAssignedToMe) {
         return compareIdsEquivalence(issue.status?.id, x.id);
       }
@@ -500,10 +499,14 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
       (reporterId === issue.assignee.id || issue.assignee.id === session?.user_id);
     setIsIssueAssignedToMe(isAssigned);
 
-    if (issue.citizen_type !== 1) {
-      setCitizenName(issue.citizen);
+    if (issue.citizen) {
+      if (issue.citizen.type !== ConfidentialityChoices.CONFIDENTIAL) {
+        setCitizenName(issue.citizen.name ?? '');
+      } else {
+        setCitizenName(isAssigned ? (issue.citizen.name ?? '') : 'Anonymous');
+      }
     } else {
-      setCitizenName(isAssigned ? issue.citizen : 'Anonymous');
+      setCitizenName('');
     }
 
     if (issue.rating) {
@@ -658,7 +661,7 @@ function renderHeaderAndActions(
   return (
     <View style={{ padding: 23 }}>
       <Text style={styles.stepDescription}>
-        {citizenName}, {issue.intake_date && moment(issue.intake_date).format('DD-MMM-YYYY')}{' '}
+        {citizenName ? `${citizenName}, `: null} {issue.intake_date && moment(issue.intake_date).format('DD-MMM-YYYY')}{' '}
         {issue.intake_date && currentDate.diff(issue.intake_date, 'days')} {i18n.t('days_ago')}
       </Text>
       <Text style={styles.stepDescription}>
@@ -711,10 +714,6 @@ function renderHeaderAndActions(
       <View
         style={{ borderWidth: 1, borderRadius: 15, padding: 15, borderColor: colors.lightgray }}
       >
-        <Paragraph>
-          {JSON.stringify(!hasActionsOrResolved)} {JSON.stringify(isAcceptEnabled)}
-        </Paragraph>
-
         {/* Actions */}
         <ActionButton
           label={i18n.t('accept_issue')}

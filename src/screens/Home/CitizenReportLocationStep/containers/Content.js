@@ -199,9 +199,11 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
                 stepTwoParams,
                 stepLocationParams: {
                   issueLocation: {
-                    id:
-                      uniqueRegion?.id ?? location?.id,
+                    id: uniqueRegion?.id ?? location?.id,
                     name: uniqueRegion?.name ?? location?.name,
+                    administrative_id: uniqueRegion?.id ?? location?.id,
+                    created_date: uniqueRegion?.created_date ?? location?.created_date,
+                    updated_date: uniqueRegion?.updated_date ?? location?.updated_date,
                   },
                   locationDescription: additionalDetails,
                 },

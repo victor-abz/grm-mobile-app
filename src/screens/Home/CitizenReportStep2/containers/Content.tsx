@@ -129,13 +129,16 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
 
   const getCategory = (value) => {
     const result = issueCategories.filter((obj) => obj.name === value);
-    const _category = {
-      id: result[0].id,
-      name: result[0].name,
-      confidentiality_level: result[0].confidentiality_level,
-      assigned_department: result[0].assigned_department?.id,
-      administrative_level: result[0].assigned_department?.administrative_level,
-    };
+    const first = result?.[0];
+    const _category = first
+      ? {
+        id: first.id,
+        name: first.name,
+        confidentiality_level: first.confidentiality_level,
+        assigned_department: first.assigned_department?.id ?? null,
+        administrative_level: first.assigned_department?.administrative_level ?? null,
+      }
+      : null;
     return _category;
   };
 
@@ -242,18 +245,10 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
       stepOneParams,
       stepTwoParams: {
         date: date ? date.toISOString() : undefined,
-        issueType: selectedIssueType
-          ? { id: selectedIssueType.id, name: selectedIssueType.name }
-          : null,
-        issueSubType: selectedIssueSubType
-          ? { id: selectedIssueSubType.id, name: selectedIssueSubType.name }
-          : null,
-        issueComponent: selectedIssueComponent
-          ? { id: selectedIssueComponent.id, name: selectedIssueComponent.name }
-          : null,
-        issueSubComponent: selectedIssueSubComponent
-          ? { id: selectedIssueSubComponent.id, name: selectedIssueSubComponent.name }
-          : null,
+        issueType: selectedIssueType ?? null,
+        issueSubType: selectedIssueSubType ?? null,
+        issueComponent: selectedIssueComponent ?? null,
+        issueSubComponent: selectedIssueSubComponent ?? null,
         ongoingEvent: checked,
         attachment: attachment.uri
           ? {
@@ -274,7 +269,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
               name: recordingURI.split('/').pop(),
             }
           : undefined,
-        category: getCategory(pickerCategory),
+        category: pickerCategory ? getCategory(pickerCategory) : null,
         additionalDetails,
       },
     });

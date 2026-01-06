@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Text, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { View, ScrollView, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
 import { Button, TextInput, RadioButton } from 'react-native-paper';
 import { i18n } from "../../../../translations/i18n";
 import { styles } from './Content.styles';
@@ -92,7 +91,7 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
           <RadioButton.Group
             onValueChange={(newValue) => {
               if (newValue === confidentialValue) {
-                setConfidentialValue(0);
+                setConfidentialValue(ConfidentialityChoices.CONFIDENTIAL);
               } else {
                 setConfidentialValue(newValue);
               }
@@ -194,17 +193,19 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
                 labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
                 mode="contained"
                 onPress={() => {
+                  const payload = {
+                    ...stepOneParams,
+                    name,
+                    ageGroup: selectedAge,
+                    citizen_type: confidentialValue,
+                    citizen_group: dropdownValues[types[0]],
+                    citizen_group_2: dropdownValues[types[1]],
+                    gender: pickerGenderValue,
+                    filledOnSomebodyElseBehalf: checked,
+                  };
+                 
                   navigation.navigate('CitizenReportStep2', {
-                    stepOneParams: {
-                      ...stepOneParams,
-                      name,
-                      ageGroup: selectedAge,
-                      citizen_type: confidentialValue,
-                      citizen_group: dropdownValues[types[0]],
-                      citizen_group_2: dropdownValues[types[1]],
-                      gender: pickerGenderValue,
-                      filledOnSomebodyElseBehalf: checked,
-                    },
+                    stepOneParams: payload,
                   });
                 }}
               >

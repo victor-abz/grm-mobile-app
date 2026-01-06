@@ -1,11 +1,11 @@
-import * as React from "react";
-import { View, Text, Dimensions, StyleSheet } from "react-native";
+import * as React from 'react';
+import { View, Text, Dimensions, StyleSheet } from 'react-native';
 import { colors } from '../../../../utils/colors';
 import { IconButton } from 'react-native-paper';
-const { width  } = Dimensions.get("screen");
-import { i18n } from "../../../../translations/i18n";
-import { Audio } from "expo-av";
-import { useState, useEffect } from "react";
+const { width } = Dimensions.get('screen');
+import { i18n } from '../../../../translations/i18n';
+import { Audio } from 'expo-av';
+import { useState, useEffect } from 'react';
 
 const milliSecondToHHMMSS = (value) => {
   const milliSecond = Number(value / 1000);
@@ -19,7 +19,7 @@ const milliSecondToHHMMSS = (value) => {
   return `${hrs}${mins}${scnds}`;
 };
 
-const RecordingCard = ({ onRecordingSaved, mode = "full", initialURI }) => {
+const RecordingCard = ({ onRecordingSaved, mode = 'full', initialURI }) => {
   const [recording, setRecording] = useState(null);
   const [recordingURI, setRecordingURI] = useState(null);
   const [current, setCurrent] = useState('00:00');
@@ -32,7 +32,7 @@ const RecordingCard = ({ onRecordingSaved, mode = "full", initialURI }) => {
   useEffect(() => {
     let tempSound;
     async function loadDuration() {
-      if (mode === "playback" && initialURI) {
+      if (mode === 'playback' && initialURI) {
         setRecordingURI(initialURI);
         try {
           const { sound: loadedSound, status } = await Audio.Sound.createAsync(
@@ -90,6 +90,8 @@ const RecordingCard = ({ onRecordingSaved, mode = "full", initialURI }) => {
       await rec.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
       rec.setOnRecordingStatusUpdate(onRecordingStatusUpdate);
       await rec.startAsync();
+
+      
       setRecording(rec);
       setIsRecording(true);
       setCurrent('00:00');
@@ -104,6 +106,8 @@ const RecordingCard = ({ onRecordingSaved, mode = "full", initialURI }) => {
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
+      console.log(uri);
+      
       setRecordingURI(uri);
       setIsRecording(false);
       setRecording(null);
@@ -165,35 +169,40 @@ const RecordingCard = ({ onRecordingSaved, mode = "full", initialURI }) => {
   };
 
   return (
-      <View
-        style={[styles.post]}
-      >
-        <View style={[styles.play, styles.alignCenter, { flexDirection: "column" }]}> 
-          {mode === "full" && isRecording && (
-            <IconButton size={35} color="#f80102" onPress={stopRecording} icon="record-circle-outline" />
-          )}
-          {mode === "full" && !isRecording && !recordingURI && (
-            <IconButton size={35} color={colors.primary} icon="microphone" onPress={startRecording} />
-          )}
-          {recordingURI && !playing && (
-            <IconButton size={35} color={colors.primary} icon="play" onPress={playRecording} />
-          )}
-          {recordingURI && playing && (
-            <IconButton size={35} color={colors.primary} icon="pause" onPress={pausePlayback} />
-          )}
-        </View>
-        <View style={[styles.alignCenter, { flexDirection: 'column', width: '70%' }]}> 
-          <Text style={styles.title}>{current}</Text>
-          {mode === "full" && isRecording && (<Text style={{ color: colors.primary }}>{i18n.t('recording_in_progress')}</Text>)}
-          {playing && (<Text style={{ color: colors.primary }}>{i18n.t('playing_in_progress')}</Text>)}
-        </View>
-        {mode === "full" && !isRecording && recordingURI && (
-          <View style={[styles.remove, styles.alignCenter, { flexDirection: "column" }]}> 
-            <IconButton size={30} color="#f80102" onPress={deleteRecording} icon="close" />
-          </View>
+    <View style={[styles.post]}>
+      <View style={[styles.play, styles.alignCenter, { flexDirection: 'column' }]}>
+        {mode === 'full' && isRecording && (
+          <IconButton
+            size={35}
+            color="#f80102"
+            onPress={stopRecording}
+            icon="record-circle-outline"
+          />
         )}
-        <View />
+        {mode === 'full' && !isRecording && !recordingURI && (
+          <IconButton size={35} color={colors.primary} icon="microphone" onPress={startRecording} />
+        )}
+        {recordingURI && !playing && (
+          <IconButton size={35} color={colors.primary} icon="play" onPress={playRecording} />
+        )}
+        {recordingURI && playing && (
+          <IconButton size={35} color={colors.primary} icon="pause" onPress={pausePlayback} />
+        )}
       </View>
+      <View style={[styles.alignCenter, { flexDirection: 'column', width: '70%' }]}>
+        <Text style={styles.title}>{current}</Text>
+        {mode === 'full' && isRecording && (
+          <Text style={{ color: colors.primary }}>{i18n.t('recording_in_progress')}</Text>
+        )}
+        {playing && <Text style={{ color: colors.primary }}>{i18n.t('playing_in_progress')}</Text>}
+      </View>
+      {mode === 'full' && !isRecording && recordingURI && (
+        <View style={[styles.remove, styles.alignCenter, { flexDirection: 'column' }]}>
+          <IconButton size={30} color="#f80102" onPress={deleteRecording} icon="close" />
+        </View>
+      )}
+      <View />
+    </View>
   );
 };
 
@@ -204,30 +213,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
     height: 50,
     color: 'white',
-    textAlign: 'center'
+    textAlign: 'center',
   },
   play: {
-    borderWidth: .5,
-    borderColor: "#c0c0c0",
+    borderWidth: 0.5,
+    borderColor: '#c0c0c0',
     width: '15%',
-    color: colors.primary
+    color: colors.primary,
   },
   remove: {
-    borderWidth: .5,
-    borderColor: "#c0c0c0",
+    borderWidth: 0.5,
+    borderColor: '#c0c0c0',
     width: '15%',
-    color: colors.error
+    color: colors.error,
   },
   title: {
     fontWeight: '500',
-    color: "black",
+    color: 'black',
     fontSize: 17,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   btnText: {
     fontSize: 15,
-    color: '#fff'
+    color: '#fff',
   },
   img: {
     height: 250,
@@ -235,20 +244,20 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   alignCenter: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   posts: {
-    display: "flex",
-    flexDirection: "column",
+    display: 'flex',
+    flexDirection: 'column',
   },
   post: {
     width: width - 45,
     borderWidth: 1,
     borderRadius: 8,
-    borderColor: "#c0c0c0",
-    display: "flex",
+    borderColor: '#c0c0c0',
+    display: 'flex',
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',

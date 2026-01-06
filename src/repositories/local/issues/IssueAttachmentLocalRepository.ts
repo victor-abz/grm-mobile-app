@@ -1,19 +1,27 @@
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 import { TABLE_NAMES } from "../../../migrations/tableName";
 import { IssueAttachment, IssueAttachmentLocalModel } from "../../../models/issues/IssueAttachment";
-import { RawRecord } from '@nozbe/watermelondb/RawRecord';
 
 export class IssueAttachmentLocalRepository extends BaseLocalRepository<IssueAttachment> {
   constructor() {
     super(TABLE_NAMES.issueAttachment);
   }
 
-  fromRemoteToLocal(issueAttachment: any): RawRecord {
-      const raw = {
-        ...issueAttachment,
+  fromRemoteToLocal(issueAttachment: any, parentId?: string | number): any {
+    if (issueAttachment && typeof issueAttachment === 'object') {
+      const i = issueAttachment as Record<string, any>;
+      
+
+      return {
+        ...i,
+        parent_id: String(parentId ?? i?.issue?.id ?? ''),
+        // keep the cleaned-up remote path
+        url: i.file
       };
-      return raw
     }
+    
+    return null;
+  }   
 
   fromLocalToRemote(localModel: IssueAttachmentLocalModel): IssueAttachment {
     return {
