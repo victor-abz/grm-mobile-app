@@ -5,7 +5,7 @@ import {
 } from '../../repositories/local/issues/IssueStatusLocalRepository';
 import { IssueStatus } from '../../models/issues/IssueStatus';
 import { TABLE_NAMES } from "../../migrations/tableName";
-import { Syncable } from '../shared/SyncService';
+import { Syncable } from '../shared/types';
 
 const localRepository = new IssueStatusLocalRepository();
 const remoteRepository = new IssueStatusRemoteRepository();

@@ -18,6 +18,7 @@ export const issueTableSchema: TableSchema = tableSchema({
     { name: 'description', type: 'string' },
     { name: 'escalated_date', type: 'string', isOptional: true },
     { name: 'intake_date', type: 'string', isOptional: true }, // DEFAULT CURRENT_TIMESTAMP
+    { name: 'issue_date', type: 'string', isOptional: true }, // DEFAULT CURRENT_TIMESTAMP
     { name: 'issue_location', type: 'string' },
     { name: 'issue_type', type: 'string', isOptional: true },
     { name: 'issue_sub_type', type: 'string', isOptional: true },

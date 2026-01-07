@@ -3,7 +3,7 @@ import { TABLE_NAMES } from "../../migrations/tableName";
 import { IssueCategoryLocalRepository } from "../../repositories/local/issues/IssueCategoryLocalRepository";
 import IssueCategoryRemoteRepository from "../../repositories/remote/issues/IssueCategoryRemoteRepository";
 import { IssueCategory } from "../../models/issues/IssueCategory";
-import { Syncable } from '../shared/SyncService';
+import { Syncable } from '../shared/types';
 
 const localRepository = new IssueCategoryLocalRepository();
 const remoteRepository = new IssueCategoryRemoteRepository();

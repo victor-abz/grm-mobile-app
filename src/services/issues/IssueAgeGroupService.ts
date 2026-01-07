@@ -5,7 +5,7 @@ import {
 } from '../../repositories/local/issues/IssueAgeGroupLocalRepository';
 import { IssueAgeGroup } from '../../models/issues/IssueAgeGroup';
 import { TABLE_NAMES } from "../../migrations/tableName";
-import { Syncable } from '../shared/SyncService';
+import { Syncable } from '../shared/types';
 
 const localRepository = new IssueAgeGroupLocalRepository();
 const remoteRepository = new IssueAgeGroupRemoteRepository();

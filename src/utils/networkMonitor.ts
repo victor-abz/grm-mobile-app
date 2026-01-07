@@ -10,6 +10,7 @@ import { issueComponentSyncable } from '../services/issues/IssueComponentService
 import { issueSubTypeSyncable } from '../services/issues/IssueSubTypeService';
 import { issueCitizenGroupListSyncable } from '../services/issues/IssueCitizenGroupService';
 import { issueAttachmentSyncable } from '../services/issues/IssueAttachmentService';
+import { databaseServiceInstance } from './storageManager';
 
 let stableConnectionTimer: NodeJS.Timeout | null = null;
 let initialSyncListener: NetInfoSubscription | null = null;
@@ -55,8 +56,7 @@ async function setupConnectionWatcher(): Promise<void> {
 
 export async function initialSync(): Promise<void> {
   registerServices();
-
-  await syncServiceInstance.initDB();
+  await databaseServiceInstance.initDB();
   initialSyncListener = NetInfo.addEventListener(async (state) => {
     if (state.isConnected) {
       await setupConnectionWatcher();

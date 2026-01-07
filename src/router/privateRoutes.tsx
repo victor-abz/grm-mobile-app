@@ -1,11 +1,11 @@
 import { createStackNavigator } from '@react-navigation/stack';
+import { databaseServiceInstance, getData, storeData } from '../utils/storageManager';
 import React, { useEffect } from 'react';
 import CustomLoadingSpinner from '../components/CustomLoadingSpinner/CustomLoadingSpinner';
 import HomeRouter from '../screens/Home';
 import { syncServiceInstance } from '../services/shared/SyncService';
 import { fetchAdministrativeRegions } from '../services/issues/AdministrativeRegionService';
 import { INITIAL_DATA_FETCHED_STORAGE_KEY } from '../utils/constants';
-import { getData, storeData } from '../utils/storageManager';
 import { DatabaseProvider } from '@nozbe/watermelondb/react';
 import { fetchFacilitatorProfile } from '../services/authService';
 import { useDispatch, useSelector } from 'react-redux';
@@ -37,7 +37,7 @@ const theme = {
 const Stack = createStackNavigator();
 const PrivateRoutes = () => {
   const dispatch = useDispatch();
-  const [dbReady, setDbReady] = React.useState(!!syncServiceInstance.database);
+  const [dbReady, setDbReady] = React.useState(!!databaseServiceInstance.database);
   const [profileLoaded, setProfileLoaded] = React.useState(false);
   const [profileError, setProfileError] = React.useState<Error | null>(null);
   const { profile } = useSelector((state: any) => state.get("authentication").toObject());
@@ -84,12 +84,10 @@ const PrivateRoutes = () => {
 
   useEffect(() => {
     if (!profileLoaded) return;
-
-    if (!syncServiceInstance.database) {
+    if (!databaseServiceInstance.database) {
       // Wait for the database to be initialized asynchronously
       const checkDb = setInterval(() => {
-        if (syncServiceInstance.database) {
-          
+        if (databaseServiceInstance.database) {
           setDbReady(true);
           syncServiceInstance.syncAll();
           fetchConstants();
@@ -152,7 +150,7 @@ const PrivateRoutes = () => {
   if (!dbReady) return <CustomLoadingSpinner />;
 
   return (
-    <DatabaseProvider database={syncServiceInstance.database}>
+    <DatabaseProvider database={databaseServiceInstance.database}>
       <Stack.Navigator>
         {/* //* Home */}
         <Stack.Screen
