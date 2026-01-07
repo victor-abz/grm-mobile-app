@@ -1,27 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-//TODO:
-
-// [x] connect updateIssue with remote,
-// [x] rename dialog params,
-// [x] Add missing fields to local issue schema
-// [x] Test local correct saving, 
-// [x] verify search list being updated
-// [x] verify patch with id as string created by watermelon
-// [x] check new way of saving statuses within a PATCH, just an id
-// [ ] test sync after re-connection
-// [ ] sub type will be changed to global
-// [ ] reporter can edit - rating
-// [ ] assignee can edit - status - check Policy
-// reporter rating , appeal, comentar
-// assignee acceptar, rechazar, cerrar, comentar.
-// todo editar de los
-
-// campos de fecha vacio no los toma en getCurrentPositionAsync, formato incorrecto da error
-
-// assignee status, reporter Rating. 
-
-// import { withObservables } from '@nozbe/watermelondb/react';
+import { showToast } from '../../../../utils/utils';
 
 import moment from 'moment';
 import {
@@ -30,7 +8,6 @@ import {
   Platform,
   ScrollView,
   Text,
-  ToastAndroid,
   View,
 } from 'react-native';
 import { Button, IconButton, Paragraph } from 'react-native-paper';
@@ -155,10 +132,6 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
     setRejectDialog(true);
   };
   const _hideRejectDialog = () => setRejectDialog(false);
-
-  const showToast = (message) => {
-    ToastAndroid.show(message, ToastAndroid.SHORT);
-  };
 
   const updateActionButtons = () => {
     function _isAcceptEnabled(x) {

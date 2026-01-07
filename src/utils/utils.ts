@@ -1,3 +1,5 @@
+import { ToastAndroid } from 'react-native';
+
 export const citizenTypes = [
     "Une organisation au nom d'un citoyen",
     "Un citoyen au nom d'un autre",
@@ -14,3 +16,8 @@ export const citizenTypes = [
  */
 export const compareIdsEquivalence = (id1, id2) =>
     String(id1).replace(/[^a-zA-Z0-9-]/g, '') === String(id2).replace(/[^a-zA-Z0-9-]/g, '');
+
+export const showToast = (message) =>
+{
+  ToastAndroid.show(message, ToastAndroid.SHORT);
+};

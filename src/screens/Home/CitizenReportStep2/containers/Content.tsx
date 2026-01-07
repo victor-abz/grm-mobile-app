@@ -5,9 +5,7 @@ import {
   Text,
   Platform,
   KeyboardAvoidingView,
-  TextInput as NativeTextInput,
-  ToastAndroid,
-} from 'react-native';
+  TextInput as NativeTextInput} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Button, Checkbox, Dialog, Paragraph, Portal, TextInput } from 'react-native-paper';
@@ -19,6 +17,7 @@ import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/Cu
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import AddAttachmentCard from "../../GRM/components/AddAttachmentCard";
+import { showToast } from '../../../../utils/utils';
 
 const theme = {
   roundness: 12,
@@ -76,6 +75,7 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
   //Other
   const [checked, setChecked] = useState(false);
   const [additionalDetails, setAdditionalDetails] = useState(null);
+  const [additionalDetailsError, setAdditionalDetailsError] = useState(null);
   const [date, setDate] = useState(null);
   const [attachment, setAttachment] = useState({});
   const [recordingURI, setRecordingURI] = useState();
@@ -235,10 +235,6 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
     setFilteredSubComponents(selectedIssueComponent ? filterSubComponents() : []);
     setPickerSubComponent(null); 
   }, [selectedIssueComponent, subComponents]);
-
-  const showToast = (message) => {
-    ToastAndroid.show(message, ToastAndroid.SHORT);
-  };
 
   const onNext = () => {
     navigation.navigate('CitizenReportLocationStep', {
@@ -476,8 +472,12 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
             outlineColor="#dedede"
             theme={theme}
             mode="outlined"
+            error={!!additionalDetailsError}
             value={additionalDetails}
-            onChangeText={(text) => setAdditionalDetails(text)}
+            onChangeText={(text) => {
+              setAdditionalDetailsError(null)
+              setAdditionalDetails(text)
+            }}
             render={(innerProps) => (
               <NativeTextInput
                 {...innerProps}
@@ -528,12 +528,15 @@ function Content({ stepOneParams, issueCategories, issueTypes, issueSubTypes, is
               if (
                 selectedIssueType === null ||
                 selectedIssueSubType === null ||
-                pickerCategory === null
+                pickerCategory === null ||
+                !additionalDetails
               ) {
+                if (!additionalDetails) {
+                  setAdditionalDetailsError('This field is required');
+                }
                 showToast(i18n.t('please_choose_value_for_required_field'));
                 return;
               }
-
               const selectedCategory = getCategory(pickerCategory);
               if (selectedCategory && selectedCategory.confidentiality_level === 'Confidential') {
                 _showDialog();
