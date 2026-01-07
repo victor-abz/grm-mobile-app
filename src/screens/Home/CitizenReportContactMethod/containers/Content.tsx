@@ -27,7 +27,7 @@ function Content() {
   const navigation = useNavigation();
   const [value, setValue] = React.useState("facilitator");
   const [dropdownDisabled, setDropdownDisabled] = React.useState(true);
-  const [contactMethodError, setContactMethodError] = React.useState();
+  const [contactMethodError, setContactMethodError] = React.useState<string>();
   const [contactInfo, setContactInfo] = React.useState("");
   const [pickerValue, setPickerValue] = useState("phone_number");
   const [items, setItems] = useState([
@@ -35,6 +35,7 @@ function Content() {
     { label: i18n.t("step_1_method_2"), value: "whatsapp" },
     { label: i18n.t("step_1_method_3"), value: "email" },
   ]);
+
   useEffect(() => {
     if (value === "channel-alert") {
       setDropdownDisabled(false);
@@ -42,6 +43,7 @@ function Content() {
       setDropdownDisabled(true);
     }
   }, [value, pickerValue]);
+  
   return (
     <ScrollView>
       <KeyboardAvoidingView
@@ -116,15 +118,15 @@ function Content() {
                 }
                 outlineColor={"#dedede"}
                 theme={theme}
-                error={contactMethodError}
+                error={!!contactMethodError}
                 mode={"outlined"}
                 keyboardType={
                   pickerValue === "email" ? "default" : "number-pad"
                 }
                 value={contactInfo}
-                maxLength={10}
+                maxLength={(pickerValue === 'phone_number' || pickerValue === 'whatsapp') ? 10 : 50}
                 onChangeText={(text) => {
-                  setContactMethodError();
+                  setContactMethodError(null);
 
                   // Si c'est un numéro (SMS ou WhatsApp)
                   if (pickerValue === "phone_number" || pickerValue === "whatsapp") {
@@ -140,8 +142,7 @@ function Content() {
                     if (numericText.length <= 10) {
                       setContactInfo(numericText);
                     }
-                  } else {
-                    // Pour l'email, aucune restriction
+                  } else { 
                     setContactInfo(text);
                   }
                 }}
@@ -158,6 +159,13 @@ function Content() {
             onPress={() => {
               if (!dropdownDisabled) {
                 if (contactInfo) {
+                  if (pickerValue === 'email') {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(contactInfo)) {
+                      setContactMethodError('Please insert a valid method of contact');
+                      return;
+                    }
+                  }
                   navigation.navigate("CitizenReportContactInfo", {
                     stepOneParams: {
                       typeOfPerson: value,

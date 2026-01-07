@@ -319,54 +319,39 @@ export class SyncService {
           database: this.database,
           pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
             let changes = {};
-
             console.log('SUB-ITEMS - From DB LAST PULLED:', new Date(lastPulledAt).toISOString());
-
-            const timestamp = Date.now();
-
             for (const syncable of this.childSyncables) {
               let allParents: {
                 created: any[];
                 updated: any[];
                 deleted: string[];
               };
-
               if (this.firstSync) {
                 const _allParents = await getAllParents(syncable.tableName);
                 allParents = { created: [], updated: _allParents, deleted: [] };
               }
-
               const syncableChanges = await syncable.pullChanges({
                 tableName: syncable.tableName,
                 lastPulledAt,
                 parentChanges:
-                  allParents ??
-                  this.pulledParentsChanges[getParentTableName(syncable.tableName)],
+                  allParents ?? this.pulledParentsChanges[getParentTableName(syncable.tableName)],
               });
-
               changes = { ...syncableChanges.changes, ...changes };
-
               // Empty old IDs array at 'tableName' key
               this.createdRecordsPostPushedWithNewBackendIDsPerTable[syncable.tableName] = [];
             }
-
             // Reset parent changes
             this.pulledParentsChanges = null;
-
-            console.log(`🍉 Sub items Changes pulled successfully. Timestamp: ${timestamp}`);
-
             const hasData = Object.values(changes ?? {}).some((table) =>
               Object.values(table ?? {}).some(
                 (arr: unknown) => Array.isArray(arr) && (arr as unknown[]).length > 0
               )
             );
-
             console.log('Have sub items data? ', hasData);
 
             // Keep using old timestamp.
             // if (!hasData) return { changes, timestamp: lastPulledAt };
             if (!hasData) return;
-
             // Otherwise, set a new one.
             console.log(new Date(this.markedTimestamp).toISOString());
             return { changes, timestamp: this.markedTimestamp };

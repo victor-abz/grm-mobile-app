@@ -8,6 +8,7 @@ import { i18n } from "../../../../translations/i18n";
 import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { useIssue } from '../../../../hooks/issues/useIssue';
+import { ToastAndroid } from 'react-native';
 import { useIssueAttachments } from '../../../../hooks/issues/useIssueAttachments';
 
 const SAMPLE_WORDS = ['lac', 'plaine', 'savane', 'colline'];
@@ -19,6 +20,10 @@ const theme = {
     placeholder: '#dedede',
     text: '#707070',
   },
+}
+
+const showToast = (message) => {
+  ToastAndroid.show(message, ToastAndroid.SHORT);
 };
 
 function Content({ issue, session, profile }) {
@@ -82,7 +87,7 @@ function Content({ issue, session, profile }) {
     };
 
     const createdIssue = await createIssue(_issue);
- 
+    
     const attachments = [
       ...(issue?.attachment ? [issue.attachment] : []),
       ...(issue?.recording ? [issue.recording] : []),
@@ -107,6 +112,7 @@ function Content({ issue, session, profile }) {
     if (createdIssue) {
       navigation.navigate('CitizenReportStep4', { issue: _issue });
     } else { 
+      showToast(`Issue creation failed. Please try again later.`)
       console.error('Issue creation failed');
     }
   };
