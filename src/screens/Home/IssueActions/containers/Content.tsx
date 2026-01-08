@@ -634,8 +634,12 @@ function renderHeaderAndActions(
   return (
     <View style={{ padding: 23 }}>
       <Text style={styles.stepDescription}>
-        {citizenName ? `${citizenName}, `: null} {issue.intake_date && moment(issue.intake_date).format('DD-MMM-YYYY')}{' '}
-        {issue.intake_date && currentDate.diff(issue.intake_date, 'days')} {i18n.t('days_ago')}
+        {citizenName ? `${citizenName}, `: null}{i18n.translate("created_at")}: {issue.created_date && moment(issue.created_date).format('DD-MMM-YYYY')}{' | '}
+        {issue.created_date && currentDate.diff(issue.created_date, 'days')} {i18n.t('days_ago')}
+      </Text>
+      <Text style={styles.stepDescription}>
+        {i18n.translate("updated_at")}{": "}{issue.updated_date && moment(issue.updated_date).format('DD-MMM-YYYY')}{' | '}
+        {issue.updated_date && currentDate.diff(issue.updated_date, 'days')} {i18n.t('days_ago')}
       </Text>
       <Text style={styles.stepDescription}>
         {i18n.t('status_label')}:{' '}

@@ -2,11 +2,10 @@ import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { Issue } from '../../../models/issues/Issue';
 import request from '../../../utils/request';
 import { BaseRemoteRepository } from '../../shared/BaseRemoteRepository';
-
+import config from '../../../../config';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
-  // private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
-  private baseUrl = `http://localhost:8000/issues`;
+  private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
 
   /**
    * Fetch all issues from a dynamic endpoint.

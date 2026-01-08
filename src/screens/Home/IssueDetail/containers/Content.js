@@ -119,8 +119,9 @@ function Content({ issue, attachments, refetchAttachment }) {
           >
             <Text style={[styles.text, { fontSize: 12, color: colors.primary }]}>
               {' '}
-              {issue.issue_date && moment(issue.issue_date).format('DD-MMM-YYYY')}{' '}
-              {issue.issue_date && currentDate.diff(issue.issue_date, 'days')}{' '}
+              {i18n.t('took_place_on')}{": "}
+              {issue.intake_date && moment(issue.intake_date).format('DD-MMM-YYYY')}{' | '}
+              {issue.intake_date && currentDate.diff(issue.intake_date, 'days')}{' '}
               {i18n.t('days_ago')}
             </Text>
           </View>

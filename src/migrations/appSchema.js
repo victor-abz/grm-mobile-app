@@ -13,7 +13,7 @@ import { issueAttachmentTableSchema } from './table-schemas/issue_attachment';
 import { issueCitizenGroupTableSchema } from './table-schemas/issue_citizen_group';
 
 export default appSchema({
-  version: 2,
+  version: 1,
   tables: [
     administrativeRegionTableSchema,
     issueStatusTableSchema,

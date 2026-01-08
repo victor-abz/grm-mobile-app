@@ -1,6 +1,9 @@
 {
   //Common
   "reload": "recharger",
+  "created_at": "Créé le",
+  "updated_at": "Mise à jour le",
+  "took_place_on": "a eu lieu le",
 
   //Headers
   "citizen_input_header": "Nouvel enregistrement",

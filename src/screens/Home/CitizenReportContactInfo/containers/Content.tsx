@@ -35,7 +35,7 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
   const [isPreviousPickerClosed, setIsPreviousPickerClosed] = useState(true);
   const [pickerAgeValue, setPickerAgeValue] = useState(null);
   const [selectedAge, setSelectedAge] = useState(null);
-  const [confidentialValue, setConfidentialValue] = useState(null);
+  const [confidentialValue, setConfidentialValue] = useState(ConfidentialityChoices.CONFIDENTIAL);
   const [selectedCitizenGroup, setSelectedCitizenGroup] = useState(null);
   const [_citizenGroups, setCitizenGroups] = useState(citizenGroups ?? []);
 

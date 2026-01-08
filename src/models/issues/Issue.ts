@@ -53,7 +53,6 @@ export interface Issue extends Base {
   description: string;
   id: string;
   intake_date: string;
-  issue_date?: Date | null;
   issue_location_id: number;
   issue_sub_type: Base;
   issue_type: Base;
@@ -111,8 +110,6 @@ export class IssueLocalModel extends Model {
   @text('description') description;
   // @ts-ignore
   @text('intake_date') intake_date;
-  // @ts-ignore
-  @text('issue_date') issue_date;
   // @ts-ignore
   @field('issue_location_id') issue_location_id;
   // @ts-ignore
