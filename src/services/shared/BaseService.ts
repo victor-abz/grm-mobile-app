@@ -4,10 +4,10 @@ import NetInfo from '@react-native-community/netinfo';
 import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
-import { syncServiceInstance } from './SyncService';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { deleteAsync } from 'expo-file-system';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
+import { databaseServiceInstance } from '../../utils/storageManager';
 export type WatermelonId = string;
 export type CreatedResponseWithBackendId = unknown;
 
@@ -63,7 +63,7 @@ export class BaseService<T> {
 
         // 1. Get all children with the old parent_id
 
-        const dbInstance = syncServiceInstance.database;
+        const dbInstance = databaseServiceInstance.database;
         const children = await dbInstance
           .get(this.localRepository.tableName)
           .query(Q.where('parent_id', Q.eq(parent[1])))
@@ -123,6 +123,7 @@ export class BaseService<T> {
         let createdResponse: Awaited<T>;
         let updatedResponse: Awaited<T>;
 
+        // Upsert on remote
         try {
           createdResponse = await this.remoteRepository.create(modelInterface);
           if (createdResponse) {
@@ -141,46 +142,40 @@ export class BaseService<T> {
 
         // @ts-ignore
         item.syncAt = new Date();
+        
         // Upsert locally using WatermelonDB
-
         if (createdResponse) {
           // TODO: Use newly created id from backend response to upsert
           console.log(
             'CREATED RESPONSE - (Currently not being used as an entry to watermelon)',
             createdResponse
           );
-
           if (createdResponse.data) {
             createdResponse.data.syncAt = JSON.stringify(new Date());
           }
-
           return await this.localRepository.upsert(item, createdResponse?.data?.id);
         } else if (updatedResponse) {
           //TODO: Use newly created id in new sub-items from backend response to upsert
           if (updatedResponse.data) {
             updatedResponse.data.syncAt = JSON.stringify(new Date());
           }
-
           console.log(
             'UPDATED RESPONSE - (Currently not being used as an entry to watermelon)',
             updatedResponse.data
           );
-
           return await this.localRepository.upsert(item);
         } else {
           console.log(
             'Nothing in response from the backend to upsert locally, proceeding to use local modified item:',
             item
           );
-
           return await this.localRepository.upsert(item);
         }
       } catch (err) {
-        console.warn('[BaseService] Remote sync failed. Will retry later.', err);
+        console.warn('[BaseService] Upsert failed. Reason: ', err);
       }
     } else {
       // Offline: upsert locally
-
       return await this.localRepository.upsert(item);
     }
   }

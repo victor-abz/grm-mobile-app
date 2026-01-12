@@ -5,7 +5,7 @@ import {
 } from '../../repositories/local/issues/IssueCitizenGroupLocalRepository';
 import { IssueCitizenGroup } from '../../models/issues/IssueCitizenGroup';
 import { TABLE_NAMES } from "../../migrations/tableName";
-import { Syncable } from '../shared/SyncService';
+import { Syncable } from '../shared/types';
 
 const localRepository = new IssueCitizenGroupLocalRepository();
 const remoteRepository = new IssueCitizenGroupRemoteRepository();

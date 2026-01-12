@@ -3,7 +3,7 @@ import { TABLE_NAMES } from "../../migrations/tableName";
 import { IssueAttachment, IssueAttachmentLocalModel } from "../../models/issues/IssueAttachment";
 import { IssueAttachmentLocalRepository } from "../../repositories/local/issues/IssueAttachmentLocalRepository";
 import IssueAttachmentRemoteRepository from "../../repositories/remote/issues/IssueAttachmentRemoteRepository";
-import { Syncable } from '../shared/SyncService';
+import { Syncable } from '../shared/types';
 
 import {
   downloadAsync,

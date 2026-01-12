@@ -1,8 +1,8 @@
 import { Model, Q } from '@nozbe/watermelondb';
 import { writer } from '@nozbe/watermelondb/decorators';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
-import { syncServiceInstance } from '../../services/shared/SyncService';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
+import { databaseServiceInstance } from '../../utils/storageManager';
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
@@ -21,7 +21,7 @@ export abstract class BaseLocalRepository<T> {
   // @ts-ignore
   @writer
   async hardDelete(item: Model): Promise<void> {
-    const dbInstance = syncServiceInstance.database;
+    const dbInstance = databaseServiceInstance.database;
     await dbInstance.write(async () => {
       const dbItem = await dbInstance.get(this.tableName).find(item.id);
       await dbItem.destroyPermanently();
@@ -30,7 +30,7 @@ export abstract class BaseLocalRepository<T> {
 
   // @ts-ignore
   async update(dbItem: Model, values: Record<string, any>, status?: SyncStatus) {
-    const dbInstance = syncServiceInstance.database;
+    const dbInstance = databaseServiceInstance.database;
 
     return await dbInstance.write(async () => {
       try {
@@ -76,7 +76,7 @@ export abstract class BaseLocalRepository<T> {
       queryClauses.push(Q.where('parent_id', Q.eq(parentId)));
     }
 
-    const dbInstance = syncServiceInstance.database;
+    const dbInstance = databaseServiceInstance.database;
     const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
 
    
@@ -101,7 +101,7 @@ export abstract class BaseLocalRepository<T> {
     if (parentId) {
       queryClauses.push(Q.where('parent_id', Q.eq(String(parentId))));
     }
-    const dbInstance = syncServiceInstance.database;
+    const dbInstance = databaseServiceInstance.database;
     const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
     return results;
   }
@@ -110,14 +110,14 @@ export abstract class BaseLocalRepository<T> {
   async findOneRaw(
     id: string | null
   ): Promise<Model> {
-    const dbInstance = syncServiceInstance.database;
+    const dbInstance = databaseServiceInstance.database;
     const result: Model = await dbInstance.get(this.tableName).find(id);
     return result;
   }
 
   // @ts-ignore
   async findOne(id: string): Promise<T> {
-    const dbInstance = syncServiceInstance.database;
+    const dbInstance = databaseServiceInstance.database;
     const itemModel = await dbInstance.read(
       async () => await dbInstance.get(this.tableName).find(id)
     );
@@ -127,7 +127,7 @@ export abstract class BaseLocalRepository<T> {
   // @ts-ignore
   @writer
   async softDelete(item: Model): Promise<void> {
-    const dbInstance = syncServiceInstance.database;
+    const dbInstance = databaseServiceInstance.database;
     await dbInstance.write(async () => {
       const dbItem = await dbInstance.get(this.tableName).find(item.id);
       await dbItem.markAsDeleted();
@@ -136,7 +136,7 @@ export abstract class BaseLocalRepository<T> {
 
   async bulkCreate(entries: any[]): Promise<void> {
     try {
-      const dbInstance = syncServiceInstance.database;
+      const dbInstance = databaseServiceInstance.database;
       let operations = [];
 
       await dbInstance.write(async () => {
@@ -166,7 +166,7 @@ export abstract class BaseLocalRepository<T> {
 
   // @ts-ignore
   async upsert(newEntry: unknown, configurableId?: string | number): Promise<any> {
-    const dbInstance = syncServiceInstance.database;
+    const dbInstance = databaseServiceInstance.database;
 
     return await dbInstance.write(async () => {
       let dbItem: Model;

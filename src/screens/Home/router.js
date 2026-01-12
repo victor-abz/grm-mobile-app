@@ -20,7 +20,7 @@ import RegisterVotesActivity from './RegisterVotesActivity/RegisterVotesActivity
 import BudgetAllocation from './BudgetAllocation/BudgetAllocation';
 import BudgetLog from './BudgetLog/BudgetLog';
 import GRM from './GRM/GRM';
-import CitizenReport from './CitizenReport/CitizenReport';
+import CitizenReportContactMethod from './CitizenReportContactMethod/CitizenReportContactMethod';
 import CitizenReportStep2 from './CitizenReportStep2/CitizenReportStep2';
 import CitizenReportStep3 from './CitizenReportStep3/CitizenReportStep3';
 import CitizenReportStep4 from './CitizenReportStep4/CitizenReportStep4';
@@ -123,8 +123,8 @@ function DashboardStackScreen() {
         options={({ navigation, route }) => customHeaderOptions(i18n.t('citizen_input_header'))}
       />
       <HomeStack.Screen
-        name="CitizenReport"
-        component={CitizenReport}
+        name="CitizenReportContactMethod"
+        component={CitizenReportContactMethod}
         options={({ navigation, route }) => customHeaderOptions(i18n.t('citizen_input_header'))}
       />
       <HomeStack.Screen

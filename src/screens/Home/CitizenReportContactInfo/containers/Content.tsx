@@ -7,6 +7,7 @@ import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { ConfidentialityChoices } from '../../../../utils/constants';
+import { showToast } from '../../../../utils/utils';
 
 const theme = {
   roundness: 12,
@@ -30,11 +31,11 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
 
   const [name, setName] = useState('');
   const [checked, setChecked] = useState(false);
-  const [contactMethodError, setContactMethodError] = React.useState();
+  const [nameError, setNameError] = React.useState<string>();
   const [isPreviousPickerClosed, setIsPreviousPickerClosed] = useState(true);
   const [pickerAgeValue, setPickerAgeValue] = useState(null);
   const [selectedAge, setSelectedAge] = useState(null);
-  const [confidentialValue, setConfidentialValue] = useState(null);
+  const [confidentialValue, setConfidentialValue] = useState(ConfidentialityChoices.CONFIDENTIAL);
   const [selectedCitizenGroup, setSelectedCitizenGroup] = useState(null);
   const [_citizenGroups, setCitizenGroups] = useState(citizenGroups ?? []);
 
@@ -82,8 +83,9 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
             theme={theme}
             mode="outlined"
             value={name}
-            error={contactMethodError}
+            error={!!nameError}
             onChangeText={(text) => {
+              setNameError(null);
               setName(text);
             }}
           />
@@ -192,22 +194,7 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
                 style={{ alignSelf: 'center', margin: 24 }}
                 labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
                 mode="contained"
-                onPress={() => {
-                  const payload = {
-                    ...stepOneParams,
-                    name,
-                    ageGroup: selectedAge,
-                    citizen_type: confidentialValue,
-                    citizen_group: dropdownValues[types[0]],
-                    citizen_group_2: dropdownValues[types[1]],
-                    gender: pickerGenderValue,
-                    filledOnSomebodyElseBehalf: checked,
-                  };
-                 
-                  navigation.navigate('CitizenReportStep2', {
-                    stepOneParams: payload,
-                  });
-                }}
+                onPress={onNext()}
               >
                 {i18n.t('next')}
               </Button>
@@ -217,6 +204,30 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
       </KeyboardAvoidingView>
     </ScrollView>
   );
+
+  function onNext(): (() => void) | (() => void) {
+    return () => {
+      if (!name) {
+        setNameError('This field is required');
+        showToast(i18n.t('please_choose_value_for_required_field'));
+        return;
+      }
+      const payload = {
+        ...stepOneParams,
+        name,
+        ageGroup: selectedAge,
+        citizen_type: confidentialValue,
+        citizen_group: dropdownValues[types[0]],
+        citizen_group_2: dropdownValues[types[1]],
+        gender: pickerGenderValue,
+        filledOnSomebodyElseBehalf: checked,
+      };
+
+      navigation.navigate('CitizenReportStep2', {
+        stepOneParams: payload,
+      });
+    };
+  }
 }
 
 export default Content;

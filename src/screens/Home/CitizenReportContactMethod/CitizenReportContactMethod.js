@@ -1,9 +1,9 @@
 import React from "react";
 import { SafeAreaView } from "react-native";
 import Content from "./containers/Content";
-import { styles } from "./CitizenReport.styles";
+import { styles } from "./CitizenReportContactMethod.styles";
 
-const CitizenReport = () => {
+const CitizenReportContactMethod = () => {
   const customStyles = styles();
 
   return (
@@ -13,4 +13,4 @@ const CitizenReport = () => {
   );
 };
 
-export default CitizenReport;
+export default CitizenReportContactMethod;

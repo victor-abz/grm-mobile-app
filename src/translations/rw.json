@@ -1,7 +1,9 @@
 {
   //Common
   "reload": "ongera usubiremo",
-
+  "created_at": "Ryakozwe kuwa",
+  "updated_at": "Yavuguruwe",
+  "took_place_on": "byabereye ku ya",
   //Headers
   "citizen_input_header": "Kwinjiza ikibazo",
   //Onboarding

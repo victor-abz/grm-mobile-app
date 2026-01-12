@@ -14,6 +14,7 @@ import {
 } from "@expo-google-fonts/poppins";
 import { syncServiceInstance } from "../services/shared/SyncService";
 import { initialSync } from "../utils/networkMonitor";
+import { databaseServiceInstance } from "../utils/storageManager";
 
 const Router = ({ theme }) => {
   const dispatch = useDispatch();
@@ -44,7 +45,7 @@ const Router = ({ theme }) => {
   {
 
       const checkSessionAndSync = async () => {
-        if (!syncServiceInstance.database && session?.token) {
+        if (!databaseServiceInstance.database && session?.token) {
           await initialSync();
           setLoading(false);
         } else {

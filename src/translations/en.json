@@ -1,4 +1,8 @@
 {
+  //Common
+  "created_at": "Created at",
+  "updated_at": "Updated at",
+  "took_place_on": "took place on",
   //Headers
   "citizen_input_header": "Citizen Input",
   //Onboarding

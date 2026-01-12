@@ -9,6 +9,7 @@ import { colors } from '../../../../utils/colors';
 import { styles } from './Content.styles';
 import { useIssue } from '../../../../hooks/issues/useIssue';
 import { useIssueAttachments } from '../../../../hooks/issues/useIssueAttachments';
+import { showToast } from '../../../../utils/utils';
 
 const SAMPLE_WORDS = ['lac', 'plaine', 'savane', 'colline'];
 const theme = {
@@ -19,11 +20,12 @@ const theme = {
     placeholder: '#dedede',
     text: '#707070',
   },
-};
+}
 
 function Content({ issue, session, profile }) {
   const navigation = useNavigation();
   const [showDialog, setShowDialog] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { createIssue } = useIssue(false);
   const { createAttachment } = useIssueAttachments();
 
@@ -73,16 +75,16 @@ function Content({ issue, session, profile }) {
       updated_date: new Date().toISOString(),
       resolution_days: 0,
       resolution_date: '',
-      intake_date: new Date().toISOString(),
-      issue_date: issue.date,
+      intake_date: issue.date,
       ongoing_issue: issue.ongoingEvent,
       comments: [],
       contact_method: issue.methodOfContact,
       contact_information: issue.contactInfo,
     };
 
+    setSubmitting(true);
     const createdIssue = await createIssue(_issue);
- 
+    
     const attachments = [
       ...(issue?.attachment ? [issue.attachment] : []),
       ...(issue?.recording ? [issue.recording] : []),
@@ -104,9 +106,11 @@ function Content({ issue, session, profile }) {
       }
     }
     
+    setSubmitting(false);
     if (createdIssue) {
       navigation.navigate('CitizenReportStep4', { issue: _issue });
     } else { 
+      showToast(`Issue creation failed. Please try again later.`)
       console.error('Issue creation failed');
     }
   };
@@ -142,7 +146,9 @@ function Content({ issue, session, profile }) {
         <View>
           <Text style={styles.stepSubtitle}>{i18n.t('step_3_field_title_1')}</Text>
           <Text style={styles.stepDescription}>
-            {issue.date !== 'null' && !!issue.date ? moment(issue.date).format('DD-MMMM-YYYY') : '--'}
+            {issue.date !== 'null' && !!issue.date
+              ? moment(issue.date).format('DD-MMMM-YYYY')
+              : '--'}
           </Text>
         </View>
 
@@ -197,16 +203,17 @@ function Content({ issue, session, profile }) {
         <Button
           theme={theme}
           style={{ alignSelf: 'center', margin: 24 }}
+          loading={submitting}
+          disabled={submitting}
           labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
           mode="contained"
           onPress={() => {
-              if (issue.category && issue.category.confidentiality_level === 'Confidential') {
-                _showDialog();
-                return;
-              }
-              submitIssue();
+            if (issue.category && issue.category.confidentiality_level === 'Confidential') {
+              _showDialog();
+              return;
             }
-          }
+            submitIssue();
+          }}
         >
           {i18n.t('submit_button_text')}
         </Button>
@@ -216,9 +223,7 @@ function Content({ issue, session, profile }) {
         <Dialog visible={showDialog} onDismiss={_hideDialog}>
           <Dialog.Title>{i18n.t('warning')}</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>
-              {i18n.t('confidential_complaint')}
-            </Paragraph>
+            <Paragraph>{i18n.t('confidential_complaint')}</Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button

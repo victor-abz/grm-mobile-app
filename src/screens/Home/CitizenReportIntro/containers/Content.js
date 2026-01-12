@@ -50,7 +50,7 @@ function Content() {
             labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
             mode="contained"
             onPress={() => {
-              navigation.navigate('CitizenReport');
+              navigation.navigate('CitizenReportContactMethod');
             }}
           >
             {i18n.t('next')}

@@ -1,65 +1,18 @@
-import { enablePromise } from 'react-native-sqlite-storage';
-import SQLiteAdapter from "@nozbe/watermelondb/adapters/sqlite";
-import { Database, DirtyRaw, Model } from "@nozbe/watermelondb";
-import schema from "../../migrations/appSchema";
-import migrations from "../../migrations/migrations";
+import { Model } from "@nozbe/watermelondb";
 import { SyncDatabaseChangeSet, synchronize } from "@nozbe/watermelondb/sync";
-import { IssueStatusLocalModel } from "../../models/issues/IssueStatus";
-import { IssueLocalModel } from "../../models/issues/Issue";
-import { IssueTypeLocalModel } from "../../models/issues/IssueType";
-import { IssueSubTypeLocalModel } from '../../models/issues/IssueSubType';
-import { IssueCategoryLocalModel } from "../../models/issues/IssueCategory";
-import { IssueComponentLocalModel } from '../../models/issues/IssueComponent';
-import { IssueAgeGroupLocalModel } from '../../models/issues/IssueAgeGroup';
-import { IssueSubComponentLocalModel } from '../../models/issues/IssueSubComponent';
-import { AdministrativeRegionLocalModel } from '../../models/issues/AdministrativeRegions';
-import { IssueCommentLocalModel } from "../../models/issues/IssueComment";
-import { IssueAttachmentLocalModel } from "../../models/issues/IssueAttachment";
-import { IssueCitizenGroupLocalModel } from '../../models/issues/IssueCitizenGroup';
 import type { CreatedResponseWithBackendId, WatermelonId } from './BaseService';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { fetchIssueList } from '../issues/IssueService';
-import { SyncStatus } from '@nozbe/watermelondb/Model';
-
-const DB_NAME = "grm-db";
-
-enablePromise(true);
-
-export type Syncable = {
-  replaceParentIds?(
-    idsToReplace: [CreatedResponseWithBackendId, WatermelonId][],
-    status?: SyncStatus
-  ): Promise<Model[]>;
-  pullChanges({
-    tableName,
-    lastPulledAt,
-    parentChanges: [],
-  }: {
-    tableName: string;
-    lastPulledAt: any;
-    parentChanges?: { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] };
-  }): Promise<{
-    changes: {
-      issue: { tableName: { deleted: any[]; created: any[]; updated: any[] } };
-      tableName: { deleted: any[]; created: any[]; updated: any[] };
-    };
-    timestamp: number;
-    createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][];
-  }>;
-  pushChanges({ changes, lastPulledAt }): Promise<void>;
-  tableName: string;
-  fetchAllParents?(tableName: string): Promise<Model[]>
-};
+import { Syncable } from './types';
+import { databaseServiceInstance } from "../../utils/storageManager";
 
 export class SyncService {
-  database: Database | null = null; // 💡 Store the database instance here
   createdRecordsPostPushedWithNewBackendIDsPerTable: {
     [key: string]: [CreatedResponseWithBackendId, WatermelonId][];
   } = {};
   firstSync = false
   isSyncFinished = true
 
-  
   private pushedParentChanges: any;
   private markedTimestamp: number;
   private pulledParentsChanges: SyncDatabaseChangeSet = null;
@@ -77,55 +30,14 @@ export class SyncService {
     this.childSyncables.push(syncable);
   }
 
-  async initDB() {
-    const adapter = new SQLiteAdapter({
-      schema,
-      migrations,
-      dbName: DB_NAME,
-      onSetUpError: (error) => {
-        // Database failed to load -- offer the user to reload the app or log out
-        console.log('Watermelon Adapter set up Failed', error);
-      },
-    });
-
-    this.database = new Database({
-      adapter,
-      modelClasses: [
-        AdministrativeRegionLocalModel,
-        IssueStatusLocalModel,
-        IssueLocalModel,
-        IssueTypeLocalModel,
-        IssueSubTypeLocalModel,
-        IssueCategoryLocalModel,
-        IssueComponentLocalModel,
-        IssueAgeGroupLocalModel,
-        IssueSubComponentLocalModel,
-        IssueCommentLocalModel,
-        IssueAttachmentLocalModel,
-        IssueCitizenGroupLocalModel,
-      ],
-    });
-  }
-
   removeAll() {
     this.syncables = [];
     this.childSyncables = [];
   }
 
-  async runMigrations(db, fromVersion, toVersion) {
-    console.log(`Migrating DB from v${fromVersion} to v${toVersion}`);
-
-    // Example migration steps
-    if (fromVersion < 2) {
-      await db.executeSql(`ALTER TABLE users ADD COLUMN phone TEXT`);
-    }
-
-    // Add more migrations here for future versions
-  }
-
   async syncAll(): Promise<void> {
     console.log('SYNCING ALL');
-    if (!this.database) {
+    if (!databaseServiceInstance.database) {
       throw new Error('Database not initialized. Call initDB() first.');
     }
 
@@ -137,7 +49,7 @@ export class SyncService {
 
     try {
       await synchronize({
-        database: this.database,
+        database: databaseServiceInstance.database,
         pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
           this.pulledParentsChanges = {};
 
@@ -248,7 +160,6 @@ export class SyncService {
       console.log('Sync All error: ', error);
     }
 
-
     // Update locally and manually push changes of child syncables with their BE generated parent_ids and mark them as synced
     try {
       if (this.pushedParentChanges) {
@@ -316,57 +227,42 @@ export class SyncService {
     if (this.pulledParentsChanges || this.firstSync) {
       try {
         await synchronize({
-          database: this.database,
+          database: databaseServiceInstance.database,
           pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
             let changes = {};
-
             console.log('SUB-ITEMS - From DB LAST PULLED:', new Date(lastPulledAt).toISOString());
-
-            const timestamp = Date.now();
-
             for (const syncable of this.childSyncables) {
               let allParents: {
                 created: any[];
                 updated: any[];
                 deleted: string[];
               };
-
               if (this.firstSync) {
                 const _allParents = await getAllParents(syncable.tableName);
                 allParents = { created: [], updated: _allParents, deleted: [] };
               }
-
               const syncableChanges = await syncable.pullChanges({
                 tableName: syncable.tableName,
                 lastPulledAt,
                 parentChanges:
-                  allParents ??
-                  this.pulledParentsChanges[getParentTableName(syncable.tableName)],
+                  allParents ?? this.pulledParentsChanges[getParentTableName(syncable.tableName)],
               });
-
               changes = { ...syncableChanges.changes, ...changes };
-
               // Empty old IDs array at 'tableName' key
               this.createdRecordsPostPushedWithNewBackendIDsPerTable[syncable.tableName] = [];
             }
-
             // Reset parent changes
             this.pulledParentsChanges = null;
-
-            console.log(`🍉 Sub items Changes pulled successfully. Timestamp: ${timestamp}`);
-
             const hasData = Object.values(changes ?? {}).some((table) =>
               Object.values(table ?? {}).some(
                 (arr: unknown) => Array.isArray(arr) && (arr as unknown[]).length > 0
               )
             );
-
             console.log('Have sub items data? ', hasData);
 
             // Keep using old timestamp.
             // if (!hasData) return { changes, timestamp: lastPulledAt };
             if (!hasData) return;
-
             // Otherwise, set a new one.
             console.log(new Date(this.markedTimestamp).toISOString());
             return { changes, timestamp: this.markedTimestamp };

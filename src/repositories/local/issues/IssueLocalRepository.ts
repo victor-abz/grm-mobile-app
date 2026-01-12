@@ -60,7 +60,6 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
       created_date: localModel.created_date,
       updated_date: localModel.updated_date,
       intake_date: localModel.intake_date,
-      issue_date: localModel.issue_date ? new Date(localModel.issue_date) : null,
       resolution_date: localModel.resolution_date ? new Date(localModel.resolution_date) : null,
       administrative_region:
         typeof localModel.administrative_region === 'string' &&
