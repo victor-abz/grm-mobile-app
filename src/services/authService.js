@@ -57,7 +57,7 @@ export async function fetchFacilitatorProfile(data) {
     return jsonData;
   } catch (error) {
     console.error(error.message);
-    return { error: 'Failed to fetch facilitator profile' } 
+    return { error: error } 
   }
 }
 

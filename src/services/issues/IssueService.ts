@@ -1,9 +1,10 @@
-import { BaseService } from '../shared/BaseService';
+import { BaseService, OfflinePagingInitialTrackingInfo as OfflinePagingInitialTrackingInfo } from '../shared/BaseService';
 import { IssueRemoteRepository } from '../../repositories/remote/issues/IssueRemoteRepository';
 import { IssueLocalRepository } from '../../repositories/local/issues/IssueLocalRepository';
 import { Issue } from '../../models/issues/Issue';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { Syncable } from '../shared/types';
+import { LatestValueAtCurrentPage } from '../../repositories/shared/BaseLocalRepository';
 
 const localRepository = new IssueLocalRepository();
 const remoteRepository = new IssueRemoteRepository();
@@ -21,16 +22,24 @@ export async function fetchIssueList(endpointType: string): Promise<Issue[] | nu
       'updated_date',
       'asc'
     );
-
     return issueList;
   } catch (error) {
     console.error('Error syncing issues:', error);
   }
 }
 
+export async function fetchMoreIssueList(endpointType: string, offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<Issue>): Promise<Issue[] | null> {
+  try {
+    const issueList = await issueService.getMore(endpointType, offlinePagingInitialTrackingInfo);
+    return issueList;
+  } catch (error) {
+    console.error('Error fetching more issues. Reason: ', error);
+  }
+}
+
 export async function createIssue(issue: Issue): Promise<Issue | null> {
   try {
-    const newIssue = await issueService.upsert(issue);
+    const newIssue: any = await issueService.upsert(issue);
     return newIssue;
   } catch (error) {
     console.error('Error creating Issue:', error);
@@ -39,7 +48,7 @@ export async function createIssue(issue: Issue): Promise<Issue | null> {
 
 export async function updateIssue(issue: Issue): Promise<Issue | null> {
   try {
-    const updatedIssue = await issueService.upsert(issue);
+    const updatedIssue: any = await issueService.upsert(issue);
     return updatedIssue;
   } catch (error) {
     console.error('Error Updating Issue:', error);

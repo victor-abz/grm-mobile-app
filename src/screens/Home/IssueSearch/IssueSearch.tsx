@@ -9,13 +9,11 @@ import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 import { useIssue } from '../../../hooks/issues/useIssue';
 import { useSelector } from 'react-redux';
 
-function IssueSearch() {
+function IssueSearch() { 
   const customStyles = styles();
-  const { assigneeIssueList, reporterIssueList, loading: issueListLoading } = useIssue();
+  const { fetchMoreReporterIssueList, fetchMoreAssigneeIssueList, assigneeIssueList, reporterIssueList, loading: issueListLoading } = useIssue();
   const { issueStatusList, loading, getStatusById } = useIssueStatus();
   const { session, profile } = useSelector((state) => state.get('authentication').toObject());
-
-  if (issueListLoading) return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
 
   if (assigneeIssueList) {
     assigneeIssueList.forEach((item, index) => {
@@ -55,7 +53,14 @@ function IssueSearch() {
 
   return (
     <SafeAreaView style={customStyles.container}>
-      <Content assigneeIssueList={assigneeIssueList} reporterIssueList={reporterIssueList} statuses={issueStatusList} />
+      <Content
+        fetchMoreAssigneeIssueList={fetchMoreAssigneeIssueList}
+        fetchMoreReporterIssueList={fetchMoreReporterIssueList}
+        assigneeIssueList={assigneeIssueList}
+        reporterIssueList={reporterIssueList}
+        statuses={issueStatusList}
+        issueListLoading={issueListLoading}
+      />
     </SafeAreaView>
   );
 }

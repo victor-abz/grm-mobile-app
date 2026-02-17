@@ -4,6 +4,7 @@ import type { Issue } from "../../models/issues/Issue";
 import { useDatabase } from '@nozbe/watermelondb/react';
 import { useSelector } from 'react-redux';
 import { TABLE_NAMES } from '../../migrations/tableName';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 export function useIssue(fetchIssues: boolean = true) {
   const [assigneeIssueList, setAssigneeIssueList] = useState<Issue[]>()
@@ -12,7 +13,9 @@ export function useIssue(fetchIssues: boolean = true) {
   const { session } = useSelector((state) => {
       return state.get("authentication").toObject();
   });
-  
+
+  const isConnected = useNetInfo().isConnected;
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -88,6 +91,32 @@ export function useIssue(fetchIssues: boolean = true) {
       setReporterIssueList(filteredList);
     }
   }
+  
+  const fetchMoreReporterIssueList = async (completeList?: Issue[]) => {
+    setLoading(true);
+
+    const issuesList = await IssueService.fetchMoreIssueList('reporter', {
+      completeList,
+      fieldName: 'intake_date',
+    });
+    const filteredList = issuesList.filter((issue) =>
+      issue.reporter
+        ? session.user_id == issue?.reporter?.id || session.user_id == issue.reporter
+        : false
+    );
+    setReporterIssueList([...reporterIssueList, ...filteredList]);
+  };
+  
+  const fetchMoreAssigneeIssueList = async (completeList?: Issue[]) => {
+    // setLoading(true);
+    // const issuesList = await IssueService.fetchMoreIssueList('assignee', latestValue);
+    // const filteredList = issuesList.filter((issue) =>
+    //   issue.assignee
+    //     ? session.user_id == issue?.assignee?.id || session.user_id == issue.assignee
+    //     : false
+    // );
+    // setAssigneeIssueList([...assigneeIssueList, ...filteredList]);
+  };
 
   const createIssue = async (issue: Issue) => {
     setLoading(true)
@@ -101,5 +130,13 @@ export function useIssue(fetchIssues: boolean = true) {
     return updatedIssue;
   }
     
-  return { assigneeIssueList, reporterIssueList, loading, createIssue, updateIssue }
+  return {
+    assigneeIssueList,
+    reporterIssueList,
+    loading,
+    createIssue,
+    updateIssue,
+    fetchMoreReporterIssueList,
+    fetchMoreAssigneeIssueList,
+  };
 }

@@ -1,12 +1,17 @@
 import { Model, Q } from '@nozbe/watermelondb';
 import { writer } from '@nozbe/watermelondb/decorators';
-import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
+import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { databaseServiceInstance } from '../../utils/storageManager';
 
 export type Mapper<T> = {
   toModel: (row: any) => T;
   toRow: (model: T) => any;
+};
+
+export type LatestValueAtCurrentPage = {
+  fieldName: string;
+  latestValue: any;
 };
 
 type QueryClause = Q.Where | Q.SortBy | Q.Take;
@@ -57,32 +62,78 @@ export abstract class BaseLocalRepository<T> {
     sortOrder: SortOrder | null,
     limit: number | null,
     lastPulledAt: string | null,
-    parentId: string | null
+    parentId: string | null,
+    page: number = 0, // zero-based page index
+    extra: number = 0, // bring N more items (e.g. 100)
+    latestValueAtCurrentPage?: LatestValueAtCurrentPage
   ): Promise<T[]> {
-    if (!sortBy) {
-      sortBy = 'created_date';
-    }
-    if (!sortOrder) {
-      sortOrder = Q.desc;
-    }
-    if (!limit) {
-      limit = 200;
-    }
-    let queryClauses: QueryClause[] = [Q.sortBy(sortBy, sortOrder), Q.take(limit)];
+    if (!sortBy) sortBy = 'created_date';
+    if (!sortOrder) sortOrder = Q.desc;
+
+    // TODO: Keep using 100 limit
+    // if (!limit) limit = 100;
+    if (!limit) limit = 5;
+
+    const pageSize = limit + (extra || 0);
+    let queryClauses: QueryClause[] = [Q.sortBy(sortBy, sortOrder)];
+
     if (lastPulledAt) {
       queryClauses.push(Q.where('created_date', Q.gte(lastPulledAt)));
     }
+
     if (parentId) {
-      queryClauses.push(Q.where('parent_id', Q.eq(parentId)));
+      queryClauses.push(Q.where('parent_id', Q.eq(String(parentId))));
+    }
+
+    console.log("LATEST_VALUE", latestValueAtCurrentPage);
+    
+    // Useful for pagination. If available, bring values below and equal the provided value.
+    if (latestValueAtCurrentPage) {
+      queryClauses.push(
+        Q.where(
+          latestValueAtCurrentPage.fieldName,
+          Q.lte(latestValueAtCurrentPage.latestValue[latestValueAtCurrentPage.fieldName])
+        )
+      );
     }
 
     const dbInstance = databaseServiceInstance.database;
-    const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
+    // Note: WatermelonDB doesn't reliably support skip/offset in all versions;
+    // so query the filtered/sorted set and slice for pagination.
 
-   
-    const formattedResults = results.map((result) => this.fromLocalToRemote(result));
-    console.log(formattedResults.length);
-    return formattedResults
+    let results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
+
+    // If duplicated step: move it before everything, take the value, delete the duplicates and query Q.lte
+    // If not duplicated: Careful with the latest value when no internet do something at the switch. [1,2]..load more(Q.lte)..[1,2,3]
+    // Delete the latestValue when no internet the first time
+    // let duplicatedRange = latestValue.value === results[1][latestValue.fieldName];
+    //
+
+    // Remove
+    // const opposite = 1
+    // Remove
+    // if (duplicatedRange) {
+    //   //add them duplicated all, delete the rendered old ones
+    //   queryClauses.push(
+    //     Q.and(
+    //       Q.where(latestValue.fieldName, Q.gt(opposite)),
+    //       Q.where('id', Q.lt(latestValue.id))
+    //     )
+    //   );
+    //   results = await dbInstance.get(this.tableName).query(...queryClauses);
+    // }
+
+    console.log('====================');
+    console.log('====================');
+    console.log('====================');
+    console.log('====================');
+    console.log(results);
+
+    let start = 5 * pageSize;
+
+    const paged = results.slice(start, start + pageSize);
+
+    return paged.map((result) => this.fromLocalToRemote(result));
   }
 
   // @ts-ignore
@@ -97,7 +148,7 @@ export abstract class BaseLocalRepository<T> {
     if (!sortOrder) sortOrder = Q.desc;
     if (!limit) limit = 200;
     let queryClauses: QueryClause[] = [];
-    
+
     if (parentId) {
       queryClauses.push(Q.where('parent_id', Q.eq(String(parentId))));
     }
@@ -107,9 +158,7 @@ export abstract class BaseLocalRepository<T> {
   }
 
   // @ts-ignore
-  async findOneRaw(
-    id: string | null
-  ): Promise<Model> {
+  async findOneRaw(id: string | null): Promise<Model> {
     const dbInstance = databaseServiceInstance.database;
     const result: Model = await dbInstance.get(this.tableName).find(id);
     return result;
@@ -174,7 +223,6 @@ export abstract class BaseLocalRepository<T> {
         dbItem = await dbInstance.get(this.tableName).find(String(newEntry.id));
         await dbItem.update((_item) => {
           Object.keys(_item._raw).forEach((key) => {
-         
             if (key !== 'id' && key !== '_changed' && key !== '_status' && newEntry[key]) {
               _item[key] = newEntry[key];
             }

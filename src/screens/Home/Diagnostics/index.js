@@ -1,10 +1,8 @@
 import React, { useState } from "react";
-import { StyleSheet, SafeAreaView, View, TouchableOpacity } from "react-native";
+import { StyleSheet, SafeAreaView, View } from "react-native";
 import { Text } from "react-native-paper";
 import { colors } from "../../../utils/colors";
 import { useDatabase } from '@nozbe/watermelondb/react';
-import { syncServiceInstance } from "../../../services/shared/SyncService";
-import { TABLE_NAMES } from "../../../migrations/tableName";
 
 export function Diagnostics() {
   // const {issueCategoriesList, loading} = useIssueCategories()

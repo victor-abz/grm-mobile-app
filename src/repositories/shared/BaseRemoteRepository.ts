@@ -19,6 +19,8 @@ export abstract class BaseRemoteRepository<T> {
     parentId: string | null,
   ): Promise<T[]>;
 
+  abstract fetchMore(endpointType: string): Promise<T[]>;
+
   abstract fetchById(id: string): Promise<T>;
 
   abstract update(id: string, item: T): Promise<T>;

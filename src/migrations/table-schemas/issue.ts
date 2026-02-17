@@ -1,5 +1,5 @@
-import { tableSchema, TableSchema } from "@nozbe/watermelondb";
-import { TABLE_NAMES } from "../tableName";
+import { tableSchema, TableSchema } from '@nozbe/watermelondb';
+import { TABLE_NAMES } from '../tableName';
 
 export const issueTableSchema: TableSchema = tableSchema({
   name: TABLE_NAMES.issue,
@@ -17,7 +17,7 @@ export const issueTableSchema: TableSchema = tableSchema({
     { name: 'deleted_date', type: 'string', isOptional: true },
     { name: 'description', type: 'string' },
     { name: 'escalated_date', type: 'string', isOptional: true },
-    { name: 'intake_date', type: 'string', isOptional: true }, // DEFAULT CURRENT_TIMESTAMP
+    { name: 'intake_date', type: 'string', isOptional: true, isIndexed: true }, // DEFAULT CURRENT_TIMESTAMP
     { name: 'issue_location', type: 'string' },
     { name: 'issue_type', type: 'string', isOptional: true },
     { name: 'issue_sub_type', type: 'string', isOptional: true },
@@ -35,7 +35,7 @@ export const issueTableSchema: TableSchema = tableSchema({
     { name: 'escalate_flag', type: 'boolean' }, // DEFAULT FALSE
     { name: 'reject_flag', type: 'boolean' }, // DEFAULT FALSE
     { name: 'rating', type: 'number', isOptional: true },
-    { name: 'escalation_reason', type: 'string', isOptional: true }, 
+    { name: 'escalation_reason', type: 'string', isOptional: true },
     { name: 'research_result', type: 'string', isOptional: true },
   ],
 });

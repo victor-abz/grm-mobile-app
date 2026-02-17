@@ -6,13 +6,15 @@ import config from '../../../../config';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
+  private nextReporterListPage: string;
+  private nextAssigneeListPage: string;
 
   /**
    * Fetch all issues from a dynamic endpoint.
    * @param endpointType 'assignee' | 'reporter' | etc.
    */
   async fetchAll(
-    endpointType: string | null,
+    endpointType: 'assignee' | 'reporter' | null,
     sortBy: string | null,
     sortOrder: SortOrder | null,
     page: number | null,
@@ -23,7 +25,9 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     deleted_date: EpochTimeStamp | null
   ): Promise<Issue[]> {
     const params: Record<string, string> = {};
-    
+    this.nextAssigneeListPage = null;
+    this.nextReporterListPage = null;
+
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
     if (page) params.page = page.toString();
@@ -74,7 +78,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       } catch (error) {
         console.error(error.message);
       }
-      
     } else {
       try {
         const response = await request({
@@ -82,15 +85,38 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
           method: 'GET',
           params: new URLSearchParams(params),
         });
-  
+
         const jsonData: any = response.data;
+        if (response.data && response.data.next) {
+          if (endpointType === 'reporter') {
+            this.nextReporterListPage = response.data.next;
+          } else if (endpointType === 'assignee') {
+            this.nextAssigneeListPage = response.data.next;
+          }
+        }
         return jsonData.results ?? [];
       } catch (error) {
         return Promise.reject({ message: error.message });
       }
-      
     }
+  }
 
+  async fetchMore(endpointType: 'assignee' | 'reporter'): Promise<Issue[]> {
+    const url: string | null = endpointType == 'reporter' ? this.nextReporterListPage : this.nextAssigneeListPage;
+    if (!url) return []; 
+
+    const response = await request({
+      url,
+      method: 'GET',
+    });
+
+    if (endpointType == 'reporter') {
+      this.nextReporterListPage = response.data.next;
+    } else {
+      this.nextAssigneeListPage = response.data.next;
+    }
+    
+    return response?.data?.results ?? [];
   }
 
   async create(item: Issue): Promise<Issue> {

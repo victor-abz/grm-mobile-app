@@ -15,7 +15,6 @@ const issueStatusService = new BaseService<IssueStatus>(localRepository, remoteR
 export async function fetchIssueStatusList(): Promise<IssueStatus[]> {
   try {
     const list = await issueStatusService.getAll();
-    console.log("### ISL at IS Service:", list);
     
     return list
   } catch (error) {

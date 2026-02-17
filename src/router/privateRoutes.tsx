@@ -1,20 +1,19 @@
+import { DatabaseProvider } from '@nozbe/watermelondb/react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { databaseServiceInstance, getData, storeData } from '../utils/storageManager';
 import React, { useEffect } from 'react';
+import { Dimensions, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Button } from 'react-native-paper';
+import { useDispatch, useSelector } from 'react-redux';
 import CustomLoadingSpinner from '../components/CustomLoadingSpinner/CustomLoadingSpinner';
 import HomeRouter from '../screens/Home';
-import { syncServiceInstance } from '../services/shared/SyncService';
-import { fetchAdministrativeRegions } from '../services/issues/AdministrativeRegionService';
-import { INITIAL_DATA_FETCHED_STORAGE_KEY } from '../utils/constants';
-import { DatabaseProvider } from '@nozbe/watermelondb/react';
 import { fetchFacilitatorProfile } from '../services/authService';
-import { useDispatch, useSelector } from 'react-redux';
-import { setProfile } from '../store/ducks/authentication.duck';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { colors } from '../utils/colors';
-import { Button } from 'react-native-paper';
+import { fetchAdministrativeRegions } from '../services/issues/AdministrativeRegionService';
+import { syncServiceInstance } from '../services/shared/SyncService';
+import { logout, setProfile } from '../store/ducks/authentication.duck';
 import { i18n } from '../translations/i18n';
-
+import { colors } from '../utils/colors';
+import { INITIAL_DATA_FETCHED_STORAGE_KEY } from '../utils/constants';
+import { databaseServiceInstance, getData, storeData } from '../utils/storageManager';
 
 const { width } = Dimensions.get('screen');
 
@@ -28,23 +27,17 @@ const theme = {
   },
 };
 
-//[x] install, auto create 3 instances, auto update 1 from remote.
-//[x] manually update 1, check remote, check local.
-//[x] (OFFLINE) manually update 1, check local, (CONNECT) check remote.
-//[x] (OFFLINE) manually update 1, auto update remote(same), (CONNECT) check remote, check local. watermelon change wins against remote
-//[x] check for empty pushChanges
-
 const Stack = createStackNavigator();
 const PrivateRoutes = () => {
   const dispatch = useDispatch();
   const [dbReady, setDbReady] = React.useState(!!databaseServiceInstance.database);
   const [profileLoaded, setProfileLoaded] = React.useState(false);
   const [profileError, setProfileError] = React.useState<Error | null>(null);
-  const { profile } = useSelector((state: any) => state.get("authentication").toObject());
- 
+  const { profile } = useSelector((state: any) => state.get('authentication').toObject());
+
   const fetchConstants = async () => {
     const hasInitialData = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);
-    //  await removeValue(INITIAL_DATA_FETCHED_STORAGE_KEY);
+
     if (!hasInitialData) {
       try {
         const FETCH_ALL_PAGES = true;
@@ -57,7 +50,6 @@ const PrivateRoutes = () => {
   };
 
   const loadFacilitatorProfile = async () => {
-
     // Try to get facilitatorProfile from redux state first
     if (profile) {
       setProfileLoaded(true);
@@ -108,6 +100,8 @@ const PrivateRoutes = () => {
     // Guard: clear any existing interval before setting a new one
     if (dbReady) {
       const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+      // const SYNC_INTERVAL_MS = 7000;
+      // const SYNC_INTERVAL_MS = 20000000000000; //
       syncAllInterval = setInterval(() => {
         syncServiceInstance.syncAll();
       }, SYNC_INTERVAL_MS);
@@ -122,31 +116,68 @@ const PrivateRoutes = () => {
 
   if (profileError)
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        
-        <Text style={{ marginVertical: 16, color: "red" }}>
-          Something wrong has occurred. Please try again.
-        </Text>
-        <Button
-          theme={theme}
-          style={[
-            styles.reloadButton,
-            {
-              backgroundColor: '#24c38b',
-            },
-          ]}
-          color="white"
-          onPress={() => {
-            setProfileError(null);
-            setProfileLoaded(false);
-            loadFacilitatorProfile();
-          }}
-        >
-          {i18n.t('reload')}
-        </Button>
-      </View>
+        <View style={{ flex: 1, justifyContent: 'space-between', alignItems: 'center' }}>
+          <View/>
+          <Text
+            style={{
+              fontSize: 20,
+              textAlign: 'center',
+              marginVertical: 16,
+              marginHorizontal: 14,
+              color: colors.primary,
+              fontWeight: '600',
+            }}
+          >
+            Something wrong has occurred. Please try again.
+          </Text>
+          <View>
+            <Button
+              theme={theme}
+              style={[
+                styles.reloadButton,
+                {
+                  backgroundColor: '#24c38b',
+                },
+              ]}
+              color="white"
+              onPress={() => {
+                setProfileError(null);
+                setProfileLoaded(false);
+                loadFacilitatorProfile();
+              }}
+            >
+              {i18n.t('reload')}
+            </Button>
+            <View style={{ marginVertical: 20 }} />
+            <Button
+              theme={theme}
+              style={[
+                styles.reloadButton,
+                {
+                  backgroundColor: colors.lightgray,
+                },
+              ]}
+              color="white"
+              onPress={() => dispatch(logout())}
+            >
+              {i18n.t('logout')}
+            </Button>
+            <View style={{ marginVertical: 20 }} />
+            <Text
+              style={{
+                marginVertical: 16,
+                color: colors.error,
+                marginHorizontal: 14,
+                textAlign: 'center',
+              }}
+            >
+              {profileError.message}
+              If the error persists, please contact support.
+            </Text>
+          </View>
+        </View>
     );
-  
+
   if (!dbReady) return <CustomLoadingSpinner />;
 
   return (

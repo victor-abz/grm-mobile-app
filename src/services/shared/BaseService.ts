@@ -1,20 +1,28 @@
 import type { Model } from '@nozbe/watermelondb';
 import { Q, RawRecord } from '@nozbe/watermelondb';
 import NetInfo from '@react-native-community/netinfo';
-import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
+import { BaseLocalRepository, LatestValueAtCurrentPage } from '../../repositories/shared/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { deleteAsync } from 'expo-file-system';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
 import { databaseServiceInstance } from '../../utils/storageManager';
+import PhaseTasks from '../../screens/Home/PhaseTasks/PhaseTasks';
 export type WatermelonId = string;
 export type CreatedResponseWithBackendId = unknown;
+
+export type OfflinePagingInitialTrackingInfo<T> = {
+  completeList: T[];
+  fieldName: string;
+};
 
 export class BaseService<T> {
   createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][] = [];
   private isFile: boolean;
+  private localPage = 0;
 
+  forcePaginateFromLocalNoAccessToBackendList = false;
   constructor(
     private localRepository: BaseLocalRepository<T>,
     private remoteRepository: BaseRemoteRepository<T>
@@ -142,7 +150,7 @@ export class BaseService<T> {
 
         // @ts-ignore
         item.syncAt = new Date();
-        
+
         // Upsert locally using WatermelonDB
         if (createdResponse) {
           // TODO: Use newly created id from backend response to upsert
@@ -207,21 +215,168 @@ export class BaseService<T> {
         );
 
         if (Array.isArray(remoteResult)) {
+          this.forcePaginateFromLocalNoAccessToBackendList = false;
           return remoteResult;
         } else {
+          this.forcePaginateFromLocalNoAccessToBackendList = true;
           console.warn(
             '[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval'
           );
-          return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
+          return await this.localRepository.getAll(
+            sortBy,
+            sortOrder,
+            null,
+            null,
+            parentId,
+            null,
+            null
+          );
         }
       } catch (err) {
+        this.forcePaginateFromLocalNoAccessToBackendList = true;
         console.warn(
           '[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval. Reason: '
         );
-        return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
+        return await this.localRepository.getAll(
+          sortBy,
+          sortOrder,
+          null,
+          null,
+          parentId,
+          null,
+          null
+        );
       }
     } else {
-      return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
+      this.forcePaginateFromLocalNoAccessToBackendList = true;
+      return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId, null, null);
+    }
+  }
+
+  async getMore(
+    endpointType: string | null,
+    offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<T>
+  ): Promise<T[]> {
+    const { completeList, fieldName } = offlinePagingInitialTrackingInfo ?? {};
+    try {
+      // Fetch From Remote
+      if (!this.forcePaginateFromLocalNoAccessToBackendList) {
+        const remoteResult = await this.remoteRepository.fetchMore(endpointType);
+        if (Array.isArray(remoteResult)) {
+          return remoteResult;
+        } else {
+          // Fetch From Local From Latest Value
+          // [] Fetch, disconnect, fetch from local, maybe lastvalue does not exist, bring from zero, locally.
+          // [] review unstable connection detector.
+
+
+
+          const lastIndexFromAvailableData = offlinePagingInitialTrackingInfo
+            ? completeList.findLastIndex((e) => e)
+            : undefined;
+
+          // lte=offline - always delete
+
+          // If duplicated step: move it before everything, take the value, delete the duplicates and query (Q.lte)
+          // If not duplicated: internet dont remove/no internet remove. Careful with the latest value when no internet do something at the switch. [1,2]..load more(Q.lte)..[1,2,3]
+
+          // Delete the latestValue when no internet the first time, just the first time to clean range order from backend and local
+
+          // let hasDuplicatedValueForField =
+          //   completeList[lastIndexFromAvailableData][fieldName] ===
+          //   completeList[lastIndexFromAvailableData - 1][fieldName];
+          prepareListWithoutLastValueRange(lastIndexFromAvailableData);
+          
+          const latestValueAtCurrentPage = {
+            fieldName,
+            latestValue: completeList[lastIndexFromAvailableData],
+          };
+          this.forcePaginateFromLocalNoAccessToBackendList = true;
+          //Call Paging With Latest Value Removed To Query With Q.Lte
+          const list = this.localRepository.getAll(
+            'intake_date',
+            'desc',
+            50,
+            null,
+            null,
+            5,
+            0,
+            latestValueAtCurrentPage
+          );
+          this.localPage++;
+          return list;
+        }
+      } else {
+        // Fetch From Local Regular Slice Paging, Except if local page equals 0
+        
+         const lastIndexFromAvailableData = offlinePagingInitialTrackingInfo
+           ? completeList.findLastIndex((e) => e)
+           : undefined;
+
+         // lte=offline - always delete
+
+         // If duplicated step: move it before everything, take the value, delete the duplicates and query (Q.lte)
+         // If not duplicated: internet dont remove/no internet remove. Careful with the latest value when no internet do something at the switch. [1,2]..load more(Q.lte)..[1,2,3]
+
+         // Delete the latestValue when no internet the first time , just the first time to clean range order from backend and local
+
+         // let hasDuplicatedValueForField =
+         //   completeList[lastIndexFromAvailableData][fieldName] ===
+         //   completeList[lastIndexFromAvailableData - 1][fieldName];
+         prepareListWithoutLastValueRange(lastIndexFromAvailableData);
+         const latestValueAtCurrentPage = {
+           fieldName,
+           latestValue: completeList[lastIndexFromAvailableData],
+         };
+        
+        this.forcePaginateFromLocalNoAccessToBackendList = true;
+
+        const list = this.localRepository.getAll(
+          'intake_date',
+          'desc',
+          50,
+          null,
+          null,
+          5,
+          0,
+          this.localPage == 0 ? latestValueAtCurrentPage : undefined 
+        );
+        this.localPage++;
+        return list;
+      }
+    } catch (err) {
+      if (!this.forcePaginateFromLocalNoAccessToBackendList) {
+        this.forcePaginateFromLocalNoAccessToBackendList = true;
+        console.error('Pagination from remote/local failed. Retrying...');
+        try {
+          
+          console.log("$$$$$$$$$$$$$$");
+          console.log(this.forcePaginateFromLocalNoAccessToBackendList);
+          console.log(offlinePagingInitialTrackingInfo);
+          
+          const list = await this.getMore(endpointType, offlinePagingInitialTrackingInfo);
+          return list
+
+        } catch (error) {
+          console.error("Error");
+          console.error(error);
+          
+        }
+      } else {
+        console.error('Pagination from remote/local retry failed.');
+      }
+    }
+
+    function prepareListWithoutLastValueRange(lastIndexFromAvailableData: number) {
+      for (let index = completeList.length - 1; index >= 0; index--) {        
+        const element = completeList[index];
+        if (element[fieldName] != completeList[lastIndexFromAvailableData][fieldName]) {
+         console.log("debugger");
+          
+          break;
+        }
+        completeList.pop();
+      }
     }
   }
 
@@ -276,6 +431,7 @@ export class BaseService<T> {
 
     if (parentChanges) {
       // Parent IDs available - Pulling sub-items
+      console.log('Parent IDs available');
 
       try {
         let newRecords = [];
@@ -350,7 +506,10 @@ export class BaseService<T> {
           return formattedSubItems;
         });
 
-        // tableChanges.updated = []
+        // [11/Dec/2025 16:55:44] "POST /issues/369/add-attachment HTTP/1.1" 201 1261
+        // [11/Dec/2025 16:55:44] "POST /issues/369/add-attachment HTTP/1.1" 201 1261
+        // [11/Dec/2025 16:55:44] "GET /issues/369/attachments/?updated_at=2025-12-11T16%3A55%3A41.462Z HTTP/1.1" 200 2507
+
         tableChanges.updated = [
           ...tableChanges.updated,
           ...updatedFormattedRecords.flat().map((record) => ({
@@ -363,6 +522,14 @@ export class BaseService<T> {
         // tableChanges.updated = [];
         syncPullFailed = true;
       }
+
+      //[x]permissions alert looks like stop download file ?
+
+      //[x]check background progress in pause
+
+      // [x]Caused by: Directory
+      // 'file:///data/user/0/com.setcobj.grmapp/files//issues/397/attachments'
+      // could not be created or already exists]
 
       // // 3. Fetch deleted records (soft deletes are highly recommended for this)
 
@@ -415,6 +582,8 @@ export class BaseService<T> {
       return { changes };
     } else {
       // Parent IDs unavailable - Pulling parents
+      console.log('Parent IDs unavailable - Pulling parents');
+
       try {
         const newRecords = await this.remoteRepository.fetchAll(
           endPointType,
@@ -565,6 +734,7 @@ export class BaseService<T> {
     if (tableChanges.updated.length > 0) {
       console.log(`Pushing ${tableChanges.updated.length} updated records to ${tableName}`);
       for (const record of tableChanges.updated) {
+        console.log('CREATED', tableChanges.updated);
         const modelInterface = this.localRepository.fromLocalToRemote(record);
         await this.remoteRepository.update(modelInterface.id, modelInterface);
       }
