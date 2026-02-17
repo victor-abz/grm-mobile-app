@@ -17,54 +17,50 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
   const [userId, setUserId] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment());
 
-  const sortByCreationDateDesc = (data) => {
-    return data.sort(function(a,b){
-      return new Date(b.created_date) - new Date(a.created_date);
+  const sortByUpdatedDateDesc = (data) => {
+    return data.sort(function (a, b) {
+      return new Date(b.updated_date) - new Date(a.updated_date);
     });
   };
 
   useEffect(() => {
     getSessionData().then((sessionData) => {
       setUserId(sessionData['user_id']);
-    })
+    });
   }, []);
 
   useEffect(() => {
     let filteredIssues = [];
-    let resolvedStatus;
     switch (status) {
       case 'assigned':
-        filteredIssues = assigneeIssueList ?? []
-        filteredIssues = sortByCreationDateDesc(filteredIssues);
+        filteredIssues = assigneeIssueList ?? [];
+        // filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'reported':
-        filteredIssues = reporterIssueList ?? []
-        filteredIssues = sortByCreationDateDesc(filteredIssues);
+        filteredIssues = reporterIssueList ?? [];
+        // filteredIssues = sortByCreationDateDesc(filteredIssues);
         break;
       case 'resolved':
-        resolvedStatus = statuses.find((el) => el.final_status === true);
+        const resolvedStatus = statuses.find((el) => el.final_status === true);
+        const rejectedStatus = statuses.find((el) => el.rejected_status === true);
         filteredIssues = [
           ...assigneeIssueList.filter(
             (issue) =>
               issue.assignee &&
               (issue.assignee.id === userId || issue.assignee === userId) &&
-              issue.status.id === resolvedStatus.id
-          ),
-          ...reporterIssueList.filter(
-            (issue) =>
-              issue.assignee &&
-              (issue.assignee.id === userId || issue.assignee === userId) &&
-              issue.status.id === resolvedStatus.id
+              (issue.status.id === resolvedStatus.id || issue.status.id === rejectedStatus.id)
           ),
         ];
-        filteredIssues = sortByCreationDateDesc(filteredIssues);
+
+        filteredIssues = sortByUpdatedDateDesc(filteredIssues);
         break;
       default:
         filteredIssues = displayedIssues.map((issue) => issue);
     }
-  
+
     setDisplayedIssues(filteredIssues);
   }, [status, assigneeIssueList, reporterIssueList]);
+
 
   function Item({ item, onPress }) {
     return (
