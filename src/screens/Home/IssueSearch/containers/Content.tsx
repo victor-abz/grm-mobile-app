@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, FlatList, TouchableOpacity, Text, StatusBar, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,7 +10,6 @@ import moment from 'moment';
 import { getSessionData } from "../../../../store/ducks/authentication.duck";
 import { Issue } from '../../../../models/issues/Issue';
 import { IssueStatus } from '../../../../models/issues/IssueStatus';
-import { LatestValueAtCurrentPage } from '../../../../repositories/shared/BaseLocalRepository';
 
 function Content({
   fetchMoreAssigneeIssueList,
@@ -33,12 +32,19 @@ function Content({
   const [displayedIssues, setDisplayedIssues] = useState<Issue[]>([]);
   const [userId, setUserId] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment());
+  const [isListReady, setIsListReady] = useState(false);
+  const issuesListRef = useRef(null)
+  const [issueListHeight, setIssueListHeight] = useState(0);
 
   const sortByUpdatedDateDesc = (data) => {
     return data.sort(function (a, b) {
       return new Date(b.updated_date) - new Date(a.updated_date);
     });
   };
+
+    useEffect(() => {
+      if (issuesListRef.current) setIsListReady(true)
+    }, [issuesListRef.current]);
 
   useEffect(() => {
     getSessionData().then((sessionData) => {
@@ -226,6 +232,7 @@ function Content({
         />
       </ToggleButton.Row>
       <FlatList
+        ref={issuesListRef}
         style={{ flex: 1 }}
         data={displayedIssues}
         renderItem={renderItem}
@@ -239,30 +246,40 @@ function Content({
             />
           )
         }
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => index.toString()}
+        bounces={false}
         extraData={selectedId}
-        // onEndReached={
-        //   status == 'assigned'
-        //     ? loadNextPageAssignee
-        //     : status == 'reported'
-        //       ? loadNextPageReported
-        //       : null // TODO: paginate resolved
-        // }
+        onEndReachedThreshold={0.1}
+        onEndReached={(info) => {
+          if (displayedIssues.length > 0 && issueListHeight > 0 && issueListLoading == false) {
+            if (status == 'assigned') {
+              loadNextPageAssignee(info);
+            } else if (status == 'reported') {
+              loadNextPageReported(info);
+            } else {
+              null; // TODO: paginate resolved
+            }
+          }
+        }}
+        onLayout={(e) => setIssueListHeight(e.nativeEvent.layout.height)}
       />
     </>
   );
 
-  function loadNextPageReported(info: { distanceFromEnd: number }) {
+  async function loadNextPageReported(info: { distanceFromEnd: number }) {
     console.log('LOADING NEXT PAGE REPORTED..');
-    // if(the lastPage.length < pageSize) return    
-    fetchMoreReporterIssueList(displayedIssues);
+    // TODO:  if(the lastPage.length < pageSize) return;
+    
+    await fetchMoreReporterIssueList(displayedIssues);
+    // if (displayedIssues.length > 0) fetchMoreReporterIssueList(displayedIssues);
   }
   
   function loadNextPageAssignee(info: { distanceFromEnd: number }) {
-    console.log('LOADING NEXT PAGE REPORTED..');
-    // if(the lastPage.length < pageSize) return    
+    console.log('LOADING NEXT PAGE ASSIGNEE..');
+    //TODO: if(the lastPage.length < pageSize) return;    
     fetchMoreAssigneeIssueList(displayedIssues);
   }
+
 }
 
 const styles = StyleSheet.create({

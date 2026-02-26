@@ -11,7 +11,13 @@ import { useSelector } from 'react-redux';
 
 function IssueSearch() { 
   const customStyles = styles();
-  const { fetchMoreReporterIssueList, fetchMoreAssigneeIssueList, assigneeIssueList, reporterIssueList, loading: issueListLoading } = useIssue();
+  const {
+    fetchMoreReporterIssueList,
+    fetchMoreAssigneeIssueList,
+    assigneeIssueList,
+    reporterIssueList,
+    loading: issueListLoading,
+  } = useIssue();
   const { issueStatusList, loading, getStatusById } = useIssueStatus();
   const { session, profile } = useSelector((state) => state.get('authentication').toObject());
 

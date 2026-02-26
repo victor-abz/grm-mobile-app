@@ -1,11 +1,13 @@
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 import { ContactMedium, ContactMethod, Issue, IssueLocalModel } from '../../../models/issues/Issue';
 import { TABLE_NAMES } from '../../../migrations/tableName';
+import { parseJson } from '../../../utils/utils';
 
 export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   constructor() {
     super(TABLE_NAMES.issue);
   }
+  
   fromRemoteToLocal(issue: any): any {
     if (issue && typeof issue === 'object') {
       const i = issue as Record<string, any>;
@@ -28,15 +30,6 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   }
 
   fromLocalToRemote(localModel: IssueLocalModel): Issue {
-
-    const parseJson = (jsonString: string | null): any => {
-      try {
-        return jsonString ? JSON.parse(jsonString) : null;
-      } catch (e) {
-        console.error('Failed to parse JSON:', e);
-        return jsonString;
-      }
-    };
 
     return {
       id: localModel.id,

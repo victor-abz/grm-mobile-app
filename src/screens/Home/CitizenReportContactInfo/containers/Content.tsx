@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button, TextInput, RadioButton } from 'react-native-paper';
-import { i18n } from "../../../../translations/i18n";
+import { i18n } from '../../../../translations/i18n';
 import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
@@ -64,7 +64,7 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
   // Combine both citizenGroups arrays if needed, or use one as source
   const allGroups = [...(_citizenGroups || [])];
   // Get unique types
-  const types = Array.from(new Set(allGroups.map((g) => g.type)));  
+  const types = Array.from(new Set(allGroups.map((g) => g.type)));
 
   return (
     <ScrollView>
@@ -231,3 +231,97 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
 }
 
 export default Content;
+
+
+
+// async getMore(endpointType: string | null) {
+//     const state = await NetInfo.fetch();
+
+//       try {
+//         const remoteResult = await this.remoteRepository.fetchMore(endpointType);
+
+//         if (Array.isArray(remoteResult)) {
+//           return remoteResult;
+//         } else {
+//           // remote[1, 2]...local[3, 4]
+//           const remoteArray = Array.isArray(remoteResult)
+//             ? remoteResult
+//             : remoteResult?.data ?? remoteResult?.results ?? [];
+
+//           try {
+//             const localArray: any[] = await this.localRepository.getAll(
+//               'intake_date',
+//               'desc',
+//               null,
+//               null,
+//               null,
+//               null,
+//               null
+//             );
+
+//             // merge remote/local preserving most recent intake_date order
+//             const combined = [...remoteArray, ...localArray];
+
+//             // dedupe by id (fallback to _id), keeping first occurrence (remote items first)
+//             const seen = new Set<string>();
+//             const deduped: any[] = [];
+//             for (const item of combined) {
+//               const id = String(item?.id ?? item?._id ?? '');
+//               if (!id) continue;
+//               if (!seen.has(id)) {
+//                 seen.add(id);
+//                 deduped.push(item);
+//               }
+//             }
+
+//             const getIntakeTimestamp = (it: any) =>
+//               new Date(it?.intake_date ?? it?.intakeDate ?? it?.created_at ?? 0).getTime() || 0;
+
+//             deduped.sort((a, b) => getIntakeTimestamp(b) - getIntakeTimestamp(a));
+
+//             // attempt to respect remote pagination if available
+//             const page =
+//               Number(remoteResult?.page ?? remoteResult?.current_page ?? remoteResult?.pageNumber ?? 0) ||
+//               0;
+//             const pageSize =
+//               Number(
+//                 remoteResult?.per_page ??
+//                   remoteResult?.page_size ??
+//                   remoteResult?.pageSize ??
+//                   remoteResult?.perPage ??
+//                   0
+//               ) || 0;
+
+//             if (page > 0 && pageSize > 0) {
+//               const start = (page - 1) * pageSize;
+//               const end = page * pageSize;
+//               return deduped.slice(start, end);
+//             }
+
+//             return deduped;
+//           } catch (e) {
+//             // fallback: return local results sorted by intake_date
+//             const localOnly: any[] = await this.localRepository.getAll(
+//               'intake_date',
+//               'desc',
+//               null,
+//               null,
+//               null,
+//               null,
+//               null
+//             );
+//             return localOnly;
+//           }
+//           // removing duplicates[1, 2, 3, 4]
+//           // console.warn(
+//           //   '[BaseService] Remote fetch failed. Will retry later. Proceeding with local retrieval'
+//           // );
+//           // return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
+//         }
+//       } catch (err) {
+//         // console.warn(
+//         //   '[BaseService] Remote fetch failed. Will retry later. Proceeding with local retrieval. Reason: '
+//         // );
+//         // return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
+//       }
+//   }

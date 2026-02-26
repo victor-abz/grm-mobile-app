@@ -144,6 +144,12 @@ android {
             useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
         }
     }
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def date = new Date().format("yyyyMMdd-HHmmss")
+            outputFileName = "grm-${variant.name}-${defaultConfig.versionName}-${date}.apk"
+        }
+    }
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`

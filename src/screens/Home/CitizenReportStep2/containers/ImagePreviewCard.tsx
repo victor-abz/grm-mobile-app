@@ -49,7 +49,51 @@ const ImagePreviewCard = ({ uri, onRemove, id, showRemove = true, onRetry }) => 
           </TouchableOpacity>
         )}
       </ImageBackground>
+      {/* 
+      {error && (
+        <>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ color: 'black', fontWeight: '700', marginBottom: 4 }}>
+              Attachment failed to load
+            </Text>
+            <Text style={{ color: 'black', fontSize: 12, marginBottom: 8, textAlign: 'center' }}>
+              The attachment couldn't be loaded. Tap Retry to attempt reload or Remove to delete
+              this attachment.
+            </Text>
 
+            {showRemove && (
+              <TouchableOpacity
+                onPress={onRemove}
+                style={{
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                  backgroundColor: 'rgba(255,255,255,0.12)',
+                  borderRadius: 4,
+                  marginBottom: 6,
+                  alignSelf: 'center',
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Remove attachment"
+              >
+                <Text style={{ color: 'black' }}>Remove</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={{
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                backgroundColor: colors.lightgray,
+                borderRadius: 4,
+                marginBottom: 6,
+                alignSelf: 'center',
+              }}
+              onPress={onRetryPress}
+            >
+              <Text>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )} */}
     </>
   );
 };

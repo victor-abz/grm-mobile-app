@@ -4,23 +4,23 @@ import { IssueLocalRepository } from '../../repositories/local/issues/IssueLocal
 import { Issue } from '../../models/issues/Issue';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { Syncable } from '../shared/types';
-import { LatestValueAtCurrentPage } from '../../repositories/shared/BaseLocalRepository';
+import { OfflinePaginatedListRequest } from '../../hooks/issues/useIssue';
 
 const localRepository = new IssueLocalRepository();
 const remoteRepository = new IssueRemoteRepository();
 
 const issueService = new BaseService<Issue>(localRepository, remoteRepository);
 
-export async function fetchIssueList(endpointType: string): Promise<Issue[] | null> {
+export async function fetchIssueList(endpointType: string, fetchAll: boolean = false): Promise<Issue[] | null> {
   try {
     const issueList = await issueService.getAll(
       null,
       endpointType,
       null,
       null,
-      null,
-      'updated_date',
-      'asc'
+      fetchAll,
+      'intake_date',
+      'desc'
     );
     return issueList;
   } catch (error) {
@@ -28,12 +28,20 @@ export async function fetchIssueList(endpointType: string): Promise<Issue[] | nu
   }
 }
 
-export async function fetchMoreIssueList(endpointType: string, offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<Issue>): Promise<Issue[] | null> {
+export async function fetchMoreIssueList(
+  endpointType: string,
+  offlinePaginatedListRequest: OfflinePaginatedListRequest,
+  offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<Issue>
+): Promise<{ result: Issue[]; from: 'online' | 'offline' }> {
   try {
-    const issueList = await issueService.getMore(endpointType, offlinePagingInitialTrackingInfo);
-    return issueList;
+    return await issueService.getMore(
+      endpointType,
+      offlinePaginatedListRequest,
+      offlinePagingInitialTrackingInfo
+    );
   } catch (error) {
     console.error('Error fetching more issues. Reason: ', error);
+    return { result: [], from: 'offline' };
   }
 }
 

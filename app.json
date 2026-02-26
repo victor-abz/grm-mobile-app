@@ -48,7 +48,12 @@
     "plugins": [
       "expo-location",
       "expo-image-picker",
-      "expo-av",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+        }
+      ],
       "expo-font",
       "expo-localization",
       "expo-secure-store"

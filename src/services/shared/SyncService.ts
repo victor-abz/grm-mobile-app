@@ -224,6 +224,36 @@ export class SyncService {
       this.isSyncFinished = true;
       console.error('Error pushing updated sub items with parent ids', error);
     }
+
+    // [x] Synchronize sub items with newly created parent ids from backend
+    // [x] handle replace ids for new ones - Object.keys(this.createdRecordsPostPushedWithNewBackendIDsPerTable).length > 0
+    // [x] create local url by downloading the remote url or ask backend to create local url
+    // [x] handle when no parent changes, first sync for example.
+    // Partially done, perhaps if just an attachment changes.
+    // Suggest updating issue updated_at at backend when new attachments/comments are modified
+    // [x] also delete file when sync replaces the old one
+    // [x] fix converted string attachment url
+    // [x] (the other devices receive the attachments)
+    // [x] creator device sends attachment, download the BE path.
+
+    // the creator device has an empty attachment if:
+    // [ ] Creates_offline-reconnect-push-disconnect[here], but the other devices work
+    // [ ] Connect inside local list - (test network monitor sync all)
+    // [ ] check interrupting queue of sub items
+    // [ ] Local getAll pagination
+    // [ ] Reporter/assignee attachments behaviour
+    // [x] recover internet inside issues list - check attachments
+    
+    // [ ] Implement delete attachment
+    // [ ] Implement audio play migration to new versions.
+
+    // [x] create offline, connect push everything, disconnect, check files
+
+    // [x](possible solution -> move cache file url to universal files DB path on pull // (check new login on other devices, avoid downloading all of the files)
+    // (possible solution2 -> keep record of cache files mapped with their new parent issue ids until you enter the issue detail and create the file )
+
+    // [x] create more than one issue offline - sync - check attachments.
+
     if (this.pulledParentsChanges || this.firstSync) {
       try {
         await synchronize({
@@ -259,7 +289,7 @@ export class SyncService {
               )
             );
             console.log('Have sub items data? ', hasData);
-
+            console.log('markedTimes ', this.markedTimestamp);
             // Keep using old timestamp.
             // if (!hasData) return { changes, timestamp: lastPulledAt };
             if (!hasData) return;
@@ -283,7 +313,7 @@ export class SyncService {
         });
       } catch (error) {
         this.isSyncFinished = true;
-        console.log('Sync All error: ', error);
+        console.log('Sync All error 2 : ', error);
       }
 
       // if error on first sync - handle

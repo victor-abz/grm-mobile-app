@@ -56,7 +56,7 @@ export async function fetchFacilitatorProfile(data) {
     const jsonData = response.data;
     return jsonData;
   } catch (error) {
-    console.error(error.message);
+    console.error(JSON.stringify(error.message));
     return { error: error } 
   }
 }

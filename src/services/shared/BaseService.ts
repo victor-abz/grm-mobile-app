@@ -8,19 +8,22 @@ import { TABLE_NAMES } from '../../migrations/tableName';
 import { deleteAsync } from 'expo-file-system';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
 import { databaseServiceInstance } from '../../utils/storageManager';
-import PhaseTasks from '../../screens/Home/PhaseTasks/PhaseTasks';
+import { OfflinePaginatedListRequest } from '../../hooks/issues/useIssue';
 export type WatermelonId = string;
 export type CreatedResponseWithBackendId = unknown;
 
+export type EndOfList = {
+  detail: string;
+};
+
 export type OfflinePagingInitialTrackingInfo<T> = {
-  completeList: T[];
   fieldName: string;
+  latestValue: T;
 };
 
 export class BaseService<T> {
   createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][] = [];
   private isFile: boolean;
-  private localPage = 0;
 
   forcePaginateFromLocalNoAccessToBackendList = false;
   constructor(
@@ -131,7 +134,7 @@ export class BaseService<T> {
         let createdResponse: Awaited<T>;
         let updatedResponse: Awaited<T>;
 
-        // Upsert on remote
+        // UPSERT ON REMOTE
         try {
           createdResponse = await this.remoteRepository.create(modelInterface);
           if (createdResponse) {
@@ -151,9 +154,8 @@ export class BaseService<T> {
         // @ts-ignore
         item.syncAt = new Date();
 
-        // Upsert locally using WatermelonDB
+        // UPSERT LOCALLY USING WATERMELONDB
         if (createdResponse) {
-          // TODO: Use newly created id from backend response to upsert
           console.log(
             'CREATED RESPONSE - (Currently not being used as an entry to watermelon)',
             createdResponse
@@ -163,7 +165,6 @@ export class BaseService<T> {
           }
           return await this.localRepository.upsert(item, createdResponse?.data?.id);
         } else if (updatedResponse) {
-          //TODO: Use newly created id in new sub-items from backend response to upsert
           if (updatedResponse.data) {
             updatedResponse.data.syncAt = JSON.stringify(new Date());
           }
@@ -177,7 +178,11 @@ export class BaseService<T> {
             'Nothing in response from the backend to upsert locally, proceeding to use local modified item:',
             item
           );
-          return await this.localRepository.upsert(item);
+          console.log('##########');
+          const a = await this.localRepository.upsert(item);
+          console.log(a);
+          
+          return a
         }
       } catch (err) {
         console.warn('[BaseService] Upsert failed. Reason: ', err);
@@ -219,9 +224,11 @@ export class BaseService<T> {
           return remoteResult;
         } else {
           this.forcePaginateFromLocalNoAccessToBackendList = true;
+          
           console.warn(
             '[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval'
           );
+
           return await this.localRepository.getAll(
             sortBy,
             sortOrder,
@@ -255,129 +262,101 @@ export class BaseService<T> {
 
   async getMore(
     endpointType: string | null,
-    offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<T>
-  ): Promise<T[]> {
-    const { completeList, fieldName } = offlinePagingInitialTrackingInfo ?? {};
+    offlinePaginatedListRequest: OfflinePaginatedListRequest,
+    offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<T>,
+  ): Promise<{result: T[], from: 'online' | 'offline'}> {
+    const { latestValue, fieldName } = offlinePagingInitialTrackingInfo ?? {};
     try {
+      console.log('FORCE TO OFFLINE PAGINATE: ', this.forcePaginateFromLocalNoAccessToBackendList);
+
+      const state = await NetInfo.fetch();
+      if (state.isConnected) { 
+        
+        //if error offline
+      } else {
+
+      }
+
       // Fetch From Remote
       if (!this.forcePaginateFromLocalNoAccessToBackendList) {
         const remoteResult = await this.remoteRepository.fetchMore(endpointType);
         if (Array.isArray(remoteResult)) {
-          return remoteResult;
+          
+          return {result: remoteResult, from: 'online'};
         } else {
+          console.log('LOCAL PAGINATION');
           // Fetch From Local From Latest Value
+
           // [] Fetch, disconnect, fetch from local, maybe lastvalue does not exist, bring from zero, locally.
           // [] review unstable connection detector.
 
 
 
-          const lastIndexFromAvailableData = offlinePagingInitialTrackingInfo
-            ? completeList.findLastIndex((e) => e)
-            : undefined;
-
-          // lte=offline - always delete
-
-          // If duplicated step: move it before everything, take the value, delete the duplicates and query (Q.lte)
-          // If not duplicated: internet dont remove/no internet remove. Careful with the latest value when no internet do something at the switch. [1,2]..load more(Q.lte)..[1,2,3]
-
-          // Delete the latestValue when no internet the first time, just the first time to clean range order from backend and local
-
-          // let hasDuplicatedValueForField =
-          //   completeList[lastIndexFromAvailableData][fieldName] ===
-          //   completeList[lastIndexFromAvailableData - 1][fieldName];
-          prepareListWithoutLastValueRange(lastIndexFromAvailableData);
-          
           const latestValueAtCurrentPage = {
             fieldName,
-            latestValue: completeList[lastIndexFromAvailableData],
+            latestValue
           };
+          
           this.forcePaginateFromLocalNoAccessToBackendList = true;
-          //Call Paging With Latest Value Removed To Query With Q.Lte
-          const list = this.localRepository.getAll(
+          // Call Paging With Latest Value Removed To Query With Q.Lte
+          const list = await this.localRepository.getAll(
             'intake_date',
             'desc',
-            50,
+            offlinePaginatedListRequest.pageSize, 
             null,
             null,
-            5,
-            0,
+            offlinePaginatedListRequest.nextPage,
             latestValueAtCurrentPage
           );
-          this.localPage++;
-          return list;
+          return {result: list, from: 'offline'};
+          
         }
       } else {
-        // Fetch From Local Regular Slice Paging, Except if local page equals 0
-        
-         const lastIndexFromAvailableData = offlinePagingInitialTrackingInfo
-           ? completeList.findLastIndex((e) => e)
-           : undefined;
+        // Fetch From Local Regular Slice Paging, Except if offline current page equals 0
 
-         // lte=offline - always delete
-
-         // If duplicated step: move it before everything, take the value, delete the duplicates and query (Q.lte)
-         // If not duplicated: internet dont remove/no internet remove. Careful with the latest value when no internet do something at the switch. [1,2]..load more(Q.lte)..[1,2,3]
-
-         // Delete the latestValue when no internet the first time , just the first time to clean range order from backend and local
-
-         // let hasDuplicatedValueForField =
-         //   completeList[lastIndexFromAvailableData][fieldName] ===
-         //   completeList[lastIndexFromAvailableData - 1][fieldName];
-         prepareListWithoutLastValueRange(lastIndexFromAvailableData);
          const latestValueAtCurrentPage = {
            fieldName,
-           latestValue: completeList[lastIndexFromAvailableData],
+           latestValue
          };
-        
+
         this.forcePaginateFromLocalNoAccessToBackendList = true;
 
-        const list = this.localRepository.getAll(
+        const list = await this.localRepository.getAll(
           'intake_date',
           'desc',
-          50,
+          offlinePaginatedListRequest.pageSize,
           null,
           null,
-          5,
-          0,
-          this.localPage == 0 ? latestValueAtCurrentPage : undefined 
+          offlinePaginatedListRequest.nextPage,
+          offlinePaginatedListRequest.prevPage == null ? latestValueAtCurrentPage : undefined
         );
-        this.localPage++;
-        return list;
+
+        return {result: list, from: 'offline'};
+        // return list.map((i) => {
+        //   return { ...i, from: 'offline' };
+        // });
       }
     } catch (err) {
       if (!this.forcePaginateFromLocalNoAccessToBackendList) {
         this.forcePaginateFromLocalNoAccessToBackendList = true;
         console.error('Pagination from remote/local failed. Retrying...');
         try {
+          const list = await this.getMore(
+            endpointType,
+            offlinePaginatedListRequest,
+            offlinePagingInitialTrackingInfo
+          );
           
-          console.log("$$$$$$$$$$$$$$");
-          console.log(this.forcePaginateFromLocalNoAccessToBackendList);
-          console.log(offlinePagingInitialTrackingInfo);
-          
-          const list = await this.getMore(endpointType, offlinePagingInitialTrackingInfo);
-          return list
-
+          return {result: list.result, from: list.from};
         } catch (error) {
-          console.error("Error");
+          console.error('Error');
           console.error(error);
-          
         }
       } else {
         console.error('Pagination from remote/local retry failed.');
       }
     }
 
-    function prepareListWithoutLastValueRange(lastIndexFromAvailableData: number) {
-      for (let index = completeList.length - 1; index >= 0; index--) {        
-        const element = completeList[index];
-        if (element[fieldName] != completeList[lastIndexFromAvailableData][fieldName]) {
-         console.log("debugger");
-          
-          break;
-        }
-        completeList.pop();
-      }
-    }
   }
 
   async pullChanges({

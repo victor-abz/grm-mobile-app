@@ -22,6 +22,8 @@ export abstract class BaseLocalRepository<T> {
   abstract fromRemoteToLocal(item: any, parentId?: string | number): any;
 
   abstract fromLocalToRemote(localModel: Model): T;
+  
+  private firstPagingRetrievalMade = false
 
   // @ts-ignore
   @writer
@@ -64,17 +66,15 @@ export abstract class BaseLocalRepository<T> {
     lastPulledAt: string | null,
     parentId: string | null,
     page: number = 0, // zero-based page index
-    extra: number = 0, // bring N more items (e.g. 100)
     latestValueAtCurrentPage?: LatestValueAtCurrentPage
   ): Promise<T[]> {
     if (!sortBy) sortBy = 'created_date';
     if (!sortOrder) sortOrder = Q.desc;
 
-    // TODO: Keep using 100 limit
-    // if (!limit) limit = 100;
-    if (!limit) limit = 5;
+    if (!limit) limit = 25;
 
-    const pageSize = limit + (extra || 0);
+    const pageSize = limit;
+
     let queryClauses: QueryClause[] = [Q.sortBy(sortBy, sortOrder)];
 
     if (lastPulledAt) {
@@ -88,49 +88,22 @@ export abstract class BaseLocalRepository<T> {
     console.log("LATEST_VALUE", latestValueAtCurrentPage);
     
     // Useful for pagination. If available, bring values below and equal the provided value.
-    if (latestValueAtCurrentPage) {
+    if (latestValueAtCurrentPage && !this.firstPagingRetrievalMade) {
       queryClauses.push(
         Q.where(
           latestValueAtCurrentPage.fieldName,
           Q.lte(latestValueAtCurrentPage.latestValue[latestValueAtCurrentPage.fieldName])
         )
       );
+      this.firstPagingRetrievalMade = true
     }
-
     const dbInstance = databaseServiceInstance.database;
     // Note: WatermelonDB doesn't reliably support skip/offset in all versions;
     // so query the filtered/sorted set and slice for pagination.
-
     let results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
-
-    // If duplicated step: move it before everything, take the value, delete the duplicates and query Q.lte
-    // If not duplicated: Careful with the latest value when no internet do something at the switch. [1,2]..load more(Q.lte)..[1,2,3]
     // Delete the latestValue when no internet the first time
-    // let duplicatedRange = latestValue.value === results[1][latestValue.fieldName];
-    //
-
-    // Remove
-    // const opposite = 1
-    // Remove
-    // if (duplicatedRange) {
-    //   //add them duplicated all, delete the rendered old ones
-    //   queryClauses.push(
-    //     Q.and(
-    //       Q.where(latestValue.fieldName, Q.gt(opposite)),
-    //       Q.where('id', Q.lt(latestValue.id))
-    //     )
-    //   );
-    //   results = await dbInstance.get(this.tableName).query(...queryClauses);
-    // }
-
-    console.log('====================');
-    console.log('====================');
-    console.log('====================');
-    console.log('====================');
-    console.log(results);
-
-    let start = 5 * pageSize;
-
+    let start = page * pageSize;
+    
     const paged = results.slice(start, start + pageSize);
 
     return paged.map((result) => this.fromLocalToRemote(result));

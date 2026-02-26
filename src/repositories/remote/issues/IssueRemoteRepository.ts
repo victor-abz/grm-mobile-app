@@ -6,8 +6,8 @@ import config from '../../../../config';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
-  private nextReporterListPage: string;
-  private nextAssigneeListPage: string;
+  private nextReporterListPage: string = null;
+  private nextAssigneeListPage: string = null;
 
   /**
    * Fetch all issues from a dynamic endpoint.
@@ -25,8 +25,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     deleted_date: EpochTimeStamp | null
   ): Promise<Issue[]> {
     const params: Record<string, string> = {};
-    this.nextAssigneeListPage = null;
-    this.nextReporterListPage = null;
 
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
@@ -85,7 +83,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
           method: 'GET',
           params: new URLSearchParams(params),
         });
-
         const jsonData: any = response.data;
         if (response.data && response.data.next) {
           if (endpointType === 'reporter') {
@@ -103,7 +100,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
 
   async fetchMore(endpointType: 'assignee' | 'reporter'): Promise<Issue[]> {
     const url: string | null = endpointType == 'reporter' ? this.nextReporterListPage : this.nextAssigneeListPage;
-    if (!url) return []; 
+    if (!url) return [];
 
     const response = await request({
       url,
@@ -116,7 +113,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       this.nextAssigneeListPage = response.data.next;
     }
     
-    return response?.data?.results ?? [];
+    return response?.data?.results;
   }
 
   async create(item: Issue): Promise<Issue> {

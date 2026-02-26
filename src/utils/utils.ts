@@ -21,3 +21,20 @@ export const showToast = (message) =>
 {
   ToastAndroid.show(message, ToastAndroid.SHORT);
 };
+
+export const parseJson = (jsonString: string | null): any => {
+  try {
+    return jsonString ? JSON.parse(jsonString) : null;
+  } catch (e) {
+    console.error('Failed to parse JSON:', e);
+    return jsonString;
+  }
+};
+
+export function removeDuplicates(listA, listB) {
+  const array = [...listA, ...listB];
+  const uniqueArray = array.filter(
+    (item, index, self) => index === self.findIndex((t) => String(t.id) === String(item.id))
+  );
+  return uniqueArray;
+}
