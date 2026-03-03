@@ -1,13 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, FlatList, TouchableOpacity, Text, StatusBar, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  Text,
+  StatusBar,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ToggleButton } from 'react-native-paper';
+import { Divider, ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import { i18n } from "../../../../translations/i18n";
+import { i18n } from '../../../../translations/i18n';
 import ListHeader from '../components/ListHeader';
 import moment from 'moment';
-import { getSessionData } from "../../../../store/ducks/authentication.duck";
+import { getSessionData } from '../../../../store/ducks/authentication.duck';
 import { Issue } from '../../../../models/issues/Issue';
 import { IssueStatus } from '../../../../models/issues/IssueStatus';
 
@@ -33,7 +41,7 @@ function Content({
   const [userId, setUserId] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment());
   const [isListReady, setIsListReady] = useState(false);
-  const issuesListRef = useRef(null)
+  const issuesListRef = useRef(null);
   const [issueListHeight, setIssueListHeight] = useState(0);
 
   const sortByUpdatedDateDesc = (data) => {
@@ -42,9 +50,9 @@ function Content({
     });
   };
 
-    useEffect(() => {
-      if (issuesListRef.current) setIsListReady(true)
-    }, [issuesListRef.current]);
+  useEffect(() => {
+    if (issuesListRef.current) setIsListReady(true);
+  }, [issuesListRef.current]);
 
   useEffect(() => {
     getSessionData().then((sessionData) => {
@@ -246,10 +254,9 @@ function Content({
             />
           )
         }
-        keyExtractor={(item, index) => index.toString()}
-        bounces={false}
+        keyExtractor={(item, index) => String(index)}
+        bounces={true}
         extraData={selectedId}
-        onEndReachedThreshold={0.1}
         onEndReached={(info) => {
           if (displayedIssues.length > 0 && issueListHeight > 0 && issueListLoading == false) {
             if (status == 'assigned') {
@@ -268,18 +275,13 @@ function Content({
 
   async function loadNextPageReported(info: { distanceFromEnd: number }) {
     console.log('LOADING NEXT PAGE REPORTED..');
-    // TODO:  if(the lastPage.length < pageSize) return;
-    
     await fetchMoreReporterIssueList(displayedIssues);
-    // if (displayedIssues.length > 0) fetchMoreReporterIssueList(displayedIssues);
-  }
-  
-  function loadNextPageAssignee(info: { distanceFromEnd: number }) {
-    console.log('LOADING NEXT PAGE ASSIGNEE..');
-    //TODO: if(the lastPage.length < pageSize) return;    
-    fetchMoreAssigneeIssueList(displayedIssues);
   }
 
+  function loadNextPageAssignee(info: { distanceFromEnd: number }) {
+    console.log('LOADING NEXT PAGE ASSIGNEE..');
+    fetchMoreAssigneeIssueList(displayedIssues);
+  }
 }
 
 const styles = StyleSheet.create({
@@ -334,4 +336,3 @@ const styles = StyleSheet.create({
 });
 
 export default Content;
-      

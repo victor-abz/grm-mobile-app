@@ -1,7 +1,7 @@
 import type { Model } from '@nozbe/watermelondb';
 import { Q, RawRecord } from '@nozbe/watermelondb';
 import NetInfo from '@react-native-community/netinfo';
-import { BaseLocalRepository, LatestValueAtCurrentPage } from '../../repositories/shared/BaseLocalRepository';
+import { BaseLocalRepository, LocalGetAllEventInfo, LatestValueAtCurrentPage } from '../../repositories/shared/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { TABLE_NAMES } from '../../migrations/tableName';
@@ -178,11 +178,9 @@ export class BaseService<T> {
             'Nothing in response from the backend to upsert locally, proceeding to use local modified item:',
             item
           );
-          console.log('##########');
-          const a = await this.localRepository.upsert(item);
-          console.log(a);
-          
-          return a
+          const upsertResponse = await this.localRepository.upsert(item);
+
+          return upsertResponse;
         }
       } catch (err) {
         console.warn('[BaseService] Upsert failed. Reason: ', err);
@@ -224,12 +222,12 @@ export class BaseService<T> {
           return remoteResult;
         } else {
           this.forcePaginateFromLocalNoAccessToBackendList = true;
-          
+
           console.warn(
             '[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval'
           );
 
-          return await this.localRepository.getAll(
+          const getAllResponse = await this.localRepository.getAll(
             sortBy,
             sortOrder,
             null,
@@ -238,13 +236,15 @@ export class BaseService<T> {
             null,
             null
           );
+
+          return getAllResponse.results
         }
       } catch (err) {
         this.forcePaginateFromLocalNoAccessToBackendList = true;
         console.warn(
           '[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval. Reason: '
         );
-        return await this.localRepository.getAll(
+        const getAllResponse = await this.localRepository.getAll(
           sortBy,
           sortOrder,
           null,
@@ -253,10 +253,12 @@ export class BaseService<T> {
           null,
           null
         );
+        return getAllResponse.results
       }
     } else {
       this.forcePaginateFromLocalNoAccessToBackendList = true;
-      return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId, null, null);
+      const getAllResponse = await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId, null, null);
+      return getAllResponse.results
     }
   }
 
@@ -264,99 +266,72 @@ export class BaseService<T> {
     endpointType: string | null,
     offlinePaginatedListRequest: OfflinePaginatedListRequest,
     offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<T>,
-  ): Promise<{result: T[], from: 'online' | 'offline'}> {
-    const { latestValue, fieldName } = offlinePagingInitialTrackingInfo ?? {};
+    firstLocalPageRetry: boolean = false
+  ): Promise<{ event: LocalGetAllEventInfo, results: T[] }> {
     try {
       console.log('FORCE TO OFFLINE PAGINATE: ', this.forcePaginateFromLocalNoAccessToBackendList);
-
-      const state = await NetInfo.fetch();
-      if (state.isConnected) { 
-        
-        //if error offline
-      } else {
-
-      }
-
       // Fetch From Remote
       if (!this.forcePaginateFromLocalNoAccessToBackendList) {
         const remoteResult = await this.remoteRepository.fetchMore(endpointType);
         if (Array.isArray(remoteResult)) {
-          
-          return {result: remoteResult, from: 'online'};
+          // Return event null indicating that a remote data fetch
+          // was made
+          return { event: null, results: remoteResult };
         } else {
           console.log('LOCAL PAGINATION');
           // Fetch From Local From Latest Value
-
-          // [] Fetch, disconnect, fetch from local, maybe lastvalue does not exist, bring from zero, locally.
-          // [] review unstable connection detector.
-
-
-
-          const latestValueAtCurrentPage = {
-            fieldName,
-            latestValue
-          };
-          
           this.forcePaginateFromLocalNoAccessToBackendList = true;
           // Call Paging With Latest Value Removed To Query With Q.Lte
-          const list = await this.localRepository.getAll(
+          const getAllResponse = await this.localRepository.getAll(
             'intake_date',
             'desc',
-            offlinePaginatedListRequest.pageSize, 
+            offlinePaginatedListRequest.pageSize,
             null,
             null,
             offlinePaginatedListRequest.nextPage,
-            latestValueAtCurrentPage
+            offlinePagingInitialTrackingInfo
           );
-          return {result: list, from: 'offline'};
-          
+          // return { result: getAllResponse, from: 'offline' };
+          return getAllResponse
         }
       } else {
         // Fetch From Local Regular Slice Paging, Except if offline current page equals 0
-
-         const latestValueAtCurrentPage = {
-           fieldName,
-           latestValue
-         };
-
         this.forcePaginateFromLocalNoAccessToBackendList = true;
-
-        const list = await this.localRepository.getAll(
+            const getAllResponse = await this.localRepository.getAll(
           'intake_date',
           'desc',
           offlinePaginatedListRequest.pageSize,
           null,
           null,
           offlinePaginatedListRequest.nextPage,
-          offlinePaginatedListRequest.prevPage == null ? latestValueAtCurrentPage : undefined
+          firstLocalPageRetry || offlinePaginatedListRequest.prevPage === 0
+            ? offlinePagingInitialTrackingInfo
+            : undefined
         );
-
-        return {result: list, from: 'offline'};
-        // return list.map((i) => {
-        //   return { ...i, from: 'offline' };
-        // });
+        return getAllResponse
       }
     } catch (err) {
       if (!this.forcePaginateFromLocalNoAccessToBackendList) {
         this.forcePaginateFromLocalNoAccessToBackendList = true;
         console.error('Pagination from remote/local failed. Retrying...');
         try {
-          const list = await this.getMore(
+          const firstLocalPageRetry = true
+          const response = await this.getMore(
             endpointType,
             offlinePaginatedListRequest,
-            offlinePagingInitialTrackingInfo
+            offlinePagingInitialTrackingInfo,
+            firstLocalPageRetry
           );
-          
-          return {result: list.result, from: list.from};
+          return response
         } catch (error) {
           console.error('Error');
           console.error(error);
         }
+
       } else {
         console.error('Pagination from remote/local retry failed.');
       }
     }
-
   }
 
   async pullChanges({

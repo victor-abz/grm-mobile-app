@@ -5,6 +5,11 @@ import { useDatabase } from '@nozbe/watermelondb/react';
 import { useSelector } from 'react-redux';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { useNetInfo } from '@react-native-community/netinfo';
+import { removeDuplicatesOptimized } from '../../utils/utils';
+
+const PAGE_SIZE = 20
+const INITIAL_PREV_PAGE = 0
+const INITIAL_NEXT_PAGE = 1;
   
 export type OfflinePaginatedListRequest = {
     prevPage: number;
@@ -25,9 +30,9 @@ export function useIssue(fetchIssues: boolean = true)  {
   const [endOfResolvedListReached, setEndOfResolvedListReached] = useState(false);
   
   const [offlinePaginatedListRequest, setOfflinePaginatedListRequest] = useState({
-    prevPage: null,
-    nextPage: null,
-    pageSize: 5,
+    prevPage: INITIAL_PREV_PAGE,
+    nextPage: INITIAL_NEXT_PAGE,
+    pageSize: PAGE_SIZE,
   });
 
   const isConnected = useNetInfo().isConnected;
@@ -40,10 +45,10 @@ export function useIssue(fetchIssues: boolean = true)  {
   }, []);
   
   useEffect(() => {
-    if (reporterIssueList && assigneeIssueList) {   
-      setLoading(false)
+    if (reporterIssueList && assigneeIssueList) {
+      setLoading(false);
     }
-  }, [reporterIssueList, assigneeIssueList])
+  }, [reporterIssueList, assigneeIssueList]);
 
   useEffect(() => {
     const issuesCollection = database.get(TABLE_NAMES.issue);
@@ -133,14 +138,10 @@ export function useIssue(fetchIssues: boolean = true)  {
     setLoading(true);
 
     try {
-      const listWithoutLastValueRange = prepareListWithoutLastValueRange(
-        completeList,
-        'intake_date'
-      );
-
+  
       const lastItem = completeList[completeList.length - 1];
 
-      const {result: nextIssues, from} = await IssueService.fetchMoreIssueList(
+      const { event, results: nextIssues } = await IssueService.fetchMoreIssueList(
         'reporter',
         offlinePaginatedListRequest,
         {
@@ -155,18 +156,36 @@ export function useIssue(fetchIssues: boolean = true)  {
       }
 
       // Pagination from local when items don't have from: 'online' (remote adds that in BaseService.getMore)
-      const fromOffline = nextIssues.length === 0 || from === 'offline';
+      const fromOffline = nextIssues.length === 0 || event;
+      // const fromOffline = (nextIssues[0] as any)?.from !== 'online';
 
-      if (fromOffline) {
+      if (event?.firstPageRetrievalMade) {
+        //next page is after the set of duplicates
         setOfflinePaginatedListRequest((prev) => {
           const safePrev = prev ?? {
-            prevPage: null,
-            nextPage: null,
-            pageSize: offlinePaginatedListRequest.pageSize,
+            prevPage: INITIAL_PREV_PAGE,
+            nextPage: INITIAL_NEXT_PAGE,
+            pageSize: PAGE_SIZE,
           };
 
           return {
             pageSize: safePrev.pageSize,
+            nextPage: safePrev.nextPage != null ? safePrev.nextPage + 2 : 1,
+            prevPage: safePrev.prevPage != null ? safePrev.prevPage + 2 : 0,
+          };
+        });
+      }
+
+      if (fromOffline) {
+        setOfflinePaginatedListRequest((prev) => {
+          const safePrev = prev ?? {
+            prevPage: INITIAL_PREV_PAGE,
+            nextPage: INITIAL_NEXT_PAGE,
+            pageSize: PAGE_SIZE,
+          };
+
+          return {
+            pageSize: PAGE_SIZE,
             nextPage: safePrev.nextPage != null ? safePrev.nextPage + 1 : 1,
             prevPage: safePrev.prevPage != null ? safePrev.prevPage + 1 : 0,
           };
@@ -180,15 +199,28 @@ export function useIssue(fetchIssues: boolean = true)  {
             : false
         ) ?? [];
 
-      // First time we get offline results: clean list (trim last intake_date range) then append. Later: use full list.
+      // Only on first offline page: use trimmed prefix to avoid duplicates around the boundary
       const baseList =
-        fromOffline && !offlinePaginationHasStarted ? listWithoutLastValueRange : completeList;
-
-      if (fromOffline) {
+        fromOffline && !offlinePaginationHasStarted
+          ? prepareListWithoutLastValueRange(completeList, 'intake_date')
+          : completeList;
+      
+      //if no duplicates return setReporterIssueList([...baseList, ...filteredList])
+      if (
+        removeDuplicatesOptimized(baseList, nextPageFilteredToUserAsReporter).length ===
+        baseList.length + nextPageFilteredToUserAsReporter.length
+      ) {
+        setReporterIssueList([...baseList, ...nextPageFilteredToUserAsReporter]);
+        console.log('No Duplicates found');
+      } else {
+        const baseListUnique = removeDuplicatesOptimized(baseList, baseList);
+        const filteredListUnique = removeDuplicatesOptimized(nextPageFilteredToUserAsReporter, nextPageFilteredToUserAsReporter);
+        setReporterIssueList([...baseListUnique, ...filteredListUnique]);
+        console.log('Duplicates found');
+      }
+      if (fromOffline && !offlinePaginationHasStarted) {
         setOfflinePaginationHasStarted(true);
       }
-
-      setReporterIssueList([...baseList, ...filteredList]);
     } catch (error) {
       console.error('Error paginating more reported issues', error);
     } finally {

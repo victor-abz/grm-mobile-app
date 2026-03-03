@@ -4,6 +4,9 @@ import { SyncStatus } from '@nozbe/watermelondb/Model';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { databaseServiceInstance } from '../../utils/storageManager';
 
+export type LocalGetAllEventInfo = { firstPageRetrievalMade: boolean }
+
+
 export type Mapper<T> = {
   toModel: (row: any) => T;
   toRow: (model: T) => any;
@@ -22,8 +25,8 @@ export abstract class BaseLocalRepository<T> {
   abstract fromRemoteToLocal(item: any, parentId?: string | number): any;
 
   abstract fromLocalToRemote(localModel: Model): T;
-  
-  private firstPagingRetrievalMade = false
+
+  private firstPagingRetrievalMade = false;
 
   // @ts-ignore
   @writer
@@ -67,11 +70,11 @@ export abstract class BaseLocalRepository<T> {
     parentId: string | null,
     page: number = 0, // zero-based page index
     latestValueAtCurrentPage?: LatestValueAtCurrentPage
-  ): Promise<T[]> {
+  ): Promise<{ event: LocalGetAllEventInfo;  results: T[]}> {
     if (!sortBy) sortBy = 'created_date';
     if (!sortOrder) sortOrder = Q.desc;
 
-    if (!limit) limit = 25;
+    if (!limit) limit = 20;
 
     const pageSize = limit;
 
@@ -95,18 +98,49 @@ export abstract class BaseLocalRepository<T> {
           Q.lte(latestValueAtCurrentPage.latestValue[latestValueAtCurrentPage.fieldName])
         )
       );
-      this.firstPagingRetrievalMade = true
+      queryClauses.push(Q.sortBy('intake_date', 'desc'));
+      const dbInstance = databaseServiceInstance.database;
+      // Note: WatermelonDB doesn't reliably support skip/offset in all versions;
+      // so query the filtered/sorted set and slice for pagination.
+      console.log("OFFLINE SWITCH FIRST AND LAST FULL RETRIEVAL");
+      let results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
+      
+      //add the missing here to fill the page at the bottom
+      if (results.length % pageSize != 0) {
+        queryClauses.pop()
+        const getAllResults = await dbInstance.get(this.tableName).query(...queryClauses);
+        const coefficient = getAllResults.length / pageSize - Math.floor(getAllResults.length / pageSize); 
+        const numberOfItemsToAdd = pageSize - (coefficient) * pageSize
+        
+        const extraResults = getAllResults.slice(
+          getAllResults.length,
+          getAllResults.length
+        );
+   
+        return {
+          event: { firstPageRetrievalMade: true },
+          results: [...results, ...extraResults].map((result) => this.fromLocalToRemote(result)),
+        };
+      } else {
+        return {
+          event: { firstPageRetrievalMade: true },
+          results: results.map((result) => this.fromLocalToRemote(result)),
+        };
+
+      }
     }
+
     const dbInstance = databaseServiceInstance.database;
     // Note: WatermelonDB doesn't reliably support skip/offset in all versions;
     // so query the filtered/sorted set and slice for pagination.
     let results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
     // Delete the latestValue when no internet the first time
     let start = page * pageSize;
-    
     const paged = results.slice(start, start + pageSize);
-
-    return paged.map((result) => this.fromLocalToRemote(result));
+    return {
+      event: { firstPageRetrievalMade: false },
+      results: paged.map((result) => this.fromLocalToRemote(result)),
+    };
   }
 
   // @ts-ignore

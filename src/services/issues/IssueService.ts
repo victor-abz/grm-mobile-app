@@ -5,6 +5,7 @@ import { Issue } from '../../models/issues/Issue';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { Syncable } from '../shared/types';
 import { OfflinePaginatedListRequest } from '../../hooks/issues/useIssue';
+import { LocalGetAllEventInfo } from '../../repositories/shared/BaseLocalRepository';
 
 const localRepository = new IssueLocalRepository();
 const remoteRepository = new IssueRemoteRepository();
@@ -30,18 +31,21 @@ export async function fetchIssueList(endpointType: string, fetchAll: boolean = f
 
 export async function fetchMoreIssueList(
   endpointType: string,
-  offlinePaginatedListRequest: OfflinePaginatedListRequest,
+  offlinePaginatedListControlsRequest: OfflinePaginatedListRequest,
   offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<Issue>
-): Promise<{ result: Issue[]; from: 'online' | 'offline' }> {
+): Promise<{
+  event: LocalGetAllEventInfo | undefined;
+  results: Issue[];
+} | null> {
   try {
-    return await issueService.getMore(
+    const issueList = await issueService.getMore(
       endpointType,
-      offlinePaginatedListRequest,
+      offlinePaginatedListControlsRequest,
       offlinePagingInitialTrackingInfo
     );
+    return issueList;
   } catch (error) {
     console.error('Error fetching more issues. Reason: ', error);
-    return { result: [], from: 'offline' };
   }
 }
 
