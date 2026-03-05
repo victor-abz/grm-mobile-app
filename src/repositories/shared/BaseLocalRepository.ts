@@ -6,7 +6,6 @@ import { databaseServiceInstance } from '../../utils/storageManager';
 
 export type LocalGetAllEventInfo = { firstPageRetrievalMade: boolean }
 
-
 export type Mapper<T> = {
   toModel: (row: any) => T;
   toRow: (model: T) => any;
@@ -25,8 +24,6 @@ export abstract class BaseLocalRepository<T> {
   abstract fromRemoteToLocal(item: any, parentId?: string | number): any;
 
   abstract fromLocalToRemote(localModel: Model): T;
-
-  private firstPagingRetrievalMade = false;
 
   // @ts-ignore
   @writer
@@ -88,10 +85,8 @@ export abstract class BaseLocalRepository<T> {
       queryClauses.push(Q.where('parent_id', Q.eq(String(parentId))));
     }
 
-    console.log("LATEST_VALUE", latestValueAtCurrentPage);
-    
     // Useful for pagination. If available, bring values below and equal the provided value.
-    if (latestValueAtCurrentPage && !this.firstPagingRetrievalMade) {
+    if (latestValueAtCurrentPage) {
       queryClauses.push(
         Q.where(
           latestValueAtCurrentPage.fieldName,
@@ -155,7 +150,6 @@ export abstract class BaseLocalRepository<T> {
     if (!sortOrder) sortOrder = Q.desc;
     if (!limit) limit = 200;
     let queryClauses: QueryClause[] = [];
-
     if (parentId) {
       queryClauses.push(Q.where('parent_id', Q.eq(String(parentId))));
     }

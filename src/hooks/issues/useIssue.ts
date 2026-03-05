@@ -11,7 +11,7 @@ const PAGE_SIZE = 20
 const INITIAL_PREV_PAGE = 0
 const INITIAL_NEXT_PAGE = 1;
   
-export type OfflinePaginatedListRequest = {
+export type OfflinePaginatedListRequestControls = {
     prevPage: number;
     nextPage: number;
     pageSize: number;
@@ -20,16 +20,34 @@ export type OfflinePaginatedListRequest = {
 export function useIssue(fetchIssues: boolean = true)  {
   const [assigneeIssueList, setAssigneeIssueList] = useState<Issue[]>()
   const [reporterIssueList, setReporterIssueList] = useState<Issue[]>()
+  const [assigneeIssueListAsResolvedUnfiltered, setAssigneeIssueListAsResolvedUnfiltered] =
+    useState<Issue[]>();
   const database = useDatabase();
   const { session } = useSelector((state) => {
       return state.get("authentication").toObject();
   });
-  const [offlinePaginationHasStarted, setOfflinePaginationHasStarted] = useState(false);
+  
+  const [assigneeOfflinePaginationHasStarted, setAssigneeOfflinePaginationHasStarted] = useState(false);
+  const [reportedOfflinePaginationHasStarted, setReportedOfflinePaginationHasStarted] = useState(false);
+  const [resolvedOfflinePaginationHasStarted, setResolvedOfflinePaginationHasStarted] = useState(false);
+  
   const [endOfReportedListReached, setEndOfReportedListReached] = useState(false);
   const [endOfAssigneeListReached, setEndOfAssigneeListReached] = useState(false);
   const [endOfResolvedListReached, setEndOfResolvedListReached] = useState(false);
   
-  const [offlinePaginatedListRequest, setOfflinePaginatedListRequest] = useState({
+  const [reporterOfflinePaginatedListRequestControls, setReporterOfflinePaginatedListRequestControls] = useState({
+    prevPage: INITIAL_PREV_PAGE,
+    nextPage: INITIAL_NEXT_PAGE,
+    pageSize: PAGE_SIZE,
+  });
+  
+  const [assigneeOfflinePaginatedListRequestControls, setAssigneeOfflinePaginatedListRequestControls] = useState({
+    prevPage: INITIAL_PREV_PAGE,
+    nextPage: INITIAL_NEXT_PAGE,
+    pageSize: PAGE_SIZE,
+  });
+
+  const [resolvedOfflinePaginatedListRequestControls, setResolvedOfflinePaginatedListRequestControls] = useState({
     prevPage: INITIAL_PREV_PAGE,
     nextPage: INITIAL_NEXT_PAGE,
     pageSize: PAGE_SIZE,
@@ -85,7 +103,9 @@ export function useIssue(fetchIssues: boolean = true)  {
   const refetch = () => {
     setAssigneeIssueList(undefined);
     setReporterIssueList(undefined);
-    setOfflinePaginationHasStarted(false); // reset so next offline run can trim again
+    setAssigneeOfflinePaginationHasStarted(false);
+    setReportedOfflinePaginationHasStarted(false);
+    setResolvedOfflinePaginationHasStarted(false);
   };
   
   const fetchAssigneeIssueList = async () => { 
@@ -125,8 +145,8 @@ export function useIssue(fetchIssues: boolean = true)  {
     }
     return listCopy;
   }
-    
-  const fetchMoreReporterIssueList = async (completeList?: Issue[]) => {
+
+  const fetchMoreReporterIssuesList = async (completeList?: Issue[]) => {
     if (endOfReportedListReached) {
       return;
     }
@@ -143,7 +163,7 @@ export function useIssue(fetchIssues: boolean = true)  {
 
       const { event, results: nextIssues } = await IssueService.fetchMoreIssueList(
         'reporter',
-        offlinePaginatedListRequest,
+        reporterOfflinePaginatedListRequestControls,
         {
           fieldName: 'intake_date',
           latestValue: lastItem,
@@ -161,7 +181,7 @@ export function useIssue(fetchIssues: boolean = true)  {
 
       if (event?.firstPageRetrievalMade) {
         //next page is after the set of duplicates
-        setOfflinePaginatedListRequest((prev) => {
+        setReporterOfflinePaginatedListRequestControls((prev) => {
           const safePrev = prev ?? {
             prevPage: INITIAL_PREV_PAGE,
             nextPage: INITIAL_NEXT_PAGE,
@@ -176,8 +196,8 @@ export function useIssue(fetchIssues: boolean = true)  {
         });
       }
 
-      if (fromOffline) {
-        setOfflinePaginatedListRequest((prev) => {
+      else if (fromOffline) {
+        setReporterOfflinePaginatedListRequestControls((prev) => {
           const safePrev = prev ?? {
             prevPage: INITIAL_PREV_PAGE,
             nextPage: INITIAL_NEXT_PAGE,
@@ -191,8 +211,8 @@ export function useIssue(fetchIssues: boolean = true)  {
           };
         });
       }
-
-      const filteredList =
+      
+      const nextPageFilteredToUserAsReporter =
         nextIssues.filter((issue) =>
           issue.reporter
             ? session.user_id == issue?.reporter?.id || session.user_id == issue.reporter
@@ -201,7 +221,7 @@ export function useIssue(fetchIssues: boolean = true)  {
 
       // Only on first offline page: use trimmed prefix to avoid duplicates around the boundary
       const baseList =
-        fromOffline && !offlinePaginationHasStarted
+        fromOffline && !reportedOfflinePaginationHasStarted
           ? prepareListWithoutLastValueRange(completeList, 'intake_date')
           : completeList;
       
@@ -218,8 +238,8 @@ export function useIssue(fetchIssues: boolean = true)  {
         setReporterIssueList([...baseListUnique, ...filteredListUnique]);
         console.log('Duplicates found');
       }
-      if (fromOffline && !offlinePaginationHasStarted) {
-        setOfflinePaginationHasStarted(true);
+      if (fromOffline && !setReportedOfflinePaginationHasStarted) {
+        setReportedOfflinePaginationHasStarted(true);
       }
     } catch (error) {
       console.error('Error paginating more reported issues', error);
@@ -227,16 +247,113 @@ export function useIssue(fetchIssues: boolean = true)  {
       setLoading(false);
     }
   };
-  
-  const fetchMoreAssigneeIssueList = async (completeList?: Issue[]) => {
-    // setLoading(true);
-    // const issuesList = await IssueService.fetchMoreIssueList('assignee', latestValue);
-    // const filteredList = issuesList.filter((issue) =>
-    //   issue.assignee
-    //     ? session.user_id == issue?.assignee?.id || session.user_id == issue.assignee
-    //     : false
-    // );
-    // setAssigneeIssueList([...assigneeIssueList, ...filteredList]);
+
+  const fetchMoreAssigneeIssuesList = async (completeList?: Issue[]) => {
+    if (endOfAssigneeListReached) {
+      return;
+    }
+
+    if (!completeList || completeList.length === 0) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const lastItem = completeList[completeList.length - 1];
+
+      const { event, results: nextIssues } = await IssueService.fetchMoreIssueList(
+        'assignee',
+        assigneeOfflinePaginatedListRequestControls,
+        {
+          fieldName: 'intake_date',
+          latestValue: lastItem,
+        }
+      );
+
+      if (!nextIssues || nextIssues.length === 0) {
+        setEndOfAssigneeListReached(true);
+        return;
+      }
+
+      // Pagination from local when items don't have from: 'online' (remote adds that in BaseService.getMore)
+      const fromOffline = nextIssues.length === 0 || event;
+      // const fromOffline = (nextIssues[0] as any)?.from !== 'online';
+
+      if (event?.firstPageRetrievalMade) {
+        //next page is after the set of duplicates
+        setAssigneeOfflinePaginatedListRequestControls((prev) => {
+          const safePrev = prev ?? {
+            prevPage: INITIAL_PREV_PAGE,
+            nextPage: INITIAL_NEXT_PAGE,
+            pageSize: PAGE_SIZE,
+          };
+ 
+          return {
+            pageSize: safePrev.pageSize,
+            nextPage: safePrev.nextPage != null ? safePrev.nextPage + 2 : 1,
+            prevPage: safePrev.prevPage != null ? safePrev.prevPage + 2 : 0,
+          };
+        });
+      }
+
+      else if (fromOffline) {
+        setAssigneeOfflinePaginatedListRequestControls((prev) => {
+          const safePrev = prev ?? {
+            prevPage: INITIAL_PREV_PAGE,
+            nextPage: INITIAL_NEXT_PAGE,
+            pageSize: PAGE_SIZE,
+          };
+
+          return {
+            pageSize: PAGE_SIZE,
+            nextPage: safePrev.nextPage != null ? safePrev.nextPage + 1 : 1,
+            prevPage: safePrev.prevPage != null ? safePrev.prevPage + 1 : 0,
+          };
+        });
+      }
+
+      const nextPageFilteredToUserAsAssignee =
+        nextIssues.filter((issue) =>
+          issue.assignee
+            ? session.user_id == issue?.assignee?.id || session.user_id == issue.assignee
+            : false
+        ) ?? [];
+
+      // Only on first offline page: use trimmed prefix to avoid duplicates around the boundary
+      const baseList =
+        fromOffline && !assigneeOfflinePaginationHasStarted
+          ? prepareListWithoutLastValueRange(completeList, 'intake_date')
+          : completeList;
+
+      //if no duplicates return setReporterIssueList([...baseList, ...filteredList])
+      if (
+        removeDuplicatesOptimized(baseList, nextPageFilteredToUserAsAssignee).length ===
+        baseList.length + nextPageFilteredToUserAsAssignee.length
+      ) {
+        setAssigneeIssueList([...baseList, ...nextPageFilteredToUserAsAssignee]);
+        console.log('No Duplicates found');
+      } else {
+        const baseListUnique = removeDuplicatesOptimized(baseList, baseList);
+        const filteredListUnique = removeDuplicatesOptimized(
+          nextPageFilteredToUserAsAssignee,
+          nextPageFilteredToUserAsAssignee
+        );
+        setAssigneeIssueList([...baseListUnique, ...filteredListUnique]);
+        console.log('Duplicates found');
+      }
+      if (fromOffline && !assigneeOfflinePaginationHasStarted) {
+        setAssigneeOfflinePaginationHasStarted(true);
+      }
+    } catch (error) {
+      console.error('Error paginating more assigned issues', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMoreResolvedIssueList = async (completeList?: Issue[]) => {
+    fetchMoreAssigneeIssuesList(completeList)
   };
 
   const createIssue = async (issue: Issue) => {
@@ -257,7 +374,8 @@ export function useIssue(fetchIssues: boolean = true)  {
     loading,
     createIssue,
     updateIssue,
-    fetchMoreReporterIssueList,
-    fetchMoreAssigneeIssueList,
+    fetchMoreReporterIssueList: fetchMoreReporterIssuesList,
+    fetchMoreAssigneeIssueList: fetchMoreAssigneeIssuesList,
+    fetchMoreResolvedIssueList: fetchMoreResolvedIssueList,
   };
 }

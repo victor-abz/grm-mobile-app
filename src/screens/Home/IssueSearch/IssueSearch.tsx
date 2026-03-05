@@ -14,6 +14,7 @@ function IssueSearch() {
   const {
     fetchMoreReporterIssueList,
     fetchMoreAssigneeIssueList,
+    fetchMoreResolvedIssueList,
     assigneeIssueList,
     reporterIssueList,
     loading: issueListLoading,
@@ -62,6 +63,7 @@ function IssueSearch() {
       <Content
         fetchMoreAssigneeIssueList={fetchMoreAssigneeIssueList}
         fetchMoreReporterIssueList={fetchMoreReporterIssueList}
+        fetchMoreResolvedIssueList={fetchMoreResolvedIssueList}
         assigneeIssueList={assigneeIssueList}
         reporterIssueList={reporterIssueList}
         statuses={issueStatusList}

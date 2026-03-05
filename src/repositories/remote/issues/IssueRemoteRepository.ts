@@ -99,7 +99,8 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   }
 
   async fetchMore(endpointType: 'assignee' | 'reporter'): Promise<Issue[]> {
-    const url: string | null = endpointType == 'reporter' ? this.nextReporterListPage : this.nextAssigneeListPage;
+    const url: string | null =
+      endpointType == 'reporter' ? this.nextReporterListPage : this.nextAssigneeListPage;
     if (!url) return [];
 
     const response = await request({

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Divider, ToggleButton } from 'react-native-paper';
+import { ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 import { i18n } from '../../../../translations/i18n';
 import ListHeader from '../components/ListHeader';
@@ -22,15 +22,17 @@ import { IssueStatus } from '../../../../models/issues/IssueStatus';
 function Content({
   fetchMoreAssigneeIssueList,
   fetchMoreReporterIssueList,
+  fetchMoreResolvedIssueList,
   assigneeIssueList,
   reporterIssueList,
   statuses,
   issueListLoading,
 }: {
-  assigneeIssueList: Issue[];
-  reporterIssueList: Issue[];
   fetchMoreReporterIssueList: (completeList?: Issue[]) => Promise<void>;
   fetchMoreAssigneeIssueList: (completeList?: Issue[]) => Promise<void>;
+  fetchMoreResolvedIssueList: (completeList?: Issue[]) => Promise<void>;
+  assigneeIssueList: Issue[];
+  reporterIssueList: Issue[];
   statuses: IssueStatus[];
   issueListLoading: boolean;
 }) {
@@ -74,21 +76,26 @@ function Content({
       case 'resolved':
         const resolvedStatus = statuses.find((el) => el.final_status === true);
         const rejectedStatus = statuses.find((el) => el.rejected_status === true);
-        filteredIssues = [
+        filteredIssues = assigneeIssueList ? [
           ...assigneeIssueList.filter(
             (issue) =>
               issue.assignee &&
-              (issue.assignee.id === userId || issue.assignee === userId) &&
-              (issue.status.id === resolvedStatus.id || issue.status.id === rejectedStatus.id)
+              (issue.assignee.id === userId ||
+                issue.assignee === userId ||
+                String(issue.assignee.id) === String(userId) ||
+                String(issue.assignee) === String(userId)
+              ) &&
+              (issue.status.id === resolvedStatus.id ||
+                issue.status.id === rejectedStatus.id ||
+                String(issue.status.id) === String(rejectedStatus.id)
+              )
           ),
-        ];
-
+        ] : []
         filteredIssues = sortByUpdatedDateDesc(filteredIssues);
         break;
       default:
         filteredIssues = displayedIssues.map((issue) => issue);
     }
-
     setDisplayedIssues(filteredIssues);
   }, [status, assigneeIssueList, reporterIssueList]);
 
@@ -264,7 +271,7 @@ function Content({
             } else if (status == 'reported') {
               loadNextPageReported(info);
             } else {
-              null; // TODO: paginate resolved
+              loadNextPageResolved(info);
             }
           }
         }}
@@ -273,14 +280,16 @@ function Content({
     </>
   );
 
-  async function loadNextPageReported(info: { distanceFromEnd: number }) {
-    console.log('LOADING NEXT PAGE REPORTED..');
-    await fetchMoreReporterIssueList(displayedIssues);
+  async function loadNextPageReported(info?: { distanceFromEnd: number }) {
+    await fetchMoreReporterIssueList(reporterIssueList);
   }
 
-  function loadNextPageAssignee(info: { distanceFromEnd: number }) {
-    console.log('LOADING NEXT PAGE ASSIGNEE..');
-    fetchMoreAssigneeIssueList(displayedIssues);
+  async function loadNextPageAssignee(info?: { distanceFromEnd: number }) {
+    await fetchMoreAssigneeIssueList(assigneeIssueList);
+  }
+  
+  async function loadNextPageResolved(info?: { distanceFromEnd: number }) {
+    await fetchMoreResolvedIssueList(assigneeIssueList);
   }
 }
 
