@@ -42,7 +42,7 @@ export class SyncService {
     }
 
     if (!this.isSyncFinished) {
-      throw new Error('Sync in progress.');
+      return;
     }
 
     this.isSyncFinished = false;

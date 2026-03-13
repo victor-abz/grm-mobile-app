@@ -114,3 +114,4 @@ android/gradle.properties
 config.prod
 config.dev
 credentials.json
+android/app/release
