@@ -83,7 +83,8 @@ export abstract class BaseLocalRepository<T> {
     }
 
     if (parentId) {
-      queryClauses.push(Q.where('parent_id', Q.eq(String(parentId))));
+      parentId = String(parentId).replace(/\\"/g, '').replace(/"/g, '');
+      queryClauses.push(Q.where('parent_id', Q.eq(parentId)));
     }
 
     // Useful for pagination. If available, bring values below and equal the provided value.
@@ -152,7 +153,8 @@ export abstract class BaseLocalRepository<T> {
     if (!limit) limit = 200;
     let queryClauses: QueryClause[] = [];
     if (parentId) {
-      queryClauses.push(Q.where('parent_id', Q.eq(String(parentId))));
+      parentId = String(parentId).replace(/\\"/g, '').replace(/"/g, '');
+      queryClauses.push(Q.where('parent_id', Q.eq(parentId)));
     }
     const dbInstance = databaseServiceInstance.database;
     const results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
@@ -197,7 +199,7 @@ export abstract class BaseLocalRepository<T> {
             dbInstance.get(this.tableName).prepareCreate((tableElementPlaceholder) => {
               Object.keys(tableElementPlaceholder._raw).forEach((key) => {
                 if (key == 'id') {
-                  tableElementPlaceholder._raw[key] = String(element[key]);
+                  tableElementPlaceholder._raw[key] = String(element[key]).replace(/\\"/g, '').replace(/"/g, '');
                 }
 
                 if (key !== 'id' && key !== '_changed' && key !== '_status') {
@@ -217,12 +219,26 @@ export abstract class BaseLocalRepository<T> {
 
   // @ts-ignore
   async upsert(newEntry: unknown, configurableId?: string | number): Promise<any> {
+    
+    if (newEntry.id) {  
+      newEntry['id'] = String(newEntry.id).replace(/\\"/g, '').replace(/"/g, '');
+    }
+    
+    if (configurableId) {  
+      configurableId = String(configurableId).replace(/\\"/g, '').replace(/"/g, '');
+    }
+
+    if (newEntry._raw && newEntry._raw.id) {  
+      newEntry['_raw']['id'] = String(newEntry._raw.id).replace(/\\"/g, '').replace(/"/g, '');
+    }
+
     const dbInstance = databaseServiceInstance.database;
 
     return await dbInstance.write(async () => {
       let dbItem: Model;
       try {
-        dbItem = await dbInstance.get(this.tableName).find(String(newEntry.id));
+        // TRYING TO UPDATE
+        dbItem = await dbInstance.get(this.tableName).find(newEntry.id);
         await dbItem.update((_item) => {
           Object.keys(_item._raw).forEach((key) => {
             if (key !== 'id' && key !== '_changed' && key !== '_status' && newEntry[key]) {
@@ -235,15 +251,14 @@ export abstract class BaseLocalRepository<T> {
         return dbItem;
       } catch (error) {
         // If not found, create new
-        console.warn(error);
-        console.log('Could not update locally, attempting to create locally...');
+        console.warn(`Could not update locally, attempting to create locally...: ${error}`);
         try {
           const createdInstance = await dbInstance
             .get(this.tableName)
             .create((tableElementPlaceholder) => {
               
               if (configurableId) {
-                tableElementPlaceholder._raw.id = String(configurableId);
+                tableElementPlaceholder._raw.id = configurableId;
                 tableElementPlaceholder._raw._status = 'synced';
               }
 
@@ -263,7 +278,7 @@ export abstract class BaseLocalRepository<T> {
                   if (key !== 'id') {
                     tableElementPlaceholder._raw[key] = newEntry[key];
                   } else if (newEntry.id) {
-                    tableElementPlaceholder._raw.id = String(newEntry.id);
+                    tableElementPlaceholder._raw.id = newEntry.id;
                   }
                 }
               });

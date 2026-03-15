@@ -201,6 +201,8 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   // Access Control:
   // Only users who are either the reporter or assignee of the issue can access this endpoint.
   async update(id: string, item: Issue): Promise<Issue> {
+    id = String(id).replace(/\\"/g, '').replace(/"/g, '');
+    
     const url = `${this.baseUrl}/${id}/update/`;
 
     const body = {
@@ -209,7 +211,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       rating: item.rating ?? undefined,
       escalation_reason: item.escalation_reason,
       research_result: item.research_result,
-      status: item.status.id,
+      status: String(item.status.id).replace(/\\"/g, '').replace(/"/g, ''),
     };
 
     const requestOptions = {
