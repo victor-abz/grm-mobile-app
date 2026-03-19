@@ -121,7 +121,7 @@ export class BaseService<T> {
    * @param item WatermelonDB Model instance to upsert
    * @returns Promise<void>
    */
-  async upsert(item: Model): Promise<void> {
+  async upsert(item: Model): Promise<any | null> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {

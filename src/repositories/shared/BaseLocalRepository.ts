@@ -237,11 +237,17 @@ export abstract class BaseLocalRepository<T> {
     return await dbInstance.write(async () => {
       let dbItem: Model;
       try {
-        // TRYING TO UPDATE
+        // UPDATE INTENT
         dbItem = await dbInstance.get(this.tableName).find(newEntry.id);
         await dbItem.update((_item) => {
           Object.keys(_item._raw).forEach((key) => {
-            if (key !== 'id' && key !== '_changed' && key !== '_status' && newEntry[key]) {
+            if (
+              key !== 'id' &&
+              key !== '_changed' &&
+              key !== '_status' &&
+              typeof newEntry == 'object' &&
+              Object.hasOwn(newEntry, key)
+            ) {
               _item[key] = newEntry[key];
             }
           });

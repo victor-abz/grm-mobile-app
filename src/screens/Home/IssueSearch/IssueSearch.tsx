@@ -1,9 +1,7 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native';
-import { ActivityIndicator } from 'react-native-paper';
 import Content from './containers';
 import { styles } from './IssueSearch.style';
-import { colors } from '../../../utils/colors';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 
 import { useIssue } from '../../../hooks/issues/useIssue';

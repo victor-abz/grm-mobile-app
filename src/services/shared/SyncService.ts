@@ -1,17 +1,19 @@
-import { Model } from "@nozbe/watermelondb";
-import { SyncDatabaseChangeSet, synchronize } from "@nozbe/watermelondb/sync";
+import { Model } from '@nozbe/watermelondb';
+import { SyncDatabaseChangeSet, synchronize } from '@nozbe/watermelondb/sync';
 import type { CreatedResponseWithBackendId, WatermelonId } from './BaseService';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { fetchIssueList } from '../issues/IssueService';
 import { Syncable } from './types';
-import { databaseServiceInstance } from "../../utils/storageManager";
+import { databaseServiceInstance } from '../../utils/storageManager';
+import { removeDuplicates } from '../../utils/utils';
+import { Issue } from '../../models/issues/Issue';
 
 export class SyncService {
   createdRecordsPostPushedWithNewBackendIDsPerTable: {
     [key: string]: [CreatedResponseWithBackendId, WatermelonId][];
   } = {};
-  firstSync = false
-  isSyncFinished = true
+  firstSync = false;
+  isSyncFinished = true;
 
   private pushedParentChanges: any;
   private markedTimestamp: number;
@@ -47,6 +49,7 @@ export class SyncService {
 
     this.isSyncFinished = false;
 
+    // Synchronize Parent Elements
     try {
       await synchronize({
         database: databaseServiceInstance.database,
@@ -160,10 +163,12 @@ export class SyncService {
       console.log('Sync All error: ', error);
     }
 
-    // Update locally and manually push changes of child syncables with their BE generated parent_ids and mark them as synced
+    // Update Everything locally; and manually push changes of child syncables with their BE generated parent_ids and mark them as synced locally
     try {
       if (this.pushedParentChanges) {
+        
         for (const syncable of this.childSyncables) {
+        
           const parentTableName = getParentTableName(syncable.tableName);
 
           const replacedItems: Model[] = await syncable.replaceParentIds(
@@ -225,35 +230,8 @@ export class SyncService {
       console.error('Error pushing updated sub items with parent ids', error);
     }
 
-    // [x] Synchronize sub items with newly created parent ids from backend
-    // [x] handle replace ids for new ones - Object.keys(this.createdRecordsPostPushedWithNewBackendIDsPerTable).length > 0
-    // [x] create local url by downloading the remote url or ask backend to create local url
-    // [x] handle when no parent changes, first sync for example.
-    // Partially done, perhaps if just an attachment changes.
-    // Suggest updating issue updated_at at backend when new attachments/comments are modified
-    // [x] also delete file when sync replaces the old one
-    // [x] fix converted string attachment url
-    // [x] (the other devices receive the attachments)
-    // [x] creator device sends attachment, download the BE path.
 
-    // the creator device has an empty attachment if:
-    // [ ] Creates_offline-reconnect-push-disconnect[here], but the other devices work
-    // [ ] Connect inside local list - (test network monitor sync all)
-    // [ ] check interrupting queue of sub items
-    // [ ] Local getAll pagination
-    // [ ] Reporter/assignee attachments behaviour
-    // [x] recover internet inside issues list - check attachments
-    
-    // [ ] Implement delete attachment
-    // [ ] Implement audio play migration to new versions.
-
-    // [x] create offline, connect push everything, disconnect, check files
-
-    // [x](possible solution -> move cache file url to universal files DB path on pull // (check new login on other devices, avoid downloading all of the files)
-    // (possible solution2 -> keep record of cache files mapped with their new parent issue ids until you enter the issue detail and create the file )
-
-    // [x] create more than one issue offline - sync - check attachments.
-
+    // Synchronize Children Elements - If New Pulled Parent Changes Available
     if (this.pulledParentsChanges || this.firstSync) {
       try {
         await synchronize({
@@ -298,7 +276,7 @@ export class SyncService {
             return { changes, timestamp: this.markedTimestamp };
           },
 
-          // To be used for delete attachments, for example
+          // To be used with delete attachments, for example
           pushChanges: async ({ changes, lastPulledAt }) => {
             console.log('Pushing Child Syncables: ', JSON.stringify(changes, null, 2));
             console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
@@ -327,19 +305,27 @@ export const syncServiceInstance = new SyncService();
 
 function getParentTableName(childTableName: string): string {
   switch (childTableName) {
-    case TABLE_NAMES.issueAttachment: 
-      return TABLE_NAMES.issue
+    case TABLE_NAMES.issueAttachment:
+      return TABLE_NAMES.issue;
     case TABLE_NAMES.issueComment:
-      return TABLE_NAMES.issue
+      return TABLE_NAMES.issue;
   }
 }
 
 async function getAllParents(childTableName: string): Promise<any[]> {
+  let reportedIssuesList: Issue[];
+  let assignedIssuesList: Issue[];
+  let uniqueList: any[] | PromiseLike<any[]>;
   switch (childTableName) {
     case TABLE_NAMES.issueAttachment:
-      return await fetchIssueList('reporter');
+      reportedIssuesList = await fetchIssueList('reporter', true);
+      assignedIssuesList = await fetchIssueList('assignee', true);
+      uniqueList = removeDuplicates(reportedIssuesList, assignedIssuesList);
+      return uniqueList;
     case TABLE_NAMES.issueComment:
-      return await fetchIssueList('reporter');
+      reportedIssuesList = await fetchIssueList('reporter', true);
+      assignedIssuesList = await fetchIssueList('assignee', true);
+      uniqueList = removeDuplicates(reportedIssuesList, assignedIssuesList);
+      return uniqueList;
   }
 }
-

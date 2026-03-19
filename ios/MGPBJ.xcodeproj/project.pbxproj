@@ -79,7 +79,7 @@
 			name = Libraries;
 			sourceTree = "<group>";
 		};
-		83CBB9F61A601CBA00E9B192 = {
+		83CBB9F61A601CBA00E9B192 /* PBXGroup */ = {
 			isa = PBXGroup;
 			children = (
 				13B07FAE1A68108700A75B9A /* MGPBJ */,
@@ -163,7 +163,7 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		83CBB9F71A601CBA00E9B192 /* Project object */ = {
+		83CBB9F71A601CBA00E9B192 = {
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 1130;
@@ -181,7 +181,7 @@
 				en,
 				Base,
 			);
-			mainGroup = 83CBB9F61A601CBA00E9B192;
+			mainGroup = 83CBB9F61A601CBA00E9B192 /* PBXGroup */;
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -199,7 +199,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				23F0711BBC8C406281413361 /* MGPBJ-Bridging-Header.h in Resources */,
+				23F0711BBC8C406281413361,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -317,13 +317,13 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.setcobj.grmapp";
-				PRODUCT_NAME = "MGPBJ";
+				PRODUCT_BUNDLE_IDENTIFIER = com.setcobj.grmapp;
+				PRODUCT_NAME = MGPBJ;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				TARGETED_DEVICE_FAMILY = "1,2";
-				SWIFT_OBJC_BRIDGING_HEADER = MGPBJ/MGPBJ-Bridging-Header.h;
+				SWIFT_OBJC_BRIDGING_HEADER = "MGPBJ/MGPBJ-Bridging-Header.h";
 				CODE_SIGN_ENTITLEMENTS = MGPBJ/MGPBJ.entitlements;
 			};
 			name = Debug;
@@ -344,12 +344,12 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.setcobj.grmapp";
-				PRODUCT_NAME = "MGPBJ";
+				PRODUCT_BUNDLE_IDENTIFIER = com.setcobj.grmapp;
+				PRODUCT_NAME = MGPBJ;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				TARGETED_DEVICE_FAMILY = "1,2";
-				SWIFT_OBJC_BRIDGING_HEADER = MGPBJ/MGPBJ-Bridging-Header.h;
+				SWIFT_OBJC_BRIDGING_HEADER = "MGPBJ/MGPBJ-Bridging-Header.h";
 				CODE_SIGN_ENTITLEMENTS = MGPBJ/MGPBJ.entitlements;
 			};
 			name = Release;
@@ -407,6 +407,7 @@
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -456,6 +457,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -482,5 +484,5 @@
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
+	rootObject = 83CBB9F71A601CBA00E9B192;
 }

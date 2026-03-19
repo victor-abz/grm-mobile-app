@@ -12,9 +12,9 @@ export class IssueCategoryLocalRepository extends BaseLocalRepository<IssueCateg
         const i = issueCategory as Record<string, any>;
         return {
           ...i,
-          assigned_department: JSON.stringify(i.assigned_department),
-          assigned_appeal_department: JSON.stringify(i.assigned_appeal_department),
-          parent: JSON.stringify(i.parent),
+          assigned_department: typeof i.assigned_department === 'object' ? JSON.stringify(i.assigned_department): i.assigned_department,
+          assigned_appeal_department: typeof i.assigned_appeal_department === 'object' ? JSON.stringify(i.assigned_appeal_department): i.assigned_appeal_department,
+          parent: typeof i.parent === 'object' ? JSON.stringify(i.parent): i.parent,
         }
       }
       return null;
