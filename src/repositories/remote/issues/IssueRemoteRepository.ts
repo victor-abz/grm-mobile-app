@@ -121,7 +121,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     const body = {
       title: item.title,
       description: item.description,
-      status: item.status.id ?? item.status,
+      status: item.status ? (item.status.id ?? item.status) : null,
       category: item.category ? (item.category.id ?? item.category) : null,
       issue_type: item.issue_type ? (item.issue_type.id ?? item.issue_type) : null,
       issue_sub_type: item.issue_sub_type ? (item.issue_sub_type.id ?? item.issue_sub_type) : null,

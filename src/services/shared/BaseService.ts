@@ -8,7 +8,7 @@ import { TABLE_NAMES } from '../../migrations/tableName';
 import { deleteAsync } from 'expo-file-system';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
 import { databaseServiceInstance } from '../../utils/storageManager';
-import { OfflinePaginatedListRequest } from '../../hooks/issues/useIssue';
+import { OfflinePaginatedListRequestControls } from '../../hooks/issues/useIssue';
 export type WatermelonId = string;
 export type CreatedResponseWithBackendId = unknown;
 
@@ -121,6 +121,7 @@ export class BaseService<T> {
    * @param item WatermelonDB Model instance to upsert
    * @returns Promise<void>
    */
+  
   async upsert(item: Model): Promise<any | null> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
@@ -264,7 +265,7 @@ export class BaseService<T> {
 
   async getMore(
     endpointType: string | null,
-    offlinePaginatedListRequest: OfflinePaginatedListRequest,
+    offlinePaginatedListRequest: OfflinePaginatedListRequestControls,
     offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<T>,
     firstLocalPageRetry: boolean = false
   ): Promise<{ event: LocalGetAllEventInfo, results: T[] }> {
@@ -381,11 +382,22 @@ export class BaseService<T> {
     let syncPullFailed = false;
     let createdRecordsPostPushedWithNewBackendIDs = [];
 
-    // 1. Fetch newly created records
+    // 1. FETCH NEWLY CREATED RECORDS
+   
+    const nullSortBy = null;
+    const nullSortOrder = null;
+    const nullPage = null;
+    const nullLimit = null;
+    const nullUpdatedDate = null;
+    const nullCreatedDate = null;
+    const nullDeletedDate = null;
+    const nullParentId = null;
 
+    console.log(parentChanges);
+    
     if (parentChanges) {
       // Parent IDs available - Pulling sub-items
-      console.log('Parent IDs available');
+      console.log('Parent IDs object available - pulling sub items');
 
       try {
         let newRecords = [];
@@ -396,14 +408,14 @@ export class BaseService<T> {
             [
               await this.remoteRepository.fetchAll(
                 endPointType,
-                null,
-                null,
-                null,
-                null,
+                nullSortBy,
+                nullSortOrder,
+                nullPage,
+                nullLimit,
                 forceFetchAllPages,
                 lastPulledAt, // created_date
-                null,
-                null,
+                nullUpdatedDate,
+                nullDeletedDate,
                 parent.id ?? null
               ),
               parent.id ?? null,
@@ -433,14 +445,14 @@ export class BaseService<T> {
             [
               await this.remoteRepository.fetchAll(
                 endPointType,
-                null,
-                null,
-                null,
-                null,
+                nullSortBy,
+                nullSortOrder,
+                nullPage,
+                nullLimit,
                 forceFetchAllPages,
-                null,
+                nullCreatedDate,
                 lastPulledAt,
-                null,
+                nullDeletedDate,
                 parent.id ?? null
               ),
               parent.id ?? null,
@@ -536,20 +548,20 @@ export class BaseService<T> {
       return { changes };
     } else {
       // Parent IDs unavailable - Pulling parents
-      console.log('Parent IDs unavailable - Pulling parents');
+      console.log('No Parent IDs, therefore no sub items to sync. Pulling Top Level Elements');
 
       try {
         const newRecords = await this.remoteRepository.fetchAll(
           endPointType,
-          null,
-          null,
-          null,
-          null,
+          nullSortBy,
+          nullSortOrder,
+          nullPage,
+          nullLimit,
           forceFetchAllPages,
           lastPulledAt,
-          null,
-          null,
-          null
+          nullUpdatedDate,
+          nullDeletedDate,
+          nullParentId
         );
 
         const createdFormattedRecords = newRecords.map((item) =>
@@ -567,20 +579,20 @@ export class BaseService<T> {
         syncPullFailed = true;
       }
 
-      // 2. Fetch updated records
+      // 2. FETCH UPDATED RECORDS
       if (lastPulledAt != null) {
         try {
           const updatedRecords = await this.remoteRepository.fetchAll(
             endPointType,
-            null,
-            null,
-            null,
-            null,
+            nullSortBy,
+            nullSortOrder,
+            nullPage,
+            nullLimit,
             forceFetchAllPages,
-            null,
+            nullCreatedDate,
             lastPulledAt,
-            null,
-            null
+            nullDeletedDate,
+            nullParentId
           );
 
           const updatedFormattedRecords = updatedRecords.map((item) =>

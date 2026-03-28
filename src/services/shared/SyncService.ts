@@ -163,20 +163,18 @@ export class SyncService {
       console.log('Sync All error: ', error);
     }
 
-    // Update Everything locally; and manually push changes of child syncables with their BE generated parent_ids and mark them as synced locally
+    // Update Everything locally and manually push old child items with new parent ids
+    // using child syncables with their BE generated parent_ids and mark them as synced locally
     try {
       if (this.pushedParentChanges) {
-        
         for (const syncable of this.childSyncables) {
-        
           const parentTableName = getParentTableName(syncable.tableName);
 
+          // Prepare database items with parent ids generated from backend.
           const replacedItems: Model[] = await syncable.replaceParentIds(
             this.createdRecordsPostPushedWithNewBackendIDsPerTable[parentTableName],
             'synced'
           );
-
-          console.log('replaced items', replacedItems);
 
           // Ensure we have a place for this table's changes
           const tableChanges = this.pushedParentChanges?.[syncable.tableName] ?? {
@@ -187,6 +185,7 @@ export class SyncService {
 
           console.log('table changes', tableChanges);
 
+          // Declaration of function to add the replaced items to the Table changes object
           const updateParentIdFor = (arr: any[] = []) =>
             arr.map((record: any) => {
               const match = replacedItems.find((r: any) => {
@@ -216,7 +215,6 @@ export class SyncService {
 
           console.log(this.pushedParentChanges);
 
-          // update this.changesToPush with the upper replaceParentIds executed()
           await syncable.pushChanges({
             changes: this.pushedParentChanges,
             lastPulledAt: this.markedTimestamp,
@@ -230,8 +228,7 @@ export class SyncService {
       console.error('Error pushing updated sub items with parent ids', error);
     }
 
-
-    // Synchronize Children Elements - If New Pulled Parent Changes Available
+    // If New Pulled Parent Changes Available - Synchronize the rest of the children properties -
     if (this.pulledParentsChanges || this.firstSync) {
       try {
         await synchronize({
@@ -245,17 +242,22 @@ export class SyncService {
                 updated: any[];
                 deleted: string[];
               };
+              
               if (this.firstSync) {
                 const _allParents = await getAllParents(syncable.tableName);
                 allParents = { created: [], updated: _allParents, deleted: [] };
               }
+
+              // Pull Child Changes
               const syncableChanges = await syncable.pullChanges({
                 tableName: syncable.tableName,
                 lastPulledAt,
                 parentChanges:
                   allParents ?? this.pulledParentsChanges[getParentTableName(syncable.tableName)],
               });
+              
               changes = { ...syncableChanges.changes, ...changes };
+              
               // Empty old IDs array at 'tableName' key
               this.createdRecordsPostPushedWithNewBackendIDsPerTable[syncable.tableName] = [];
             }

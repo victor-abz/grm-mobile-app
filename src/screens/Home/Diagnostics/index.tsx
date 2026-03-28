@@ -91,7 +91,7 @@ export function Diagnostics() {
       <View style={styles.form}>
         <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Upcoming feature.</Text>
         <View>
-          <TouchableOpacity onPress={makeQuery} ><Text>Make Query§</Text></TouchableOpacity>
+          {/* <TouchableOpacity onPress={makeQuery} ><Text>Make Query§</Text></TouchableOpacity> */}
         </View>
       </View>
     </SafeAreaView>

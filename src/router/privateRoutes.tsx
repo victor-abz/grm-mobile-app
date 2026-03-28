@@ -10,6 +10,7 @@ import { fetchFacilitatorProfile } from '../services/authService';
 import { fetchAdministrativeRegions } from '../services/issues/AdministrativeRegionService';
 import { syncServiceInstance } from '../services/shared/SyncService';
 import { logout, setProfile } from '../store/ducks/authentication.duck';
+import { setGlobalLoading } from '../store/ducks/global.duck';
 import { i18n } from '../translations/i18n';
 import { colors } from '../utils/colors';
 import { INITIAL_DATA_FETCHED_STORAGE_KEY } from '../utils/constants';
@@ -40,11 +41,14 @@ const PrivateRoutes = () => {
 
     if (!hasInitialData) {
       try {
+        dispatch(setGlobalLoading(true))
         const FETCH_ALL_PAGES = true;
         await fetchAdministrativeRegions(FETCH_ALL_PAGES);
         await storeData(INITIAL_DATA_FETCHED_STORAGE_KEY, true);
+        dispatch(setGlobalLoading(false))
       } catch (error) {
         console.error(error);
+        dispatch(setGlobalLoading(false))
       }
     }
   };
