@@ -4,6 +4,7 @@ import { SyncStatus } from '@nozbe/watermelondb/Model';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { databaseServiceInstance } from '../../utils/storageManager';
 import * as Sentry from '@sentry/react-native';
+import { parseJson } from '../../utils/utils';
 
 export type LocalGetAllEventInfo = { firstPageRetrievalMade: boolean }
 

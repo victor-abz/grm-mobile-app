@@ -36,6 +36,11 @@ function Content({ issue }) {
     setShowDialog(true);
     setSelected(_selected);
   };
+ 
+  // Focus the list to the end of messages on load
+  useEffect(() => {
+    if (commentsListRef.current) setTimeout(() => commentsListRef.current?.scrollToEnd(), 400)
+  }, [commentsListRef.current]);
 
   const renderItem = ({ item, index }) => { 
     
@@ -56,6 +61,7 @@ function Content({ issue }) {
       </View>
     );
   }
+  
   const onPressSend = async () => {
     if (commentText.length === 0) return;
     const newComment: IssueComment = {
@@ -73,6 +79,7 @@ function Content({ issue }) {
     setTimeout(() => commentsListRef.current?.scrollToEnd({ animated: true }), 500);
   };
 
+  //Modal, Messages List and Comment Input
   return (
     <View style={styles.container}>
       <Portal>
@@ -126,6 +133,7 @@ function Content({ issue }) {
                 )}
                 data={issueCommentsList}
                 renderItem={renderItem}
+                onStartReached={() => console.log('paginate')}
                 keyExtractor={(item) => item.due_date}
               />
             ) : (
@@ -147,7 +155,9 @@ function Content({ issue }) {
                   fontSize: 14,
                   color: colors.secondary,
                 }}
-                onFocus={() => setTimeout(() => commentsListRef.current?.scrollToEnd({ animated: true }), 500)}
+                onFocus={() =>
+                  setTimeout(() => commentsListRef.current?.scrollToEnd({ animated: true }), 500)
+                }
                 blurOnSubmit
                 ref={commentInputRef}
                 right={<TextInput.Icon onPress={onPressSend} name="send" color={colors.primary} />}

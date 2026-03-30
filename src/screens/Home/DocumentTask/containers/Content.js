@@ -193,7 +193,7 @@ function Content({ task, phase, eadl, updatePhase }) {
   //         />
   //         <Text style={styles.cardDateText}>
   //           {moment(task.open_at).format("MMMM-yyyy")}-
-  //           {moment(task.due_at).format("MMMM-yyyy")}
+  //           {moment(task.due_date).format("MMMM-yyyy")}
   //         </Text>
   //       </View>
   //       <Text

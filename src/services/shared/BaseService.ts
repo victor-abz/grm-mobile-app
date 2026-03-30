@@ -263,6 +263,8 @@ export class BaseService<T> {
     }
   }
 
+  // [] Fetch, disconnect, fetch from local, maybe lastvalue does not exist, bring from zero, locally.
+  // [] review unstable connection detector.
   async getMore(
     endpointType: string | null,
     offlinePaginatedListRequest: OfflinePaginatedListRequestControls,

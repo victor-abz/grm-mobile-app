@@ -1,30 +1,42 @@
 import { Model } from "@nozbe/watermelondb";
-import { field, text } from "@nozbe/watermelondb/decorators";
+import { json, field, text } from "@nozbe/watermelondb/decorators";
 import { TABLE_NAMES } from "../../migrations/tableName";
 
+export interface CommentUser {
+  id: string;
+  name: string;
+}
 
 export interface IssueComment {
-  id: string,
-  comment: string,
-  due_date?: Date | null,
-  parent_id: string,
+  id: string;
+  comment: string;
+  due_date?: string;
+  parent_id: string;
+  user: CommentUser;
+  created_date: string;
+  deleted_date?: string | null;
+  updated_date?: string | null;
 }
 
 export class IssueCommentLocalModel extends Model {
   static table = TABLE_NAMES.issueComment;
 
   // @ts-ignore
-  @text('comment_text') comment_text;
+  @text('comment') comment;
+  // @ts-ignore
+  @text('name') name;
+  // @ts-ignore
+  @json('user', (json) => json) user;
   // @ts-ignore
   @text('created_date') created_date;
   // @ts-ignore
-  @field('deleted_date') deleted_date;
+  @text('deleted_date') deleted_date;
   // @ts-ignore
-  @field('comment_due_date') comment_due_date;
+  @text('due_date') due_date;
   // @ts-ignore
-  @field('sync_date') sync_date;
+  @text('sync_date') sync_date;
   // @ts-ignore
-  @field('updated_date') updated_date;
+  @text('updated_date') updated_date;
   // @ts-ignore
   @field('parent_id') parent_id;
 }
