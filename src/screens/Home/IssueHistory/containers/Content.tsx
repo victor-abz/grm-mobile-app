@@ -1,5 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ActivityIndicator,
+} from 'react-native';
 import moment from 'moment';
 import { styles } from './Content.styles';
 import { i18n } from "../../../../translations/i18n";
@@ -9,6 +19,7 @@ import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCa
 import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
 import { useSelector } from 'react-redux';
 import { IssueComment } from '../../../../models/issues/IssueComment';
+import RecordingCard from '../../GRM/components/RecordingCard';
 
 const theme = {
   roundness: 12,
@@ -21,12 +32,13 @@ const theme = {
 };
 
 function Content({ issue }) {
-  const { issueCommentsList, loading, createIssueComment } = useIssueComments(issue.id);
+  const { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment, setIssueCommentsList } = useIssueComments(issue.id);
   const { profile, session } = useSelector((state: any) => state.get('authentication').toObject());
   const [commentText, setCommentText] = useState('');
   
   const commentInputRef = useRef(null)
   const commentsListRef = useRef(null)
+  const loadMoreTriggeredRef = useRef(false);
   
   const [showDialog, setShowDialog] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -41,6 +53,19 @@ function Content({ issue }) {
   useEffect(() => {
     if (commentsListRef.current) setTimeout(() => commentsListRef.current?.scrollToEnd(), 400)
   }, [commentsListRef.current]);
+
+  const onPaginate = useCallback(
+    (e) => {
+      // const y = e?.nativeEvent?.contentOffset?.y ?? 0;
+      // when user scrolls to (or near) top, load older items (next page)
+      // if (y <= 40 && hasMore && !loadingMore && !loading && !loadMoreTriggeredRef.current) {
+      if (hasMore && !loadingMore && !loading && !loadMoreTriggeredRef.current) {
+        loadMoreTriggeredRef.current = true;
+        loadMore();
+      }
+    },
+    [hasMore, loadingMore, loading, loadMore]
+  );
 
   const renderItem = ({ item, index }) => { 
     
@@ -87,18 +112,24 @@ function Content({ issue }) {
           <Dialog.Title>{selected?.name}</Dialog.Title>
           <Dialog.Content>
             <Paragraph>{selected?.comment}</Paragraph>
-            <View style={styles.collapsibleContent}>
+            <View>
               {(selected?.attachment || selected?.recording) && (
                 <View style={{ flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
                   {selected?.attachment && selected?.attachment.local_url && (
                     <ImagePreviewCard
                       uri={selected.attachment.local_url}
                       id={selected.attachment.id}
+                      onRemove={() => {}}
+                      onRetry={() => {}}
                       showRemove={false}
                     />
                   )}
                   {selected?.recording && (
-                    <RecordingCard mode="playback" initialURI={selected.recording.local_url} />
+                    <RecordingCard
+                      mode="playback"
+                      initialURI={selected.recording.local_url}
+                      onRecordingSaved={() => {}}
+                    />
                   )}
                 </View>
               )}
@@ -116,7 +147,11 @@ function Content({ issue }) {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-
+      {/* <TouchableOpacity onPress={() => {
+        setIssueCommentsList([...issueCommentsList, ...issueCommentsList])
+      }}>
+        <Text>Press</Text>
+</TouchableOpacity> */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -127,14 +162,27 @@ function Content({ issue }) {
               <FlatList
                 ref={commentsListRef}
                 style={{ flex: 1 }}
+                inverted={true}
                 ItemSeparatorComponent={() => <Divider />}
-                ListHeaderComponent={() => (
-                  <Text style={styles.title}>{i18n.t('activity_label')}</Text>
+                ListFooterComponent={() => (
+                  <View>
+                    <Text style={styles.title}>{i18n.t('activity_label')}</Text>
+                    {loadingMore ? (
+                      <View style={{ paddingVertical: 10 }}>
+                        <ActivityIndicator color={colors.primary} />
+                      </View>
+                    ) : null}
+                  </View>
                 )}
                 data={issueCommentsList}
                 renderItem={renderItem}
-                onStartReached={() => console.log('paginate')}
-                keyExtractor={(item) => item.due_date}
+                // onScroll={onScroll}
+                onEndReached={onPaginate}
+                scrollEventThrottle={16}
+                onMomentumScrollBegin={() => {
+                  loadMoreTriggeredRef.current = false;
+                }}
+                keyExtractor={(item, index) => String(item?.id ?? item?.due_date ?? index)}
               />
             ) : (
               <View style={{ flex: 1 }} />
@@ -148,7 +196,6 @@ function Content({ issue }) {
                 autoCapitalize="sentences"
                 label={'Comment'}
                 mode="flat"
-                labelColor={colors.lightgray}
                 style={{
                   borderRadius: 20,
                   backgroundColor: colors.white,

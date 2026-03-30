@@ -69,10 +69,15 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
     parentId: string | null
   ): Promise<IssueComment[]> {
     const url = `${this.baseUrl}/${parentId}/comments/`;
+    const pageParam = page ?? 1;
+    const pageSizeParam = limit ?? 20;
     const requestOptions = {
       url,
       method: 'GET',
-      params: new URLSearchParams({ page: '1', pageSize: '20' }),
+      params: new URLSearchParams({
+        page: String(pageParam),
+        pageSize: String(pageSizeParam),
+      }),
     };
     try {
       const response = await request({
@@ -80,7 +85,8 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
       });
 
       const jsonData: any = response.data;
-      return jsonData.results;
+      const results = Array.isArray(jsonData?.results) ? jsonData.results : [];
+      return results.map((item: any) => this.fromRemoteToLocal(item));
     } catch (error) {
       console.error(error.message);
     }

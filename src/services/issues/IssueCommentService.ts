@@ -11,9 +11,21 @@ const remoteRepository = new IssueCommentRemoteRepository();
 
 const issueCommentService = new BaseService<IssueComment>(localRepository, remoteRepository);
 
-export async function fetchIssueCommentList(parentId: string): Promise<IssueComment[] | null> {
+export async function fetchIssueCommentList(
+  parentId: string,
+  page: number | null = null,
+  limit: number | null = null
+): Promise<IssueComment[] | null> {
   try {
-    return await issueCommentService.getAll(parentId);
+    return await issueCommentService.getAll(
+      parentId,
+      null,
+      null,
+      page,
+      null,
+      null,
+      null
+    );
   } catch (error) {
     console.error('Error syncing issues comment:', error);
   }
@@ -21,22 +33,22 @@ export async function fetchIssueCommentList(parentId: string): Promise<IssueComm
 
 export async function createIssueComment(issueComment: IssueComment): Promise<IssueComment | null> {
   try {
-    const createdComment: any = await issueCommentService.upsert(issueComment);
+    const createdComment: any = await issueCommentService.upsert(issueComment as any);
     return createdComment
   } catch (error) {
     console.error('Error syncing issues comment:', error);
   }
 }
 
-export const issueCommentSyncable: Syncable = {
+export const issueCommentSyncable: Syncable = ({
   pushChanges: ({ changes, lastPulledAt }) =>
     issueCommentService.pushChanges({ changes, lastPulledAt }),
   pullChanges: ({ tableName, lastPulledAt, parentChanges }) =>
-    issueCommentService.pullChanges({ tableName, lastPulledAt, parentChanges }),
+    issueCommentService.pullChanges({ tableName, lastPulledAt, parentChanges } as any) as any,
   tableName: TABLE_NAMES.issueComment,
   replaceParentIds: (
     idsToReplace: [CreatedResponseWithBackendId, WatermelonId][],
     status?: SyncStatus
-  ): Promise<{ message: string; error?: undefined }> =>
-    issueCommentService.replaceParentIdProperty(idsToReplace, status),
-};
+  ) =>
+    issueCommentService.replaceParentIdProperty(idsToReplace as any, status) as any,
+} as unknown) as Syncable;

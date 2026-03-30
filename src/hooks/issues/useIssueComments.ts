@@ -1,32 +1,88 @@
 import { useEffect, useState } from 'react'
 import * as IssueCommentService from '../../services/issues/IssueCommentService';
-import { IssueComment, IssueCommentLocalModel } from "../../models/issues/IssueComment";
+import { IssueComment } from "../../models/issues/IssueComment";
 
 export function useIssueComments(parentId: string) {
-  const [issueCommentsList, setIssueCommentsList] = useState<IssueComment[]>();
+  const PAGE_SIZE = 20;
+  const [issueCommentsList, setIssueCommentsList] = useState<IssueComment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
-    fetchIssueCommentsList(parentId);
-  }, []);
+    // initial load for new parentId
+    setIssueCommentsList([]);
+    setPage(1);
+    setHasMore(true);
+    fetchIssueCommentsPage(1);
+  }, [parentId]);
 
-  const fetchIssueCommentsList = async (parentId: string) => {
+  const fetchIssueCommentsPage = async (pageToLoad: number) => {
     setLoading(true);
-    if (!issueCommentsList) {
-      const comments = await IssueCommentService.fetchIssueCommentList(parentId);
-      comments.reverse()
-      setIssueCommentsList(comments);
-    }
+    const comments = await IssueCommentService.fetchIssueCommentList(parentId, pageToLoad, PAGE_SIZE);
+    const safeComments = Array.isArray(comments) ? comments : [];
+    setHasMore(safeComments.length >= PAGE_SIZE);
+    // Keep chronological order (oldest -> newest) for chat-like UI
+    setIssueCommentsList((prev) => {
+      const merged = [...safeComments, ...prev];
+      const seen = new Set<string>();
+      const deduped = merged.filter((c: any) => {
+        const key = String(c?.id ?? c?.due_date ?? JSON.stringify(c));
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      deduped.sort((a: any, b: any) => {
+        const aTime = new Date(a?.due_date ?? a?.created_date ?? 0).getTime();
+        const bTime = new Date(b?.due_date ?? b?.created_date ?? 0).getTime();
+        return bTime - aTime;
+      });
+      return deduped;
+    });
     setLoading(false);
+  };
+
+  const loadMore = async () => {
+    if (loadingMore || loading || !hasMore) return;
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const comments = await IssueCommentService.fetchIssueCommentList(parentId, nextPage, PAGE_SIZE);
+      const safeComments = Array.isArray(comments) ? comments : [];
+      setHasMore(safeComments.length >= PAGE_SIZE);
+
+      setIssueCommentsList((prev) => {
+        const merged = [...safeComments, ...prev];
+        const seen = new Set<string>();
+        const deduped = merged.filter((c: any) => {
+          const key = String(c?.id ?? c?.due_date ?? JSON.stringify(c));
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        deduped.sort((a: any, b: any) => {
+          const aTime = new Date(a?.due_date ?? a?.created_date ?? 0).getTime();
+          const bTime = new Date(b?.due_date ?? b?.created_date ?? 0).getTime();
+          return bTime - aTime;
+        });
+        return deduped;
+      });
+      setPage(nextPage);
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const createIssueComment = async (issueComment: IssueComment) => {
     setLoading(true);
     const comment = await IssueCommentService.createIssueComment(issueComment);
-    setIssueCommentsList([...issueCommentsList, comment]);
+    if (comment) {
+      setIssueCommentsList([...issueCommentsList, comment]);
+    }
     setLoading(false);
   };
 
-  return { issueCommentsList, loading, createIssueComment };
+  return { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment, setIssueCommentsList };
 }
 
