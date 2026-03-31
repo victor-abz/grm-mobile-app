@@ -32,7 +32,7 @@ const theme = {
 };
 
 function Content({ issue }) {
-  const { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment, setIssueCommentsList } = useIssueComments(issue.id);
+  const { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment } = useIssueComments(issue.id);
   const { profile, session } = useSelector((state: any) => state.get('authentication').toObject());
   const [commentText, setCommentText] = useState('');
   
@@ -147,11 +147,6 @@ function Content({ issue }) {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-      {/* <TouchableOpacity onPress={() => {
-        setIssueCommentsList([...issueCommentsList, ...issueCommentsList])
-      }}>
-        <Text>Press</Text>
-</TouchableOpacity> */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}

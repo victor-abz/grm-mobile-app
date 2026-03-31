@@ -258,7 +258,7 @@ export class BaseService<T> {
       }
     } else {
       this.forcePaginateFromLocalNoAccessToBackendList = true;
-      const getAllResponse = await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId, null, null);
+      const getAllResponse = await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId, null, null, allPages);
       return getAllResponse.results
     }
   }

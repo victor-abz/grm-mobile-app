@@ -13,9 +13,9 @@ export function useAdministrativeRegions() {
   const fetchAdministrativeRegionsList = async () => {
     setLoading(true);
     if (!administrativeRegionsList) {
-      const administrativeRegionsList =
+      const administrativeRegions =
         await AdministrativeRegionService.fetchAdministrativeRegions(true);
-      setAdministrativeRegionsList(administrativeRegionsList);
+        setAdministrativeRegionsList(administrativeRegions);
     }
     setLoading(false);
   };

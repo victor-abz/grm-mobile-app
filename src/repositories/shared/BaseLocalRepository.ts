@@ -68,7 +68,8 @@ export abstract class BaseLocalRepository<T> {
     lastPulledAt: string | null,
     parentId: string | null,
     page: number = 0, // zero-based page index
-    latestValueAtCurrentPage?: LatestValueAtCurrentPage
+    latestValueAtCurrentPage?: LatestValueAtCurrentPage,
+    allPages = false
   ): Promise<{ event: LocalGetAllEventInfo;  results: T[]}> {
     if (!sortBy) sortBy = 'created_date';
     if (!sortOrder) sortOrder = Q.desc;
@@ -134,7 +135,7 @@ export abstract class BaseLocalRepository<T> {
     let results: Model[] = await dbInstance.get(this.tableName).query(...queryClauses);
     // Delete the latestValue when no internet the first time
     let start = page * pageSize;
-    const paged = results.slice(start, start + pageSize);
+    const paged = allPages ? results : results.slice(start, start + pageSize);
     return {
       event: { firstPageRetrievalMade: false },
       results: paged.map((result) => this.fromLocalToRemote(result)),

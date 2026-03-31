@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
-  ScrollView,
   Text,
   Platform,
   KeyboardAvoidingView,
@@ -80,19 +79,25 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
     pickersState,
   ]);
 
+
   const filterCommunes = (parent) => {
     let _communes = communes.slice();
-      
     _communes = parent ? _communes.filter((commune) => String(commune.parent) === String(parent)) : _communes;
     _communes = _communes.map(({ parent, ...rest }) => ({
       ...rest,
       parentRegion: parent,
     }));
-    console.log("filter communes : ", _communes) 
     return _communes;
   };
+
+  const formattedTopLevelCommunes = useMemo(() => {
+    if (!communes?.length) return [];
+    return filterCommunes(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [communes]);
+  
   return (
-    <ScrollView>
+    <View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : null}>
         <View style={{ padding: 23 }}>
           <Text style={styles.stepText}>{i18n.t('step_4')}</Text>
@@ -107,18 +112,23 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
                 value: 'id',
               }}
               searchable={true}
+              listMode="FLATLIST"
+              flatListProps={{
+                // extra tuning for large lists
+                initialNumToRender: 20,
+                maxToRenderPerBatch: 28,
+                windowSize: 10,
+              }}
               placeholder={i18n.t('step_location_dropdown_placeholder')}
               value={commune1}
               disabled={!!uniqueRegion}
-              items={filterCommunes(null)}
+              items={formattedTopLevelCommunes}
               setPickerValue={(val) => {
                 setCommune1(val());
                 if (val() && val() !== commune1) handlePickCommune(val());
               }}
               onSelectItem={(item) => setLocation(item)}
-              // onChangeValue={(value) => {
-              //   if (value) handlePickCommune(value);
-              // }}
+             
             />
           </View>
         )}
@@ -214,7 +224,7 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
           </Button>
         </View>
       </KeyboardAvoidingView>
-    </ScrollView>
+    </View>
   );
 }
 

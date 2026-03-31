@@ -83,6 +83,6 @@ export function useIssueComments(parentId: string) {
     setLoading(false);
   };
 
-  return { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment, setIssueCommentsList };
+  return { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment };
 }
 
