@@ -1,11 +1,11 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, text } from '@nozbe/watermelondb/decorators';
+import { text, field } from '@nozbe/watermelondb/decorators';
 import { TABLE_NAMES } from "../../migrations/tableName";
 import { Base } from "../Base";
 
 export interface AdministrativeRegion extends Base {
-  administrative_level: number;
-  parent: number;
+  administrative_level: string;
+  hierarchical_name: string;
 }
 
 export class AdministrativeRegionLocalModel extends Model {
@@ -15,7 +15,7 @@ export class AdministrativeRegionLocalModel extends Model {
   // @ts-ignore
   @text('name') name;
   // @ts-ignore
-  @field('administrative_level') administrative_level;
+  @text('administrative_level') administrative_level;
   // @ts-ignore
-  @field('parent') parent;
+  @text('hierarchical_name') hierarchical_name;
 }

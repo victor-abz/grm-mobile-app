@@ -40,7 +40,6 @@ function Content({ issue, session, profile }) {
   
   const submitIssue = async () =>
   {  
-    console.log(JSON.stringify(issue, null, 2));
     
     const randomCodeNumber = Math.floor(Math.random() * 1000);
     const _issue = {
@@ -92,12 +91,10 @@ function Content({ issue, session, profile }) {
       ...(issue?.recording ? [issue.recording] : []),
     ];
     
-    console.log(JSON.stringify(attachments, null, 2));
     
     if (attachments) {
       for (let index = 0; index < attachments.length; index++) {
         const element = attachments[index];
-        console.log("33333333",element.local_url);
         
          await createAttachment({
            file_name: element.name,

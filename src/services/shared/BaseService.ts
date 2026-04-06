@@ -52,14 +52,12 @@ export class BaseService<T> {
   }
 
   async bulkCreate(entries: T[]): Promise<void> {
-    // check if any conversion is needed
-    // for (let index = 0; index < entries.length; index++) {
-    //   const element = entries[index];
-    //   this.localRepository.fromRemoteToLocal(element)
-    // }
-
-    //TODO: ADD GLOBAL LOADING
-    this.localRepository.bulkCreate(entries);
+    let formattedEntries = entries.slice();
+    for (let index = 0; index < entries.length; index++) {
+      const element = formattedEntries[index];
+      formattedEntries[index] = this.localRepository.fromRemoteToLocal(element)
+    }
+    this.localRepository.bulkCreate(formattedEntries);
   }
 
   async replaceParentIdProperty(
@@ -237,7 +235,7 @@ export class BaseService<T> {
             null,
             null
           );
-
+          
           return getAllResponse.results
         }
       } catch (err) {

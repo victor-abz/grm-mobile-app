@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button, TextInput } from 'react-native-paper';
-import { debounce } from 'lodash';
 import { i18n } from "../../../../translations/i18n";
 import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';
@@ -27,12 +26,12 @@ const theme = {
 export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueRegion }) { 
   const navigation = useNavigation();
   const [communes, setCommunes] = useState(issueCommunes);
-  const [commune1, setCommune1] = useState(null);
+  const [region, setRegion] = useState(null);
   const [location, setLocation] = useState();
   const [pickersState, setPickersState] = useState([]);
   const [additionalDetails, setAdditionalDetails] = useState(null);
   const [initialized, setInitialized] = useState(false);
-  const [communesSubPickers, setCommunesSubPickers] = useState([]);
+  // const [communesSubPickers, setCommunesSubPickers] = useState([]);
 
   useEffect(() => {
     if (issueCommunes && !initialized) {
@@ -41,59 +40,58 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
     }
   }, [issueCommunes]);
 
-  const handler = (selectedAdministrativeId, _index) => {
-    let communesCopy = communes.slice();
-    let updatedPickers = [];
-    let index;
-    if (_index !== undefined) index = _index + 1;
+  // const handler = (selectedAdministrativeId, _index) => {
+  //   let communesCopy = communes.slice();
+  //   let updatedPickers = [];
+  //   let index;
+  //   if (_index !== undefined) index = _index + 1;
 
-    // Filter communes by parent (administrative ID)
-    communesCopy = communesCopy.filter((x) => String(x.parent) === String(selectedAdministrativeId));
+  //   // Filter communes by parent_id (administrative ID)
+  //   communesCopy = communesCopy.filter((x) => String(x.parent_id) === String(selectedAdministrativeId));
 
-    if (communesCopy.length > 0) {
-      if (communesSubPickers[index]) {
-        // If picker exist at position -> Replace picker content
-        updatedPickers = [...communesSubPickers];
-        updatedPickers[index] = selectedAdministrativeId;
-      } else {
-        // Otherwise -> Add new picker
-        updatedPickers = [...communesSubPickers, selectedAdministrativeId];
-      }
-      setCommunesSubPickers(updatedPickers);
-    } else {
-      // Remove next pickers/selected values and stop
-      updatedPickers = [...communesSubPickers];
-      if (index === undefined) {
-        updatedPickers = [];
-        setPickersState([]);
-      } else {
-        updatedPickers.splice(index, communesSubPickers.length - index);
-      }
-      setCommunesSubPickers(updatedPickers);
-    }
-  };
+  //   if (communesCopy.length > 0) {
+  //     if (communesSubPickers[index]) {
+  //       // If picker exist at position -> Replace picker content
+  //       updatedPickers = [...communesSubPickers];
+  //       updatedPickers[index] = selectedAdministrativeId;
+  //     } else {
+  //       // Otherwise -> Add new picker
+  //       updatedPickers = [...communesSubPickers, selectedAdministrativeId];
+  //     }
+  //     setCommunesSubPickers(updatedPickers);
+  //   } else {
+  //     // Remove next pickers/selected values and stop
+  //     updatedPickers = [...communesSubPickers];
+  //     if (index === undefined) {
+  //       updatedPickers = [];
+  //       setPickersState([]);
+  //     } else {
+  //       updatedPickers.splice(index, communesSubPickers.length - index);
+  //     }
+  //     setCommunesSubPickers(updatedPickers);
+  //   }
+  // };
 
-  const handlePickCommune = useCallback(debounce(handler, 100), [
-    communesSubPickers,
-    communes,
-    pickersState,
-  ]);
+  // const handlePickCommune = useCallback(debounce(handler, 100), [
+  //   communesSubPickers,
+  //   communes,
+  //   pickersState,
+  // ]);
 
-
-  const filterCommunes = (parent) => {
-    let _communes = communes.slice();
-    _communes = parent ? _communes.filter((commune) => String(commune.parent) === String(parent)) : _communes;
-    _communes = _communes.map(({ parent, ...rest }) => ({
-      ...rest,
-      parentRegion: parent,
-    }));
-    return _communes;
-  };
+  // const filterCommunes = (parent_region) => {
+  //   let _communes = communes.slice();
+  //   _communes = parent_region ? _communes.filter((commune) => String(commune.parent_id) === String(parent_region)) : _communes;
+  //   _communes = _communes.map(({ parent_id, ...rest }) => ({
+  //     ...rest,
+  //     parentRegion: parent_region,
+  //   }));
+  //   return _communes;
+  // };
 
   const formattedTopLevelCommunes = useMemo(() => {
     if (!communes?.length) return [];
-    return filterCommunes(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // return filterCommunes(null);
+    return communes;
   }, [communes]);
   
   return (
@@ -108,7 +106,7 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
           <View key="firstLevel">
             <CustomDropDownPicker
               schema={{
-                label: 'name',
+                label: 'hierarchical_name',
                 value: 'id',
               }}
               searchable={true}
@@ -120,31 +118,30 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
                 windowSize: 10,
               }}
               placeholder={i18n.t('step_location_dropdown_placeholder')}
-              value={commune1}
+              value={region}
               disabled={!!uniqueRegion}
               items={formattedTopLevelCommunes}
               setPickerValue={(val) => {
-                setCommune1(val());
-                if (val() && val() !== commune1) handlePickCommune(val());
+                setRegion(val());
+                // if (val() && val() !== commune1) handlePickCommune(val());
               }}
               onSelectItem={(item) => setLocation(item)}
-             
             />
           </View>
         )}
 
         {/* Rendered after picking one from above */}
-        {communesSubPickers.map((parent, index) => (
+        {/* {communesSubPickers.map((parent_region, index) => (
           <View style={{ zIndex: 1000 + index }} key={{ index }}>
             <CustomDropDownPicker
               schema={{
                 label: 'name',
                 value: 'id',
               }}
-              disabled={!!uniqueRegion}
+              // disabled={!!uniqueRegion}
               placeholder={i18n.t('step_location_dropdown_placeholder')}
               value={pickersState[index]}
-              items={filterCommunes(parent, index)}
+              items={filterCommunes(parent_region, index)}
               onSelectItem={(item) => setLocation(item)}
               setPickerValue={(val) => {
                 const newState = [...pickersState];
@@ -157,7 +154,7 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
               }}
             />
           </View>
-        ))}
+        ))} */}
         <View style={{ paddingHorizontal: 50 }}>
           <Text style={styles.stepNote}>{i18n.t('step_location_input_explanation')}</Text>
           <TextInput
@@ -198,12 +195,13 @@ export function Content({ stepOneParams, stepTwoParams, issueCommunes, uniqueReg
           <Button
             theme={theme}
             disabled={
-              (commune1 === null || [commune1, ...pickersState].length === 0) && !uniqueRegion
+              (region === null || [region, ...pickersState].length === 0) && !uniqueRegion
             }
             style={{ alignSelf: 'center', margin: 24 }}
             labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
             mode="contained"
-            onPress={() => {
+            onPress={() =>
+            {
               navigation.navigate('CitizenReportStep3', {
                 stepOneParams,
                 stepTwoParams,

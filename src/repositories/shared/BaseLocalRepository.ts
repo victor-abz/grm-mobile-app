@@ -189,26 +189,40 @@ export abstract class BaseLocalRepository<T> {
     });
   }
 
-  async bulkCreate(entries: any[]): Promise<void> {
+  isKeyIdentifiable(key: string) {
+    switch (key) {
+      case 'id': 
+        return true
+      case 'administrative_level': 
+        return true
+      default: 
+        return false
+    }
+  }
+
+  async bulkCreate(formattedEntries: any[]): Promise<void> {
     try {
       const dbInstance = databaseServiceInstance.database;
       let operations = [];
 
       await dbInstance.write(async () => {
-        for (let index = 0; index < entries.length; index++) {
-          const element = entries[index];
+        for (let index = 0; index < formattedEntries.length; index++) {
+          const element = formattedEntries[index];
           operations.push(
             dbInstance.get(this.tableName).prepareCreate((tableElementPlaceholder) => {
               Object.keys(tableElementPlaceholder._raw).forEach((key) => {
-                if (key == 'id') {
-                  tableElementPlaceholder._raw[key] = String(element[key]).replace(/\\"/g, '').replace(/"/g, '');
+                if (this.isKeyIdentifiable(key)) {
+                  
+                  tableElementPlaceholder._raw[key] = String(element[key])
+                    .replace(/\\"/g, '')
+                    .replace(/"/g, '');
                 }
 
                 if (key !== 'id' && key !== '_changed' && key !== '_status') {
                   tableElementPlaceholder._raw[key] = element[key];
                 }
               });
-              tableElementPlaceholder = element;
+              // tableElementPlaceholder = element;
             })
           );
         }

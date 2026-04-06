@@ -145,7 +145,7 @@ export class SyncService {
         },
 
         pushChanges: async ({ changes, lastPulledAt }) => {
-          console.log('Pushing CHANGES: ', JSON.stringify(changes, null, 2));
+          // console.log('Pushing CHANGES: ', JSON.stringify(changes, null, 2));
           console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
 
           this.pushedParentChanges = changes;
@@ -280,7 +280,7 @@ export class SyncService {
 
           // To be used with delete attachments, for example
           pushChanges: async ({ changes, lastPulledAt }) => {
-            console.log('Pushing Child Syncables: ', JSON.stringify(changes, null, 2));
+            // console.log('Pushing Child Syncables: ', JSON.stringify(changes, null, 2));
             console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
 
             for (const syncable of this.childSyncables) {

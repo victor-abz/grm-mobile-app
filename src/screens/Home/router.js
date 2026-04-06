@@ -114,7 +114,7 @@ function DashboardStackScreen() {
         component={HomeRouter}
         options={({ navigation, route }) => ({
           ...customHeaderOptions(i18n.t('label_grm')),
-          ...customHeaderRightIcon({navigation, route})
+          ...customHeaderRightIcon({ navigation, route }),
         })}
       />
       <HomeStack.Screen
@@ -152,19 +152,16 @@ function DashboardStackScreen() {
         component={CitizenReportStep4}
         options={({ navigation, route }) => customHeaderOptions(i18n.t('citizen_input_header'))}
       />
-
       <HomeStack.Screen
         name="IssueSearch"
         component={IssueSearch}
         options={({ navigation, route }) => customHeaderOptions(i18n.t('summary'))}
       />
-
       <HomeStack.Screen
         name="Statistics"
         component={Statistics}
-        options={({ navigation, route }) => customHeaderOptions(i18n.t("diagnostics"))}
+        options={({ navigation, route }) => customHeaderOptions(i18n.t('diagnostics'))}
       />
-
       {/* <HomeStack.Screen */}
       {/*  name="IssueDetail" */}
       {/*  component={IssueDetail} */}
@@ -177,7 +174,6 @@ function DashboardStackScreen() {
         component={IssueDetailTabsStack}
         options={({ navigation, route }) => customHeaderOptions(i18n.t('grm_management'))}
       />
-
       <HomeStack.Screen
         name="RegisterSubprojects"
         component={RegisterSubprojects}
