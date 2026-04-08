@@ -183,7 +183,7 @@ export class SyncService {
             deleted: [],
           };
 
-          console.log('table changes', tableChanges);
+          // console.log('table changes', tableChanges);
 
           // Declaration of function to add the replaced items to the Table changes object
           const updateParentIdFor = (arr: any[] = []) =>
@@ -213,7 +213,7 @@ export class SyncService {
             updated: updateParentIdFor(tableChanges.updated),
           };
 
-          console.log(this.pushedParentChanges);
+          // console.log(this.pushedParentChanges);
 
           await syncable.pushChanges({
             changes: this.pushedParentChanges,
@@ -251,7 +251,8 @@ export class SyncService {
               // Pull Child Changes
               const syncableChanges = await syncable.pullChanges({
                 tableName: syncable.tableName,
-                lastPulledAt,
+                lastPulledAt: this.firstSync ? null : lastPulledAt,
+                forceFetchAllPages: true,
                 parentChanges:
                   allParents ?? this.pulledParentsChanges[getParentTableName(syncable.tableName)],
               });

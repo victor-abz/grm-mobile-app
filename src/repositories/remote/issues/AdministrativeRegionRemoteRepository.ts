@@ -4,9 +4,11 @@ import { AdministrativeRegion } from '../../../models/issues/AdministrativeRegio
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 
 class AdministrativeRegionRemoteRepository extends BaseRemoteRepository<AdministrativeRegion> {
+
   fetchMore(endpointType: string): Promise<AdministrativeRegion[]> {
     throw new Error('Method not implemented.');
   }
+
   create(item: AdministrativeRegion): Promise<AdministrativeRegion> {
     throw new Error('Method not implemented.');
   }

@@ -43,8 +43,8 @@ export async function createIssueComment(issueComment: IssueComment): Promise<Is
 export const issueCommentSyncable: Syncable = ({
   pushChanges: ({ changes, lastPulledAt }) =>
     issueCommentService.pushChanges({ changes, lastPulledAt }),
-  pullChanges: ({ tableName, lastPulledAt, parentChanges }) =>
-    issueCommentService.pullChanges({ tableName, lastPulledAt, parentChanges } as any) as any,
+  pullChanges: ({ tableName, lastPulledAt, forceFetchAllPages, parentChanges }) =>
+    issueCommentService.pullChanges({ tableName, lastPulledAt, forceFetchAllPages, parentChanges  } as any) as any,
   tableName: TABLE_NAMES.issueComment,
   replaceParentIds: (
     idsToReplace: [CreatedResponseWithBackendId, WatermelonId][],

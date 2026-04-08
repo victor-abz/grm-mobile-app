@@ -38,7 +38,7 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
       method: 'POST',
       data: body,
     };
-    
+
     try {
       const response = await request({
         ...requestOptions,
@@ -68,18 +68,67 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
     deleted_date: EpochTimeStamp | null,
     parentId: string | null
   ): Promise<IssueComment[]> {
-    const url = `${this.baseUrl}/${parentId}/comments/`;
+    console.log("ISSUE COMMENTS FETCH");
+    console.log(allPages);
+    
+    const params: Record<string, string> = {};
+    const _url = `/issues/${parentId}/comments/`;
     const pageParam = page ?? 1;
     const pageSizeParam = limit ?? 20;
-    const requestOptions = {
-      url,
+
+    params.page = String(pageParam);
+    params.pageSize = String(pageSizeParam);
+
+    if (created_date) params.created_at = new Date(created_date).toISOString();
+    if (updated_date) params.updated_at = new Date(updated_date).toISOString();
+
+    let requestOptions = {
+      url: _url,
       method: 'GET',
-      params: new URLSearchParams({
-        page: String(pageParam),
-        pageSize: String(pageSizeParam),
-      }),
+      params: new URLSearchParams(params),
     };
+
     try {
+      let commentsList: IssueComment[] = [];
+      let lastPage = false;
+      let url = `/issues/${parentId}/comments/`;
+
+      if (allPages) {
+        while (!lastPage) {
+          // Keep initial query params (page/pageSize, date filters) for the first request.
+          // For subsequent requests, the server-provided `next` URL already includes the querystring.
+          requestOptions = {
+            ...requestOptions,
+            url,
+            params: url.includes('?') ? undefined : requestOptions.params,
+          };
+          const response = await request({
+            ...requestOptions,
+          });
+
+          if (
+            response &&
+            response.data &&
+            response.data.results &&
+            Array.isArray(response.data.results)
+          ) {
+            commentsList = commentsList.concat(response.data.results);
+            if (!response.data.next) {
+              lastPage = true;
+            } else {
+              console.log("UPDATING URL....");
+              
+              url = response.data.next.substring(response.data.next.indexOf('/issues'));
+              console.log(" URL: ", url);
+            }
+          } else {
+            lastPage = true;
+          }
+        }
+
+        const results: IssueComment[] = commentsList ?? [];
+        return results.map((item: any) => this.fromRemoteToLocal(item));
+      }
       const response = await request({
         ...requestOptions,
       });
@@ -87,6 +136,7 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
       const jsonData: any = response.data;
       const results = Array.isArray(jsonData?.results) ? jsonData.results : [];
       return results.map((item: any) => this.fromRemoteToLocal(item));
+      
     } catch (error) {
       console.error(error.message);
     }
