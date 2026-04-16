@@ -7,15 +7,15 @@ export function useIssueComments(parentId: string) {
   const [issueCommentsList, setIssueCommentsList] = useState<IssueComment[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     // initial load for new parentId
     setIssueCommentsList([]);
-    setPage(1);
+    setPage(0);
     setHasMore(true);
-    fetchIssueCommentsPage(1);
+    fetchIssueCommentsPage(0);
   }, [parentId]);
 
   const fetchIssueCommentsPage = async (pageToLoad: number) => {
@@ -48,7 +48,13 @@ export function useIssueComments(parentId: string) {
     const nextPage = page + 1;
     setLoadingMore(true);
     try {
+      
+      console.log(nextPage);
+      console.log(parentId);
+      
       const comments = await IssueCommentService.fetchIssueCommentList(parentId, nextPage, PAGE_SIZE);
+      console.log(comments);
+
       const safeComments = Array.isArray(comments) ? comments : [];
       setHasMore(safeComments.length >= PAGE_SIZE);
 
@@ -78,7 +84,7 @@ export function useIssueComments(parentId: string) {
     setLoading(true);
     const comment = await IssueCommentService.createIssueComment(issueComment);
     if (comment) {
-      setIssueCommentsList([...issueCommentsList, comment]);
+      setIssueCommentsList([comment, ...issueCommentsList]);
     }
     setLoading(false);
   };

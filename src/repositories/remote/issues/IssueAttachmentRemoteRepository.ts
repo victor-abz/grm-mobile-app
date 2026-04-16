@@ -72,15 +72,12 @@ class IssueAttachmentRemoteRepository extends BaseRemoteRepository<IssueAttachme
     params.page = String(page ?? 1);
     params.pageSize = String(limit ?? 20);
     
-    // Convert to URLSearchParams for the request
-    const queryParams = new URLSearchParams(params);
-      
     const _url = `/issues/${parentId}/attachments/`;
     
     let requestOptions = {
       url: _url,
       method: 'GET',
-      params: new URLSearchParams(queryParams),
+      params: new URLSearchParams(params),
     };
 
     try {
@@ -92,6 +89,9 @@ class IssueAttachmentRemoteRepository extends BaseRemoteRepository<IssueAttachme
           requestOptions = {
             ...requestOptions,
             url,
+            // Keep initial query params for the first request. For subsequent requests,
+            // the server-provided `next` URL already includes the querystring.
+            params: url.includes('?') ? undefined : requestOptions.params,
           };
 
           const response = await request({

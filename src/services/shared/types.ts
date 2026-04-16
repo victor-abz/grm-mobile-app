@@ -29,3 +29,13 @@ export type Syncable = {
   tableName: string;
   fetchAllParents?(tableName: string): Promise<Model[]>;
 };
+
+export type OfflinePaginatedListRequestControls = {
+  prevPage: number;
+  nextPage: number;
+  pageSize: number;
+};export type OfflinePagingInitialTrackingInfo<T> = {
+  fieldName: string;
+  latestValue: T;
+};
+

@@ -4,7 +4,12 @@ import { IssueComment } from "../../models/issues/IssueComment";
 import { IssueCommentLocalRepository } from "../../repositories/local/issues/IssueCommentLocalRepository";
 import IssueCommentRemoteRepository from "../../repositories/remote/issues/IssueCommentRemoteRepository";
 import { SyncStatus } from '@nozbe/watermelondb/Model';
-import { Syncable } from '../shared/types';
+import type {
+  OfflinePagingInitialTrackingInfo,
+  OfflinePaginatedListRequestControls,
+  Syncable
+} from '../shared/types';
+import { LocalGetAllEventInfo } from '../../repositories/shared/BaseLocalRepository';
 
 const localRepository = new IssueCommentLocalRepository();
 const remoteRepository = new IssueCommentRemoteRepository();
@@ -31,6 +36,26 @@ export async function fetchIssueCommentList(
   }
 }
 
+// export async function fetchMoreIssueCommentList(
+//   endpointType: string,
+//   offlinePaginatedListControlsRequest: OfflinePaginatedListRequestControls,
+//   offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<IssueComment>
+// ): Promise<{
+//   event: LocalGetAllEventInfo | undefined;
+//   results: IssueComment[];
+// } | null> {
+//   try {
+//     const issueCommentsList = await issueCommentService.getMore(
+//       endpointType,
+//       offlinePaginatedListControlsRequest,
+//       offlinePagingInitialTrackingInfo
+//     );
+//     return issueCommentsList;
+//   } catch (error) {
+//     console.error('Error fetching more issues. Reason: ', error);
+//   }
+// }
+
 export async function createIssueComment(issueComment: IssueComment): Promise<IssueComment | null> {
   try {
     const createdComment: any = await issueCommentService.upsert(issueComment as any);
@@ -40,15 +65,15 @@ export async function createIssueComment(issueComment: IssueComment): Promise<Is
   }
 }
 
-export const issueCommentSyncable: Syncable = ({
+export const issueCommentSyncable: Syncable = {
   pushChanges: ({ changes, lastPulledAt }) =>
     issueCommentService.pushChanges({ changes, lastPulledAt }),
   pullChanges: ({ tableName, lastPulledAt, forceFetchAllPages, parentChanges }) =>
-    issueCommentService.pullChanges({ tableName, lastPulledAt, forceFetchAllPages, parentChanges  } as any) as any,
+    issueCommentService.pullChanges({ tableName, lastPulledAt, forceFetchAllPages, parentChanges  }),
   tableName: TABLE_NAMES.issueComment,
   replaceParentIds: (
     idsToReplace: [CreatedResponseWithBackendId, WatermelonId][],
     status?: SyncStatus
   ) =>
     issueCommentService.replaceParentIdProperty(idsToReplace as any, status) as any,
-} as unknown) as Syncable;
+};

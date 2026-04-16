@@ -8,17 +8,13 @@ import { TABLE_NAMES } from '../../migrations/tableName';
 import { deleteAsync } from 'expo-file-system';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
 import { databaseServiceInstance } from '../../utils/storageManager';
-import { OfflinePaginatedListRequestControls } from '../../hooks/issues/useIssue';
+import type { OfflinePagingInitialTrackingInfo, OfflinePaginatedListRequestControls } from './types';
+
 export type WatermelonId = string;
 export type CreatedResponseWithBackendId = unknown;
 
 export type EndOfList = {
   detail: string;
-};
-
-export type OfflinePagingInitialTrackingInfo<T> = {
-  fieldName: string;
-  latestValue: T;
 };
 
 export class BaseService<T> {
@@ -137,7 +133,7 @@ export class BaseService<T> {
         try {
           createdResponse = await this.remoteRepository.create(modelInterface);
           if (createdResponse) {
-            console.log('Remote Create successful');
+            console.log('✅ Remote Create successful');
           } else {
             console.log("Couldn't create, proceed with Update");
             updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
@@ -232,6 +228,7 @@ export class BaseService<T> {
             null,
             null,
             parentId,
+            page,
             null,
             null
           );
@@ -249,6 +246,7 @@ export class BaseService<T> {
           null,
           null,
           parentId,
+          page,
           null,
           null
         );
@@ -261,8 +259,6 @@ export class BaseService<T> {
     }
   }
 
-  // [] Fetch, disconnect, fetch from local, maybe lastvalue does not exist, bring from zero, locally.
-  // [] review unstable connection detector.
   async getMore(
     endpointType: string | null,
     offlinePaginatedListRequest: OfflinePaginatedListRequestControls,

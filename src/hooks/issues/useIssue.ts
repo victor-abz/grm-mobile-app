@@ -11,11 +11,6 @@ const PAGE_SIZE = 20
 const INITIAL_PREV_PAGE = 0
 const INITIAL_NEXT_PAGE = 1;
   
-export type OfflinePaginatedListRequestControls = {
-    prevPage: number;
-    nextPage: number;
-    pageSize: number;
-  };
 
 export function useIssue(fetchIssues: boolean = true)  {
   const [assigneeIssueList, setAssigneeIssueList] = useState<Issue[]>()

@@ -12,14 +12,15 @@ import {
 } from 'react-native';
 import moment from 'moment';
 import { styles } from './Content.styles';
-import { i18n } from "../../../../translations/i18n";
+import { i18n } from '../../../../translations/i18n';
 import { Button, Dialog, Paragraph, Portal, Divider, TextInput } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
-import { useIssueComments } from "../../../../hooks/issues/useIssueComments";
+import { useIssueComments } from '../../../../hooks/issues/useIssueComments';
 import { useSelector } from 'react-redux';
 import { IssueComment } from '../../../../models/issues/IssueComment';
 import RecordingCard from '../../GRM/components/RecordingCard';
+import { Icon } from 'react-native-elements';
 
 const theme = {
   roundness: 12,
@@ -32,14 +33,15 @@ const theme = {
 };
 
 function Content({ issue }) {
-  const { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment } = useIssueComments(issue.id);
+  const { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment } =
+    useIssueComments(issue.id);
   const { profile, session } = useSelector((state: any) => state.get('authentication').toObject());
   const [commentText, setCommentText] = useState('');
-  
-  const commentInputRef = useRef(null)
-  const commentsListRef = useRef(null)
+
+  const commentInputRef = useRef(null);
+  const commentsListRef = useRef(null);
   const loadMoreTriggeredRef = useRef(false);
-  
+
   const [showDialog, setShowDialog] = useState(false);
   const [selected, setSelected] = useState(null);
 
@@ -48,10 +50,11 @@ function Content({ issue }) {
     setShowDialog(true);
     setSelected(_selected);
   };
- 
+
   // Focus the list to the end of messages on load
   useEffect(() => {
-    if (commentsListRef.current) setTimeout(() => commentsListRef.current?.scrollToEnd(), 400)
+    if (commentsListRef.current)
+      setTimeout(() => commentsListRef.current?.scrollToIndex({ index: 0, animated: true }), 400);
   }, [commentsListRef.current]);
 
   const onPaginate = useCallback(
@@ -67,8 +70,7 @@ function Content({ issue }) {
     [hasMore, loadingMore, loading, loadMore]
   );
 
-  const renderItem = ({ item, index }) => { 
-    
+  const renderItem = ({ item, index }) => {
     return (
       <View key={index} style={styles.commentCard}>
         <TouchableOpacity onPress={() => _showDialog(item)}>
@@ -85,14 +87,14 @@ function Content({ issue }) {
         </TouchableOpacity>
       </View>
     );
-  }
-  
+  };
+
   const onPressSend = async () => {
     if (commentText.length === 0) return;
     const newComment: IssueComment = {
       id: undefined,
       parent_id: issue.id,
-      user: {id: session.user_id ,name: profile?.user?.name},
+      user: { id: session.user_id, name: profile?.user?.name },
       comment: commentText,
       due_date: new Date().toISOString(),
       created_date: new Date().toISOString(),
@@ -101,7 +103,7 @@ function Content({ issue }) {
     await createIssueComment(newComment);
     setCommentText('');
     commentInputRef.current?.blur();
-    setTimeout(() => commentsListRef.current?.scrollToEnd({ animated: true }), 500);
+    setTimeout(() => commentsListRef.current?.scrollToIndex({ index: 0, animated: true }), 500);
   };
 
   //Modal, Messages List and Comment Input
@@ -182,6 +184,23 @@ function Content({ issue }) {
             ) : (
               <View style={{ flex: 1 }} />
             )}
+            <TouchableOpacity
+              onPress={() => {
+                setTimeout(
+                  () => commentsListRef.current?.scrollToIndex({ index: 0, animated: true }),
+                  400
+                );
+              }}
+              style={styles.floatingButton}
+            >
+              <Icon
+                type="ionicon"
+                style={{ marginTop: 2 }}
+                color={colors.white}
+                size={20}
+                name={Platform.OS === 'ios' ? 'chevron-down' : 'chevron-down'}
+              />
+            </TouchableOpacity>
 
             <View style={{ paddingBottom: 10 }}>
               <TextInput
@@ -198,7 +217,10 @@ function Content({ issue }) {
                   color: colors.secondary,
                 }}
                 onFocus={() =>
-                  setTimeout(() => commentsListRef.current?.scrollToEnd({ animated: true }), 500)
+                  setTimeout(
+                    () => commentsListRef.current?.scrollToIndex({ index: 0, animated: true }),
+                    400
+                  )
                 }
                 blurOnSubmit
                 ref={commentInputRef}

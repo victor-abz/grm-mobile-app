@@ -133,15 +133,15 @@ export async function refetchAttachment(attachmentId: string) {
   }
 }
 
-export const issueAttachmentSyncable: Syncable = ({
+export const issueAttachmentSyncable: Syncable = {
   pushChanges: ({ changes, lastPulledAt }) =>
     issueAttachmentService.pushChanges({ changes, lastPulledAt }),
   pullChanges: ({ tableName, lastPulledAt, forceFetchAllPages, parentChanges }) =>
-    issueAttachmentService.pullChanges({ tableName, lastPulledAt, forceFetchAllPages, parentChanges } as any) as any,
+    issueAttachmentService.pullChanges({ tableName, lastPulledAt, forceFetchAllPages, parentChanges }),
   tableName: TABLE_NAMES.issueAttachment,
   replaceParentIds: (
     idsToReplace: [CreatedResponseWithBackendId, WatermelonId][],
     status?: SyncStatus
   ) =>
     issueAttachmentService.replaceParentIdProperty(idsToReplace as any, status) as any,
-} as unknown) as Syncable;
+};

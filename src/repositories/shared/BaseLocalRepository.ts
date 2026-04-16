@@ -269,7 +269,7 @@ export abstract class BaseLocalRepository<T> {
           });
         });
         console.log('Item successfully updated');
-        console.log('Succesfully Updated Watermelon DB');
+        console.log('✅ Succesfully Updated Watermelon DB');
         return dbItem;
       } catch (error) {
         // If not found, create new
@@ -307,7 +307,7 @@ export abstract class BaseLocalRepository<T> {
 
             });
           console.log('Item Successfully Created');
-          console.log('Succesfully Updated Watermelon DB');
+          console.log('✅ Succesfully Updated Watermelon DB');
           return createdInstance;
         } catch (e) {
           Sentry.captureException(e, {

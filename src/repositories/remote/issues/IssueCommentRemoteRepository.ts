@@ -8,6 +8,7 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
   fetchMore(endpointType: string): Promise<IssueComment[]> {
     throw new Error('Method not implemented.');
   }
+  
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
 
   fromRemoteToLocal(issueComment: any): any {
@@ -68,15 +69,14 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
     deleted_date: EpochTimeStamp | null,
     parentId: string | null
   ): Promise<IssueComment[]> {
-    console.log("ISSUE COMMENTS FETCH");
-    console.log(allPages);
+
     
     const params: Record<string, string> = {};
     const _url = `/issues/${parentId}/comments/`;
     const pageParam = page ?? 1;
     const pageSizeParam = limit ?? 20;
 
-    params.page = String(pageParam);
+    params.page = String(pageParam + 1); // incremented by 1 due to local paging which starts at 0
     params.pageSize = String(pageSizeParam);
 
     if (created_date) params.created_at = new Date(created_date).toISOString();

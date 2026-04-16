@@ -1,10 +1,11 @@
-import { BaseService, OfflinePagingInitialTrackingInfo as OfflinePagingInitialTrackingInfo } from '../shared/BaseService';
+import { BaseService } from '../shared/BaseService';
+import { OfflinePagingInitialTrackingInfo } from '../shared/types';
 import { IssueRemoteRepository } from '../../repositories/remote/issues/IssueRemoteRepository';
 import { IssueLocalRepository } from '../../repositories/local/issues/IssueLocalRepository';
 import { Issue } from '../../models/issues/Issue';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { Syncable } from '../shared/types';
-import { OfflinePaginatedListRequest } from '../../hooks/issues/useIssue';
+import { OfflinePaginatedListRequestControls } from '../shared/types';
 import { LocalGetAllEventInfo } from '../../repositories/shared/BaseLocalRepository';
 
 const localRepository = new IssueLocalRepository();
@@ -31,7 +32,7 @@ export async function fetchIssueList(endpointType: string, fetchAll: boolean = f
 
 export async function fetchMoreIssueList(
   endpointType: string,
-  offlinePaginatedListControlsRequest: OfflinePaginatedListRequest,
+  offlinePaginatedListControlsRequest: OfflinePaginatedListRequestControls,
   offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<Issue>
 ): Promise<{
   event: LocalGetAllEventInfo | undefined;
