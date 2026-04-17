@@ -170,6 +170,7 @@
   "actions": "ACTIONS",
   "details": "DETAILS",
   "history": "HISTORIQUE",
+  "nothing_to_show": "Rien à afficher",
   "days_ago": "jours écoulés",
   "view_details": "VOIR LES DETAILS",
   "accept_issue": "Accepter la plainte",

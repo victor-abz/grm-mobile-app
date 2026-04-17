@@ -459,6 +459,7 @@ export class BaseService<T> {
         const updatedFormattedRecords = updatedRecords.map((item) => {
           const parentId = item[1];
           const subItemsList = item[0];
+          if (!subItemsList) return [];
           let formattedSubItems = [];
           for (let index = 0; index < subItemsList.length; index++) {
             const element = subItemsList[index];

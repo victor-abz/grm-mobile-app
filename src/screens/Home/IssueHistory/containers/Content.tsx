@@ -182,7 +182,22 @@ function Content({ issue }) {
                 keyExtractor={(item, index) => String(item?.id ?? item?.due_date ?? index)}
               />
             ) : (
-              <View style={{ flex: 1 }} />
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+                <Icon
+                  type="ionicon"
+                  name={Platform.OS === 'ios' ? 'chatbubble-ellipses-outline' : 'chatbubble-ellipses-outline'}
+                  size={48}
+                  color={colors.primary}
+                  style={{ marginBottom: 16 }}
+                />
+                <Text style={{ fontSize: 20, fontWeight: '700', color: colors.primary, marginBottom: 8 }}>
+                  {i18n.t("nothing_to_show")}
+                </Text>
+                <Text style={{ fontSize: 16, color: colors.secondary, textAlign: 'center', opacity: 0.7 }}>
+                  {i18n.t("information_not_available")}
+                </Text>
+              </View>
+        
             )}
             <TouchableOpacity
               onPress={() => {

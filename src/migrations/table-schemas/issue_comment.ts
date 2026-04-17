@@ -10,6 +10,7 @@ export const issueCommentTableSchema: TableSchema = tableSchema({
     { name: 'due_date', type: 'string' },
     { name: 'sync_date', type: 'number', isOptional: true },
     { name: 'updated_date', type: 'number' },
+    { name: 'user', type: 'string' },
     { name: 'parent_id', type: 'string', isIndexed: true },
   ],
 });

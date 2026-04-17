@@ -116,10 +116,7 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
             if (!response.data.next) {
               lastPage = true;
             } else {
-              console.log("UPDATING URL....");
-              
               url = response.data.next.substring(response.data.next.indexOf('/issues'));
-              console.log(" URL: ", url);
             }
           } else {
             lastPage = true;
@@ -138,7 +135,7 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
       return results.map((item: any) => this.fromRemoteToLocal(item));
       
     } catch (error) {
-      console.error(error.message);
+      // console.warn("Could not fetch comments. Reason: ", error.message);
     }
   }
 
@@ -161,7 +158,9 @@ class IssueCommentRemoteRepository extends BaseRemoteRepository<IssueComment> {
   }
 
   update(id: string, item: IssueComment): Promise<IssueComment> {
-    throw new Error('Method not implemented.');
+    // No updatedResponse: Method not implemented
+    return null 
+    // throw new Error('Method not implemented.');
   }
 }
 
