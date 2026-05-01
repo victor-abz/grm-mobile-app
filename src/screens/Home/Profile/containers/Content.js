@@ -80,7 +80,7 @@ function Content({ issues, session, profile, department, statuses }) {
       <ProfileItem title={i18n.t('phone')} description={profile?.user?.phone} />
       <ProfileItem
         title={i18n.t('location')}
-        description={`${profile?.department?.name} - ${profile?.administrative_region?.name}`}
+        description={`${profile?.administrative_region?.name}`}
       />
       <ProfileItem title={i18n.t('department')} description={department?.name} />
       <ProfileItem
