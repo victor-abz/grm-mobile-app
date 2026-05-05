@@ -35,7 +35,7 @@ export async function validateCode(data) {
     body: JSON.stringify(data),
   };
   // eslint-disable-next-line no-console
-  const fetchResponse = await fetch(`${baseURL}/authentication/facilitator-credential/update`, {
+  const fetchResponse = await fetch(`${baseURL}/authentication/facilitator-credentials/update/`, {
     ...requestOptions,
   });
   // eslint-disable-next-line no-return-await
