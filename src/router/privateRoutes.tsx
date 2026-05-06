@@ -1,7 +1,7 @@
 import { DatabaseProvider } from '@nozbe/watermelondb/react';
 import { createStackNavigator } from '@react-navigation/stack';
 import React, { useEffect } from 'react';
-import { Dimensions, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import { Button } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomLoadingSpinner from '../components/CustomLoadingSpinner/CustomLoadingSpinner';
@@ -104,6 +104,7 @@ const PrivateRoutes = () => {
     // Guard: clear any existing interval before setting a new one
     if (dbReady) {
       const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+      // const SYNC_INTERVAL_MS = 1.5 * 60 * 1000; // 1.5 minutes
       // const SYNC_INTERVAL_MS = 7000;
       // const SYNC_INTERVAL_MS = 20000000000000; //
       syncAllInterval = setInterval(() => {

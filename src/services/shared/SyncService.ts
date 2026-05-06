@@ -163,7 +163,7 @@ export class SyncService {
       console.log('Sync All error: ', error);
     }
 
-    // Update Everything locally and manually push old child items with new parent ids
+    // Update Everything locally. Also, manually push old child items with new parent ids
     // using child syncables with their BE generated parent_ids and mark them as synced locally
     try {
       if (this.pushedParentChanges) {

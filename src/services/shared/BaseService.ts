@@ -389,8 +389,7 @@ export class BaseService<T> {
     const nullDeletedDate = null;
     const nullParentId = null;
 
-    console.log(parentChanges);
-    
+
     if (parentChanges) {
       // Parent IDs available - Pulling sub-items
       console.log('Parent IDs object available - pulling sub items');
@@ -468,10 +467,6 @@ export class BaseService<T> {
 
           return formattedSubItems;
         });
-
-        // [11/Dec/2025 16:55:44] "POST /issues/369/add-attachment HTTP/1.1" 201 1261
-        // [11/Dec/2025 16:55:44] "POST /issues/369/add-attachment HTTP/1.1" 201 1261
-        // [11/Dec/2025 16:55:44] "GET /issues/369/attachments/?updated_at=2025-12-11T16%3A55%3A41.462Z HTTP/1.1" 200 2507
 
         tableChanges.updated = [
           ...tableChanges.updated,
