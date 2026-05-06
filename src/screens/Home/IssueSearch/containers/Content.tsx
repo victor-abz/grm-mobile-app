@@ -99,6 +99,7 @@ function Content({
     setDisplayedIssues(filteredIssues);
   }, [status, assigneeIssueList, reporterIssueList]);
 
+
   function Item({ item, onPress }) {
     return (
       <TouchableOpacity onPress={onPress} style={[styles.item]}>
