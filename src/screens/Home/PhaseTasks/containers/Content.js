@@ -152,7 +152,7 @@ function Content({ eadl, phase }) {
                         />
                         <Text style={styles.cardDateText}>
                           {moment(item.open_at).format('MMMM-yyyy')}-
-                          {moment(item.due_at).format('MMMM-yyyy')}
+                          {moment(item.due_date).format('MMMM-yyyy')}
                         </Text>
                       </View>
                     </View>

@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { StyleSheet, SafeAreaView, View, TouchableOpacity } from "react-native";
+import { StyleSheet, SafeAreaView, View } from "react-native";
 import { Text } from "react-native-paper";
 import { colors } from "../../../utils/colors";
 import { useDatabase } from '@nozbe/watermelondb/react';
 import { syncServiceInstance } from "../../../services/shared/SyncService";
-import { TABLE_NAMES } from "../../../migrations/tableName";
+import { TouchableOpacity } from "react-native";
+import { Q } from "@nozbe/watermelondb";
+import { databaseServiceInstance } from "../../../utils/storageManager";
 
 export function Diagnostics() {
   // const {issueCategoriesList, loading} = useIssueCategories()
@@ -42,11 +44,43 @@ export function Diagnostics() {
   //     .then((a) => a)
   //     .catch((error) => ({ error }));
     
-  //   const subscription = dbInstance.get('issue').query().observe().subscribe(_setIssue);
+  //
+  //   const subscription = dbInstance.get('issue').query(query).observe().subscribe(_setIssue);
 
   //   return () => subscription.unsubscribe();
 
   // }, [])
+
+  const makeQuery = async () =>
+  {
+    const query = Q.where('intake_date', Q.gte('2026-02-11T14:21:11.343000Z'));
+    console.log(
+      await databaseServiceInstance.database.get('issue').query(query).fetchIds()
+      // [
+      //   ('571',
+      //   '572',
+      //   '573',
+      //   '574',
+      //   '575',
+      //   '576',
+      //   '577',
+      //   '578',
+      //   '579',
+      //   '580',
+      //   '581',
+      //   '582',
+      //   '583',
+      //   '584',
+      //   '585',
+      //   '586',
+      //   '587',
+      //   '588',
+      //   '589',
+      //   '590')
+      // ]
+    );
+    
+  }
 
   // if (loading) {
   //   return <View><Text>Loading...</Text></View>
@@ -56,7 +90,9 @@ export function Diagnostics() {
     <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.form}>
         <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Upcoming feature.</Text>
-
+        <View>
+          {/* <TouchableOpacity onPress={makeQuery} ><Text>Make Query§</Text></TouchableOpacity> */}
+        </View>
       </View>
     </SafeAreaView>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { SafeAreaView, ScrollView } from 'react-native';
+import { Image, Animated, SafeAreaView, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 import Content from './containers';
@@ -15,7 +15,7 @@ function Profile() {
 
   if (issueListLoading || issueStatusesLoading)
     return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
-
+  
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>

@@ -14,15 +14,14 @@ export class AdministrativeRegionLocalRepository extends BaseLocalRepository<Adm
       name: localModel.name,
       created_date: localModel.created_date,
       administrative_level: localModel.administrative_level,
-      parent: localModel.parent,
+      hierarchical_name: localModel.hierarchical_name,
     };
   }
 
-  fromRemoteToLocal(AdministrativeRegion: any): RawRecord {  
+  fromRemoteToLocal(administrativeRegion: any): RawRecord {
     const raw = {
-      ...AdministrativeRegion,
+      ...administrativeRegion,
     };
     return raw
   }
-
 }

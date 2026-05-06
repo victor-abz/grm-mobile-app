@@ -21,3 +21,39 @@ export const showToast = (message) =>
 {
   ToastAndroid.show(message, ToastAndroid.SHORT);
 };
+
+export const parseJson = (jsonString: string | null): any => {
+  try {
+    return jsonString ? JSON.parse(jsonString) : null;
+  } catch (e) {
+    console.error('Failed to parse JSON:', e);
+    return jsonString;
+  }
+};
+/**
+ * Removes duplicates from two lists and returns a new list with unique items.
+ *
+ * @param {any[]} listA - The first list to remove duplicates from.
+ * @param {any[]} listB - The second list to remove duplicates from.
+ * @returns {any[]} A new list with unique items.
+ */
+export function removeDuplicates(listA, listB) {
+  const array = [...listA, ...listB];
+  const uniqueArray = array.filter(
+    (item, index, self) => index === self.findIndex((t) => String(t.id) === String(item.id))
+  );
+  return uniqueArray;
+}
+
+/**
+ * Removes duplicates from two lists and returns a new list with unique items.
+ *
+ * @param {any[]} listA - The first list to remove duplicates from.
+ * @param {any[]} listB - The second list to remove duplicates from.
+ * @returns {any[]} A new list with unique items.
+ */
+export function removeDuplicatesOptimized(listA, listB) {
+  const array = [...listA, ...listB];
+  const uniqueArray = new Set(array.map((item) => item));
+  return Array.from(uniqueArray);
+}

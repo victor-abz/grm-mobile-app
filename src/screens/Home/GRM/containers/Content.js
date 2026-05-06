@@ -1,60 +1,73 @@
-import React from "react";
-import { View, ScrollView } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import SmallCard from "../components/SmallCard";
-import BigCard from "../components/BigCard";
-import Chart from "../../../../../assets/chart_line_solid.svg";
-import FileIcon from "../../../../../assets/file_alt_regular.svg";
-import TeamWorkIcon from "../../../../../assets/team-work.svg";
-import SyncIcon from "../../../../../assets/sync_alt_solid.svg";
-import { i18n } from "../../../../translations/i18n";
+import React from 'react';
+import { View, ScrollView, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import SmallCard from '../components/SmallCard';
+import BigCard from '../components/BigCard';
+import Chart from '../../../../../assets/chart_line_solid.svg';
+import FileIcon from '../../../../../assets/file_alt_regular.svg';
+import TeamWorkIcon from '../../../../../assets/team-work.svg';
+import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
+import { i18n } from '../../../../translations/i18n';
+import { useSelector } from 'react-redux';
+import CustomLoadingSpinner from '../../../../components/CustomLoadingSpinner/CustomLoadingSpinner';
 
 function Content() {
   const navigation = useNavigation();
+  const { globalLoading } = useSelector((state) => state.get('global').toObject());
+
   return (
-    <ScrollView contentContainerStyle={{paddingTop: 20}} style={{ backgroundColor: "white" }}>
+    <ScrollView contentContainerStyle={{ paddingTop: 20 }} style={{ backgroundColor: 'white' }}>
+      {globalLoading && (
+        <View style={{ paddingVertical: 10 }}>
+          <CustomLoadingSpinner />
+        </View>
+      )}
       <BigCard
-        image={require("../../../../../assets/BG_9.png")}
-        onCardPress={() => navigation.navigate("CitizenReportIntro")}
-        title={i18n.t("collect_reports")}
+        image={require('../../../../../assets/BG_9.png')}
+        onCardPress={() => {
+          if (!globalLoading) {
+            navigation.navigate('CitizenReportIntro');
+          }
+        }}
+        title={i18n.t('collect_reports')}
         icon={<TeamWorkIcon />}
       />
       <View style={{ marginVertical: 20 }}>
         <BigCard
-          image={require("../../../../../assets/purpleBg.png")}
-          onCardPress={() => navigation.navigate("IssueSearch")}
-          title={i18n.t("search_reports")}
+          image={require('../../../../../assets/purpleBg.png')}
+          onCardPress={() => navigation.navigate('IssueSearch')}
+          title={i18n.t('search_reports')}
           icon={<SyncIcon />}
         />
       </View>
-        <BigCard
-            image={require("../../../../../assets/small-rectangle.png")}
-            onCardPress={() => navigation.navigate("SyncAttachments")}
-            title={i18n.t("sync_files")}
-            icon={<SyncIcon />}
-            // cardHeight={79}
+      <BigCard
+        image={require('../../../../../assets/small-rectangle.png')}
+        onCardPress={() => navigation.navigate('SyncAttachments')}
+        title={i18n.t('sync_files')}
+        icon={<SyncIcon />}
+        // cardHeight={79}
+      />
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-evenly',
+          marginVertical: 20,
+          borderRadius: 15,
+        }}
+      >
+        <SmallCard
+          image={require('../../../../../assets/BG_1.png')}
+          onCardPress={() => navigation.navigate('Statistics')}
+          title={i18n.t('diagnostics')}
+          icon={<Chart />}
         />
-        <View
-            style={{
-                flexDirection: "row",
-                justifyContent: "space-evenly",
-                marginVertical: 20,
-                borderRadius: 15,
-            }}
-        >
-            <SmallCard
-                image={require("../../../../../assets/BG_1.png")}
-                onCardPress={() => navigation.navigate("Statistics")}
-                title={i18n.t("diagnostics")}
-                icon={<Chart />}
-            />
-            <SmallCard
-                image={require("../../../../../assets/BG_2.png")}
-                onCardPress={() => alert("Upcoming feature")}
-                title={i18n.t("information")}
-                icon={<FileIcon />}
-            />
-        </View>
+        <SmallCard
+          image={require('../../../../../assets/BG_2.png')}
+          onCardPress={() => alert('Upcoming feature')}
+          title={i18n.t('information')}
+          icon={<FileIcon />}
+        />
+      </View>
 
       {/*<ReactNativeSwipeableViewStack*/}
       {/*  // onSwipe={(swipedIndex) => this.onCardSwipe(swipedIndex)}*/}

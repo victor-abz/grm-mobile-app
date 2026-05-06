@@ -11,6 +11,7 @@ import { issueSubTypeSyncable } from '../services/issues/IssueSubTypeService';
 import { issueCitizenGroupListSyncable } from '../services/issues/IssueCitizenGroupService';
 import { issueAttachmentSyncable } from '../services/issues/IssueAttachmentService';
 import { databaseServiceInstance } from './storageManager';
+import { issueCommentSyncable } from '../services/issues/IssueCommentService';
 
 let stableConnectionTimer: NodeJS.Timeout | null = null;
 let initialSyncListener: NetInfoSubscription | null = null;
@@ -30,6 +31,7 @@ export function registerServices(): void {
   syncServiceInstance.register(issueSubTypeSyncable);
   syncServiceInstance.register(issueCitizenGroupListSyncable);
   syncServiceInstance.registerChildSyncables(issueAttachmentSyncable);
+  syncServiceInstance.registerChildSyncables(issueCommentSyncable);
 }
 
 async function setupConnectionWatcher(): Promise<void> {

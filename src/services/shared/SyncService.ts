@@ -1,17 +1,19 @@
-import { Model } from "@nozbe/watermelondb";
-import { SyncDatabaseChangeSet, synchronize } from "@nozbe/watermelondb/sync";
+import { Model } from '@nozbe/watermelondb';
+import { SyncDatabaseChangeSet, synchronize } from '@nozbe/watermelondb/sync';
 import type { CreatedResponseWithBackendId, WatermelonId } from './BaseService';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { fetchIssueList } from '../issues/IssueService';
 import { Syncable } from './types';
-import { databaseServiceInstance } from "../../utils/storageManager";
+import { databaseServiceInstance } from '../../utils/storageManager';
+import { removeDuplicates } from '../../utils/utils';
+import { Issue } from '../../models/issues/Issue';
 
 export class SyncService {
   createdRecordsPostPushedWithNewBackendIDsPerTable: {
     [key: string]: [CreatedResponseWithBackendId, WatermelonId][];
   } = {};
-  firstSync = false
-  isSyncFinished = true
+  firstSync = false;
+  isSyncFinished = true;
 
   private pushedParentChanges: any;
   private markedTimestamp: number;
@@ -42,11 +44,12 @@ export class SyncService {
     }
 
     if (!this.isSyncFinished) {
-      throw new Error('Sync in progress.');
+      return;
     }
 
     this.isSyncFinished = false;
 
+    // Synchronize Parent Elements
     try {
       await synchronize({
         database: databaseServiceInstance.database,
@@ -142,7 +145,7 @@ export class SyncService {
         },
 
         pushChanges: async ({ changes, lastPulledAt }) => {
-          console.log('Pushing CHANGES: ', JSON.stringify(changes, null, 2));
+          // console.log('Pushing CHANGES: ', JSON.stringify(changes, null, 2));
           console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
 
           this.pushedParentChanges = changes;
@@ -160,18 +163,18 @@ export class SyncService {
       console.log('Sync All error: ', error);
     }
 
-    // Update locally and manually push changes of child syncables with their BE generated parent_ids and mark them as synced
+    // Update Everything locally. Also, manually push old child items with new parent ids
+    // using child syncables with their BE generated parent_ids and mark them as synced locally
     try {
       if (this.pushedParentChanges) {
         for (const syncable of this.childSyncables) {
           const parentTableName = getParentTableName(syncable.tableName);
 
+          // Prepare database items with parent ids generated from backend.
           const replacedItems: Model[] = await syncable.replaceParentIds(
             this.createdRecordsPostPushedWithNewBackendIDsPerTable[parentTableName],
             'synced'
           );
-
-          console.log('replaced items', replacedItems);
 
           // Ensure we have a place for this table's changes
           const tableChanges = this.pushedParentChanges?.[syncable.tableName] ?? {
@@ -180,8 +183,9 @@ export class SyncService {
             deleted: [],
           };
 
-          console.log('table changes', tableChanges);
+          // console.log('table changes', tableChanges);
 
+          // Declaration of function to add the replaced items to the Table changes object
           const updateParentIdFor = (arr: any[] = []) =>
             arr.map((record: any) => {
               const match = replacedItems.find((r: any) => {
@@ -209,9 +213,8 @@ export class SyncService {
             updated: updateParentIdFor(tableChanges.updated),
           };
 
-          console.log(this.pushedParentChanges);
+          // console.log(this.pushedParentChanges);
 
-          // update this.changesToPush with the upper replaceParentIds executed()
           await syncable.pushChanges({
             changes: this.pushedParentChanges,
             lastPulledAt: this.markedTimestamp,
@@ -224,6 +227,8 @@ export class SyncService {
       this.isSyncFinished = true;
       console.error('Error pushing updated sub items with parent ids', error);
     }
+
+    // If New Pulled Parent Changes Available - Synchronize the rest of the children properties -
     if (this.pulledParentsChanges || this.firstSync) {
       try {
         await synchronize({
@@ -237,17 +242,23 @@ export class SyncService {
                 updated: any[];
                 deleted: string[];
               };
+              
               if (this.firstSync) {
                 const _allParents = await getAllParents(syncable.tableName);
                 allParents = { created: [], updated: _allParents, deleted: [] };
               }
+
+              // Pull Child Changes
               const syncableChanges = await syncable.pullChanges({
                 tableName: syncable.tableName,
-                lastPulledAt,
+                lastPulledAt: this.firstSync ? null : lastPulledAt,
+                forceFetchAllPages: true,
                 parentChanges:
                   allParents ?? this.pulledParentsChanges[getParentTableName(syncable.tableName)],
               });
+              
               changes = { ...syncableChanges.changes, ...changes };
+              
               // Empty old IDs array at 'tableName' key
               this.createdRecordsPostPushedWithNewBackendIDsPerTable[syncable.tableName] = [];
             }
@@ -259,7 +270,7 @@ export class SyncService {
               )
             );
             console.log('Have sub items data? ', hasData);
-
+            console.log('markedTimes ', this.markedTimestamp);
             // Keep using old timestamp.
             // if (!hasData) return { changes, timestamp: lastPulledAt };
             if (!hasData) return;
@@ -268,9 +279,9 @@ export class SyncService {
             return { changes, timestamp: this.markedTimestamp };
           },
 
-          // To be used for delete attachments, for example
+          // To be used with delete attachments, for example
           pushChanges: async ({ changes, lastPulledAt }) => {
-            console.log('Pushing Child Syncables: ', JSON.stringify(changes, null, 2));
+            // console.log('Pushing Child Syncables: ', JSON.stringify(changes, null, 2));
             console.log(`🍉 Pushing with lastPulledAt = ${lastPulledAt}`);
 
             for (const syncable of this.childSyncables) {
@@ -283,7 +294,7 @@ export class SyncService {
         });
       } catch (error) {
         this.isSyncFinished = true;
-        console.log('Sync All error: ', error);
+        console.log('Sync All error 2 : ', error);
       }
 
       // if error on first sync - handle
@@ -297,19 +308,27 @@ export const syncServiceInstance = new SyncService();
 
 function getParentTableName(childTableName: string): string {
   switch (childTableName) {
-    case TABLE_NAMES.issueAttachment: 
-      return TABLE_NAMES.issue
+    case TABLE_NAMES.issueAttachment:
+      return TABLE_NAMES.issue;
     case TABLE_NAMES.issueComment:
-      return TABLE_NAMES.issue
+      return TABLE_NAMES.issue;
   }
 }
 
 async function getAllParents(childTableName: string): Promise<any[]> {
+  let reportedIssuesList: Issue[];
+  let assignedIssuesList: Issue[];
+  let uniqueList: any[] | PromiseLike<any[]>;
   switch (childTableName) {
     case TABLE_NAMES.issueAttachment:
-      return await fetchIssueList('reporter');
+      reportedIssuesList = await fetchIssueList('reporter', true);
+      assignedIssuesList = await fetchIssueList('assignee', true);
+      uniqueList = removeDuplicates(reportedIssuesList, assignedIssuesList);
+      return uniqueList;
     case TABLE_NAMES.issueComment:
-      return await fetchIssueList('reporter');
+      reportedIssuesList = await fetchIssueList('reporter', true);
+      assignedIssuesList = await fetchIssueList('assignee', true);
+      uniqueList = removeDuplicates(reportedIssuesList, assignedIssuesList);
+      return uniqueList;
   }
 }
-

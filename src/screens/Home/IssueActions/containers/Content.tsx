@@ -208,7 +208,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
         name: prevIssue.reporter.name,
         id: prevIssue.assignee.id,
         comment: i18n.t('issue_was_accepted'),
-        due_at: moment(),
+        due_date: moment(),
       });
       return updatedIssue;
     });
@@ -236,7 +236,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
         //     name: prevIssue.reporter.name,
         //     id: session?.user_id,
         //     comment: reason,
-        //     due_at: moment().toNow(),
+        //     due_date: moment().toNow(),
         //     attachment: attachment.uri
         //       ? {
         //           url: '',
@@ -270,7 +270,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
           name: prevIssue.reporter.name,
           id: session?.user_id,
           comment: i18n.t('issue_was_rated'),
-          due_at: moment(),
+          due_date: moment(),
         });
         updatedIssue.rating = rating;
         return updatedIssue;
@@ -288,7 +288,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
         name: prevIssue.reporter.name,
         id: session?.user_id,
         comment: i18n.t('issue_was_appealed'),
-        due_at: moment(),
+        due_date: moment(),
       });
       updatedIssue.escalate_flag = true;
       return updatedIssue;
@@ -314,7 +314,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
         //     name: prevIssue.reporter.name,
         //     id: session?.user_id,
         //     comment: escalateComment,
-        //     due_at: moment(),
+        //     due_date: moment(),
         //     attachment: attachment.uri
         //       ? {
         //           url: '',
@@ -348,7 +348,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
         name: prevIssue.reporter.name,
         id: session?.user_id,
         comment,
-        due_at: moment(),
+        due_date: moment(),
         attachment: attachment.uri
           ? {
               url: '',
@@ -425,7 +425,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
         //     name: prevIssue.reporter.name,
         //     id: session?.user_id,
         //     comment: i18n.t('issue_was_resolved'),
-        //     due_at: moment(),
+        //     due_date: moment(),
         //     attachment: attachment.uri
         //       ? {
         //           url: '',

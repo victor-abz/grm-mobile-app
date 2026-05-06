@@ -1,42 +1,35 @@
 import { BaseLocalRepository } from '../../shared/BaseLocalRepository';
 import { ContactMedium, ContactMethod, Issue, IssueLocalModel } from '../../../models/issues/Issue';
 import { TABLE_NAMES } from '../../../migrations/tableName';
+import { parseJson } from '../../../utils/utils';
 
 export class IssueLocalRepository extends BaseLocalRepository<Issue> {
   constructor() {
     super(TABLE_NAMES.issue);
   }
+  
   fromRemoteToLocal(issue: any): any {
     if (issue && typeof issue === 'object') {
       const i = issue as Record<string, any>;
       
       return {
         ...i,
-        administrative_region: JSON.stringify(i.administrative_region),
-        assignee: JSON.stringify(i.assignee),
-        category: JSON.stringify(i.category),
-        citizen: JSON.stringify(i.citizen),
-        component: JSON.stringify(i.component),
-        issue_sub_type: JSON.stringify(i.issue_sub_type),
-        issue_type: JSON.stringify(i.issue_type),
-        reporter: JSON.stringify(i.reporter),
-        sub_component: JSON.stringify(i.sub_component),
-        status: JSON.stringify(i.status),
+        administrative_region: typeof i.administrative_region === 'object' ? JSON.stringify(i.administrative_region) : i.administrative_region,
+        assignee: typeof i.assignee === 'object' ? JSON.stringify(i.assignee) : i.assignee,
+        category: typeof i.category === 'object' ? JSON.stringify(i.category) : i.category,
+        citizen: typeof i.citizen === 'object' ? JSON.stringify(i.citizen) : i.citizen,
+        component: typeof i.component === 'object' ? JSON.stringify(i.component) : i.component,
+        issue_sub_type: typeof i.issue_sub_type === 'object' ? JSON.stringify(i.issue_sub_type) : i.issue_sub_type,
+        issue_type: typeof i.issue_type === 'object' ? JSON.stringify(i.issue_type) : i.issue_type,
+        reporter: typeof i.reporter === 'object' ? JSON.stringify(i.reporter) : i.reporter,
+        sub_component: typeof i.sub_component === 'object' ? JSON.stringify(i.sub_component) : i.sub_component,
+        status: typeof i.status === 'object' ? JSON.stringify(i.status) : i.status,
       };
     }
     return null;
   }
 
   fromLocalToRemote(localModel: IssueLocalModel): Issue {
-
-    const parseJson = (jsonString: string | null): any => {
-      try {
-        return jsonString ? JSON.parse(jsonString) : null;
-      } catch (e) {
-        console.error('Failed to parse JSON:', e);
-        return jsonString;
-      }
-    };
 
     return {
       id: localModel.id,
@@ -79,7 +72,7 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
           ? parseJson(localModel.category)
           : localModel.category,
       citizen:
-        typeof localModel.citizen === 'string' && localModel.citizen.trim().startsWith('{') //issue subtype estaba mal disenado antes, relacionaba con campo parent - pero se relaciona con el modelo issue type
+        typeof localModel.citizen === 'string' && localModel.citizen.trim().startsWith('{')
           ? parseJson(localModel.citizen)
           : localModel.citizen,
       component:
@@ -87,12 +80,12 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
           ? parseJson(localModel.component)
           : localModel.component,
       contact_information: localModel.contact_information,
-      issue_sub_type:
+      issue_sub_type: 
         typeof localModel.issue_sub_type === 'string' &&
         localModel.issue_type.trim().startsWith('{')
           ? parseJson(localModel.issue_sub_type)
           : localModel.issue_sub_type,
-      issue_type:
+      issue_type: 
         typeof localModel.issue_type === 'string' && localModel.issue_type.trim().startsWith('{')
           ? parseJson(localModel.issue_type)
           : localModel.issue_type,

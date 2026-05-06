@@ -59,33 +59,67 @@ class IssueAttachmentRemoteRepository extends BaseRemoteRepository<IssueAttachme
     deletedAt: EpochTimeStamp | null,
     parentId: string | null
   ): Promise<IssueAttachment[]> {
-      
     const params: Record<string, string> = {};
 
     if (endpointType) params.endpoint_type = endpointType;
     if (sortBy) params.sort_by = sortBy;
     if (sortOrder) params.sort_order = String(sortOrder);
-    if (page != null) params.page = String(page);
-    if (limit != null) params.pageSize = String(limit);
-
-    if (allPages) params.pageSize = params.pageSize || '1000';
-
+    
     if (createdAt) params.created_at = new Date(createdAt).toISOString();
     if (updatedAt) params.updated_at = new Date(updatedAt).toISOString();
     if (deletedAt) params.deleted_at = new Date(deletedAt).toISOString();
-
-    // Convert to URLSearchParams for the request
-    const queryParams = new URLSearchParams(params);
-      
-    const url = `${this.baseUrl}/${parentId}/attachments/`;
     
-    const requestOptions = {
-      url,
+    params.page = String(page ?? 1);
+    params.pageSize = String(limit ?? 20);
+    
+    const _url = `/issues/${parentId}/attachments/`;
+    
+    let requestOptions = {
+      url: _url,
       method: 'GET',
-      params: new URLSearchParams(queryParams),
+      params: new URLSearchParams(params),
     };
-      
+
     try {
+      let attachmentsList: IssueAttachment[] = [];
+      let lastPage = false;
+      let url = `/issues/${parentId}/attachments/`;
+      if (allPages) {
+        while (!lastPage) {
+          requestOptions = {
+            ...requestOptions,
+            url,
+            // Keep initial query params for the first request. For subsequent requests,
+            // the server-provided `next` URL already includes the querystring.
+            params: url.includes('?') ? undefined : requestOptions.params,
+          };
+
+          const response = await request({
+            ...requestOptions,
+          });
+
+          if (
+            response &&
+            response.data &&
+            response.data.results &&
+            Array.isArray(response.data.results)
+          ) {
+            attachmentsList = attachmentsList.concat(response.data.results);
+            if (!response.data.next) {
+              lastPage = true;
+            } else {
+              
+              url = response.data.next.substring(response.data.next.indexOf('/issues'));
+            }
+          } else {
+            lastPage = true;
+          }
+        }
+
+        const results: IssueAttachment[] = attachmentsList ?? [];
+        return results;
+      }
+      
       const response = await request({
         ...requestOptions,
       });

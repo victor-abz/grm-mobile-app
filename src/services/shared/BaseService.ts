@@ -1,20 +1,27 @@
 import type { Model } from '@nozbe/watermelondb';
 import { Q, RawRecord } from '@nozbe/watermelondb';
 import NetInfo from '@react-native-community/netinfo';
-import { BaseLocalRepository } from '../../repositories/shared/BaseLocalRepository';
+import { BaseLocalRepository, LocalGetAllEventInfo, LatestValueAtCurrentPage } from '../../repositories/shared/BaseLocalRepository';
 import { BaseRemoteRepository } from '../../repositories/shared/BaseRemoteRepository';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { deleteAsync } from 'expo-file-system';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
 import { databaseServiceInstance } from '../../utils/storageManager';
+import type { OfflinePagingInitialTrackingInfo, OfflinePaginatedListRequestControls } from './types';
+
 export type WatermelonId = string;
 export type CreatedResponseWithBackendId = unknown;
+
+export type EndOfList = {
+  detail: string;
+};
 
 export class BaseService<T> {
   createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][] = [];
   private isFile: boolean;
 
+  forcePaginateFromLocalNoAccessToBackendList = false;
   constructor(
     private localRepository: BaseLocalRepository<T>,
     private remoteRepository: BaseRemoteRepository<T>
@@ -41,14 +48,12 @@ export class BaseService<T> {
   }
 
   async bulkCreate(entries: T[]): Promise<void> {
-    // check if any conversion is needed
-    // for (let index = 0; index < entries.length; index++) {
-    //   const element = entries[index];
-    //   this.localRepository.fromRemoteToLocal(element)
-    // }
-
-    //TODO: ADD GLOBAL LOADING
-    this.localRepository.bulkCreate(entries);
+    let formattedEntries = entries.slice();
+    for (let index = 0; index < entries.length; index++) {
+      const element = formattedEntries[index];
+      formattedEntries[index] = this.localRepository.fromRemoteToLocal(element)
+    }
+    this.localRepository.bulkCreate(formattedEntries);
   }
 
   async replaceParentIdProperty(
@@ -110,7 +115,8 @@ export class BaseService<T> {
    * @param item WatermelonDB Model instance to upsert
    * @returns Promise<void>
    */
-  async upsert(item: Model): Promise<void> {
+  
+  async upsert(item: Model): Promise<any | null> {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
@@ -123,11 +129,11 @@ export class BaseService<T> {
         let createdResponse: Awaited<T>;
         let updatedResponse: Awaited<T>;
 
-        // Upsert on remote
+        // UPSERT ON REMOTE
         try {
           createdResponse = await this.remoteRepository.create(modelInterface);
           if (createdResponse) {
-            console.log('Remote Create successful');
+            console.log('✅ Remote Create successful');
           } else {
             console.log("Couldn't create, proceed with Update");
             updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
@@ -142,10 +148,9 @@ export class BaseService<T> {
 
         // @ts-ignore
         item.syncAt = new Date();
-        
-        // Upsert locally using WatermelonDB
+
+        // UPSERT LOCALLY USING WATERMELONDB
         if (createdResponse) {
-          // TODO: Use newly created id from backend response to upsert
           console.log(
             'CREATED RESPONSE - (Currently not being used as an entry to watermelon)',
             createdResponse
@@ -155,7 +160,6 @@ export class BaseService<T> {
           }
           return await this.localRepository.upsert(item, createdResponse?.data?.id);
         } else if (updatedResponse) {
-          //TODO: Use newly created id in new sub-items from backend response to upsert
           if (updatedResponse.data) {
             updatedResponse.data.syncAt = JSON.stringify(new Date());
           }
@@ -169,7 +173,9 @@ export class BaseService<T> {
             'Nothing in response from the backend to upsert locally, proceeding to use local modified item:',
             item
           );
-          return await this.localRepository.upsert(item);
+          const upsertResponse = await this.localRepository.upsert(item);
+
+          return upsertResponse;
         }
       } catch (err) {
         console.warn('[BaseService] Upsert failed. Reason: ', err);
@@ -207,21 +213,121 @@ export class BaseService<T> {
         );
 
         if (Array.isArray(remoteResult)) {
+          this.forcePaginateFromLocalNoAccessToBackendList = false;
           return remoteResult;
         } else {
+          this.forcePaginateFromLocalNoAccessToBackendList = true;
+
           console.warn(
             '[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval'
           );
-          return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
+
+          const getAllResponse = await this.localRepository.getAll(
+            sortBy,
+            sortOrder,
+            null,
+            null,
+            parentId,
+            page,
+            null,
+            null
+          );
+          
+          return getAllResponse.results
         }
       } catch (err) {
+        this.forcePaginateFromLocalNoAccessToBackendList = true;
         console.warn(
           '[BaseService] Remote sync failed. Will retry later. Proceeding with local retrieval. Reason: '
         );
-        return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
+        const getAllResponse = await this.localRepository.getAll(
+          sortBy,
+          sortOrder,
+          null,
+          null,
+          parentId,
+          page,
+          null,
+          null
+        );
+        return getAllResponse.results
       }
     } else {
-      return await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId);
+      this.forcePaginateFromLocalNoAccessToBackendList = true;
+      const getAllResponse = await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId, null, null, allPages);
+      return getAllResponse.results
+    }
+  }
+
+  async getMore(
+    endpointType: string | null,
+    offlinePaginatedListRequest: OfflinePaginatedListRequestControls,
+    offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<T>,
+    firstLocalPageRetry: boolean = false
+  ): Promise<{ event: LocalGetAllEventInfo, results: T[] }> {
+    try {
+      console.log('FORCE TO OFFLINE PAGINATE: ', this.forcePaginateFromLocalNoAccessToBackendList);
+      // Fetch From Remote
+      if (!this.forcePaginateFromLocalNoAccessToBackendList) {
+        const remoteResult = await this.remoteRepository.fetchMore(endpointType);
+        if (Array.isArray(remoteResult)) {
+          // Return event null indicating that a remote data fetch
+          // was made
+          return { event: null, results: remoteResult };
+        } else {
+          console.log('LOCAL PAGINATION');
+          // Fetch From Local From Latest Value
+          this.forcePaginateFromLocalNoAccessToBackendList = true;
+          // Call Paging With Latest Value Removed To Query With Q.Lte
+          const getAllResponse = await this.localRepository.getAll(
+            'intake_date',
+            'desc',
+            offlinePaginatedListRequest.pageSize,
+            null,
+            null,
+            offlinePaginatedListRequest.nextPage,
+            offlinePagingInitialTrackingInfo
+          );
+          // return { result: getAllResponse, from: 'offline' };
+          return getAllResponse
+        }
+      } else {
+        // Fetch From Local Regular Slice Paging, Except if offline current page equals 0
+        this.forcePaginateFromLocalNoAccessToBackendList = true;
+            const getAllResponse = await this.localRepository.getAll(
+          'intake_date',
+          'desc',
+          offlinePaginatedListRequest.pageSize,
+          null,
+          null,
+          offlinePaginatedListRequest.nextPage,
+          firstLocalPageRetry || offlinePaginatedListRequest.prevPage === 0
+            ? offlinePagingInitialTrackingInfo
+            : undefined
+        );
+        return getAllResponse
+      }
+    } catch (err) {
+      if (!this.forcePaginateFromLocalNoAccessToBackendList) {
+        this.forcePaginateFromLocalNoAccessToBackendList = true;
+        console.error('Pagination from remote/local failed. Retrying...');
+        try {
+          const firstLocalPageRetry = true
+          const response = await this.getMore(
+            endpointType,
+            offlinePaginatedListRequest,
+            offlinePagingInitialTrackingInfo,
+            firstLocalPageRetry
+          );
+          return response
+        } catch (error) {
+          console.error('Error');
+          console.error(error);
+        }
+
+      } else {
+        console.error('Pagination from remote/local retry failed.');
+      }
     }
   }
 
@@ -272,10 +378,21 @@ export class BaseService<T> {
     let syncPullFailed = false;
     let createdRecordsPostPushedWithNewBackendIDs = [];
 
-    // 1. Fetch newly created records
+    // 1. FETCH NEWLY CREATED RECORDS
+   
+    const nullSortBy = null;
+    const nullSortOrder = null;
+    const nullPage = null;
+    const nullLimit = null;
+    const nullUpdatedDate = null;
+    const nullCreatedDate = null;
+    const nullDeletedDate = null;
+    const nullParentId = null;
+
 
     if (parentChanges) {
       // Parent IDs available - Pulling sub-items
+      console.log('Parent IDs object available - pulling sub items');
 
       try {
         let newRecords = [];
@@ -286,14 +403,14 @@ export class BaseService<T> {
             [
               await this.remoteRepository.fetchAll(
                 endPointType,
-                null,
-                null,
-                null,
-                null,
+                nullSortBy,
+                nullSortOrder,
+                nullPage,
+                nullLimit,
                 forceFetchAllPages,
                 lastPulledAt, // created_date
-                null,
-                null,
+                nullUpdatedDate,
+                nullDeletedDate,
                 parent.id ?? null
               ),
               parent.id ?? null,
@@ -323,14 +440,14 @@ export class BaseService<T> {
             [
               await this.remoteRepository.fetchAll(
                 endPointType,
-                null,
-                null,
-                null,
-                null,
+                nullSortBy,
+                nullSortOrder,
+                nullPage,
+                nullLimit,
                 forceFetchAllPages,
-                null,
+                nullCreatedDate,
                 lastPulledAt,
-                null,
+                nullDeletedDate,
                 parent.id ?? null
               ),
               parent.id ?? null,
@@ -341,6 +458,7 @@ export class BaseService<T> {
         const updatedFormattedRecords = updatedRecords.map((item) => {
           const parentId = item[1];
           const subItemsList = item[0];
+          if (!subItemsList) return [];
           let formattedSubItems = [];
           for (let index = 0; index < subItemsList.length; index++) {
             const element = subItemsList[index];
@@ -350,7 +468,6 @@ export class BaseService<T> {
           return formattedSubItems;
         });
 
-        // tableChanges.updated = []
         tableChanges.updated = [
           ...tableChanges.updated,
           ...updatedFormattedRecords.flat().map((record) => ({
@@ -363,6 +480,14 @@ export class BaseService<T> {
         // tableChanges.updated = [];
         syncPullFailed = true;
       }
+
+      //[x]permissions alert looks like stop download file ?
+
+      //[x]check background progress in pause
+
+      // [x]Caused by: Directory
+      // 'file:///data/user/0/com.setcobj.grmapp/files//issues/397/attachments'
+      // could not be created or already exists]
 
       // // 3. Fetch deleted records (soft deletes are highly recommended for this)
 
@@ -415,18 +540,20 @@ export class BaseService<T> {
       return { changes };
     } else {
       // Parent IDs unavailable - Pulling parents
+      console.log('No Parent IDs, therefore no sub items to sync. Pulling Top Level Elements');
+
       try {
         const newRecords = await this.remoteRepository.fetchAll(
           endPointType,
-          null,
-          null,
-          null,
-          null,
+          nullSortBy,
+          nullSortOrder,
+          nullPage,
+          nullLimit,
           forceFetchAllPages,
           lastPulledAt,
-          null,
-          null,
-          null
+          nullUpdatedDate,
+          nullDeletedDate,
+          nullParentId
         );
 
         const createdFormattedRecords = newRecords.map((item) =>
@@ -444,20 +571,20 @@ export class BaseService<T> {
         syncPullFailed = true;
       }
 
-      // 2. Fetch updated records
+      // 2. FETCH UPDATED RECORDS
       if (lastPulledAt != null) {
         try {
           const updatedRecords = await this.remoteRepository.fetchAll(
             endPointType,
-            null,
-            null,
-            null,
-            null,
+            nullSortBy,
+            nullSortOrder,
+            nullPage,
+            nullLimit,
             forceFetchAllPages,
-            null,
+            nullCreatedDate,
             lastPulledAt,
-            null,
-            null
+            nullDeletedDate,
+            nullParentId
           );
 
           const updatedFormattedRecords = updatedRecords.map((item) =>
@@ -565,6 +692,7 @@ export class BaseService<T> {
     if (tableChanges.updated.length > 0) {
       console.log(`Pushing ${tableChanges.updated.length} updated records to ${tableName}`);
       for (const record of tableChanges.updated) {
+        console.log('CREATED', tableChanges.updated);
         const modelInterface = this.localRepository.fromLocalToRemote(record);
         await this.remoteRepository.update(modelInterface.id, modelInterface);
       }

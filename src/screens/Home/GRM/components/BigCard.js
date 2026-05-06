@@ -4,9 +4,10 @@ import { Card, Headline } from "react-native-paper";
 import RightChevron from "../../../../../assets/right-chevron.svg";
 const screenWidth = Dimensions.get("window").width;
 
-function BigCard({ onCardPress, image, title, icon, cardHeight = 123 }) {
+function BigCard({ onCardPress, disabled = false, image, title, icon, cardHeight = 123 }) {
   return (
     <Card
+      disabled={disabled}
       onPress={onCardPress}
       style={{
         width: screenWidth * 0.888,

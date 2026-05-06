@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button, TextInput, RadioButton } from 'react-native-paper';
-import { i18n } from "../../../../translations/i18n";
+import { i18n } from '../../../../translations/i18n';
 import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
@@ -64,7 +64,7 @@ function Content({ stepOneParams, issueAges, citizenGroups }) {
   // Combine both citizenGroups arrays if needed, or use one as source
   const allGroups = [...(_citizenGroups || [])];
   // Get unique types
-  const types = Array.from(new Set(allGroups.map((g) => g.type)));  
+  const types = Array.from(new Set(allGroups.map((g) => g.type)));
 
   return (
     <ScrollView>

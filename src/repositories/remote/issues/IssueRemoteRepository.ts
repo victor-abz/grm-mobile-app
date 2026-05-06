@@ -6,13 +6,15 @@ import config from '../../../../config';
 
 export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   private baseUrl = `${config.API_AUTH_BASE_URL}/issues`;
+  private nextReporterListPage: string = null;
+  private nextAssigneeListPage: string = null;
 
   /**
    * Fetch all issues from a dynamic endpoint.
    * @param endpointType 'assignee' | 'reporter' | etc.
    */
   async fetchAll(
-    endpointType: string | null,
+    endpointType: 'assignee' | 'reporter' | null,
     sortBy: string | null,
     sortOrder: SortOrder | null,
     page: number | null,
@@ -23,7 +25,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     deleted_date: EpochTimeStamp | null
   ): Promise<Issue[]> {
     const params: Record<string, string> = {};
-    
+
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
     if (page) params.page = page.toString();
@@ -74,7 +76,6 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       } catch (error) {
         console.error(error.message);
       }
-      
     } else {
       try {
         const response = await request({
@@ -82,22 +83,45 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
           method: 'GET',
           params: new URLSearchParams(params),
         });
-  
         const jsonData: any = response.data;
+        if (response.data && response.data.next) {
+          if (endpointType === 'reporter') {
+            this.nextReporterListPage = response.data.next;
+          } else if (endpointType === 'assignee') {
+            this.nextAssigneeListPage = response.data.next;
+          }
+        }
         return jsonData.results ?? [];
       } catch (error) {
         return Promise.reject({ message: error.message });
       }
-      
     }
+  }
 
+  async fetchMore(endpointType: 'assignee' | 'reporter'): Promise<Issue[]> {
+    const url: string | null =
+      endpointType == 'reporter' ? this.nextReporterListPage : this.nextAssigneeListPage;
+    if (!url) return [];
+
+    const response = await request({
+      url,
+      method: 'GET',
+    });
+
+    if (endpointType == 'reporter') {
+      this.nextReporterListPage = response.data.next;
+    } else {
+      this.nextAssigneeListPage = response.data.next;
+    }
+    
+    return response?.data?.results;
   }
 
   async create(item: Issue): Promise<Issue> {
     const body = {
       title: item.title,
       description: item.description,
-      status: item.status.id ?? item.status,
+      status: item.status ? (item.status.id ?? item.status) : null,
       category: item.category ? (item.category.id ?? item.category) : null,
       issue_type: item.issue_type ? (item.issue_type.id ?? item.issue_type) : null,
       issue_sub_type: item.issue_sub_type ? (item.issue_sub_type.id ?? item.issue_sub_type) : null,
@@ -177,6 +201,8 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   // Access Control:
   // Only users who are either the reporter or assignee of the issue can access this endpoint.
   async update(id: string, item: Issue): Promise<Issue> {
+    id = String(id).replace(/\\"/g, '').replace(/"/g, '');
+    
     const url = `${this.baseUrl}/${id}/update/`;
 
     const body = {
@@ -185,7 +211,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       rating: item.rating ?? undefined,
       escalation_reason: item.escalation_reason,
       research_result: item.research_result,
-      status: item.status.id,
+      status: String(item.status.id).replace(/\\"/g, '').replace(/"/g, ''),
     };
 
     const requestOptions = {

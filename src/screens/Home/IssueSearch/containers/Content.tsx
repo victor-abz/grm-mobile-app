@@ -1,21 +1,50 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, TouchableOpacity, Text, StatusBar, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  Text,
+  StatusBar,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ToggleButton } from 'react-native-paper';
 import { colors } from '../../../../utils/colors';
-import { i18n } from "../../../../translations/i18n";
+import { i18n } from '../../../../translations/i18n';
 import ListHeader from '../components/ListHeader';
 import moment from 'moment';
-import { getSessionData } from "../../../../store/ducks/authentication.duck";
+import { getSessionData } from '../../../../store/ducks/authentication.duck';
+import { Issue } from '../../../../models/issues/Issue';
+import { IssueStatus } from '../../../../models/issues/IssueStatus';
 
-function Content({ assigneeIssueList, reporterIssueList, statuses }) {
+function Content({
+  fetchMoreAssigneeIssueList,
+  fetchMoreReporterIssueList,
+  fetchMoreResolvedIssueList,
+  assigneeIssueList,
+  reporterIssueList,
+  statuses,
+  issueListLoading,
+}: {
+  fetchMoreReporterIssueList: (completeList?: Issue[]) => Promise<void>;
+  fetchMoreAssigneeIssueList: (completeList?: Issue[]) => Promise<void>;
+  fetchMoreResolvedIssueList: (completeList?: Issue[]) => Promise<void>;
+  assigneeIssueList: Issue[];
+  reporterIssueList: Issue[];
+  statuses: IssueStatus[];
+  issueListLoading: boolean;
+}) {
   const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
-  const [status, setStatus] = useState('reported');
-  const [displayedIssues, setDisplayedIssues] = useState([]);
+  const [status, setStatus] = useState<'reported' | 'assigned' | 'resolved'>('reported');
+  const [displayedIssues, setDisplayedIssues] = useState<Issue[]>([]);
   const [userId, setUserId] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment());
+  const [isListReady, setIsListReady] = useState(false);
+  const issuesListRef = useRef(null);
+  const [issueListHeight, setIssueListHeight] = useState(0);
 
   const sortByUpdatedDateDesc = (data) => {
     return data.sort(function (a, b) {
@@ -24,13 +53,17 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
   };
 
   useEffect(() => {
+    if (issuesListRef.current) setIsListReady(true);
+  }, [issuesListRef.current]);
+
+  useEffect(() => {
     getSessionData().then((sessionData) => {
       setUserId(sessionData['user_id']);
     });
   }, []);
 
   useEffect(() => {
-    let filteredIssues = [];
+    let filteredIssues: Issue[] = [];
     switch (status) {
       case 'assigned':
         filteredIssues = assigneeIssueList ?? [];
@@ -43,21 +76,26 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
       case 'resolved':
         const resolvedStatus = statuses.find((el) => el.final_status === true);
         const rejectedStatus = statuses.find((el) => el.rejected_status === true);
-        filteredIssues = [
+        filteredIssues = assigneeIssueList ? [
           ...assigneeIssueList.filter(
             (issue) =>
               issue.assignee &&
-              (issue.assignee.id === userId || issue.assignee === userId) &&
-              (issue.status.id === resolvedStatus.id || issue.status.id === rejectedStatus.id)
+              (issue.assignee.id === userId ||
+                issue.assignee === userId ||
+                String(issue.assignee.id) === String(userId) ||
+                String(issue.assignee) === String(userId)
+              ) &&
+              (issue.status.id === resolvedStatus.id ||
+                issue.status.id === rejectedStatus.id ||
+                String(issue.status.id) === String(rejectedStatus.id)
+              )
           ),
-        ];
-
+        ] : []
         filteredIssues = sortByUpdatedDateDesc(filteredIssues);
         break;
       default:
         filteredIssues = displayedIssues.map((issue) => issue);
     }
-
     setDisplayedIssues(filteredIssues);
   }, [status, assigneeIssueList, reporterIssueList]);
 
@@ -73,12 +111,13 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
             <Text style={[styles.subTitle]} numberOfLines={1}>
               {item.description}
             </Text>
-            <Text style={[styles.subTitle]}> 
+            <Text style={[styles.subTitle]}>
               {item.citizen?.name}
               {item.citizen && item.created_date && ','}{' '}
               {item.created_date && moment(item.created_date).format('DD-MMM-YYYY')}
               {item.created_date && ','}{' '}
-              {item.created_date && currentDate.diff(item.created_date, 'days')} {i18n.t('days_ago')}
+              {item.created_date && currentDate.diff(item.created_date, 'days')}{' '}
+              {i18n.t('days_ago')}
             </Text>
             <Text style={styles.subTitle}>
               {i18n.t('status_label')}:{' '}
@@ -106,9 +145,8 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
   const renderItem = ({ item }) => {
     const backgroundColor = item.id === selectedId ? '#6e3b6e' : '#f9c2ff';
     const color = item.id === selectedId ? 'white' : 'black';
-    
-    const updateIssue = (updatedIssue) =>
-    {
+
+    const updateIssue = (updatedIssue) => {
       setDisplayedIssues((prevIssues) => {
         const newIssues = prevIssues.map((issue) =>
           issue.id === updatedIssue.id ? updatedIssue : issue
@@ -120,23 +158,20 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
     return (
       <Item
         item={item}
-        onPress={() =>
-        { 
+        onPress={() => {
           navigation.navigate('IssueDetailTabs', {
             item,
             updateIssue,
             merge: true,
-          })}
-        }
+          });
+        }}
         backgroundColor={{ backgroundColor }}
         textColor={{ color }}
       />
     );
   };
 
-  const renderHeader = () => (
-    <ListHeader status={status} />
-  );
+  const renderHeader = () => <ListHeader status={status} />;
   return (
     <>
       <ToggleButton.Row
@@ -213,15 +248,50 @@ function Content({ assigneeIssueList, reporterIssueList, statuses }) {
         />
       </ToggleButton.Row>
       <FlatList
+        ref={issuesListRef}
         style={{ flex: 1 }}
         data={displayedIssues}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
-        keyExtractor={(item) => item.id.toString()}
+        ListFooterComponent={() =>
+          issueListLoading && (
+            <ActivityIndicator
+              style={{ paddingVertical: 20 }}
+              color={colors.primary}
+              size="small"
+            />
+          )
+        }
+        keyExtractor={(item, index) => String(index)}
+        bounces={true}
         extraData={selectedId}
+        onEndReached={(info) => {
+          if (displayedIssues.length > 0 && issueListHeight > 0 && issueListLoading == false) {
+            if (status == 'assigned') {
+              loadNextPageAssignee(info);
+            } else if (status == 'reported') {
+              loadNextPageReported(info);
+            } else {
+              loadNextPageResolved(info);
+            }
+          }
+        }}
+        onLayout={(e) => setIssueListHeight(e.nativeEvent.layout.height)}
       />
     </>
   );
+
+  async function loadNextPageReported(info?: { distanceFromEnd: number }) {
+    await fetchMoreReporterIssueList(reporterIssueList);
+  }
+
+  async function loadNextPageAssignee(info?: { distanceFromEnd: number }) {
+    await fetchMoreAssigneeIssueList(assigneeIssueList);
+  }
+  
+  async function loadNextPageResolved(info?: { distanceFromEnd: number }) {
+    await fetchMoreResolvedIssueList(assigneeIssueList);
+  }
 }
 
 const styles = StyleSheet.create({

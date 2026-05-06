@@ -12,8 +12,9 @@ const administrativeRegionService = new BaseService<AdministrativeRegion>(localR
 
 export async function fetchAdministrativeRegions(fetchAllPages: boolean): Promise<AdministrativeRegion[] | null> {
   try {
-    const fetchFromLocal = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);    
+    const fetchFromLocal = await getData(INITIAL_DATA_FETCHED_STORAGE_KEY);
     const response = await administrativeRegionService.getAll(null, null, fetchFromLocal, null, fetchAllPages);
+    
     if (!fetchFromLocal) {
       await administrativeRegionService.bulkCreate(response); 
       //Turn off sync global loading

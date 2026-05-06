@@ -14,7 +14,7 @@ export class IssueSubTypeLocalRepository extends BaseLocalRepository<IssueSubTyp
 
       return {
         ...i,
-        parent: JSON.stringify(i.parent),
+        parent: typeof i.parent === 'object' ? JSON.stringify(i.parent) : i.parent,
       };
     }
     return null;

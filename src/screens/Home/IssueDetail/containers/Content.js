@@ -79,7 +79,7 @@ function Content({ issue, attachments, refetchAttachment }) {
         {
           name: issue.reporter.name,
           comment: newComment,
-          due_at: commentDate,
+          due_date: commentDate,
         },
       ];
       setComments([
@@ -87,7 +87,7 @@ function Content({ issue, attachments, refetchAttachment }) {
         {
           name: issue.reporter.name,
           comment: newComment,
-          due_at: commentDate,
+          due_date: commentDate,
         },
       ]);
       setNewComment('');

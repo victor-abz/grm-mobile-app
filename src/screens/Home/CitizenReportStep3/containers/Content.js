@@ -40,6 +40,7 @@ function Content({ issue, session, profile }) {
   
   const submitIssue = async () =>
   {  
+    
     const randomCodeNumber = Math.floor(Math.random() * 1000);
     const _issue = {
       tracking_code: `${randomWord(SAMPLE_WORDS)}${randomCodeNumber}`,
@@ -89,10 +90,12 @@ function Content({ issue, session, profile }) {
       ...(issue?.attachment ? [issue.attachment] : []),
       ...(issue?.recording ? [issue.recording] : []),
     ];
-
+    
+    
     if (attachments) {
       for (let index = 0; index < attachments.length; index++) {
         const element = attachments[index];
+        
          await createAttachment({
            file_name: element.name,
            is_audio: element.isAudio,
@@ -105,7 +108,6 @@ function Content({ issue, session, profile }) {
          });
       }
     }
-    
     setSubmitting(false);
     if (createdIssue) {
       navigation.navigate('CitizenReportStep4', { issue: _issue });
@@ -133,7 +135,6 @@ function Content({ issue, session, profile }) {
         <Text style={styles.stepSubtitle}>{i18n.t('step_3_confirmation')}</Text>
         <Text style={styles.stepDescription}>{i18n.t('step_3_subtitle')}</Text>
       </View>
-
 
       {/* STEP 3 SUMMARY */}
       <View style={styles.cardConfirm}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Dimensions, Platform, View } from 'react-native';
@@ -10,10 +10,11 @@ const screenHeight = Dimensions.get('window').height;
 function CustomDropDownPicker({
   value,
   items,
-  listMode = 'SCROLLVIEW',
+  listMode,
   scrollViewProps = {
     nestedScrollEnabled: true,
   },
+  flatListProps,
   setPickerValue,
   setItems,
   searchable = false,
@@ -30,6 +31,27 @@ function CustomDropDownPicker({
 }) {
   const [dropdownVisible, setDropdownVisible] = React.useState(false);
   const [open, setOpen] = useState(false);
+
+  const effectiveListMode = useMemo(() => {
+    // SCROLLVIEW renders all items at once (slow with large datasets).
+    // FLATLIST virtualizes and is much faster for hundreds/thousands of rows.
+    if (listMode) return listMode;
+    return Array.isArray(items) && items.length > 150 ? 'FLATLIST' : 'SCROLLVIEW';
+  }, [items, listMode]);
+
+  const effectiveFlatListProps = useMemo(
+    () => ({
+      removeClippedSubviews: true,
+      initialNumToRender: 16,
+      maxToRenderPerBatch: 24,
+      windowSize: 8,
+      updateCellsBatchingPeriod: 50,
+      keyboardShouldPersistTaps: 'handled',
+      ...(flatListProps ?? {}),
+    }),
+    [flatListProps]
+  );
+
   return (
     <View
       style={[
@@ -80,8 +102,9 @@ function CustomDropDownPicker({
         setOpen={setOpen}
         setValue={(newValue) => setPickerValue(newValue)}
         setItems={(newItems) => setItems(newItems)}
-        listMode={listMode}
+        listMode={effectiveListMode}
         scrollViewProps={scrollViewProps}
+        flatListProps={effectiveFlatListProps}
       />
     </View>
   );

@@ -8,15 +8,19 @@ export type Syncable = {
     status?: SyncStatus
   ): Promise<Model[]>;
   pullChanges({
-    tableName, lastPulledAt, parentChanges: [],
+    tableName,
+    lastPulledAt,
+    forceFetchAllPages,
+    parentChanges: [],
   }: {
     tableName: string;
     lastPulledAt: any;
-    parentChanges?: { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[]; };
+    forceFetchAllPages: boolean;
+    parentChanges?: { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] };
   }): Promise<{
     changes: {
-      issue: { tableName: { deleted: any[]; created: any[]; updated: any[]; }; };
-      tableName: { deleted: any[]; created: any[]; updated: any[]; };
+      issue: { tableName: { deleted: any[]; created: any[]; updated: any[] } };
+      tableName: { deleted: any[]; created: any[]; updated: any[] };
     };
     timestamp: number;
     createdRecordsPostPushedWithNewBackendIDs: [CreatedResponseWithBackendId, WatermelonId][];
@@ -25,3 +29,13 @@ export type Syncable = {
   tableName: string;
   fetchAllParents?(tableName: string): Promise<Model[]>;
 };
+
+export type OfflinePaginatedListRequestControls = {
+  prevPage: number;
+  nextPage: number;
+  pageSize: number;
+};export type OfflinePagingInitialTrackingInfo<T> = {
+  fieldName: string;
+  latestValue: T;
+};
+

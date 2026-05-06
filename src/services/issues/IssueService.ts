@@ -1,36 +1,58 @@
 import { BaseService } from '../shared/BaseService';
+import { OfflinePagingInitialTrackingInfo } from '../shared/types';
 import { IssueRemoteRepository } from '../../repositories/remote/issues/IssueRemoteRepository';
 import { IssueLocalRepository } from '../../repositories/local/issues/IssueLocalRepository';
 import { Issue } from '../../models/issues/Issue';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { Syncable } from '../shared/types';
+import { OfflinePaginatedListRequestControls } from '../shared/types';
+import { LocalGetAllEventInfo } from '../../repositories/shared/BaseLocalRepository';
 
 const localRepository = new IssueLocalRepository();
 const remoteRepository = new IssueRemoteRepository();
 
 const issueService = new BaseService<Issue>(localRepository, remoteRepository);
 
-export async function fetchIssueList(endpointType: string): Promise<Issue[] | null> {
+export async function fetchIssueList(endpointType: string, fetchAll: boolean = false): Promise<Issue[] | null> {
   try {
     const issueList = await issueService.getAll(
       null,
       endpointType,
       null,
       null,
-      null,
-      'updated_date',
-      'asc'
+      fetchAll,
+      'intake_date',
+      'desc'
     );
-
     return issueList;
   } catch (error) {
     console.error('Error syncing issues:', error);
   }
 }
 
+export async function fetchMoreIssueList(
+  endpointType: string,
+  offlinePaginatedListControlsRequest: OfflinePaginatedListRequestControls,
+  offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<Issue>
+): Promise<{
+  event: LocalGetAllEventInfo | undefined;
+  results: Issue[];
+} | null> {
+  try {
+    const issueList = await issueService.getMore(
+      endpointType,
+      offlinePaginatedListControlsRequest,
+      offlinePagingInitialTrackingInfo
+    );
+    return issueList;
+  } catch (error) {
+    console.error('Error fetching more issues. Reason: ', error);
+  }
+}
+
 export async function createIssue(issue: Issue): Promise<Issue | null> {
   try {
-    const newIssue = await issueService.upsert(issue);
+    const newIssue: any = await issueService.upsert(issue);
     return newIssue;
   } catch (error) {
     console.error('Error creating Issue:', error);
@@ -39,7 +61,7 @@ export async function createIssue(issue: Issue): Promise<Issue | null> {
 
 export async function updateIssue(issue: Issue): Promise<Issue | null> {
   try {
-    const updatedIssue = await issueService.upsert(issue);
+    const updatedIssue: any = await issueService.upsert(issue);
     return updatedIssue;
   } catch (error) {
     console.error('Error Updating Issue:', error);
