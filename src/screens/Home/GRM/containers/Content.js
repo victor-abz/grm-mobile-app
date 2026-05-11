@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, Text } from 'react-native';
+import { View, ScrollView, Text, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import SmallCard from '../components/SmallCard';
 import BigCard from '../components/BigCard';
@@ -10,7 +10,6 @@ import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
 import { i18n } from '../../../../translations/i18n';
 import { useSelector } from 'react-redux';
 import CustomLoadingSpinner from '../../../../components/CustomLoadingSpinner/CustomLoadingSpinner';
-import { colors } from '../../../../utils/colors';
 
 function Content() {
   const navigation = useNavigation();
@@ -48,7 +47,8 @@ function Content() {
             icon={<TeamWorkIcon />}
             style={{
               marginBottom: 18,
-              minHeight: 160,
+              minHeight: Dimensions.get('window').width < 400 ? 130 : 160,
+
               width: '100%',
               borderRadius: 20,
               shadowColor: '#000',
@@ -66,7 +66,7 @@ function Content() {
             icon={<SyncIcon />}
             style={{
               marginBottom: 18,
-              minHeight: 160,
+              minHeight: Dimensions.get('window').width < 400 ? 130 : 160,
               width: '100%',
               borderRadius: 20,
               shadowColor: '#000',
@@ -78,7 +78,7 @@ function Content() {
           />
         </View>
         <View>
-          <View style={{ flex: 1, marginTop: 50 }}>
+          <View style={{ flex: 1, marginTop: (Dimensions.get('window').width < 400) ? 0 : 50, }}>
             <Text
               style={{
                 color: '#999999',
