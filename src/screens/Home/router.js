@@ -288,6 +288,16 @@ function HomeRouter() {
       <Tab.Screen
         name="Dashboard"
         options={{
+          // headerShown: false,
+          headerTitleStyle: {
+            fontFamily: 'Poppins_600SemiBold',
+            fontSize: 22,
+            fontWeight: '600',
+            color: '#0F172A',
+            letterSpacing: 0.2,
+          },
+          headerStyle: { elevation: 0, borderBottomColor: '#E5E7EB', borderBottomWidth: 1 },
+
           tabBarActiveTintColor: colors.primary,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedFeatherIcon
@@ -334,6 +344,16 @@ function HomeRouter() {
         name="Profile"
         options={{
           tabBarActiveTintColor: colors.primary,
+          // headerShown: false,
+          headerTitleStyle: {
+            fontFamily: 'Poppins_600SemiBold',
+            fontSize: 22,
+            fontWeight: '600',
+            color: '#0F172A',
+            letterSpacing: 0.2,
+          },
+          headerStyle: { elevation: 0, borderBottomColor: '#E5E7EB', borderBottomWidth: 1 },
+          // headerShown: false,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedFeatherIcon
               pose={focused ? 'focused' : 'unfocused'}

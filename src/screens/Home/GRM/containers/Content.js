@@ -10,6 +10,7 @@ import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
 import { i18n } from '../../../../translations/i18n';
 import { useSelector } from 'react-redux';
 import CustomLoadingSpinner from '../../../../components/CustomLoadingSpinner/CustomLoadingSpinner';
+import { colors } from '../../../../utils/colors';
 
 function Content() {
   const navigation = useNavigation();
@@ -47,7 +48,7 @@ function Content() {
             icon={<TeamWorkIcon />}
             style={{
               marginBottom: 18,
-              minHeight: 160,
+              minHeight: 130,
               width: '100%',
               borderRadius: 20,
               shadowColor: '#000',
@@ -65,7 +66,7 @@ function Content() {
             icon={<SyncIcon />}
             style={{
               marginBottom: 18,
-              minHeight: 160,
+              minHeight: 130,
               width: '100%',
               borderRadius: 20,
               shadowColor: '#000',
@@ -76,55 +77,75 @@ function Content() {
             }}
           />
         </View>
+        <View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                color: '#999999',
+                fontSize: 15,
+                fontWeight: 'bold',
+                padding: 15,
+                textTransform: 'uppercase',
+                borderBottomWidth: 1,
+                borderBottomColor: colors.lightgray,
+              }}
+            >
+              {i18n.t('account_insights')}
+            </Text>
+          </View>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginVertical: 12,
-            borderRadius: 20,
-            backgroundColor: '#f9f9f9',
-            padding: 12,
-            alignItems: 'center',
-            minHeight: 110,
-            width: '100%',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 5,
-            elevation: 2,
-          }}
-        >
-          <SmallCard
-            image={require('../../../../../assets/BG_1.png')}
-            onCardPress={() => navigation.navigate('Statistics')}
-            title={i18n.t('diagnostics')}
-            icon={<Chart />}
+          {/* Separator */}
+          <View style={{ width: '100%', height: 1, backgroundColor: '#E5E7EB', marginBottom: 8 }} />
+
+          <View
             style={{
-              flex: 1,
-              marginRight: 8,
-              minWidth: 130,
-              borderRadius: 14,
-              backgroundColor: 'white',
-              elevation: 1,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginVertical: 12,
+              borderRadius: 20,
+              backgroundColor: '#F3F4F6', // a soft modern gray, subtle lift from white
+
+              padding: 12,
+              alignItems: 'center',
+              minHeight: 110,
+              width: '100%',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 5,
+              elevation: 2,
             }}
-          />
-          <SmallCard
-            image={require('../../../../../assets/BG_2.png')}
-            onCardPress={() => alert('Upcoming feature')}
-            title={i18n.t('information')}
-            icon={<FileIcon />}
-            style={{
-              flex: 1,
-              marginLeft: 8,
-              minWidth: 130,
-              borderRadius: 14,
-              backgroundColor: 'white',
-              elevation: 1,
-            }}
-          />
+          >
+            <SmallCard
+              image={require('../../../../../assets/BG_1.png')}
+              onCardPress={() => navigation.navigate('Statistics')}
+              title={i18n.t('diagnostics')}
+              icon={<Chart />}
+              style={{
+                flex: 1,
+                marginRight: 8,
+                minWidth: 130,
+                borderRadius: 14,
+                backgroundColor: 'white',
+                elevation: 1,
+              }}
+            />
+            <SmallCard
+              image={require('../../../../../assets/BG_2.png')}
+              onCardPress={() => alert('Upcoming feature')}
+              title={i18n.t('information')}
+              icon={<FileIcon />}
+              style={{
+                flex: 1,
+                marginLeft: 8,
+                minWidth: 130,
+                borderRadius: 14,
+                backgroundColor: 'white',
+                elevation: 1,
+              }}
+            />
+          </View>
         </View>
-
       </ScrollView>
     </View>
   );
