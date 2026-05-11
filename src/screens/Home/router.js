@@ -288,6 +288,7 @@ function HomeRouter() {
       <Tab.Screen
         name="Dashboard"
         options={{
+          tabBarActiveTintColor: colors.primary,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedFeatherIcon
               pose={focused ? 'focused' : 'unfocused'}
@@ -299,9 +300,10 @@ function HomeRouter() {
         }}
         component={GRM}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Notifications"
         options={{
+          tabBarActiveTintColor: colors.primary,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedIonicons
               pose={focused ? 'focused' : 'unfocused'}
@@ -312,10 +314,11 @@ function HomeRouter() {
           ),
         }}
         component={NotificationsStackScreen}
-      />
-      <Tab.Screen
+      /> */}
+      {/* <Tab.Screen
         name="Diagnostics"
         options={{
+          tabBarActiveTintColor: colors.primary,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedIonicons
               pose={focused ? 'focused' : 'unfocused'}
@@ -326,10 +329,11 @@ function HomeRouter() {
           ),
         }}
         component={Diagnostics}
-      />
+      /> */}
       <Tab.Screen
         name="Profile"
         options={{
+          tabBarActiveTintColor: colors.primary,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedFeatherIcon
               pose={focused ? 'focused' : 'unfocused'}
