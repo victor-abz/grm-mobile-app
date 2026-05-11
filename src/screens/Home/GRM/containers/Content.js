@@ -48,7 +48,7 @@ function Content() {
             icon={<TeamWorkIcon />}
             style={{
               marginBottom: 18,
-              minHeight: 130,
+              minHeight: 160,
               width: '100%',
               borderRadius: 20,
               shadowColor: '#000',
@@ -66,7 +66,7 @@ function Content() {
             icon={<SyncIcon />}
             style={{
               marginBottom: 18,
-              minHeight: 130,
+              minHeight: 160,
               width: '100%',
               borderRadius: 20,
               shadowColor: '#000',
@@ -78,16 +78,16 @@ function Content() {
           />
         </View>
         <View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, marginTop: 50 }}>
             <Text
               style={{
                 color: '#999999',
                 fontSize: 15,
                 fontWeight: 'bold',
-                padding: 15,
+                paddingHorizontal: 15,
+                paddingTop: 25,
+                paddingBottom: 0,
                 textTransform: 'uppercase',
-                borderBottomWidth: 1,
-                borderBottomColor: colors.lightgray,
               }}
             >
               {i18n.t('account_insights')}
@@ -95,7 +95,7 @@ function Content() {
           </View>
 
           {/* Separator */}
-          <View style={{ width: '100%', height: 1, backgroundColor: '#E5E7EB', marginBottom: 8 }} />
+          {/* <View style={{ width: '100%', height: 1, backgroundColor: '#E5E7EB', marginBottom: 8 }} /> */}
 
           <View
             style={{
@@ -103,17 +103,10 @@ function Content() {
               justifyContent: 'space-between',
               marginVertical: 12,
               borderRadius: 20,
-              backgroundColor: '#F3F4F6', // a soft modern gray, subtle lift from white
-
-              padding: 12,
+              padding: 6,
               alignItems: 'center',
               minHeight: 110,
               width: '100%',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 5,
-              elevation: 2,
             }}
           >
             <SmallCard
@@ -145,6 +138,7 @@ function Content() {
               }}
             />
           </View>
+          {/* <View style={{ width: '100%', height: 1, backgroundColor: '#E5E7EB', marginBottom: 8 }} /> */}
         </View>
       </ScrollView>
     </View>
