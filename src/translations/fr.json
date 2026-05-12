@@ -7,6 +7,10 @@
 
   //Headers
   "citizen_input_header": "Nouvel enregistrement",
+  
+  //Tabs
+  "dashboard": "Dashboard",
+  "profile": "Profil",
   //Onboarding
   "used_app_before": "Avez-vous vos identifiants de connexion ?",
   "yes": "OUI",

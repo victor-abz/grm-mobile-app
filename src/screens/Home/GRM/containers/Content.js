@@ -17,6 +17,27 @@ function Content() {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <View
+        style={{
+          elevation: 0,
+          borderBottomColor: '#E5E7EB',
+          borderBottomWidth: 1,
+        }}
+      >
+        <Text
+          style={{
+            letterSpacing: 0.2,
+            paddingVertical: 12,
+            color: '#111827',
+            fontSize: Dimensions.get('window').width < 400 ? 18 : 22,
+            fontWeight: 'bold',
+            paddingHorizontal: 25,
+            textTransform: 'uppercase',
+          }}
+        >
+          {i18n.t('dashboard')}
+        </Text>
+      </View>
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -78,7 +99,7 @@ function Content() {
           />
         </View>
         <View>
-          <View style={{ flex: 1, marginTop: (Dimensions.get('window').width < 400) ? 0 : 50, }}>
+          <View style={{ flex: 1, marginTop: Dimensions.get('window').width < 400 ? 0 : 50 }}>
             <Text
               style={{
                 color: '#999999',
