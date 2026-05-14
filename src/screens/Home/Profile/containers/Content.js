@@ -3,7 +3,6 @@ import { View, Text } from 'react-native';
 import { i18n } from "../../../../translations/i18n";
 import { useDispatch } from 'react-redux';
 import styles from './Content.style';
-import UserAvatar from '@muhzi/react-native-user-avatar';
 import ProfileItem from '../components/ProfileItem';
 import { logout } from '../../../../store/ducks/authentication.duck';
 import { Button } from 'react-native-paper';
@@ -54,7 +53,26 @@ function Content({ issues, session, profile, department, statuses }) {
   return (
     <View>
       <View style={styles.containerA}>
-        <UserAvatar userName={session.username} src={photo} size={120} />
+        <View
+          style={{
+            borderRadius: 240,
+            height: 120,
+            width: 120,
+            backgroundColor: colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {session.username && session.username.length > 0 ? (
+            <Text style={{ color: 'white', fontWeight: '500', fontSize: 30 }}>
+              {session.username.charAt(0).toUpperCase()}
+            </Text>
+          ) : (
+            <Text style={{ color: 'white', fontWeight: '500', fontSize: 30 }}>
+              ?
+            </Text>
+          )}
+        </View>
       </View>
       <Text style={styles.listHeader}>{i18n.t('your_complaint_count')}</Text>
       <View style={styles.cardContainer}>

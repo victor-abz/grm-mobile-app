@@ -7,7 +7,6 @@ import { styles } from './Profile.style';
 import { useIssue } from '../../../hooks/issues/useIssue';
 import { ActivityIndicator } from 'react-native-paper';
 import { colors } from '../../../utils/colors';
-import { Dimensions } from 'react-native';
 import { i18n } from '../../../translations/i18n';
 
 function Profile() {
@@ -20,25 +19,8 @@ function Profile() {
   
   return (
     <SafeAreaView style={styles.container}>
-      <View
-        style={{
-          elevation: 0,
-          borderBottomColor: '#E5E7EB',
-          borderBottomWidth: 1,
-        }}
-      >
-        <Text
-          style={{
-            fontFamily: 'Poppins_600SemiBold',
-            letterSpacing: 0.2,
-            paddingVertical: 12,
-            color: '#111827',
-            fontSize: Dimensions.get('window').width < 400 ? 18 : 22,
-            fontWeight: 'bold',
-            paddingHorizontal: 25,
-            textTransform: 'uppercase',
-          }}
-        >
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerText}>
           {i18n.t('profile')}
         </Text>
       </View>
@@ -60,3 +42,4 @@ function Profile() {
 }
 
 export default Profile;
+
