@@ -179,7 +179,7 @@ function Content({
 
   const renderHeader = () => <ListHeader status={status} />;
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <ToggleButton.Row
         style={{ justifyContent: 'space-between', padding: 10 }}
         onValueChange={(value) => {
@@ -285,7 +285,7 @@ function Content({
         }}
         onLayout={(e) => setIssueListHeight(e.nativeEvent.layout.height)}
       />
-    </>
+    </View>
   );
 
   async function loadNextPageReported(info?: { distanceFromEnd: number }) {

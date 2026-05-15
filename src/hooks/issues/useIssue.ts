@@ -29,7 +29,9 @@ export function useIssue(fetchIssues: boolean = true)  {
   const [endOfReportedListReached, setEndOfReportedListReached] = useState(false);
   const [endOfAssigneeListReached, setEndOfAssigneeListReached] = useState(false);
   const [endOfResolvedListReached, setEndOfResolvedListReached] = useState(false);
-  
+  const [filteredAssigneeList, setFilteredAssigneeList] = useState<Issue[]>();
+  const [filteredReporterList, setFilteredReporterList] = useState<Issue[]>();
+  const  [searchTerm, setSearchTerm] = useState(null)
   const [reporterOfflinePaginatedListRequestControls, setReporterOfflinePaginatedListRequestControls] = useState({
     prevPage: INITIAL_PREV_PAGE,
     nextPage: INITIAL_NEXT_PAGE,
@@ -61,7 +63,7 @@ export function useIssue(fetchIssues: boolean = true)  {
     if (reporterIssueList && assigneeIssueList) {
       setLoading(false);
     }
-  }, [reporterIssueList, assigneeIssueList]);
+  }, [searchTerm, reporterIssueList, assigneeIssueList]);
 
   useEffect(() => {
     const issuesCollection = database.get(TABLE_NAMES.issue);
@@ -88,10 +90,10 @@ export function useIssue(fetchIssues: boolean = true)  {
 
   useEffect(() => {
     if (assigneeIssueList === undefined) {
-      fetchAssigneeIssueList();
+      fetchAssigneeIssueList(searchTerm);
     }
     if (reporterIssueList === undefined) {
-      fetchReporterIssueList();
+      fetchReporterIssueList(searchTerm);
     }
   }, [assigneeIssueList, reporterIssueList])
   
@@ -116,7 +118,7 @@ export function useIssue(fetchIssues: boolean = true)  {
     }
   }
 
-  const fetchReporterIssueList = async () => {
+  const fetchReporterIssueList = async (searchTerm = null) => {
     setLoading(true);
     if (!reporterIssueList) {
       const issuesList = await IssueService.fetchIssueList('reporter');
@@ -362,15 +364,36 @@ export function useIssue(fetchIssues: boolean = true)  {
     const updatedIssue = await IssueService.updateIssue(issue)
     return updatedIssue;
   }
-    
+
+  const fetchTrackingCodeIssueList = (term: string | null) => {
+      console.log(term)
+    if (!term || term.length === 0) {
+      setFilteredAssigneeList(assigneeIssueList);
+      setFilteredReporterList(reporterIssueList);
+      return;
+    }
+    const lowerTerm = term.toLowerCase();
+    setFilteredAssigneeList(
+      assigneeIssueList?.filter(issue =>
+        issue.tracking_code?.toLowerCase().includes(lowerTerm)
+      )
+    );
+    setFilteredReporterList(
+      reporterIssueList?.filter(issue =>
+        issue.tracking_code?.toLowerCase().includes(lowerTerm)
+      )
+    );
+  };
+
   return {
-    assigneeIssueList,
-    reporterIssueList,
+    assigneeIssueList: filteredAssigneeList ?? assigneeIssueList,
+    reporterIssueList: filteredReporterList ?? reporterIssueList,
     loading,
     createIssue,
     updateIssue,
     fetchMoreReporterIssueList: fetchMoreReporterIssuesList,
     fetchMoreAssigneeIssueList: fetchMoreAssigneeIssuesList,
     fetchMoreResolvedIssueList: fetchMoreResolvedIssueList,
+    fetchTrackingCodeIssueList
   };
 }

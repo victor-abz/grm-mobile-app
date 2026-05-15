@@ -193,7 +193,8 @@ export class BaseService<T> {
     page: number | null = null,
     allPages: boolean | null = null,
     sortBy: string = null,
-    sortOrder: SortOrder = null
+    sortOrder: SortOrder = null,
+    search_term: string | null = null
   ): Promise<T[]> {
     const state = await NetInfo.fetch();
 
@@ -209,7 +210,8 @@ export class BaseService<T> {
           null,
           null,
           null,
-          parentId
+          parentId,
+          search_term
         );
 
         if (Array.isArray(remoteResult)) {
@@ -411,7 +413,8 @@ export class BaseService<T> {
                 lastPulledAt, // created_date
                 nullUpdatedDate,
                 nullDeletedDate,
-                parent.id ?? null
+                parent.id ?? null,
+                null
               ),
               parent.id ?? null,
             ],
@@ -448,7 +451,8 @@ export class BaseService<T> {
                 nullCreatedDate,
                 lastPulledAt,
                 nullDeletedDate,
-                parent.id ?? null
+                parent.id ?? null,
+                null
               ),
               parent.id ?? null,
             ],
@@ -553,7 +557,8 @@ export class BaseService<T> {
           lastPulledAt,
           nullUpdatedDate,
           nullDeletedDate,
-          nullParentId
+          nullParentId,
+          null
         );
 
         const createdFormattedRecords = newRecords.map((item) =>
@@ -584,7 +589,8 @@ export class BaseService<T> {
             nullCreatedDate,
             lastPulledAt,
             nullDeletedDate,
-            nullParentId
+            nullParentId,
+            null
           );
 
           const updatedFormattedRecords = updatedRecords.map((item) =>

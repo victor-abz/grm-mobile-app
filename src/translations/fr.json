@@ -260,4 +260,5 @@
   "stat_nb_issue_by_issue_component": "Le nombre de plainte par Composante",
   "stat_nb_issue_by_issue_sub_component": "Le nombre de plainte par Sous Composante",
   "stat_nb_issue_by_per_date": "Le nombre de plainte par jour",
+  "no_results": "Aucun résultat trouvé"
 }
