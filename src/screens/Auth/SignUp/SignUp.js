@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { i18n } from "../../../translations/i18n";
 import { Controller, useForm } from 'react-hook-form';
 import {
   Alert,
@@ -21,16 +20,17 @@ import {
 } from 'react-native-confirmation-code-field';
 import { ActivityIndicator, Button, Provider, TextInput } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
+import { i18n } from "../../../translations/i18n";
 import styles from './SignUp.style';
 
-import { signUp } from '../../../store/ducks/authentication.duck';
 import BigCheck from '../../../../assets/big-check.svg';
 import CodeLogo from '../../../../assets/code_logo.svg';
 import SuccessLogo from '../../../../assets/success_logo.svg';
-import { register } from '../../../services/authService';
+import { validateCode } from "../../../services/authService";
 import { colors } from '../../../utils/colors';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
+import {  login, signUp } from "../../../store/ducks/authentication.duck";
 
 const CELL_COUNT = 6;
 
@@ -54,27 +54,22 @@ function SignUp({ route }) {
   const hideModal = () => setCodeModal(false);
   const hideSuccessModal = (response) => {
     setSuccessModal(false);
-    dispatch(signUp(response));
   };
   const onSignUp = async (code) => {
     setLoading(true);
     // handle code with backend, check if valid
-    const response = await register({ ...credentials, validation_code: code });
-    
+    const response = await validateCode({ username: credentials.email, password: credentials.password, code });
     if (response.error) {
         setLoading(false);
-        Alert.alert('Sign Up Error', response?.non_field_errors[0], [{ text: 'OK' }], {
+        Alert.alert('Sign Up Error', response.error, [{ text: 'OK' }], {
           cancelable: false,
         });
         return;
     }
     setLoading(false);
-    setSuccessModal(true);
-    setTimeout(() => {
-      hideSuccessModal(response);
-    }, 3000);
-    
-    hideModal();
+    dispatch(login(
+      response,
+    ));
   };
   
   const onPressSignUp = (data) => {

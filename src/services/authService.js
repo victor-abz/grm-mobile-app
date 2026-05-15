@@ -1,5 +1,5 @@
-import config from "../../config";
-import request from "../utils/request";
+import config from '../../config';
+import request from '../utils/request';
 
 const baseURL = config.API_AUTH_BASE_URL || '';
 export { baseURL };
@@ -14,16 +14,32 @@ function handleErrors(response)
 }
 
 export async function register(data) {
-    const myHeaders = new Headers();
-    myHeaders.append('Content-Type', 'application/json');
-    const requestOptions = {
-      method: 'POST',
-      headers: myHeaders,
-      body: JSON.stringify(data),
-    };
-    const response = fetch(`${baseURL}/authentication/register/`, requestOptions)
-    const result = handleErrors(response)      
-    return await result.json();
+  const myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+  const requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    body: JSON.stringify(data),
+  };
+  const response = await fetch(`${baseURL}/authentication/register/`, requestOptions);
+  // eslint-disable-next-line no-return-await
+  return await response.json();
+}
+
+export async function validateCode(data) {
+  const myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+  const requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    body: JSON.stringify(data),
+  };
+  // eslint-disable-next-line no-console
+  const fetchResponse = await fetch(`${baseURL}/authentication/facilitator-credentials/update/`, {
+    ...requestOptions,
+  });
+  // eslint-disable-next-line no-return-await
+  return await fetchResponse.json();
 }
 
 export async function fetchAuthCredentials(data) {
@@ -43,7 +59,7 @@ export async function fetchAuthCredentials(data) {
     }
 }
   
-export async function fetchFacilitatorProfile(data) {
+export async function fetchFacilitatorProfile() {
   const url = `/authentication/facilitator-profile/`;
   const requestOptions = {
     url,
