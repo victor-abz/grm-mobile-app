@@ -101,7 +101,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
   const [isRecordResolutionEnabled, setIsRecordResolutionEnabled] = useState(false);
   const [isRateAppealEnabled, setIsRateAppealEnabled] = useState(false);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(5);
   const [hasActionsOrResolved, setHasActionsOrResolved] = useState(false);
   const [attachment, setAttachment] = useState({});
   const [recordingURI, setRecordingURI] = useState();
@@ -302,8 +302,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
       const updatedIssue = {
         ...prevIssue,
         escalate_flag: true,
-        //leave it singular as a string
-        escalation_reason: '',
+        escalation_reason: escalateComment,
 
         // TODO: Use new comment services to add
         // the following commented property
@@ -414,7 +413,8 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
 
   const recordResolutionConfirmation = () => {
     const newStatus = getStatus('final_status');
-    setIssue(async (prevIssue) => {
+    
+    setIssue((prevIssue) => {
       const updatedIssue = {
         ...prevIssue,
         research_result: resolution,

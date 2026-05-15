@@ -137,13 +137,15 @@ export class BaseService<T> {
           } else {
             console.log("Couldn't create, proceed with Update");
             updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
-            console.log(updatedResponse ? 'Remote Update successful' : 'Failed to update remotely');
+            console.log(
+              updatedResponse ? '✅ Remote Update successful' : 'Failed to update remotely'
+            );
           }
         } catch (createErr: any) {
           // If already exists, update instead
           console.log("Couldn't create, proceed with Update. Reason: ", createErr);
           updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
-          console.log(updatedResponse ? 'Remote Update successful' : 'Failed to update remotely');
+          console.log(updatedResponse ? '✅ Remote Update successful' : 'Failed to update remotely');
         }
 
         // @ts-ignore
