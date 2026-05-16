@@ -28,6 +28,8 @@ import { styles } from './Content.styles';
 import { ConfidentialityChoices } from '../../../../utils/constants';
 import { IssueComment } from '../../../../models/issues/IssueComment';
 import { useIssueComments } from '../../../../hooks/issues/useIssueComments';
+import { setNewCommentsFlag } from '../../../../store/ducks/global.duck';
+import { useDispatch } from 'react-redux';
 
 type ConfirmationDialogType =
   | 'record_steps'
@@ -100,6 +102,7 @@ function Content({ session, profile, currentIssue, navigation, loading, statuses
   const [hasActionsOrResolved, setHasActionsOrResolved] = useState(false);
   const [attachment, setAttachment] = useState({});
   const [recordingURI, setRecordingURI] = useState();
+  const dispatch = useDispatch()
 
   const goToDetails = () => navigation.jumpTo('IssueDetail');
   const goToHistory = () => {
@@ -211,6 +214,7 @@ function Content({ session, profile, currentIssue, navigation, loading, statuses
     };
     await createIssueComment(newComment);
     setComment('');
+    dispatch(setNewCommentsFlag(true))
   };
 
   const acceptIssue = async () => {

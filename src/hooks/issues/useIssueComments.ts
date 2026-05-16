@@ -19,6 +19,13 @@ export function useIssueComments(parentId: string, disabledList = false) {
     fetchIssueCommentsPage(0);
   }, [parentId]);
 
+  const refreshComments = () => {
+    setIssueCommentsList([]);
+    setPage(0);
+    setHasMore(true);
+    fetchIssueCommentsPage(0);
+  }
+
   const fetchIssueCommentsPage = async (pageToLoad: number) => {
     setLoading(true);
     const comments = await IssueCommentService.fetchIssueCommentList(parentId, pageToLoad, PAGE_SIZE);
@@ -92,6 +99,14 @@ export function useIssueComments(parentId: string, disabledList = false) {
     setLoading(false);
   };
 
-  return { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment };
+  return {
+    issueCommentsList,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    createIssueComment,
+    refreshComments,
+  };
 }
 
