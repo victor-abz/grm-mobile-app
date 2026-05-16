@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import * as IssueCommentService from '../../services/issues/IssueCommentService';
 import { IssueComment } from "../../models/issues/IssueComment";
 
-export function useIssueComments(parentId: string) {
+export function useIssueComments(parentId: string, disabledList = false) {
   const PAGE_SIZE = 20;
   const [issueCommentsList, setIssueCommentsList] = useState<IssueComment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -12,6 +12,7 @@ export function useIssueComments(parentId: string) {
 
   useEffect(() => {
     // initial load for new parentId
+    if (disabledList) { return;  }
     setIssueCommentsList([]);
     setPage(0);
     setHasMore(true);
@@ -85,6 +86,8 @@ export function useIssueComments(parentId: string) {
     const comment = await IssueCommentService.createIssueComment(issueComment);
     if (comment) {
       setIssueCommentsList([comment, ...issueCommentsList]);
+    } else {
+      throw new Error('Error creating comment')
     }
     setLoading(false);
   };
