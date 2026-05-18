@@ -273,7 +273,7 @@ export abstract class BaseLocalRepository<T> {
         return dbItem;
       } catch (error) {
         // If not found, create new
-        console.warn(`Could not update locally, attempting to create locally...: ${error}`);
+        console.warn(`Could not update locally; creating a fresh copy instead. ${error}`);
         try {
           const createdInstance = await dbInstance
             .get(this.tableName)

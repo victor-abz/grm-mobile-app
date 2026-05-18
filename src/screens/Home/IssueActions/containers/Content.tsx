@@ -309,9 +309,13 @@ function Content({ session, profile, currentIssue, navigation, loading, statuses
 
   const recordStep = async () => {
     try {
-      await addActionCommentToHistory(comment);
-      updateActionButtons();
-      handleConfirmationDialogs('record_steps');
+      setIssue((prevIssue) => {
+        const updatedIssue = {
+          ...prevIssue,
+          updated_date: new Date(),
+        };
+        return updatedIssue;
+      });
     } catch (error) {
       alert(error);
     }
