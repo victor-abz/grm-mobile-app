@@ -209,8 +209,9 @@ export class BaseService<T> {
     forceFetchFromLocal: boolean | null = null,
     page: number | null = null,
     allPages: boolean | null = null,
-    sortBy: string = null,
-    sortOrder: SortOrder = null
+    sortBy: string | null = null,
+    sortOrder: SortOrder | null = null,
+    extraQueries: any[] | null = null
   ): Promise<T[]> {
     const state = await NetInfo.fetch();
 
@@ -247,7 +248,8 @@ export class BaseService<T> {
             parentId,
             page,
             null,
-            null
+            null,
+            extraQueries
           );
 
           return getAllResponse.results;
@@ -265,7 +267,8 @@ export class BaseService<T> {
           parentId,
           page,
           null,
-          null
+          null,
+          extraQueries
         );
         return getAllResponse.results;
       }
@@ -279,17 +282,20 @@ export class BaseService<T> {
         parentId,
         null,
         null,
-        allPages
+        allPages,
+        extraQueries
       );
       return getAllResponse.results;
     }
   }
 
+  // NOTE: Currently used only by issue lists (reporter/assignee/resolved). Consider generalizing if reused.
   async getMore(
     endpointType: string | null,
     offlinePaginatedListRequest: OfflinePaginatedListRequestControls,
     offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<T>,
-    firstLocalPageRetry: boolean = false
+    firstLocalPageRetry: boolean = false,
+    extraQueries: any[] | null = null
   ): Promise<{ event: LocalGetAllEventInfo; results: T[] }> {
     try {
       console.log('FORCE TO OFFLINE PAGINATE: ', this.forcePaginateFromLocalNoAccessToBackendList);
@@ -312,7 +318,9 @@ export class BaseService<T> {
             null,
             null,
             offlinePaginatedListRequest.nextPage,
-            offlinePagingInitialTrackingInfo
+            offlinePagingInitialTrackingInfo,
+            false,
+            extraQueries
           );
           // return { result: getAllResponse, from: 'offline' };
           return getAllResponse;
@@ -329,7 +337,9 @@ export class BaseService<T> {
           offlinePaginatedListRequest.nextPage,
           firstLocalPageRetry || offlinePaginatedListRequest.prevPage === 0
             ? offlinePagingInitialTrackingInfo
-            : undefined
+            : undefined,
+          false,
+          extraQueries
         );
         return getAllResponse;
       }

@@ -69,8 +69,9 @@ export abstract class BaseLocalRepository<T> {
     parentId: string | null,
     page: number = 0, // zero-based page index
     latestValueAtCurrentPage?: LatestValueAtCurrentPage,
-    allPages = false
-  ): Promise<{ event: LocalGetAllEventInfo;  results: T[]}> {
+    allPages = false,
+    extraQueries: QueryClause[] | null = null
+  ): Promise<{ event: LocalGetAllEventInfo; results: T[] }> {
     if (!sortBy) sortBy = 'created_date';
     if (!sortOrder) sortOrder = Q.desc;
 
@@ -79,6 +80,9 @@ export abstract class BaseLocalRepository<T> {
     const pageSize = limit;
 
     let queryClauses: QueryClause[] = [Q.sortBy(sortBy, sortOrder)];
+    if (extraQueries && extraQueries.length > 0) {
+      queryClauses = [...queryClauses, ...extraQueries];
+    }
 
     if (lastPulledAt) {
       queryClauses.push(Q.where('created_date', Q.gte(lastPulledAt)));
