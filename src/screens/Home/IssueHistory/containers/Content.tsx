@@ -104,7 +104,7 @@ function Content({ issue }) {
     if (commentText.length === 0) return;
     const newComment: IssueComment = {
       id: undefined,
-      parent_id: issue.id,
+      parent_id: String(issue.id),
       user: { id: session.user_id, name: profile?.user?.name },
       comment: commentText,
       due_date: new Date().toISOString(),

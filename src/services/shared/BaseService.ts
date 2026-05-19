@@ -694,6 +694,11 @@ export class BaseService<T> {
       return;
     }
 
+    // clean the array from null or undefined values that can cause problems during the push process
+    tableChanges.created = tableChanges.created.filter((item) => item != null);
+    tableChanges.updated = tableChanges.updated.filter((item) => item != null);
+    tableChanges.deleted = tableChanges.deleted.filter((item) => item != null);
+    
     // Handle created records
     if (tableChanges.created.length > 0) {
       console.log(`Pushing ${tableChanges.created.length} new records to ${tableName}`);
