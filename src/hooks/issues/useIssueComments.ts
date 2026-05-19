@@ -28,22 +28,28 @@ export function useIssueComments(parentId: string, disabledList = false) {
 
   const fetchIssueCommentsPage = async (pageToLoad: number) => {
     setLoading(true);
-    const comments = await IssueCommentService.fetchIssueCommentList(parentId, pageToLoad, PAGE_SIZE);
+    const comments = await IssueCommentService.fetchIssueCommentList(
+      parentId,
+      pageToLoad,
+      PAGE_SIZE
+    );
     const safeComments = Array.isArray(comments) ? comments : [];
     setHasMore(safeComments.length >= PAGE_SIZE);
+
     // Keep chronological order (oldest -> newest) for chat-like UI
     setIssueCommentsList((prev) => {
       const merged = [...safeComments, ...prev];
       const seen = new Set<string>();
       const deduped = merged.filter((c: any) => {
-        const key = String(c?.id ?? c?.due_date ?? JSON.stringify(c));
+        const key = String(c?.id ?? c?.created_date ?? JSON.stringify(c));
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       });
+
       deduped.sort((a: any, b: any) => {
-        const aTime = new Date(a?.due_date ?? a?.created_date ?? 0).getTime();
-        const bTime = new Date(b?.due_date ?? b?.created_date ?? 0).getTime();
+        const aTime = new Date(a?.created_date ?? 0).getTime();
+        const bTime = new Date(b?.created_date ?? 0).getTime();
         return bTime - aTime;
       });
       return deduped;
