@@ -208,7 +208,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     const body = {
       escalate_flag: item.escalate_flag,
       reject_flag: item.reject_flag,
-      rating: item.rating ?? undefined,
+      rating: item.rating && item.rating > 0 ? item.rating : undefined,
       escalation_reason: item.escalation_reason,
       research_result: item.research_result,
       status: String(item.status.id).replace(/\\"/g, '').replace(/"/g, ''),

@@ -1,6 +1,7 @@
 import { Model } from '@nozbe/watermelondb';
 import { SyncDatabaseChangeSet, synchronize } from '@nozbe/watermelondb/sync';
 import type { CreatedResponseWithBackendId, WatermelonId } from './BaseService';
+import { watermelonController } from './BaseService';
 import { TABLE_NAMES } from '../../migrations/tableName';
 import { fetchIssueList } from '../issues/IssueService';
 import { Syncable } from './types';
@@ -44,6 +45,10 @@ export class SyncService {
     }
 
     if (!this.isSyncFinished) {
+      return;
+    }
+
+    if (watermelonController.isManuallyUpdating) {
       return;
     }
 
@@ -152,6 +157,36 @@ export class SyncService {
 
           for (const syncable of this.syncables) {
             await syncable.pushChanges({ changes, lastPulledAt });
+          }
+          
+          // Check if child items with real parent ids exists to
+          // create them too (adding comments to an old existing issue for example)
+          let _childChanges: {
+            [key: string]: { created: any[], updated: any[], deleted: any[] }
+          } = {}
+          for (const syncable of this.childSyncables) {
+            let childChanges = {}
+            
+            const createdChildChanges = changes[syncable.tableName].created.map((i) =>
+              !!i.parent_id ? { ...i, parent_id: String(i.parent_id) } : null
+            );
+            
+            const updatedChildChanges = changes[syncable.tableName].updated.map((i) =>
+              !!i.parent_id ? { ...i, parent_id: String(i.parent_id) } : null
+            );
+            
+            const deletedChildChanges = changes[syncable.tableName].deleted
+
+          
+            _childChanges[syncable.tableName] = {created: createdChildChanges, updated: updatedChildChanges, deleted: deletedChildChanges}
+            
+            if (
+              createdChildChanges.length > 0 ||
+              updatedChildChanges.length > 0 ||
+              deletedChildChanges.length > 0
+            ) {
+              await syncable.pushChanges({ changes: _childChanges, lastPulledAt });
+            }
           }
 
           console.log(`🍉 Changes pushed successfully.`);

@@ -7,6 +7,10 @@
 
   //Headers
   "citizen_input_header": "Nouvel enregistrement",
+  
+  //Tabs
+  "dashboard": "Dashboard",
+  "profile": "Profil",
   //Onboarding
   "used_app_before": "Avez-vous vos identifiants de connexion ?",
   "yes": "OUI",
@@ -29,6 +33,7 @@
   "collect_reports": "Collecte Plaintes ou Suggestions",
   "search_reports": "Résumé de mes Plaintes",
   "sync_files": "Synchroniser les Fichiers",
+  "account_insights": "Aperçu du Compte",
 
   //GRM-Intro
   "intro_text_0": "Communique avec le citoyen : ",
@@ -173,6 +178,7 @@
   "nothing_to_show": "Rien à afficher",
   "days_ago": "jours écoulés",
   "view_details": "VOIR LES DETAILS",
+  "view_updates": "Afficher les mises à jour",
   "accept_issue": "Accepter la plainte",
   "reject_issue": "Rejeter la plainte",
   "record_steps_taken": "Enregistrer les étapes parcourues",

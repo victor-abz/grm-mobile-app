@@ -13,6 +13,12 @@ import type { OfflinePagingInitialTrackingInfo, OfflinePaginatedListRequestContr
 export type WatermelonId = string;
 export type CreatedResponseWithBackendId = unknown;
 
+class WatermelonController {
+  isManuallyUpdating = false;
+}
+
+export const watermelonController = new WatermelonController();
+
 export type EndOfList = {
   detail: string;
 };
@@ -26,7 +32,7 @@ export class BaseService<T> {
     private localRepository: BaseLocalRepository<T>,
     private remoteRepository: BaseRemoteRepository<T>
   ) {
-    this.isFile = this.checkIfFile();
+    this.isFile = this.checkIfTableContainsFiles();
   }
 
   private getPathFieldName(): string {
@@ -38,7 +44,7 @@ export class BaseService<T> {
     }
   }
 
-  private checkIfFile(): boolean {
+  private checkIfTableContainsFiles(): boolean {
     switch (this.localRepository.tableName) {
       case TABLE_NAMES.issueAttachment:
         return true;
@@ -51,7 +57,7 @@ export class BaseService<T> {
     let formattedEntries = entries.slice();
     for (let index = 0; index < entries.length; index++) {
       const element = formattedEntries[index];
-      formattedEntries[index] = this.localRepository.fromRemoteToLocal(element)
+      formattedEntries[index] = this.localRepository.fromRemoteToLocal(element);
     }
     this.localRepository.bulkCreate(formattedEntries);
   }
@@ -115,8 +121,10 @@ export class BaseService<T> {
    * @param item WatermelonDB Model instance to upsert
    * @returns Promise<void>
    */
-  
+
   async upsert(item: Model): Promise<any | null> {
+    // if(!syncServiceInstance.) { return }
+    watermelonController.isManuallyUpdating = true;
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
@@ -137,13 +145,17 @@ export class BaseService<T> {
           } else {
             console.log("Couldn't create, proceed with Update");
             updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
-            console.log(updatedResponse ? 'Remote Update successful' : 'Failed to update remotely');
+            console.log(
+              updatedResponse ? '✅ Remote Update successful' : 'Failed to update remotely'
+            );
           }
         } catch (createErr: any) {
           // If already exists, update instead
           console.log("Couldn't create, proceed with Update. Reason: ", createErr);
           updatedResponse = await this.remoteRepository.update(modelInterface.id, modelInterface);
-          console.log(updatedResponse ? 'Remote Update successful' : 'Failed to update remotely');
+          console.log(
+            updatedResponse ? '✅ Remote Update successful' : 'Failed to update remotely'
+          );
         }
 
         // @ts-ignore
@@ -158,6 +170,7 @@ export class BaseService<T> {
           if (createdResponse.data) {
             createdResponse.data.syncAt = JSON.stringify(new Date());
           }
+          watermelonController.isManuallyUpdating = false;
           return await this.localRepository.upsert(item, createdResponse?.data?.id);
         } else if (updatedResponse) {
           if (updatedResponse.data) {
@@ -167,6 +180,7 @@ export class BaseService<T> {
             'UPDATED RESPONSE - (Currently not being used as an entry to watermelon)',
             updatedResponse.data
           );
+          watermelonController.isManuallyUpdating = false;
           return await this.localRepository.upsert(item);
         } else {
           console.log(
@@ -175,13 +189,16 @@ export class BaseService<T> {
           );
           const upsertResponse = await this.localRepository.upsert(item);
 
+          watermelonController.isManuallyUpdating = false;
           return upsertResponse;
         }
       } catch (err) {
+        watermelonController.isManuallyUpdating = false;
         console.warn('[BaseService] Upsert failed. Reason: ', err);
       }
     } else {
       // Offline: upsert locally
+      watermelonController.isManuallyUpdating = false;
       return await this.localRepository.upsert(item);
     }
   }
@@ -192,8 +209,9 @@ export class BaseService<T> {
     forceFetchFromLocal: boolean | null = null,
     page: number | null = null,
     allPages: boolean | null = null,
-    sortBy: string = null,
-    sortOrder: SortOrder = null
+    sortBy: string | null = null,
+    sortOrder: SortOrder | null = null,
+    extraQueries: any[] | null = null
   ): Promise<T[]> {
     const state = await NetInfo.fetch();
 
@@ -230,10 +248,11 @@ export class BaseService<T> {
             parentId,
             page,
             null,
-            null
+            null,
+            extraQueries
           );
-          
-          return getAllResponse.results
+
+          return getAllResponse.results;
         }
       } catch (err) {
         this.forcePaginateFromLocalNoAccessToBackendList = true;
@@ -248,23 +267,36 @@ export class BaseService<T> {
           parentId,
           page,
           null,
-          null
+          null,
+          extraQueries
         );
-        return getAllResponse.results
+        return getAllResponse.results;
       }
     } else {
       this.forcePaginateFromLocalNoAccessToBackendList = true;
-      const getAllResponse = await this.localRepository.getAll(sortBy, sortOrder, null, null, parentId, null, null, allPages);
-      return getAllResponse.results
+      const getAllResponse = await this.localRepository.getAll(
+        sortBy,
+        sortOrder,
+        null,
+        null,
+        parentId,
+        null,
+        null,
+        allPages,
+        extraQueries
+      );
+      return getAllResponse.results;
     }
   }
 
+  // NOTE: Currently used only by issue lists (reporter/assignee/resolved). Consider generalizing if reused.
   async getMore(
     endpointType: string | null,
     offlinePaginatedListRequest: OfflinePaginatedListRequestControls,
     offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<T>,
-    firstLocalPageRetry: boolean = false
-  ): Promise<{ event: LocalGetAllEventInfo, results: T[] }> {
+    firstLocalPageRetry: boolean = false,
+    extraQueries: any[] | null = null
+  ): Promise<{ event: LocalGetAllEventInfo; results: T[] }> {
     try {
       console.log('FORCE TO OFFLINE PAGINATE: ', this.forcePaginateFromLocalNoAccessToBackendList);
       // Fetch From Remote
@@ -286,15 +318,17 @@ export class BaseService<T> {
             null,
             null,
             offlinePaginatedListRequest.nextPage,
-            offlinePagingInitialTrackingInfo
+            offlinePagingInitialTrackingInfo,
+            false,
+            extraQueries
           );
           // return { result: getAllResponse, from: 'offline' };
-          return getAllResponse
+          return getAllResponse;
         }
       } else {
         // Fetch From Local Regular Slice Paging, Except if offline current page equals 0
         this.forcePaginateFromLocalNoAccessToBackendList = true;
-            const getAllResponse = await this.localRepository.getAll(
+        const getAllResponse = await this.localRepository.getAll(
           'intake_date',
           'desc',
           offlinePaginatedListRequest.pageSize,
@@ -303,28 +337,29 @@ export class BaseService<T> {
           offlinePaginatedListRequest.nextPage,
           firstLocalPageRetry || offlinePaginatedListRequest.prevPage === 0
             ? offlinePagingInitialTrackingInfo
-            : undefined
+            : undefined,
+          false,
+          extraQueries
         );
-        return getAllResponse
+        return getAllResponse;
       }
     } catch (err) {
       if (!this.forcePaginateFromLocalNoAccessToBackendList) {
         this.forcePaginateFromLocalNoAccessToBackendList = true;
         console.error('Pagination from remote/local failed. Retrying...');
         try {
-          const firstLocalPageRetry = true
+          const firstLocalPageRetry = true;
           const response = await this.getMore(
             endpointType,
             offlinePaginatedListRequest,
             offlinePagingInitialTrackingInfo,
             firstLocalPageRetry
           );
-          return response
+          return response;
         } catch (error) {
           console.error('Error');
           console.error(error);
         }
-
       } else {
         console.error('Pagination from remote/local retry failed.');
       }
@@ -379,7 +414,7 @@ export class BaseService<T> {
     let createdRecordsPostPushedWithNewBackendIDs = [];
 
     // 1. FETCH NEWLY CREATED RECORDS
-   
+
     const nullSortBy = null;
     const nullSortOrder = null;
     const nullPage = null;
@@ -388,7 +423,6 @@ export class BaseService<T> {
     const nullCreatedDate = null;
     const nullDeletedDate = null;
     const nullParentId = null;
-
 
     if (parentChanges) {
       // Parent IDs available - Pulling sub-items
@@ -660,6 +694,11 @@ export class BaseService<T> {
       return;
     }
 
+    // clean the array from null or undefined values that can cause problems during the push process
+    tableChanges.created = tableChanges.created.filter((item) => item != null);
+    tableChanges.updated = tableChanges.updated.filter((item) => item != null);
+    tableChanges.deleted = tableChanges.deleted.filter((item) => item != null);
+    
     // Handle created records
     if (tableChanges.created.length > 0) {
       console.log(`Pushing ${tableChanges.created.length} new records to ${tableName}`);
@@ -672,7 +711,7 @@ export class BaseService<T> {
           const createdResponse = await this.remoteRepository.create(modelInterface);
 
           if (!createdResponse) {
-            throw new Error('Error creating element at remote while syncing');
+            throw new Error('Error CREATING element at remote while syncing');
           }
 
           console.log('CREATED', tableChanges.created);
@@ -683,7 +722,7 @@ export class BaseService<T> {
             [createdResponse, record.id],
           ];
         } catch (error) {
-          throw new Error('Error creating element at remote while syncing. Reason: ', error);
+          throw new Error('Error CREATING element at remote while syncing. Reason: ', error);
         }
       }
     }
@@ -692,7 +731,7 @@ export class BaseService<T> {
     if (tableChanges.updated.length > 0) {
       console.log(`Pushing ${tableChanges.updated.length} updated records to ${tableName}`);
       for (const record of tableChanges.updated) {
-        console.log('CREATED', tableChanges.updated);
+        console.log('UPDATED', tableChanges.updated);
         const modelInterface = this.localRepository.fromLocalToRemote(record);
         await this.remoteRepository.update(modelInterface.id, modelInterface);
       }

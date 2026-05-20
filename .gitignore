@@ -106,6 +106,8 @@ ios/yourproject.xcworkspace/contents.xcworkspacedata
 .DS_Store
 __MACOSX/
 
+# local env files
+.env*.local
 
 eas.json
 android/gradle.properties

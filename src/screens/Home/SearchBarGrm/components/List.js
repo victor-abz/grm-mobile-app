@@ -35,15 +35,26 @@ const Item = ({ item, onPress }) => {
   );
 };
 
-const searchFilter = (issue, searchPhrase) => {
+const searchFilter = (issue, searchPhrase) =>
+{
   if (issue) {
     // ((issues.assignee && issues.assignee.id === eadl?._id) ||
     // (issues.reporter && issues.reporter.id === eadl?._id)) &&
-    return (issue.tracking_code.includes(searchPhrase.toLowerCase()) ||
-        issue.internal_code.includes(searchPhrase.toLowerCase()));
-  }
-  return false;
-};
+    if (
+      typeof issue.tracking_code === "string" &&
+      issue.tracking_code.toLowerCase().includes(searchPhrase.toLowerCase())
+    ) {
+      return true;
+    }
+    if (
+      typeof issue.internal_code === "string" &&
+      issue.internal_code.toLowerCase().includes(searchPhrase.toLowerCase())
+    ) {
+      return true;
+    }
+    return false;
+  };
+}
 
 // the filter
 const List = (props) => {
@@ -71,7 +82,7 @@ const List = (props) => {
         <FlatList
           data={props.data}
           renderItem={renderItem}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => item.id}
         />
       </View>
     </SafeAreaView>

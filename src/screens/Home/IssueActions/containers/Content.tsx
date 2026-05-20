@@ -26,6 +26,10 @@ import RecordStepsDialog from '../components/RecordStepsDialog';
 import RejectDialog from '../components/RejectDialog';
 import { styles } from './Content.styles';
 import { ConfidentialityChoices } from '../../../../utils/constants';
+import { IssueComment } from '../../../../models/issues/IssueComment';
+import { useIssueComments } from '../../../../hooks/issues/useIssueComments';
+import { setNewCommentsFlag } from '../../../../store/ducks/global.duck';
+import { useDispatch } from 'react-redux';
 
 type ConfirmationDialogType =
   | 'record_steps'
@@ -55,25 +59,17 @@ type Props = {
   currentIssue: any;
   navigation: any;
   session: any;
+  profile: any;
   loading: boolean;
   statuses: IssueStatus[];
   updateIssue: (issue: Issue) => Promise<Issue>;
   getStatus: (statusName: keyof IssueStatus) => IssueStatus;
 };
 
-function Content({ session, currentIssue, navigation, loading, statuses = [], updateIssue, getStatus }: Props) {
+function Content({ session, profile, currentIssue, navigation, loading, statuses = [], updateIssue, getStatus }: Props) {
   const [issue, setIssue] = useState(currentIssue);
-  
-  // const [issue, setIssue] = useState({
-  //   ...currentIssue,
-  //   // status: { name: 'Créé', id: 1 }
-  //   status: { name: 'Ouv', id: 4 },
-  //   reject_flag: true,
-  //   assignee: { id: 2 },
-  //   reporter: { id: 2 },
-  //   // status: { name: 'Ouv', id: 2 }
-  // });
-  
+  const { createIssueComment } = useIssueComments(issue.id, true);
+
   const [acceptDialog, setAcceptDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(false);
 
@@ -92,19 +88,21 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
   const [recordedResolution, setRecordedResolution] = useState(false);
   const [currentDate, setCurrentDate] = useState(moment());
   const [citizenName, setCitizenName] = useState('');
-  const [reason, onChangeReason] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
   const [escalateComment, onChangeEscalateComment] = useState('');
-  const [comment, onChangeComment] = useState('');
+  const [comment, setComment] = useState('');
+
 
   const [resolution, onChangeResolution] = useState('');
   const [isAcceptEnabled, setIsAcceptEnabled] = useState(false);
   const [isRecordResolutionEnabled, setIsRecordResolutionEnabled] = useState(false);
   const [isRateAppealEnabled, setIsRateAppealEnabled] = useState(false);
   const [isIssueAssignedToMe, setIsIssueAssignedToMe] = useState(false);
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(5);
   const [hasActionsOrResolved, setHasActionsOrResolved] = useState(false);
   const [attachment, setAttachment] = useState({});
   const [recordingURI, setRecordingURI] = useState();
+  const dispatch = useDispatch()
 
   const goToDetails = () => navigation.jumpTo('IssueDetail');
   const goToHistory = () => {
@@ -189,7 +187,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
       });
   };
 
-  const updateIssueWithComments = (issue, newStatus, commentData) => {
+  const updateIssueWithComments = async (issue, newStatus, commentData) => {
     const newComments = [...(issue.comments ?? []), commentData];
 
     return {
@@ -201,66 +199,62 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
     };
   };
 
-  const acceptIssue = () => {
-    const newStatus = getStatus('open_status');
-    setIssue((prevIssue) => {
-      const updatedIssue = updateIssueWithComments(prevIssue, newStatus, {
-        name: prevIssue.reporter.name,
-        id: prevIssue.assignee.id,
-        comment: i18n.t('issue_was_accepted'),
-        due_date: moment(),
+  const addActionCommentToHistory = async (text?: string) => {
+    if (!text && comment.length < 1) {
+      return;
+    }
+    const newComment: IssueComment = {
+      id: undefined,
+      parent_id: issue.id,
+      user: { id: session.user_id, name: profile?.user?.name },
+      comment: text ?? comment,
+      due_date: new Date().toISOString(),
+      created_date: new Date().toISOString(),
+      updated_date: new Date().toISOString(),
+    };
+    await createIssueComment(newComment);
+    setComment('');
+    dispatch(setNewCommentsFlag(true))
+  };
+
+  const acceptIssue = async () => {
+    try {
+      setComment(i18n.t('issue_was_accepted'));
+      const newStatus = getStatus('open_status');
+      setIssue((prevIssue) => {
+        const updatedIssue = {
+          ...prevIssue,
+          status: newStatus,
+        };
+
+        return updatedIssue;
       });
-      return updatedIssue;
-    });
+    } catch (error) {
+      alert(error);
+    }
   };
 
   const rejectIssue = () => {
-    const newStatus = getStatus('rejected_status');
-    if (!newStatus) {
-      console.error('No rejected status found');
-      showToast(i18n.t('error_rejecting_issue'));
-      return;
+    try {
+      setComment(`${i18n.t('issue_was_rejected')}: ${rejectReason}`);
+      const newStatus = getStatus('rejected_status');
+      if (!newStatus) {
+        console.error('No rejected status found');
+        showToast(i18n.t('error_rejecting_issue'));
+        return;
+      }
+      setIssue((prevIssue) => {
+        const updatedIssue = {
+          ...prevIssue,
+          status: newStatus,
+          reject_flag: true,
+         
+        };
+        return updatedIssue;
+      });
+    } catch (error) {
+      alert(error);
     }
-
-    setIssue((prevIssue) => {
-      const updatedIssue = {
-        ...prevIssue,
-        status: newStatus,
-        reject_flag: true,
-
-        // TODO: Use new comment services to add
-        // the following commented property
-        // comments: [
-        //   ...(prevIssue.comments ?? []),
-        //   {
-        //     name: prevIssue.reporter.name,
-        //     id: session?.user_id,
-        //     comment: reason,
-        //     due_date: moment().toNow(),
-        //     attachment: attachment.uri
-        //       ? {
-        //           url: '',
-        //           id: attachment?.id,
-        //           uploaded: false,
-        //           local_url: attachment?.uri,
-        //           name: attachment?.uri.split('/').pop(),
-        //         }
-        //       : undefined,
-        //     recording: recordingURI
-        //       ? {
-        //           url: '',
-        //           id: recordingURI.split('/').pop(),
-        //           uploaded: false,
-        //           local_url: recordingURI,
-        //           isAudio: true,
-        //           name: recordingURI.split('/').pop(),
-        //         }
-        //       : undefined,
-        //   },
-        // ],
-      };
-      return updatedIssue;
-    });
   };
 
   const rateIssue = () => {
@@ -298,113 +292,81 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
   };
 
   const escalateIssue = () => {
-    setIssue((prevIssue) => {
-      const updatedIssue = {
-        ...prevIssue,
-        escalate_flag: true,
-        //leave it singular as a string
-        escalation_reason: '',
-
-        // TODO: Use new comment services to add
-        // the following commented property
-        // comments: [
-        //   ...(prevIssue.comments || []),
-        //   {
-        //     //check if can be replaced with create response
-        //     name: prevIssue.reporter.name,
-        //     id: session?.user_id,
-        //     comment: escalateComment,
-        //     due_date: moment(),
-        //     attachment: attachment.uri
-        //       ? {
-        //           url: '',
-        //           id: attachment?.id,
-        //           uploaded: false,
-        //           local_url: attachment?.uri,
-        //           name: attachment?.uri.split('/').pop(),
-        //         }
-        //       : undefined,
-        //     recording: recordingURI
-        //       ? {
-        //           url: '',
-        //           id: recordingURI.split('/').pop(),
-        //           uploaded: false,
-        //           local_url: recordingURI,
-        //           isAudio: true,
-        //           name: recordingURI.split('/').pop(),
-        //         }
-        //       : undefined,
-        //   },
-        // ],
-      };
-      console.log('escalate : ', updatedIssue.comments);
-      return updatedIssue;
-    });
+    try {
+      setComment(`${i18n.t('issue_was_escalated')}: ${escalateComment}`);
+      setIssue((prevIssue) => {
+        const updatedIssue = {
+          ...prevIssue,
+          escalate_flag: true,
+          escalation_reason: escalateComment,
+        };
+        return updatedIssue;
+      });
+    } catch (error) {
+      alert(error);
+    }
   };
 
-  const recordStep = () => {
-    setIssue((prevIssue) => {
-      const updatedIssue = updateIssueWithComments(prevIssue, issue.status, {
-        name: prevIssue.reporter.name,
-        id: session?.user_id,
-        comment,
-        due_date: moment(),
-        attachment: attachment.uri
-          ? {
-              url: '',
-              id: attachment?.id,
-              uploaded: false,
-              local_url: attachment?.uri,
-              name: attachment?.uri.split('/').pop(),
-            }
-          : undefined,
-        recording: recordingURI
-          ? {
-              url: '',
-              id: recordingURI.split('/').pop(),
-              uploaded: false,
-              local_url: recordingURI,
-              isAudio: true,
-              name: recordingURI.split('/').pop(),
-            }
-          : undefined,
+  const recordStep = async () => {
+    try {
+      setIssue((prevIssue) => {
+        const updatedIssue = {
+          ...prevIssue,
+          updated_date: new Date(),
+        };
+        return updatedIssue;
       });
-
-      return updatedIssue;
-    });
+    } catch (error) {
+      alert(error);
+    }
   };
 
   useEffect(() => {
     // Determine which dialog confirmation type is active
-    let confirmationDialogType: ConfirmationDialogType = null;
+    const onSaveIssueStatusAndComment = async () => {
+      let confirmationDialogType: ConfirmationDialogType = null;
 
-    if (recordResolutionDialog) {
-      confirmationDialogType = 'record_resolution';
-    } else if (acceptDialog) {
-      confirmationDialogType = 'accept';
-    } else if (recordStepsDialog) {
-      confirmationDialogType = 'record_steps';
-    } else if (escalateDialog) {
-      confirmationDialogType = 'escalate';
-    } else if (rejectDialog) {
-      confirmationDialogType = 'reject';
-    } else if (rateAppealDialog) {
-      confirmationDialogType = 'appeal';
-    } else if (ratingDialog) {
-      confirmationDialogType = 'rating';
-    }
+      if (recordResolutionDialog) {
+        confirmationDialogType = 'record_resolution';
+      } else if (acceptDialog) {
+        confirmationDialogType = 'accept';
+      } else if (recordStepsDialog) {
+        confirmationDialogType = 'record_steps';
+      } else if (escalateDialog) {
+        confirmationDialogType = 'escalate';
+      } else if (rejectDialog) {
+        confirmationDialogType = 'reject';
+      } else if (rateAppealDialog) {
+        confirmationDialogType = 'appeal';
+      } else if (ratingDialog) {
+        confirmationDialogType = 'rating';
+      }
 
-    if (
-      rateAppealDialog ||
-      acceptDialog ||
-      recordStepsDialog ||
-      recordResolutionDialog ||
-      escalateDialog ||
-      rejectDialog ||
-      ratingDialog
-    ) {
-      saveIssueStatus(confirmationDialogType);
-    }
+      if (
+        rateAppealDialog ||
+        acceptDialog ||
+        recordStepsDialog ||
+        recordResolutionDialog ||
+        escalateDialog ||
+        rejectDialog ||
+        ratingDialog
+      ) {
+        try {
+          await saveIssueStatus(confirmationDialogType);
+        } catch (error) {
+          alert(error);
+          return;
+        }
+        try {
+          // skip for those which are not creating comments
+          await addActionCommentToHistory();
+        } catch (error) {
+          alert(error);
+        }
+      }
+    };
+
+     onSaveIssueStatusAndComment()
     
   }, [issue]);
 
@@ -414,42 +376,19 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
 
   const recordResolutionConfirmation = () => {
     const newStatus = getStatus('final_status');
-    setIssue(async (prevIssue) => {
-      const updatedIssue = {
-        ...prevIssue,
-        research_result: resolution,
-        status: newStatus,
-        // comments: [
-        //   ...prevIssue.comments,
-        //   {
-        //     name: prevIssue.reporter.name,
-        //     id: session?.user_id,
-        //     comment: i18n.t('issue_was_resolved'),
-        //     due_date: moment(),
-        //     attachment: attachment.uri
-        //       ? {
-        //           url: '',
-        //           id: attachment?.id,
-        //           uploaded: false,
-        //           local_url: attachment?.uri,
-        //           name: attachment?.uri.split('/').pop(),
-        //         }
-        //       : undefined,
-        //     recording: recordingURI
-        //       ? {
-        //           url: '',
-        //           id: recordingURI.split('/').pop(),
-        //           uploaded: false,
-        //           local_url: recordingURI,
-        //           isAudio: true,
-        //           name: recordingURI.split('/').pop(),
-        //         }
-        //       : undefined,
-        //   },
-        // ],
-      };
-      return updatedIssue
-    });
+    try {
+      setComment(`${i18n.t('issue_was_resolved')}: ${resolution}`);
+      setIssue((prevIssue) => {
+        const updatedIssue = {
+          ...prevIssue,
+          research_result: resolution,
+          status: newStatus,
+        };
+        return updatedIssue;
+      });
+    } catch (error) {
+      alert(error);
+    }
   };
 
   const saveIssueStatus = async (
@@ -460,7 +399,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
       updateActionButtons();
       handleConfirmationDialogs(dialogConfirmationType);
     } catch (error) {
-      console.log('Save issue error', error);
+      throw new Error(`Save issue error: ${error}`);
     }
   };
 
@@ -529,8 +468,8 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
       <RejectDialog
         visible={rejectDialog}
         rejectedDialog={rejectedDialog}
-        reason={reason}
-        onChangeReason={onChangeReason}
+        reason={rejectReason}
+        onChangeReason={setRejectReason}
         attachment={attachment}
         setAttachment={setAttachment}
         setRecordingURI={setRecordingURI}
@@ -558,7 +497,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
       <RecordStepsDialog
         visible={recordStepsDialog}
         recordedSteps={recordedSteps}
-        onChangeComment={onChangeComment}
+        onChangeComment={setComment}
         setAttachment={setAttachment}
         setRecordingURI={setRecordingURI}
         comment={comment}
@@ -586,7 +525,7 @@ function Content({ session, currentIssue, navigation, loading, statuses = [], up
     return compareIdsEquivalence(issue.status?.id, status.id);
   }
 
-  function handleConfirmationDialogs(dialogConfirmationType: string) {
+  function handleConfirmationDialogs(dialogConfirmationType?: ConfirmationDialogType) {
     if (dialogConfirmationType === 'accept') {
       setAcceptedDialog(true);
     } else if (dialogConfirmationType === 'reject') {

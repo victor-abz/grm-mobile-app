@@ -61,7 +61,7 @@ export async function createIssueComment(issueComment: IssueComment): Promise<Is
     const createdComment: any = await issueCommentService.upsert(issueComment as any);
     return createdComment
   } catch (error) {
-    console.error('Error syncing issues comment:', error);
+    console.error('Error creating issue comment:', error);
   }
 }
 

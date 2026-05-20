@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import * as IssueCommentService from '../../services/issues/IssueCommentService';
 import { IssueComment } from "../../models/issues/IssueComment";
 
-export function useIssueComments(parentId: string) {
+export function useIssueComments(parentId: string, disabledList = false) {
   const PAGE_SIZE = 20;
   const [issueCommentsList, setIssueCommentsList] = useState<IssueComment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -12,30 +12,44 @@ export function useIssueComments(parentId: string) {
 
   useEffect(() => {
     // initial load for new parentId
+    if (disabledList) { return;  }
     setIssueCommentsList([]);
     setPage(0);
     setHasMore(true);
     fetchIssueCommentsPage(0);
   }, [parentId]);
 
+  const refreshComments = () => {
+    setIssueCommentsList([]);
+    setPage(0);
+    setHasMore(true);
+    fetchIssueCommentsPage(0);
+  }
+
   const fetchIssueCommentsPage = async (pageToLoad: number) => {
     setLoading(true);
-    const comments = await IssueCommentService.fetchIssueCommentList(parentId, pageToLoad, PAGE_SIZE);
+    const comments = await IssueCommentService.fetchIssueCommentList(
+      parentId,
+      pageToLoad,
+      PAGE_SIZE
+    );
     const safeComments = Array.isArray(comments) ? comments : [];
     setHasMore(safeComments.length >= PAGE_SIZE);
+
     // Keep chronological order (oldest -> newest) for chat-like UI
     setIssueCommentsList((prev) => {
       const merged = [...safeComments, ...prev];
       const seen = new Set<string>();
       const deduped = merged.filter((c: any) => {
-        const key = String(c?.id ?? c?.due_date ?? JSON.stringify(c));
+        const key = String(c?.id ?? c?.created_date ?? JSON.stringify(c));
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       });
+
       deduped.sort((a: any, b: any) => {
-        const aTime = new Date(a?.due_date ?? a?.created_date ?? 0).getTime();
-        const bTime = new Date(b?.due_date ?? b?.created_date ?? 0).getTime();
+        const aTime = new Date(a?.created_date ?? 0).getTime();
+        const bTime = new Date(b?.created_date ?? 0).getTime();
         return bTime - aTime;
       });
       return deduped;
@@ -85,10 +99,20 @@ export function useIssueComments(parentId: string) {
     const comment = await IssueCommentService.createIssueComment(issueComment);
     if (comment) {
       setIssueCommentsList([comment, ...issueCommentsList]);
+    } else {
+      throw new Error('Error creating comment')
     }
     setLoading(false);
   };
 
-  return { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment };
+  return {
+    issueCommentsList,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    createIssueComment,
+    refreshComments,
+  };
 }
 

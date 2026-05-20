@@ -6,24 +6,20 @@ import { styles } from './SearchBarGrm.style';
 import { useIssue } from '../../../hooks/issues/useIssue';
 
 function SearchBarGrm() {
-  const [issues, setIssues] = useState();  
-  const { assigneeIssueList, reporterIssueList} = useIssue()
+  const [issues, setIssues] = useState();
+  const { assigneeIssueList, reporterIssueList } = useIssue();
 
   useEffect(() => {
     if (assigneeIssueList && reporterIssueList) {
       const combined = [...assigneeIssueList, ...reporterIssueList];
-      const uniqueIssues = Array.from(
-        new Map(combined.map(issue => [issue.id, issue])).values()
-      );
+      const uniqueIssues = Array.from(new Map(combined.map((issue) => [issue.id, issue])).values());
       setIssues(uniqueIssues);
     }
   }, [assigneeIssueList, reporterIssueList]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <Content issues={issues} />
-      </ScrollView>
+      <Content issues={issues} />
     </SafeAreaView>
   );
 }

@@ -4,15 +4,15 @@ import { Card, Headline } from "react-native-paper";
 import RightChevron from '../../../../../assets/right-chevron.svg';
 const screenWidth = Dimensions.get("window").width;
 
-function SmallCard({ onCardPress, image, title, icon }) {
+function SmallCard({ style = {}, onCardPress, image, title, icon }) {
   return (
     <Card
       onPress={onCardPress}
-      style={{
+      style={[style, {
         width: screenWidth * 0.416,
         height: 156,
         borderRadius: 15,
-      }}
+      }]}
     >
       <ImageBackground
         source={image}

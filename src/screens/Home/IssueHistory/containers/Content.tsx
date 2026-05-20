@@ -17,10 +17,11 @@ import { Button, Dialog, Paragraph, Portal, Divider, TextInput } from 'react-nat
 import { colors } from '../../../../utils/colors';
 import ImagePreviewCard from '../../CitizenReportStep2/containers/ImagePreviewCard';
 import { useIssueComments } from '../../../../hooks/issues/useIssueComments';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { IssueComment } from '../../../../models/issues/IssueComment';
 import RecordingCard from '../../GRM/components/RecordingCard';
 import { Icon } from 'react-native-elements';
+import { setNewCommentsFlag } from '../../../../store/ducks/global.duck';
 
 const theme = {
   roundness: 12,
@@ -33,9 +34,19 @@ const theme = {
 };
 
 function Content({ issue }) {
-  const { issueCommentsList, loading, loadingMore, hasMore, loadMore, createIssueComment } =
-    useIssueComments(issue.id);
+  const {
+    issueCommentsList,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    createIssueComment,
+    refreshComments,
+  } = useIssueComments(issue.id);
   const { profile, session } = useSelector((state: any) => state.get('authentication').toObject());
+  const { newCommentsFlag } = useSelector((state) => state.get('global').toObject());
+  const dispatch = useDispatch()
+  
   const [commentText, setCommentText] = useState('');
 
   const commentInputRef = useRef(null);
@@ -93,7 +104,7 @@ function Content({ issue }) {
     if (commentText.length === 0) return;
     const newComment: IssueComment = {
       id: undefined,
-      parent_id: issue.id,
+      parent_id: String(issue.id),
       user: { id: session.user_id, name: profile?.user?.name },
       comment: commentText,
       due_date: new Date().toISOString(),
@@ -105,6 +116,14 @@ function Content({ issue }) {
     commentInputRef.current?.blur();
     setTimeout(() => commentsListRef.current?.scrollToIndex({ index: 0, animated: true }), 500);
   };
+
+  const handleReloadComments = useCallback(async () => {
+    refreshComments()
+    dispatch(setNewCommentsFlag(false))
+    setTimeout(() => {
+      commentsListRef.current?.scrollToIndex({ index: 0, animated: true });
+    }, 400);
+  }, [issue.id]);
 
   //Modal, Messages List and Comment Input
   return (
@@ -182,22 +201,46 @@ function Content({ issue }) {
                 keyExtractor={(item, index) => String(item?.id ?? item?.due_date ?? index)}
               />
             ) : (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: 24,
+                }}
+              >
                 <Icon
                   type="ionicon"
-                  name={Platform.OS === 'ios' ? 'chatbubble-ellipses-outline' : 'chatbubble-ellipses-outline'}
+                  name={
+                    Platform.OS === 'ios'
+                      ? 'chatbubble-ellipses-outline'
+                      : 'chatbubble-ellipses-outline'
+                  }
                   size={48}
                   color={colors.primary}
                   style={{ marginBottom: 16 }}
                 />
-                <Text style={{ fontSize: 20, fontWeight: '700', color: colors.primary, marginBottom: 8 }}>
-                  {i18n.t("nothing_to_show")}
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: '700',
+                    color: colors.primary,
+                    marginBottom: 8,
+                  }}
+                >
+                  {i18n.t('nothing_to_show')}
                 </Text>
-                <Text style={{ fontSize: 16, color: colors.secondary, textAlign: 'center', opacity: 0.7 }}>
-                  {i18n.t("information_not_available")}
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: colors.secondary,
+                    textAlign: 'center',
+                    opacity: 0.7,
+                  }}
+                >
+                  {i18n.t('information_not_available')}
                 </Text>
               </View>
-        
             )}
             <TouchableOpacity
               onPress={() => {
@@ -216,6 +259,25 @@ function Content({ issue }) {
                 name={Platform.OS === 'ios' ? 'chevron-down' : 'chevron-down'}
               />
             </TouchableOpacity>
+
+            {/* Added Reload Comments Button */}
+            {newCommentsFlag && (
+              <TouchableOpacity
+                style={{ paddingVertical: 15, justifyContent: 'center', alignItems: 'center' }}
+                onPress={handleReloadComments}
+              >
+                <Text
+                  style={{
+                    color: colors.primary,
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                  }}
+                >
+                  {i18n.t('view_updates')}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <View style={{ paddingBottom: 10 }}>
               <TextInput
