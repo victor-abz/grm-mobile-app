@@ -36,6 +36,7 @@ export class IssueLocalRepository extends BaseLocalRepository<Issue> {
       name: localModel.name,
       escalate_flag: localModel.escalate_flag,
       reject_flag: localModel.reject_flag,
+      reject_reason: localModel.reject_reason,
       rating: localModel.rating,
       escalation_reason: localModel.escalation_reason,
       research_result: localModel.research_result,

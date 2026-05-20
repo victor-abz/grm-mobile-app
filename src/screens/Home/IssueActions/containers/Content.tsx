@@ -248,6 +248,7 @@ function Content({ session, profile, currentIssue, navigation, loading, statuses
           ...prevIssue,
           status: newStatus,
           reject_flag: true,
+          reject_reason: rejectReason
          
         };
         return updatedIssue;

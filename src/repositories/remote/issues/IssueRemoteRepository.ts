@@ -211,6 +211,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
       rating: item.rating && item.rating > 0 ? item.rating : undefined,
       escalation_reason: item.escalation_reason,
       research_result: item.research_result,
+      reject_reason: item.reject_reason,
       status: String(item.status.id).replace(/\\"/g, '').replace(/"/g, ''),
     };
 
