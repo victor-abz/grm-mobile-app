@@ -5,7 +5,7 @@
   "took_place_on": "took place on",
   //Headers
   "citizen_input_header": "Citizen Input",
-  
+
   //Tabs
   "dashboard": "Dashboard",
   "profile": "Profile",
@@ -164,6 +164,11 @@
   "reject_issue": "Reject Issue",
   "record_steps_taken": "Record Steps Taken",
   "record_resolution": "Record Resolution",
+  "accept_issue_help_description": "Initiates official processing.",
+  "reject_issue_help_description": "Cancels process after submitting rejection reason.",
+  "record_steps_taken_help_description": "Saves progress without finalizing the case.",
+  "record_resolution_help_description": "Finalizes case and archives solution.",
+  "escalate_help_description": "Transfers the case to a higher level of review or to a supervisor.",
   "rate_appeal": "Rate & Appeal",
   "escalate": "Escalate",
   "lodged_by": "Lodged by:",

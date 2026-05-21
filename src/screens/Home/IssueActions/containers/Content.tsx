@@ -574,11 +574,17 @@ function renderHeaderAndActions(
   return (
     <View style={{ padding: 23 }}>
       <Text style={styles.stepDescription}>
-        {citizenName ? `${citizenName}, `: null}{i18n.translate("created_at")}: {issue.created_date && moment(issue.created_date).format('DD-MMM-YYYY')}{' | '}
+        {citizenName ? `${citizenName}, ` : null}
+        {i18n.translate('created_at')}:{' '}
+        {issue.created_date && moment(issue.created_date).format('DD-MMM-YYYY')}
+        {' | '}
         {issue.created_date && currentDate.diff(issue.created_date, 'days')} {i18n.t('days_ago')}
       </Text>
       <Text style={styles.stepDescription}>
-        {i18n.translate("updated_at")}{": "}{issue.updated_date && moment(issue.updated_date).format('DD-MMM-YYYY')}{' | '}
+        {i18n.translate('updated_at')}
+        {': '}
+        {issue.updated_date && moment(issue.updated_date).format('DD-MMM-YYYY')}
+        {' | '}
         {issue.updated_date && currentDate.diff(issue.updated_date, 'days')} {i18n.t('days_ago')}
       </Text>
       <Text style={styles.stepDescription}>
@@ -634,27 +640,32 @@ function renderHeaderAndActions(
         {/* Actions */}
         <ActionButton
           label={i18n.t('accept_issue')}
+          tooltipLabel={i18n.t('accept_issue_help_description')}
           onShowDialog={_showDialog}
           isEnabled={isAcceptEnabled && isIssueAssignedToMe}
         />
         <ActionButton
           label={i18n.t('reject_issue')}
+          tooltipLabel={i18n.t('reject_issue_help_description')}
           onShowDialog={_showRejectDialog}
           isEnabled={(!hasActionsOrResolved || isAcceptEnabled) && isIssueAssignedToMe}
         />
         <ActionButton
           label={i18n.t('record_steps_taken')}
+          tooltipLabel={i18n.t('record_steps_taken_help_description')}
           onShowDialog={_showRecordStepsDialog}
           isEnabled={isRecordResolutionEnabled}
         />
         <ActionButton
           label={i18n.t('record_resolution')}
+          tooltipLabel={i18n.t('record_resolution_help_description')}
           onShowDialog={_showRecordResolutionDialog}
           isEnabled={isRecordResolutionEnabled && isIssueAssignedToMe}
         />
       </View>
       <ActionButton
         label={i18n.t('escalate')}
+        tooltipLabel={i18n.t('escalate_help_description')}
         onShowDialog={_showEscalateDialog}
         isEnabled={!disableEscalation && isRecordResolutionEnabled}
       />

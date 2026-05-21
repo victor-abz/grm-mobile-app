@@ -183,6 +183,13 @@
   "reject_issue": "Rejeter la plainte",
   "record_steps_taken": "Enregistrer les étapes parcourues",
   "record_resolution": "Sauvegarder la résolution",
+
+  "accept_issue_help_description" : "Lance le traitement officiel du dossier.",
+  "reject_issue_help_description" : "Annule le processus après soumission d'une raison de refus.",
+  "record_steps_taken_help_description" : "Sauvegarde votre progression sans finaliser le dossier.",
+  "record_resolution_help_description" : "Finalise le dossier et archive la solution définitive.",
+  "escalate_help_description" : "Transfère le dossier à un niveau de révision plus élevé ou à un superviseur.",
+
   "rate_appeal": "Evaluer & Faire Appel",
   "escalate": "Escalader/Remonter",
   "lodged_by": "Inscrite par:",
