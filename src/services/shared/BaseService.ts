@@ -426,7 +426,9 @@ export class BaseService<T> {
 
     if (parentChanges) {
       // Parent IDs available - Pulling sub-items
-      console.log('Parent IDs object available - pulling sub items');
+      if (__DEV__) { 
+        console.log(`${tableName}: Parent IDs object available (Might be empty) - pulling sub items`);
+      }
 
       try {
         let newRecords = [];
@@ -574,7 +576,9 @@ export class BaseService<T> {
       return { changes };
     } else {
       // Parent IDs unavailable - Pulling parents
-      console.log('No Parent IDs, therefore no sub items to sync. Pulling Top Level Elements');
+      if (__DEV__) { 
+        console.log(`${tableName}: No Parent IDs, therefore no sub items to sync. This indicates a top level element pull event`);
+      }
 
       try {
         const newRecords = await this.remoteRepository.fetchAll(
@@ -600,7 +604,6 @@ export class BaseService<T> {
           id: String(record.id),
         }));
       } catch (e) {
-        console.error('Catch pulling created changes', e);
         tableChanges.updated = [];
         syncPullFailed = true;
       }
@@ -634,7 +637,6 @@ export class BaseService<T> {
             })),
           ];
         } catch (error) {
-          console.error('Catch pulling updated changes', error);
           syncPullFailed = true;
         }
 

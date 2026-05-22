@@ -65,8 +65,6 @@ export class SyncService {
             this.firstSync = true;
           }
 
-          console.log('From DB LAST PULLED:', new Date(lastPulledAt).toISOString());
-
           const timestamp = Date.now();
 
           this.markedTimestamp = timestamp;
@@ -76,6 +74,7 @@ export class SyncService {
               tableName: syncable.tableName,
               lastPulledAt,
             });
+
             // Keep temporarily replaced records with new backend ID
             // TODO: handle assignee - reporter
             this.createdRecordsPostPushedWithNewBackendIDsPerTable = {
@@ -129,23 +128,18 @@ export class SyncService {
             }
           }
 
-          console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
-
           const hasData = Object.values(this.pulledParentsChanges ?? {}).some((table) =>
             Object.values(table ?? {}).some(
               (arr: unknown) => Array.isArray(arr) && (arr as unknown[]).length > 0
             )
           );
-
-          // if (!hasData) return { changes, timestamp: lastPulledAt };
           if (!hasData) {
             this.pulledParentsChanges = null;
-            return;
+            return Promise.reject(
+              'No parent elements at changes object available or network error'
+            );
           }
-
-          // Otherwise, set a new one.
-          console.log(new Date(timestamp).toISOString());
-
+          console.log(`🍉 Changes pulled successfully. Timestamp: ${timestamp}`);
           return { changes: this.pulledParentsChanges, timestamp };
         },
 
@@ -158,28 +152,31 @@ export class SyncService {
           for (const syncable of this.syncables) {
             await syncable.pushChanges({ changes, lastPulledAt });
           }
-          
+
           // Check if child items with real parent ids exists to
           // create them too (adding comments to an old existing issue for example)
           let _childChanges: {
-            [key: string]: { created: any[], updated: any[], deleted: any[] }
-          } = {}
+            [key: string]: { created: any[]; updated: any[]; deleted: any[] };
+          } = {};
           for (const syncable of this.childSyncables) {
-            let childChanges = {}
-            
+            let childChanges = {};
+
             const createdChildChanges = changes[syncable.tableName].created.map((i) =>
               !!i.parent_id ? { ...i, parent_id: String(i.parent_id) } : null
             );
-            
+
             const updatedChildChanges = changes[syncable.tableName].updated.map((i) =>
               !!i.parent_id ? { ...i, parent_id: String(i.parent_id) } : null
             );
-            
-            const deletedChildChanges = changes[syncable.tableName].deleted
 
-          
-            _childChanges[syncable.tableName] = {created: createdChildChanges, updated: updatedChildChanges, deleted: deletedChildChanges}
-            
+            const deletedChildChanges = changes[syncable.tableName].deleted;
+
+            _childChanges[syncable.tableName] = {
+              created: createdChildChanges,
+              updated: updatedChildChanges,
+              deleted: deletedChildChanges,
+            };
+
             if (
               createdChildChanges.length > 0 ||
               updatedChildChanges.length > 0 ||
@@ -195,7 +192,7 @@ export class SyncService {
       });
     } catch (error) {
       this.isSyncFinished = true;
-      console.log('Sync All error: ', error);
+      console.log('SyncAll() error: ', error);
     }
 
     // Update Everything locally. Also, manually push old child items with new parent ids
@@ -270,20 +267,20 @@ export class SyncService {
           database: databaseServiceInstance.database,
           pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
             let changes = {};
-            console.log('SUB-ITEMS - From DB LAST PULLED:', new Date(lastPulledAt).toISOString());
+            console.log('🍉 Pull child elements intent...');
+
             for (const syncable of this.childSyncables) {
               let allParents: {
                 created: any[];
                 updated: any[];
                 deleted: string[];
               };
-              
               if (this.firstSync) {
                 const _allParents = await getAllParents(syncable.tableName);
                 allParents = { created: [], updated: _allParents, deleted: [] };
               }
-
               // Pull Child Changes
+
               const syncableChanges = await syncable.pullChanges({
                 tableName: syncable.tableName,
                 lastPulledAt: this.firstSync ? null : lastPulledAt,
@@ -291,9 +288,8 @@ export class SyncService {
                 parentChanges:
                   allParents ?? this.pulledParentsChanges[getParentTableName(syncable.tableName)],
               });
-              
               changes = { ...syncableChanges.changes, ...changes };
-              
+
               // Empty old IDs array at 'tableName' key
               this.createdRecordsPostPushedWithNewBackendIDsPerTable[syncable.tableName] = [];
             }
@@ -304,13 +300,12 @@ export class SyncService {
                 (arr: unknown) => Array.isArray(arr) && (arr as unknown[]).length > 0
               )
             );
-            console.log('Have sub items data? ', hasData);
-            console.log('markedTimes ', this.markedTimestamp);
             // Keep using old timestamp.
-            // if (!hasData) return { changes, timestamp: lastPulledAt };
-            if (!hasData) return;
+            if (!hasData)
+              return Promise.reject(
+                'No children elements at changes object available or network error'
+              );
             // Otherwise, set a new one.
-            console.log(new Date(this.markedTimestamp).toISOString());
             return { changes, timestamp: this.markedTimestamp };
           },
 
@@ -329,7 +324,7 @@ export class SyncService {
         });
       } catch (error) {
         this.isSyncFinished = true;
-        console.log('Sync All error 2 : ', error);
+        console.log('SyncAll() child elements error: ', error);
       }
 
       // if error on first sync - handle
