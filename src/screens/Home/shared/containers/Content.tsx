@@ -178,115 +178,118 @@ function Content({
   };
 
   const renderHeader = () => <ListHeader status={status} />;
-  return (
-    <View style={{ flex: 1 }}>
-      <ToggleButton.Row
-        style={{ justifyContent: 'space-between', padding: 10 }}
-        onValueChange={(value) => {
-          if (value) {
-            setStatus(value);
-          }
-        }}
-        value={status}
-      >
-        <ToggleButton
-          style={{
-            flex: 1,
-            backgroundColor: status === 'reported' ? colors.disabled : colors.white,
-            borderBottomColor: status === 'reported' ? colors.primary : colors.white,
-            borderBottomWidth: 3,
-          }}
-          icon={() => (
-            <View>
-              <Text
-                style={{
-                  color: status === 'reported' ? colors.primary : colors.secondary,
-                  fontWeight: status === 'reported' ? 'bold' : 'normal',
-                }}
-              >
-                {i18n.t('reported')}
-              </Text>
-            </View>
-          )}
-          value="reported"
-        />
-        <ToggleButton
-          style={{
-            flex: 1,
-            backgroundColor: status === 'assigned' ? colors.disabled : colors.white,
-            borderBottomColor: status === 'assigned' ? colors.primary : colors.white,
-            borderBottomWidth: 3,
-          }}
-          icon={() => (
-            <View>
-              <Text
-                style={{
-                  color: status === 'assigned' ? colors.primary : colors.secondary,
-                  fontWeight: status === 'assigned' ? 'bold' : 'normal',
-                }}
-              >
-                {i18n.t('assigned')}
-              </Text>
-            </View>
-          )}
-          value="assigned"
-        />
-        <ToggleButton
-          style={{
-            flex: 1,
-            backgroundColor: status === 'resolved' ? colors.disabled : colors.white,
-            borderBottomColor: status === 'resolved' ? colors.primary : colors.white,
-            borderBottomWidth: 3,
-          }}
-          icon={() => (
-            <View>
-              <Text
-                style={{
-                  color: status === 'resolved' ? colors.primary : colors.secondary,
-                  fontWeight: status === 'resolved' ? 'bold' : 'normal',
-                }}
-              >
-                {i18n.t('resolved')}
-              </Text>
-            </View>
-          )}
-          value="resolved"
-        />
-      </ToggleButton.Row>
-      <FlatList
-        ref={issuesListRef}
-        style={{ flex: 1 }}
-        data={displayedIssues}
-        ListEmptyComponent={renderEmpty}
-        renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={() =>
-          issueListLoading && (
-            <ActivityIndicator
-              style={{ paddingVertical: 20 }}
-              color={colors.primary}
-              size="small"
+
+      return (
+        <View style={{ flex: 1 }}>
+          <ToggleButton.Row
+            style={{ justifyContent: 'space-between', padding: 10 }}
+            onValueChange={(value) => {
+              if (value) {
+                setStatus(value);
+              }
+            }}
+            value={status}
+          >
+            <ToggleButton
+              style={{
+                flex: 1,
+                backgroundColor: status === 'reported' ? colors.disabled : colors.white,
+                borderBottomColor: status === 'reported' ? colors.primary : colors.white,
+                borderBottomWidth: 3,
+              }}
+              icon={() => (
+                <View>
+                  <Text
+                    style={{
+                      color: status === 'reported' ? colors.primary : colors.secondary,
+                      fontWeight: status === 'reported' ? 'bold' : 'normal',
+                    }}
+                  >
+                    {i18n.t('reported')}
+                  </Text>
+                </View>
+              )}
+              value="reported"
             />
-          )
-        }
-        keyExtractor={(item, index) => String(index)}
-        bounces={true}
-        extraData={selectedId}
-        onEndReached={(info) => {
-          if (displayedIssues.length > 0 && issueListHeight > 0 && issueListLoading == false) {
-            if (status == 'assigned') {
-              loadNextPageAssignee(info);
-            } else if (status == 'reported') {
-              loadNextPageReported(info);
-            } else {
-              loadNextPageResolved(info);
+            <ToggleButton
+              style={{
+                flex: 1,
+                backgroundColor: status === 'assigned' ? colors.disabled : colors.white,
+                borderBottomColor: status === 'assigned' ? colors.primary : colors.white,
+                borderBottomWidth: 3,
+              }}
+              icon={() => (
+                <View>
+                  <Text
+                    style={{
+                      color: status === 'assigned' ? colors.primary : colors.secondary,
+                      fontWeight: status === 'assigned' ? 'bold' : 'normal',
+                    }}
+                  >
+                    {i18n.t('assigned')}
+                  </Text>
+                </View>
+              )}
+              value="assigned"
+            />
+            <ToggleButton
+              style={{
+                flex: 1,
+                backgroundColor: status === 'resolved' ? colors.disabled : colors.white,
+                borderBottomColor: status === 'resolved' ? colors.primary : colors.white,
+                borderBottomWidth: 3,
+              }}
+              icon={() => (
+                <View>
+                  <Text
+                    style={{
+                      color: status === 'resolved' ? colors.primary : colors.secondary,
+                      fontWeight: status === 'resolved' ? 'bold' : 'normal',
+                    }}
+                  >
+                    {i18n.t('resolved')}
+                  </Text>
+                </View>
+              )}
+              value="resolved"
+            />
+          </ToggleButton.Row>
+          <FlatList
+            ref={issuesListRef}
+            style={{ flex: 1 }}
+            data={displayedIssues}
+            ListEmptyComponent={renderEmpty}
+            renderItem={renderItem}
+            ListHeaderComponent={renderHeader}
+            ListFooterComponent={() =>
+              issueListLoading && (
+                <ActivityIndicator
+                  style={{ paddingVertical: 20 }}
+                  color={colors.primary}
+                  size="small"
+                />
+              )
             }
-          }
-        }}
-        onLayout={(e) => setIssueListHeight(e.nativeEvent.layout.height)}
-      />
-    </View>
-  );
+            keyExtractor={(item, index) => String(index)}
+            bounces={true}
+            extraData={selectedId}
+            onEndReached={(info) => {
+              if (displayedIssues.length > 0 && issueListHeight > 0 && issueListLoading == false) {
+                if (status == 'assigned') {
+                  loadNextPageAssignee(info);
+                } else if (status == 'reported') {
+                  loadNextPageReported(info);
+                } else {
+                  loadNextPageResolved(info);
+                }
+              }
+            }}
+            onLayout={(e) => setIssueListHeight(e.nativeEvent.layout.height)}
+          />
+        </View>
+      );
+  }
+
 
   async function loadNextPageReported(info?: { distanceFromEnd: number }) {
     await fetchMoreReporterIssueList(reporterIssueList);
@@ -299,7 +302,7 @@ function Content({
   async function loadNextPageResolved(info?: { distanceFromEnd: number }) {
     await fetchMoreResolvedIssueList(assigneeIssueList);
   }
-}
+
 
 const styles = StyleSheet.create({
   container: {

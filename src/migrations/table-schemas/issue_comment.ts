@@ -5,7 +5,7 @@ export const issueCommentTableSchema: TableSchema = tableSchema({
   name:  TABLE_NAMES.issueComment,
   columns: [
     { name: 'comment', type: 'string' },
-    { name: 'created_date', type: 'number' },
+    { name: 'created_date', type: 'string' },
     { name: 'deleted_date', type: 'number', isOptional: true },
     { name: 'due_date', type: 'string' },
     { name: 'sync_date', type: 'number', isOptional: true },

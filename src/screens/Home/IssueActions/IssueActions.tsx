@@ -13,7 +13,7 @@ function IssueActions({ route, navigation }) {
   const { updateIssue } = useIssue();
   const [loading, setLoading] = useState<boolean>(false);
   const customStyles = styles();
-  const { session } = useSelector((state) => state.get('authentication').toObject());
+  const { session, profile } = useSelector((state) => state.get('authentication').toObject());
 
   useEffect(() => {
     if (statusListLoading) {
@@ -34,6 +34,7 @@ function IssueActions({ route, navigation }) {
       <Content
         loading={loading}
         session={session}
+        profile={profile}
         currentIssue={params.item}
         navigation={navigation}
         statuses={issueStatusList}

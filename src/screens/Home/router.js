@@ -12,7 +12,6 @@ import Notifications from './Notifications';
 import ParticipatoryBudgetingList from './ParticipatoryBudgeting/ParticipatoryBudgetingList';
 import PhaseTasks from './PhaseTasks/PhaseTasks';
 import DocumentTask from './DocumentTask/DocumentTask';
-import Diagnostics from './Diagnostics';
 import Statistics from './Statistics/Statistics';
 import SyncAttachments from './SyncAttachments/SyncAttachments';
 import RegisterSubprojects from './RegisterSubprojects/RegisterSubprojects';
@@ -36,7 +35,6 @@ import IssueHistory from './IssueHistory/IssueHistory';
 import Profile from './Profile/Profile';
 import { Icon } from "react-native-elements";
 import SearchBarGrm from './SearchBarGrm/SearchBarGrm';
-
 
 const iconConfig = {
   focused: {
@@ -104,18 +102,25 @@ const AnimatedFeatherIcon = posed(Feather)(iconConfig);
 const AnimatedIonicons = posed(Ionicons)(iconConfig);
 
 const HomeStack = createStackNavigator();
+const ProfileStack = createStackNavigator();
 const NotificationsStack = createStackNavigator();
+
+/**
+ * Stack for GRM module (the main app features excluding Profile)
+ */
 function DashboardStackScreen() {
   return (
     <HomeStack.Navigator>
       {/* GRM Module */}
       <HomeStack.Screen
         name="GRM"
-        component={HomeRouter}
-        options={({ navigation, route }) => ({
+        options={
+          ({ navigation, route }) => ({
           ...customHeaderOptions(i18n.t('label_grm')),
-          ...customHeaderRightIcon({ navigation, route }),
-        })}
+            ...customHeaderRightIcon({ navigation, route }),
+        })
+        }
+        component={GRM}
       />
       <HomeStack.Screen
         name="CitizenReportIntro"
@@ -162,13 +167,6 @@ function DashboardStackScreen() {
         component={Statistics}
         options={({ navigation, route }) => customHeaderOptions(i18n.t('diagnostics'))}
       />
-      {/* <HomeStack.Screen */}
-      {/*  name="IssueDetail" */}
-      {/*  component={IssueDetail} */}
-      {/*  options={({ navigation, route }) => */}
-      {/*    customHeaderOptions(route.params.item?.title) */}
-      {/*  } */}
-      {/* /> */}
       <HomeStack.Screen
         name="IssueDetailTabs"
         component={IssueDetailTabsStack}
@@ -221,6 +219,25 @@ function DashboardStackScreen() {
       />
       {/* <HomeStack.Screen name="Details" component={WorkInProgress} /> */}
     </HomeStack.Navigator>
+  );
+}
+
+/**
+ * Stack for Profile screens.
+ */
+function ProfileStackScreen() {
+  return (
+    <ProfileStack.Navigator>
+      <ProfileStack.Screen
+        name="Profile"
+        options={
+          ({ navigation, route }) => ({
+          ...customHeaderOptions(i18n.t('label_grm')),
+        })
+        }
+        component={Profile}
+      />
+    </ProfileStack.Navigator>
   );
 }
 
@@ -277,17 +294,25 @@ function IssueDetailTabsStack(props) {
   );
 }
 
-function HomeRouter() {
+/**
+ * Root-level tab navigator.
+ */
+const RootTab = createBottomTabNavigator();
+
+function AppRootNavigator() {
   return (
-    <Tab.Navigator
+    <RootTab.Navigator
       tabBarOptions={{
         activeTintColor: colors.primary,
         inactiveTintColor: 'gray',
       }}
     >
-      <Tab.Screen
-        name="Dashboard"
+      <RootTab.Screen
+        name="Home"
         options={{
+          headerShown: false,
+          tabBarLabel: i18n.t('dashboard'),
+          tabBarActiveTintColor: colors.primary,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedFeatherIcon
               pose={focused ? 'focused' : 'unfocused'}
@@ -297,39 +322,14 @@ function HomeRouter() {
             />
           ),
         }}
-        component={GRM}
+        component={DashboardStackScreen}
       />
-      <Tab.Screen
-        name="Notifications"
+      <RootTab.Screen
+        name="ProfileTab"
         options={{
-          tabBarIcon: ({ focused, color, size }) => (
-            <AnimatedIonicons
-              pose={focused ? 'focused' : 'unfocused'}
-              name="notifications-outline"
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-        component={NotificationsStackScreen}
-      />
-      <Tab.Screen
-        name="Diagnostics"
-        options={{
-          tabBarIcon: ({ focused, color, size }) => (
-            <AnimatedIonicons
-              pose={focused ? 'focused' : 'unfocused'}
-              name="analytics"
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-        component={Diagnostics}
-      />
-      <Tab.Screen
-        name="Profile"
-        options={{
+          headerShown: false,
+          tabBarLabel: i18n.t('profile'),
+          tabBarActiveTintColor: colors.primary,
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedFeatherIcon
               pose={focused ? 'focused' : 'unfocused'}
@@ -339,10 +339,10 @@ function HomeRouter() {
             />
           ),
         }}
-        component={Profile}
+        component={ProfileStackScreen}
       />
-    </Tab.Navigator>
+    </RootTab.Navigator>
   );
 }
 
-export default DashboardStackScreen;
+export default AppRootNavigator;

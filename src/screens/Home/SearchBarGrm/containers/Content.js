@@ -20,11 +20,13 @@ function Content() {
     } else if (!searchPhrase) {
       fetchTrackingCodeIssueList(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchPhrase]);
 
   useEffect(() => {
     setSearchPhrase(null);
     fetchTrackingCodeIssueList(searchPhrase);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clicked]);
 
   if (loading) return <ActivityIndicator style={[{ marginTop: 10 }]} />;

@@ -1,6 +1,6 @@
 import { AntDesign, Feather } from '@expo/vector-icons';
 import React from 'react';
-import { TouchableOpacity, View, Text } from 'react-native';
+import { Dimensions, TouchableOpacity, View, Text } from 'react-native';
 import { colors } from '../../../../utils/colors';
 import { styles } from '../containers/Content.styles';
 import { i18n } from '../../../../translations/i18n';
@@ -12,6 +12,8 @@ type Props = {
 };
 
 export default function ActionButton({ label, onShowDialog, isEnabled }: Props) {
+  const isSmallLongText = label.length > 28 && Dimensions.get('screen').width < 375;
+
   return (
     <TouchableOpacity
       onPress={onShowDialog}
@@ -24,7 +26,10 @@ export default function ActionButton({ label, onShowDialog, isEnabled }: Props) 
         padding: label === i18n.t('escalate') ? 15 : 0
       }}
     >
-      <Text style={styles.subtitle}>{label}</Text>
+      <Text style={[styles.subtitle, isSmallLongText && { fontSize: 14 }]}>{isSmallLongText ?
+        `${label.substring(0, 14)}${'\n'}${label.substring(15)}` : label
+      }
+      </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <AntDesign
           style={{ marginRight: 5 }}

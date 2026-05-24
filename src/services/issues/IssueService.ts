@@ -13,7 +13,7 @@ const remoteRepository = new IssueRemoteRepository();
 
 const issueService = new BaseService<Issue>(localRepository, remoteRepository);
 
-export async function fetchIssueList(endpointType: string, fetchAll: boolean = false, search_term: string | null = null): Promise<Issue[] | null> {
+export async function fetchIssueList(endpointType: string, fetchAll: boolean = false, extraQueries: any[] | null = null, searchTerm: string | null = null): Promise<Issue[] | null> {
   try {
     const issueList = await issueService.getAll(
       null,
@@ -23,7 +23,8 @@ export async function fetchIssueList(endpointType: string, fetchAll: boolean = f
       fetchAll,
       'intake_date',
       'desc',
-      search_term
+      extraQueries,
+      searchTerm,
     );
     return issueList;
   } catch (error) {
@@ -34,7 +35,8 @@ export async function fetchIssueList(endpointType: string, fetchAll: boolean = f
 export async function fetchMoreIssueList(
   endpointType: string,
   offlinePaginatedListControlsRequest: OfflinePaginatedListRequestControls,
-  offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<Issue>
+  offlinePagingInitialTrackingInfo?: OfflinePagingInitialTrackingInfo<Issue>,
+  extraQueries: any[] | null = null
 ): Promise<{
   event: LocalGetAllEventInfo | undefined;
   results: Issue[];
@@ -43,7 +45,9 @@ export async function fetchMoreIssueList(
     const issueList = await issueService.getMore(
       endpointType,
       offlinePaginatedListControlsRequest,
-      offlinePagingInitialTrackingInfo
+      offlinePagingInitialTrackingInfo,
+      false,
+      extraQueries,
     );
     return issueList;
   } catch (error) {
