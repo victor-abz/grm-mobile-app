@@ -1,9 +1,17 @@
-const {
-  getSentryExpoConfig
-} = require("@sentry/react-native/metro");
+const { getDefaultConfig } = require('@expo/metro-config');
+
+let getBaseConfig = getDefaultConfig;
+try {
+  const sentryMetro = require('@sentry/react-native/metro');
+  if (sentryMetro?.getSentryExpoConfig) {
+    getBaseConfig = sentryMetro.getSentryExpoConfig;
+  }
+} catch (e) {
+  console.warn('Sentry metro config unavailable, using default Expo config');
+}
 
 module.exports = (async () => {
-  const config = await getSentryExpoConfig(__dirname);
+  const config = await getBaseConfig(__dirname);
   const { transformer, resolver } = config;
 
   config.transformer = {

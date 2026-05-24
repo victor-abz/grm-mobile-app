@@ -1,6 +1,6 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native';
-import Content from './containers';
+import IssueListView from './containers';
 import { styles } from './IssueList.style';
 import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
 
@@ -56,7 +56,7 @@ function IssueList({ assigneeIssueList, reporterIssueList }) {
 
   return (
     <SafeAreaView style={[customStyles.container, { flex: 1 }]}>
-      <Content
+      <IssueListView
         fetchMoreAssigneeIssueList={fetchMoreAssigneeIssueList}
         fetchMoreReporterIssueList={fetchMoreReporterIssueList}
         fetchMoreResolvedIssueList={fetchMoreResolvedIssueList}

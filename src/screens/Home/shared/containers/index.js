@@ -1,3 +1,3 @@
-import Content from "./Content";
+import IssueListView from "./IssueListView";
 
-export default Content;
+export default IssueListView;
