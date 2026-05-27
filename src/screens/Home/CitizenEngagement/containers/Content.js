@@ -4,10 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import { logger } from '../../../../utils/logger';
 import BigCard from '../../Dashboard/components/BigCard';
 
-import greenBg from '../../../../../assets/greenBg.png';
-import orangeBg from '../../../../../assets/orangeBg.png';
-import yellowBg from '../../../../../assets/yellowBg.png';
-import purpleBg from '../../../../../assets/purpleBg.png';
+import greenBg from '../../../../../assets/greenBg.webp';
+import orangeBg from '../../../../../assets/orangeBg.webp';
+import yellowBg from '../../../../../assets/yellowBg.webp';
+import purpleBg from '../../../../../assets/purpleBg.webp';
 
 const DATA = [
   {

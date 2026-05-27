@@ -1,12 +1,25 @@
+/* eslint-disable no-use-before-define */
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import moment from 'moment';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, ScrollView, Text, View, Alert, Image, TouchableOpacity } from 'react-native';
-import { Button, Dialog, Paragraph, Portal } from 'react-native-paper';
+import {
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet as RNStyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+  Alert,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
+import { Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { withObservables } from '@nozbe/watermelondb/react';
+import { AuthContext } from '../../../../providers/AuthProvider';
+import dayjs from '../../../../utils/dayjs';
 import watermelonManager from '../../../../database/watermelonManager';
 import dataManager from '../../../../services/DataManager'; // Import DataManager for proper API sync
 import { AttachmentList } from '../../../../components/AttachmentList/AttachmentList';
@@ -34,6 +47,7 @@ const Content = ({
 }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const { credentials } = useContext(AuthContext);
   const [showDialog, setShowDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -223,7 +237,13 @@ const Content = ({
     try {
       // ✅ Get user context for both assignment and reporter ID
       const userContext = dataManager.getUserContext();
-      console.log('🔍 [STEP3] User context for issue creation:', userContext);
+      const currentUsername = userContext?.user?.id || credentials?.username;
+      console.log(
+        '🔍 [STEP3] User context for issue creation:',
+        userContext,
+        'fallback username:',
+        currentUsername
+      );
 
       // Get the initial status from available statuses using shared utility processing
       const initialStatus = statuses.find((status) => {
@@ -288,15 +308,12 @@ const Content = ({
 
         status: initialStatusId,
 
-        reporter: userContext?.user?.id,
+        reporter: currentUsername,
 
         // Set project if available
         project: stepLocationParams.projectId || stepOneParams.selectedProject?.id || '',
 
-        ...(assignmentResult.shouldAssign &&
-          assignmentResult.assigneeId && {
-            assignee: assignmentResult.assigneeId,
-          }),
+        assignee: assignmentResult.assigneeId || currentUsername,
       };
 
       console.log('🔍 [STEP3] Prepared issue data for DataManager:', {
@@ -451,7 +468,7 @@ const Content = ({
           <Text style={styles.stepSubtitle}>{t('step_3_field_title_1')}</Text>
           <Text style={styles.stepDescription}>
             {stepTwoParams.date && stepTwoParams.date !== 'null'
-              ? moment(stepTwoParams.date).format('DD-MMMM-YYYY')
+              ? dayjs(stepTwoParams.date).format('DD-MMMM-YYYY')
               : '--'}
           </Text>
         </View>
@@ -517,42 +534,51 @@ const Content = ({
         </Button>
       </View>
 
-      <Portal>
-        <Dialog visible={showDialog} onDismiss={_hideDialog}>
-          <Dialog.Title>{t('warning')}</Dialog.Title>
-          <Dialog.Content>
-            <Paragraph>{t('confidential_complaint')}</Paragraph>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button
-              theme={theme}
-              style={{
-                alignSelf: 'center',
-                backgroundColor: '#E74C3C',
-                paddingLeft: 15,
-                paddingRight: 15,
-              }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={_hideDialog}
-            >
-              {t('no')}
-            </Button>
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center', margin: 24, paddingLeft: 15, paddingRight: 15 }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={() => {
-                _hideDialog();
-                submitIssue();
-              }}
-            >
-              {t('yes')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      <Modal
+        visible={showDialog}
+        transparent
+        animationType="fade"
+        onRequestClose={_hideDialog}
+        statusBarTranslucent
+      >
+        <TouchableWithoutFeedback onPress={_hideDialog}>
+          <View style={dialogStyles.backdrop}>
+            <TouchableWithoutFeedback>
+              <View style={dialogStyles.card}>
+                <View style={dialogStyles.header}>
+                  <Text style={dialogStyles.title}>{t('warning')}</Text>
+                </View>
+                <View style={dialogStyles.body}>
+                  <Text style={dialogStyles.content}>{t('confidential_complaint')}</Text>
+                </View>
+                <View style={dialogStyles.footer}>
+                  <TouchableOpacity
+                    style={[dialogStyles.button, dialogStyles.destructiveButton]}
+                    onPress={_hideDialog}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[dialogStyles.buttonText, dialogStyles.destructiveButtonText]}>
+                      {t('no')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[dialogStyles.button, dialogStyles.primaryButton]}
+                    onPress={() => {
+                      _hideDialog();
+                      submitIssue();
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[dialogStyles.buttonText, dialogStyles.primaryButtonText]}>
+                      {t('yes')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* Fullscreen Image Modal */}
       {modalVisible && (
@@ -592,5 +618,50 @@ const enhance = withObservables([], () => ({
   types: watermelonManager.getDatabase().get('grm_issue_types').query().observe(),
   statuses: watermelonManager.getDatabase().get('grm_issue_statuses').query().observe(),
 }));
+
+const dialogStyles = RNStyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 4 },
+  title: { fontSize: 20, fontFamily: 'Poppins_600SemiBold', color: '#1a1a1a' },
+  body: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8 },
+  content: { fontSize: 15, lineHeight: 22, color: '#555', fontFamily: 'Poppins_400Regular' },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  primaryButton: { backgroundColor: colors.primary },
+  destructiveButton: { backgroundColor: '#fef2f2' },
+  buttonText: { fontSize: 15, fontFamily: 'Poppins_500Medium' },
+  primaryButtonText: { color: '#fff' },
+  destructiveButtonText: { color: '#dc2626' },
+});
 
 export default enhance(Content);

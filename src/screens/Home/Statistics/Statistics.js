@@ -3,7 +3,7 @@ import { ScrollView, View, Text, RefreshControl } from 'react-native';
 import { ActivityIndicator, Card, Button } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { withObservables } from '@nozbe/watermelondb/react';
-import moment from 'moment';
+import dayjs from '../../../utils/dayjs';
 
 // Services and utilities
 import dataManager from '../../../services/DataManager';
@@ -161,13 +161,13 @@ const Statistics = ({
       hasLookupMaps: !!lookupMaps,
     });
 
-    const threeMonthsAgo = moment().subtract(3, 'months');
-    const sixMonthsAgo = moment().subtract(6, 'months');
+    const threeMonthsAgo = dayjs().subtract(3, 'month');
+    const sixMonthsAgo = dayjs().subtract(6, 'month');
 
     // Process issues data
     const processedIssues = issues.map((issue) => {
       const rawIssue = issue._raw || issue;
-      const issueDate = moment(rawIssue.issue_date || rawIssue.intake_date);
+      const issueDate = dayjs(rawIssue.issue_date || rawIssue.intake_date);
 
       return {
         ...rawIssue,
@@ -182,22 +182,22 @@ const Statistics = ({
 
     // Calculate period metrics
     const currentMonthIssues = processedIssues.filter((issue) =>
-      issue.issueDate.isAfter(moment().startOf('month'))
+      issue.issueDate.isAfter(dayjs().startOf('month'))
     );
     const lastMonthIssues = processedIssues.filter((issue) =>
       issue.issueDate.isBetween(
-        moment().subtract(1, 'month').startOf('month'),
-        moment().subtract(1, 'month').endOf('month')
+        dayjs().subtract(1, 'month').startOf('month'),
+        dayjs().subtract(1, 'month').endOf('month')
       )
     );
 
     const currentWeekIssues = processedIssues.filter((issue) =>
-      issue.issueDate.isAfter(moment().startOf('week'))
+      issue.issueDate.isAfter(dayjs().startOf('week'))
     );
     const lastWeekIssues = processedIssues.filter((issue) =>
       issue.issueDate.isBetween(
-        moment().subtract(1, 'week').startOf('week'),
-        moment().subtract(1, 'week').endOf('week')
+        dayjs().subtract(1, 'week').startOf('week'),
+        dayjs().subtract(1, 'week').endOf('week')
       )
     );
 
@@ -287,8 +287,8 @@ const Statistics = ({
 
       // Collect data for last 3 months
       for (let i = 2; i >= 0; i--) {
-        const monthStart = moment().subtract(i, 'months').startOf('month');
-        const monthEnd = moment().subtract(i, 'months').endOf('month');
+        const monthStart = dayjs().subtract(i, 'month').startOf('month');
+        const monthEnd = dayjs().subtract(i, 'month').endOf('month');
         const monthLabel = monthStart.format('MMM YY');
         const monthIndex = 2 - i; // Convert to 0-based index for array
 
@@ -383,7 +383,7 @@ const Statistics = ({
     const monthlyData = [];
     const monthLabels = [];
     for (let i = 5; i >= 0; i--) {
-      const month = moment().subtract(i, 'months');
+      const month = dayjs().subtract(i, 'month');
       const monthStart = month.clone().startOf('month');
       const monthEnd = month.clone().endOf('month');
 
@@ -881,7 +881,7 @@ const Statistics = ({
           marginBottom: 10,
         }}
       >
-        {t('Last updated')}: {moment().format('DD MMM YYYY, HH:mm')}
+        {t('Last updated')}: {dayjs().format('DD MMM YYYY, HH:mm')}
       </Text>
     </ScrollView>
   );

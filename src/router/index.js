@@ -1,9 +1,7 @@
 import {
-  Poppins_200ExtraLight,
-  Poppins_300Light,
   Poppins_400Regular,
-  Poppins_400Regular_Italic,
   Poppins_500Medium,
+  Poppins_600SemiBold,
   Poppins_700Bold,
   useFonts,
 } from '@expo-google-fonts/poppins';
@@ -23,10 +21,8 @@ const Router = ({ theme: _theme }) => {
   const [fontsLoaded, fontError] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
+    Poppins_600SemiBold,
     Poppins_700Bold,
-    Poppins_400Regular_Italic,
-    Poppins_300Light,
-    Poppins_200ExtraLight,
   });
 
   // Show loading while authentication state is being determined or fonts are loading

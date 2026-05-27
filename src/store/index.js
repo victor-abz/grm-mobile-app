@@ -1,15 +1,16 @@
 import { createStore, compose } from 'redux';
 import { composeWithDevTools } from 'redux-devtools-extension';
 import reducers from './ducks';
-import Reactotron from '../../ReactotronConfig';
 
-let enhancerCompose = compose;
+let middleWare;
 
 // eslint-disable-next-line no-undef
 if (__DEV__) {
-  enhancerCompose = composeWithDevTools;
+  const Reactotron = require('../../ReactotronConfig').default; // eslint-disable-line global-require
+  middleWare = composeWithDevTools(Reactotron.createEnhancer());
+} else {
+  middleWare = compose();
 }
-const middleWare = enhancerCompose(Reactotron.createEnhancer());
 
 const store = createStore(reducers, middleWare);
 

@@ -1,0 +1,13 @@
+{
+  "embeddingModel": "transformer",
+  "hnswConfig": {
+    "M": 16,
+    "efConstruction": 200,
+    "efSearch": 100
+  },
+  "qualityThreshold": 0.5,
+  "promotionThreshold": 2,
+  "databasePath": "/Users/victor/Documents/dev/grm-mobile-app/.agentic-qe/data/memory.db",
+  "hnswIndexPath": "/Users/victor/Documents/dev/grm-mobile-app/.agentic-qe/data/hnsw/index.bin",
+  "initialized": "2026-05-08T15:17:53.356Z"
+}

@@ -1,21 +1,24 @@
-import React, { useState, useContext } from 'react';
+/* eslint-disable no-use-before-define */
+import React, { useState, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, View, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import {
-  Button,
-  TextInput,
-  Portal,
-  Dialog,
-  HelperText,
-  IconButton,
-  Avatar,
-} from 'react-native-paper';
+  Modal,
+  StyleSheet as RNStyleSheet,
+  Text,
+  View,
+  Alert,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  ActivityIndicator,
+} from 'react-native';
+import { Button, TextInput, HelperText, IconButton, Avatar } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../../../../providers/AuthProvider';
 import LanguageSelector from '../../../../translations/TranslationComponent';
 import { colors } from '../../../../utils/colors';
 import ProfileItem from '../components/ProfileItem';
 import { useFrappe } from '../../../../providers/FrappeProvider';
+import { getVersionDisplay, checkForUpdates } from '../../../../utils/version';
 import styles from './Content.style';
 
 // Create a wrapper component using React Native Paper Avatar
@@ -41,6 +44,10 @@ const Content = ({ profileData, isOnline, error }) => {
   const [passwordError, setPasswordError] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
+
+  useEffect(() => {
+    checkForUpdates(t);
+  }, []);
 
   const handleImagePick = async () => {
     if (!isOnline) {
@@ -188,8 +195,12 @@ const Content = ({ profileData, isOnline, error }) => {
       <View style={styles.headerSection}>
         <View style={styles.headerContent}>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{profileData?.full_name || profileData?.email}</Text>
-            <Text style={styles.userEmail}>{profileData?.email}</Text>
+            <Text style={styles.userName} numberOfLines={2}>
+              {profileData?.full_name || profileData?.email}
+            </Text>
+            <Text style={styles.userEmail} numberOfLines={1}>
+              {profileData?.email}
+            </Text>
             {isOnline && (
               <TouchableOpacity
                 onPress={() => setShowPasswordDialog(true)}
@@ -255,16 +266,17 @@ const Content = ({ profileData, isOnline, error }) => {
       <View style={styles.settingsSection}>
         <LanguageSelector />
 
-        {isOnline && (
-          <Button
-            mode="outlined"
-            onPress={() => setShowPasswordDialog(true)}
-            style={styles.button}
-            disabled={isUpdating}
-          >
-            {t('change_password')}
-          </Button>
-        )}
+        <Text
+          style={{
+            textAlign: 'center',
+            color: '#999',
+            fontSize: 12,
+            marginVertical: 12,
+            fontFamily: 'Poppins_400Regular',
+          }}
+        >
+          {t('version_label')}: {getVersionDisplay()}
+        </Text>
 
         <Button
           mode="contained"
@@ -293,10 +305,23 @@ const Content = ({ profileData, isOnline, error }) => {
         </Button>
       </View>
 
-      <Portal>
-        <Dialog
-          visible={showPasswordDialog}
-          onDismiss={() => {
+      <Modal
+        visible={showPasswordDialog}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isUpdating) {
+            setShowPasswordDialog(false);
+            setPasswordError('');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+          }
+        }}
+        statusBarTranslucent
+      >
+        <TouchableWithoutFeedback
+          onPress={() => {
             if (!isUpdating) {
               setShowPasswordDialog(false);
               setPasswordError('');
@@ -306,64 +331,142 @@ const Content = ({ profileData, isOnline, error }) => {
             }
           }}
         >
-          <Dialog.Title>{t('Change Password')}</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              label={t('Current Password')}
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry
-              style={styles.input}
-              disabled={isUpdating}
-              error={!!passwordError}
-            />
-            <TextInput
-              label={t('New Password')}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-              style={styles.input}
-              disabled={isUpdating}
-              error={!!passwordError}
-            />
-            <TextInput
-              label={t('Confirm New Password')}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              style={styles.input}
-              disabled={isUpdating}
-              error={!!passwordError}
-            />
-            {passwordError ? (
-              <HelperText type="error" visible={!!passwordError}>
-                {passwordError}
-              </HelperText>
-            ) : null}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button
-              onPress={() => {
-                setShowPasswordDialog(false);
-                setPasswordError('');
-                setCurrentPassword('');
-                setNewPassword('');
-                setConfirmPassword('');
-              }}
-              disabled={isUpdating}
-            >
-              {t('Cancel')}
-            </Button>
-            <Button onPress={handlePasswordChange} loading={isUpdating} disabled={isUpdating}>
-              {t('Update')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+          <View style={pwDialogStyles.backdrop}>
+            <TouchableWithoutFeedback>
+              <View style={pwDialogStyles.card}>
+                <View style={pwDialogStyles.header}>
+                  <Text style={pwDialogStyles.title}>{t('Change Password')}</Text>
+                </View>
+                <View style={pwDialogStyles.body}>
+                  <TextInput
+                    label={t('Current Password')}
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    secureTextEntry
+                    style={styles.input}
+                    mode="outlined"
+                    disabled={isUpdating}
+                    error={!!passwordError}
+                    outlineStyle={{ borderRadius: 12 }}
+                  />
+                  <TextInput
+                    label={t('New Password')}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry
+                    style={styles.input}
+                    mode="outlined"
+                    disabled={isUpdating}
+                    error={!!passwordError}
+                    outlineStyle={{ borderRadius: 12 }}
+                  />
+                  <TextInput
+                    label={t('Confirm New Password')}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    style={styles.input}
+                    mode="outlined"
+                    disabled={isUpdating}
+                    error={!!passwordError}
+                    outlineStyle={{ borderRadius: 12 }}
+                  />
+                  {passwordError ? (
+                    <HelperText type="error" visible={!!passwordError}>
+                      {passwordError}
+                    </HelperText>
+                  ) : null}
+                </View>
+                <View style={pwDialogStyles.footer}>
+                  <TouchableOpacity
+                    style={[pwDialogStyles.button, pwDialogStyles.secondaryButton]}
+                    onPress={() => {
+                      setShowPasswordDialog(false);
+                      setPasswordError('');
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                    }}
+                    disabled={isUpdating}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[pwDialogStyles.buttonText, pwDialogStyles.secondaryButtonText]}>
+                      {t('Cancel')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      pwDialogStyles.button,
+                      pwDialogStyles.primaryButton,
+                      isUpdating && pwDialogStyles.disabledButton,
+                    ]}
+                    onPress={handlePasswordChange}
+                    disabled={isUpdating}
+                    activeOpacity={0.8}
+                  >
+                    {isUpdating ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={[pwDialogStyles.buttonText, pwDialogStyles.primaryButtonText]}>
+                        {t('Update')}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {renderErrorMessage()}
     </View>
   );
 };
+
+const pwDialogStyles = RNStyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 4 },
+  title: { fontSize: 20, fontFamily: 'Poppins_600SemiBold', color: '#1a1a1a' },
+  body: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8 },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  primaryButton: { backgroundColor: colors.primary },
+  secondaryButton: { backgroundColor: '#f0f0f0' },
+  disabledButton: { backgroundColor: '#e0e0e0', opacity: 0.6 },
+  buttonText: { fontSize: 15, fontFamily: 'Poppins_500Medium' },
+  primaryButtonText: { color: '#fff' },
+  secondaryButtonText: { color: '#666' },
+});
 
 export default Content;

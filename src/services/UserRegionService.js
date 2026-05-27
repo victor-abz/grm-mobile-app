@@ -168,23 +168,23 @@ class UserRegionService {
         return this.regionHierarchy;
       }
 
-      // Step 2: Trigger WatermelonDB sync if we have sync capability
-      if (this.syncManager && this.credentials) {
-        console.log('🔄 [USER_REGIONS] Triggering WatermelonDB sync for regions...');
+      // Step 2: Try local DB first (non-blocking)
+      let regions = await this.getRegionsFromLocalDB();
+      logger.info('UserRegionService: Local DB regions check', { count: regions.length });
+
+      // Step 3: Only sync if local DB is empty and we have sync capability
+      if (regions.length === 0 && this.syncManager && this.credentials) {
+        logger.info('UserRegionService: No local regions, triggering sync');
 
         try {
           await this.syncManager.sync();
-          console.log('✅ [USER_REGIONS] Sync completed, processing regions...');
+          regions = await this.getRegionsFromLocalDB();
         } catch (syncError) {
-          console.error('❌ [USER_REGIONS] Sync failed:', syncError);
-          // Continue with local data
+          logger.error('UserRegionService: Sync failed, continuing with local data', syncError);
         }
       }
 
-      // Step 3: Get regions from local WatermelonDB
-      console.log('📱 [USER_REGIONS] Fetching regions from local WatermelonDB...');
-      const regions = await this.getRegionsFromLocalDB();
-      console.log(`📱 [USER_REGIONS] Found ${regions.length} regions in local DB`);
+      logger.info('UserRegionService: Processing regions', { count: regions.length });
 
       // Step 4: Get user context for region filtering
       const userContext = await this.getUserContext();
@@ -216,7 +216,7 @@ class UserRegionService {
   /**
    * Get regions from local WatermelonDB
    */
-  static async getRegionsFromLocalDB() {
+  async getRegionsFromLocalDB() {
     try {
       const database = watermelonManager.getDatabase();
       if (!database) {
@@ -274,7 +274,7 @@ class UserRegionService {
   /**
    * Check if user is assigned to region
    */
-  static isUserAssignedToRegion(region, userContext) {
+  isUserAssignedToRegion(region, userContext) {
     if (!userContext?.accessible_regions) return false;
     return userContext.accessible_regions.some(
       (accessibleRegion) => accessibleRegion.name === region.id || accessibleRegion.id === region.id
@@ -284,7 +284,7 @@ class UserRegionService {
   /**
    * Get user role for region
    */
-  static getUserRoleForRegion(region, userContext) {
+  getUserRoleForRegion(region, userContext) {
     if (!userContext?.assignments) return null;
     const assignment = userContext.assignments.find(
       (assgn) => assgn.region?.id === region.id || assgn.region?.name === region.id
@@ -295,7 +295,7 @@ class UserRegionService {
   /**
    * Get user department for region
    */
-  static getUserDepartmentForRegion(region, userContext) {
+  getUserDepartmentForRegion(region, userContext) {
     if (!userContext?.assignments) return null;
     const assignment = userContext.assignments.find(
       (assgn) => assgn.region?.id === region.id || assgn.region?.name === region.id
@@ -306,7 +306,7 @@ class UserRegionService {
   /**
    * Build region hierarchy
    */
-  static buildRegionHierarchy(regions) {
+  buildRegionHierarchy(regions) {
     // Create a map for quick lookup
     const regionMap = new Map();
     regions.forEach((region) => {
@@ -336,7 +336,7 @@ class UserRegionService {
   /**
    * Check if cached data is fresh (less than 5 minutes old)
    */
-  static isDataFresh() {
+  isDataFresh() {
     if (!this.lastFetchTime) return false;
     const fiveMinutes = 5 * 60 * 1000;
     return Date.now() - this.lastFetchTime < fiveMinutes;
@@ -506,7 +506,7 @@ class UserRegionService {
   /**
    * Request location permission
    */
-  static async requestLocationPermission() {
+  async requestLocationPermission() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       const granted = status === 'granted';
@@ -527,7 +527,7 @@ class UserRegionService {
   /**
    * Get current location
    */
-  static async getCurrentLocation() {
+  async getCurrentLocation() {
     try {
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
@@ -557,7 +557,7 @@ class UserRegionService {
   /**
    * Cache user location
    */
-  static async cacheLocation(location) {
+  async cacheLocation(location) {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.USER_LOCATION, JSON.stringify(location));
     } catch (error) {
@@ -568,7 +568,7 @@ class UserRegionService {
   /**
    * Get cached location
    */
-  static async getCachedLocation() {
+  async getCachedLocation() {
     try {
       const cachedLocation = await AsyncStorage.getItem(STORAGE_KEYS.USER_LOCATION);
       return cachedLocation ? JSON.parse(cachedLocation) : null;

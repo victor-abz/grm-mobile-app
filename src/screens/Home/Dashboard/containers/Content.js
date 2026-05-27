@@ -10,12 +10,12 @@ import Chart from '../../../../../assets/chart_line_solid.svg';
 import FileIcon from '../../../../../assets/file_alt_regular.svg';
 import SyncIcon from '../../../../../assets/sync_alt_solid.svg';
 import TeamWorkIcon from '../../../../../assets/team-work.svg';
-import group8043 from '../../../../../assets/drawable-xhdpi/group_8043.png';
-import group2 from '../../../../../assets/drawable-xhdpi/group_2.png';
-import BG1 from '../../../../../assets/BG_1.png';
-import BG2 from '../../../../../assets/BG_2.png';
-import BG9 from '../../../../../assets/BG_9.png';
-import smallRectangle from '../../../../../assets/small-rectangle.png';
+import group8043 from '../../../../../assets/drawable-xhdpi/group_8043.webp';
+import group2 from '../../../../../assets/drawable-xhdpi/group_2.webp';
+import BG1 from '../../../../../assets/BG_1.webp';
+import BG2 from '../../../../../assets/BG_2.webp';
+import BG9 from '../../../../../assets/BG_9.webp';
+import smallRectangle from '../../../../../assets/small-rectangle.webp';
 import lookupDataManager from '../../../../services/LookupDataManager';
 import dataManager from '../../../../services/DataManager';
 import { logger } from '../../../../utils/logger';
@@ -149,28 +149,28 @@ const Content = () => {
       >
         <SmallCard
           image={BG1}
-          onCardPress={() => Alert.alert(t('Upcoming feature'))}
+          onCardPress={() => Alert.alert(t('upcoming_feature'))}
           title={t('PAI')}
           icon={<Chart />}
         />
         <SmallCard
           image={BG2}
-          onCardPress={() => Alert.alert(t('Upcoming feature'))}
-          title={t('Apprendre \net actualités')}
+          onCardPress={() => Alert.alert(t('upcoming_feature'))}
+          title={t('learn_and_news')}
           icon={<FileIcon />}
         />
       </View>
       <BigCard
         image={BG9}
         onCardPress={() => navigation.navigate('CitizenEngagement')}
-        title={t("Mécanisme d'engagement des citoyens")}
+        title={t('citizen_engagement')}
         icon={<TeamWorkIcon />}
       />
       <View style={{ marginVertical: 20 }}>
         <BigCard
           image={smallRectangle}
           onCardPress={() => navigation.navigate('SyncAttachments')}
-          title={t('Sync Files')}
+          title={t('sync_files')}
           icon={<SyncIcon />}
           cardHeight={79}
         />
@@ -195,60 +195,6 @@ const Content = () => {
           </Button>
         </View>
       )}
-
-      {/* <ReactNativeSwipeableViewStack */}
-      {/*  // onSwipe={(swipedIndex) => this.onCardSwipe(swipedIndex)} */}
-      {/*  initialSelectedIndex={1} */}
-      {/*  stackSpacing={Platform.OS === "ios" ? 30 : 20} */}
-      {/*  onItemClicked={() => console.log("click")} */}
-      {/*  pointerEvents="none" */}
-      {/*  renderItem={(element) => ( */}
-      {/*    <Card */}
-      {/*      pointerEvents="none" */}
-      {/*      style={{ */}
-      {/*        width: screenWidth * 0.888, */}
-      {/*        alignSelf: "center", */}
-      {/*        borderRadius: 15, */}
-      {/*        backgroundColor: "white", */}
-      {/*        padding: 19, */}
-      {/*      }} */}
-      {/*    > */}
-      {/*      <Headline */}
-      {/*        style={{ */}
-      {/*          color: "#707070", */}
-      {/*          fontWeight: "500", */}
-      {/*        }} */}
-      {/*      > */}
-      {/*        Prochaine tâche */}
-      {/*      </Headline> */}
-      {/*      <Paragraph */}
-      {/*        style={{ */}
-      {/*          color: "#707070", */}
-      {/*        }} */}
-      {/*      > */}
-      {/*        Lorem Ipsum is simply dummy text of the printing and typesetting */}
-      {/*        industry. Lorem Ipsum has been the industry's standard dummy text */}
-      {/*        ever since the 1500s. */}
-      {/*      </Paragraph> */}
-      {/*      <Button */}
-      {/*        onPress={() => alert("hey")} */}
-      {/*        style={{ */}
-      {/*          alignSelf: "flex-end", */}
-      {/*          backgroundColor: "#24c38b", */}
-      {/*          width: 115, */}
-      {/*          marginTop: 20, */}
-      {/*          borderRadius: 7, */}
-      {/*          padding: 5, */}
-      {/*        }} */}
-      {/*        labelStyle={{ */}
-      {/*          color: "white", */}
-      {/*        }} */}
-      {/*      > */}
-      {/*        Tâches */}
-      {/*      </Button> */}
-      {/*    </Card> */}
-      {/*  )} */}
-      {/* /> */}
     </ScrollView>
   );
 };

@@ -147,7 +147,7 @@ class LookupDataManager {
   /**
    * Get table name for data type
    */
-  static getTableName(type) {
+  getTableName(type) {
     const tableMap = {
       categories: 'grm_issue_categories',
       types: 'grm_issue_types',

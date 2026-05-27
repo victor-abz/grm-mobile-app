@@ -1,9 +1,9 @@
-import moment from 'moment';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, TouchableHighlight, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { SwipeListView } from 'react-native-swipe-list-view';
+import dayjs from '../../../../../utils/dayjs';
 
 const styles = StyleSheet.create({
   container: {
@@ -139,7 +139,7 @@ const SectionList = ({
               {t('by_label')}
               {author?.name}
             </Text>
-            <Text style={styles.itemDateLabel}>{moment(date).format('LLL')}</Text>
+            <Text style={styles.itemDateLabel}>{dayjs(date).format('LLL')}</Text>
           </View>
         </View>
       </View>

@@ -5,7 +5,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import moment from 'moment';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -34,6 +33,7 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { withObservables } from '@nozbe/watermelondb/react';
+import dayjs from '../../../../utils/dayjs';
 import CustomDropDownPicker from '../../../../components/CustomDropDownPicker/CustomDropDownPicker';
 import { AttachmentList } from '../../../../components/AttachmentList/AttachmentList';
 import watermelonManager from '../../../../database/watermelonManager';
@@ -702,7 +702,7 @@ const Content = ({ stepOneParams, categories = [], types = [], projectLinks = []
             mode="contained"
             onPress={showDatePicker}
           >
-            {date ? moment(date).format('DD-MMMM-YY') : t('step_2_select_date')}
+            {date ? dayjs(date).format('DD-MMMM-YY') : t('step_2_select_date')}
           </Button>
           <Button
             compact

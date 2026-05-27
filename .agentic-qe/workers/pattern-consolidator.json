@@ -1,0 +1,8 @@
+{
+  "name": "pattern-consolidator",
+  "enabled": true,
+  "interval": 1800000,
+  "projectRoot": "/Users/victor/Documents/dev/grm-mobile-app",
+  "dataDir": "/Users/victor/Documents/dev/grm-mobile-app/.agentic-qe/data",
+  "createdAt": "2026-05-08T15:17:54.067Z"
+}

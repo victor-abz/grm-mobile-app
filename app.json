@@ -2,7 +2,6 @@
   "expo": {
     "name": "grm-app",
     "slug": "grm-app",
-    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/egrm-logo.png",
     "splash": {
@@ -12,7 +11,6 @@
     },
     "updates": {
       "enabled": true,
-      "url": "https://egrm-updates.victor-abz.com",
       "fallbackToCacheTimeout": 0,
       "checkAutomatically": "ON_LOAD"
     },
@@ -24,7 +22,7 @@
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
       },
-      "bundleIdentifier": "com.leonardogutierrezh.grmapp"
+      "bundleIdentifier": "com.worldbank.grm"
     },
     "android": {
       "adaptiveIcon": {
@@ -41,7 +39,7 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "package": "com.rtda.grmapp"
+      "package": "com.worldbank.grm"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -72,24 +70,12 @@
         }
       ],
       "expo-font",
-      "expo-localization",
-      "expo-secure-store",
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "egrm",
-          "organization": "victor-gu"
-        }
-      ]
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {
         "projectId": "13cc8fd9-97c4-46f0-9f52-d0b0043066cd"
       }
-    },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
     },
     "sdkVersion": "51.0.0"
   }

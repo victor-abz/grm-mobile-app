@@ -1,4 +1,5 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
+import { Q } from '@nozbe/watermelondb';
 import * as FileSystem from 'expo-file-system';
 import { logger } from '../utils/logger';
 
@@ -683,36 +684,34 @@ class WatermelonSyncManager {
     let total = 0;
 
     try {
-      const { collections } = this.database;
+      const tableNames = Object.keys(this.database.schema.tables);
 
-      // Create concurrent queries for all collections
-      const collectionPromises = Object.entries(collections).map(
-        async ([tableName, collection]) => {
-          try {
-            const [created, updated, deleted] = await Promise.all([
-              collection.query().where('_status', 'created').fetchCount(),
-              collection.query().where('_status', 'updated').fetchCount(),
-              collection.query().where('_status', 'deleted').fetchCount(),
-            ]);
+      // Create concurrent queries for all collections using schema table names
+      const collectionPromises = tableNames.map(async (tableName) => {
+        try {
+          const collection = this.database.get(tableName);
+          const [created, updated, deleted] = await Promise.all([
+            collection.query(Q.where('_status', 'created')).fetchCount(),
+            collection.query(Q.where('_status', 'updated')).fetchCount(),
+            collection.query(Q.where('_status', 'deleted')).fetchCount(),
+          ]);
 
-            if (created || updated || deleted) {
-              return {
-                tableName,
-                counts: { created, updated, deleted },
-                total: created + updated + deleted,
-              };
-            }
-            return null;
-          } catch (tableErr) {
-            // Skip table if any error occurs, but log for debugging
-            logger.warn('WatermelonSyncManager: Failed to inspect collection for pending changes', {
+          if (created || updated || deleted) {
+            return {
               tableName,
-              error: tableErr.message,
-            });
-            return null;
+              counts: { created, updated, deleted },
+              total: created + updated + deleted,
+            };
           }
+          return null;
+        } catch (tableErr) {
+          logger.warn('WatermelonSyncManager: Failed to inspect collection for pending changes', {
+            tableName,
+            error: tableErr.message,
+          });
+          return null;
         }
-      );
+      });
 
       // Wait for all collection queries to complete
       const collectionResults = await Promise.all(collectionPromises);

@@ -1,9 +1,9 @@
-import moment from 'moment';
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Linking, Platform, ScrollView, Text, View } from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
 import StarRating from 'react-native-star-rating-widget';
+import dayjs from '../../../../utils/dayjs';
 import { colors } from '../../../../utils/colors';
 import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
@@ -86,12 +86,6 @@ const Content = ({ issue, navigation, statuses = [], userContext }) => {
 
     const rawData = issueData._raw || issueData;
 
-    console.log(
-      '🔍 [IssueActions] Raw data rawData.matwi:',
-      rawData.rating,
-      Number.isNaN(rawData.rating)
-    );
-
     const enriched = {
       ...rawData,
 
@@ -100,14 +94,14 @@ const Content = ({ issue, navigation, statuses = [], userContext }) => {
 
       // Format dates
       issueDateFormatted: rawData.issue_date
-        ? moment(rawData.issue_date).format('DD-MMM-YYYY HH:mm')
+        ? dayjs(rawData.issue_date).format('DD-MMM-YYYY HH:mm')
         : '',
       intakeDateFormatted: rawData.intake_date
-        ? moment(rawData.intake_date).format('DD-MMM-YYYY HH:mm')
+        ? dayjs(rawData.intake_date).format('DD-MMM-YYYY HH:mm')
         : '',
 
       // Calculate days ago (memoized calculation)
-      daysAgo: rawData.intake_date ? moment().diff(moment(rawData.intake_date), 'days') : 0,
+      daysAgo: rawData.intake_date ? dayjs().diff(dayjs(rawData.intake_date), 'day') : 0,
 
       // Contact information handling
       contact_information: rawData.contact_information
@@ -118,7 +112,7 @@ const Content = ({ issue, navigation, statuses = [], userContext }) => {
         : null,
 
       // Handle citizen data
-      citizen: rawData.citizen || 'Anonymous',
+      citizen: rawData.citizen || t('anonymous'),
       citizen_type: rawData.citizen_type,
 
       // Other fields
@@ -127,13 +121,6 @@ const Content = ({ issue, navigation, statuses = [], userContext }) => {
       escalate_flag: rawData.escalate_flag || false,
       comments: rawData.comments || [],
     };
-
-    console.log('✅ [IssueActions] Enriched issue:', {
-      id: enriched.id,
-      statusLabel: enriched.statusLabel,
-      daysAgo: enriched.daysAgo,
-      citizen: enriched.citizen,
-    });
 
     return enriched;
   }, [
@@ -163,23 +150,15 @@ const Content = ({ issue, navigation, statuses = [], userContext }) => {
 
   // ========== LINKING FUNCTIONS ==========
   const whatsApp = () => {
-    Linking.openURL(WHATSAPP_LINK + (enrichedIssue?.contact_information?.contact || ''))
-      .then((value) => {
-        console.log('whatsapp result: ', value);
-      })
-      .catch((reason1) => {
-        console.error('Oups! An error occurred', reason1);
-      });
+    Linking.openURL(WHATSAPP_LINK + (enrichedIssue?.contact_information?.contact || '')).catch(
+      () => {}
+    );
   };
 
   const phoneCall = () => {
-    Linking.openURL(PHONE_CALL_LINK + (enrichedIssue?.contact_information?.contact || ''))
-      .then((value) => {
-        console.log('phone_call result: ', value);
-      })
-      .catch((reason1) => {
-        console.error('phone_call: Oups! An error occurred', reason1);
-      });
+    Linking.openURL(PHONE_CALL_LINK + (enrichedIssue?.contact_information?.contact || '')).catch(
+      () => {}
+    );
   };
 
   // ========== ACTION HANDLERS ==========

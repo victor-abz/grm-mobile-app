@@ -1,7 +1,7 @@
-import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
+import dayjs from '../../../../utils/dayjs';
 import { colors } from '../../../../utils/colors';
 import BarChartGrm from '../components/BarChartGrm';
 import PieChartGrm from '../components/PieChartGrm';
@@ -81,13 +81,15 @@ const Content = ({
 
     const labels = [];
     issues.forEach((value) => {
-      const date = moment(value.created_date).format('DD-MMM-YYYY');
+      const date = dayjs(value.created_date).format('DD-MMM-YYYY');
       const i = labels.indexOf(date);
       if (i === -1) {
         labels.push(date);
       }
     });
-    labels.sort((objA, objB) => moment(objA, 'DD-MMM-YYYY') - moment(objB, 'DD-MMM-YYYY'));
+    labels.sort(
+      (objA, objB) => dayjs(objA, 'DD-MMM-YYYY').valueOf() - dayjs(objB, 'DD-MMM-YYYY').valueOf()
+    );
 
     const dataSet = [];
     labels.forEach(() => dataSet.push(0));
@@ -240,7 +242,7 @@ const Content = ({
         setDataIssueSubComponent(_dataIssueSubComponent);
       }
 
-      const date = moment(item.created_date).format('DD-MMM-YYYY');
+      const date = dayjs(item.created_date).format('DD-MMM-YYYY');
       const i = labels.indexOf(date);
       if (i !== -1) {
         dataSet[i] += 1;

@@ -15,7 +15,12 @@
         "buildConfiguration": "Debug",
         "simulator": true
       },
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "APP_VARIANT": "development",
+        "EXPO_PUBLIC_FRAPPE_BASE_URL": "https://prime-physically-fowl.ngrok-free.app",
+        "EXPO_PUBLIC_DEFAULT_LANGUAGE": "rw"
+      }
     },
     "preview": {
       "extends": "production",
@@ -27,7 +32,12 @@
         "distribution": "internal",
         "simulator": false
       },
-      "channel": "staging"
+      "channel": "development",
+      "env": {
+        "APP_VARIANT": "preview",
+        "EXPO_PUBLIC_FRAPPE_BASE_URL": "https://prime-physically-fowl.ngrok-free.app",
+        "EXPO_PUBLIC_DEFAULT_LANGUAGE": "rw"
+      }
     },
     "production": {
       "android": {
@@ -38,7 +48,12 @@
         "simulator": false
       },
       "channel": "production",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "APP_VARIANT": "production",
+        "EXPO_PUBLIC_FRAPPE_BASE_URL": "https://production.your-frappe-instance.com",
+        "EXPO_PUBLIC_DEFAULT_LANGUAGE": "rw"
+      }
     }
   },
   "submit": {

@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 /**
  * useIssueActions Hook - Centralized action state management
  * Replaces scattered useState calls and repetitive dialog management
@@ -80,7 +81,7 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
     if (enrichedIssue.citizen_type !== 'Confidential') {
       return enrichedIssue.citizen;
     }
-    return buttonStates.isIssueAssignedToMe ? enrichedIssue.citizen : 'Anonymous';
+    return buttonStates.isIssueAssignedToMe ? enrichedIssue.citizen : t('anonymous');
   }, [enrichedIssue?.citizen, enrichedIssue?.citizen_type, buttonStates.isIssueAssignedToMe]);
 
   // ========== DIALOG MANAGEMENT ==========
@@ -366,7 +367,6 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
         return false;
       }
 
-      // Validate input if required
       if (!validateInput(actionType)) {
         const errorMessages = {
           [ACTION_TYPES.REJECT]: t('please_provide_rejection_reason'),
@@ -384,28 +384,39 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
       try {
         const newStatus = getStatusForAction(actionType, statuses);
 
-        if (newStatus === undefined) {
-          console.error(`❌ [IssueActions] No appropriate status found for action: ${actionType}`);
-          showToast(t('error_no_appropriate_status_found'));
+        const statusRequiredActions = [
+          ACTION_TYPES.ACCEPT,
+          ACTION_TYPES.REJECT,
+          ACTION_TYPES.RECORD_RESOLUTION,
+          ACTION_TYPES.APPEAL,
+        ];
+        if (!newStatus && statusRequiredActions.includes(actionType)) {
+          showToast(t('error_no_appropriate_status_found') || 'No appropriate status found');
           return false;
         }
 
         await saveIssueStatus(newStatus, actionType, additionalData);
         handlePostActionUpdates(actionType);
 
-        // Force button state recalculation by updating a dependency
         setActionStates((prev) => ({ ...prev, lastActionTimestamp: Date.now() }));
-
         return true;
       } catch (error) {
-        console.error('❌ [IssueActions] Error executing action:', error);
         showToast(t('error_updating_issue_status') || 'Error updating issue. Please try again.');
         return false;
       } finally {
         setActionStates((prev) => ({ ...prev, isUpdating: false }));
       }
     },
-    [enrichedIssue, formInputs, statuses, t, validateInput]
+    [
+      enrichedIssue,
+      formInputs,
+      statuses,
+      t,
+      validateInput,
+      saveIssueStatus,
+      handlePostActionUpdates,
+      showToast,
+    ]
   );
 
   // ========== NAVIGATION HELPERS ==========
@@ -424,6 +435,7 @@ export const useIssueActions = (enrichedIssue, statuses, currentUserId, navigati
     formInputs,
     actionStates,
     buttonStates,
+    citizenName: _citizenName,
 
     // Actions
     executeAction,

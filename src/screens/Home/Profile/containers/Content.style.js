@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,

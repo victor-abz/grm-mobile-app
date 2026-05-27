@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import moment from 'moment';
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ToggleButton } from 'react-native-paper';
+import dayjs from '../../../../utils/dayjs';
 import { colors } from '../../../../utils/colors';
 import ListHeader from '../components/ListHeader';
 import TabIcon from '../../../../components/TabIcon';
@@ -79,7 +79,7 @@ const Item = ({ item, onPress, t, _currentDate }) => {
             {item.title || item.description || 'No description'}
           </Text>
           <Text style={[styles.subTitle]}>
-            {citizen || 'Anonymous'}, {intakeDate && moment(intakeDate).format('DD-MMM-YYYY')},{' '}
+            {citizen || t('anonymous')}, {intakeDate && dayjs(intakeDate).format('DD-MMM-YYYY')},{' '}
             {intakeDate && _currentDate.diff(intakeDate, 'days')} {t('days_ago')}
           </Text>
           <Text style={styles.subTitle}>
@@ -120,7 +120,7 @@ const Content = ({
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [_selectedId, _setSelectedId] = useState(null);
-  const [_currentDate, _setCurrentDate] = useState(moment());
+  const [_currentDate, _setCurrentDate] = useState(dayjs());
 
   // Get current user ID from context
   const currentUserId =
@@ -231,13 +231,13 @@ const Content = ({
 
         // Format dates for display
         issueDateFormatted: issueData.issue_date
-          ? moment(issueData.issue_date).format('DD-MMM-YYYY')
+          ? dayjs(issueData.issue_date).format('DD-MMM-YYYY')
           : '',
         intakeDateFormatted: issueData.intake_date
-          ? moment(issueData.intake_date).format('DD-MMM-YYYY')
+          ? dayjs(issueData.intake_date).format('DD-MMM-YYYY')
           : '',
         creationFormatted: issueData.creation
-          ? moment(issueData.creation).format('DD-MMM-YYYY')
+          ? dayjs(issueData.creation).format('DD-MMM-YYYY')
           : '',
 
         // Ensure backward compatibility with existing navigation

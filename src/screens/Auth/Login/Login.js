@@ -14,6 +14,7 @@ import { AuthContext } from '../../../providers/AuthProvider';
 import { authTheme, authInputColors, authButtonColors } from '../../../utils/authTheme';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { logger } from '../../../utils/logger';
+import { getVersionDisplay } from '../../../utils/version';
 import styles from './Login.style';
 
 const Login = () => {
@@ -197,6 +198,17 @@ const Login = () => {
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+      <Text
+        style={{
+          textAlign: 'center',
+          color: '#aaa',
+          fontSize: 12,
+          paddingBottom: 20,
+          fontFamily: 'Poppins_400Regular',
+        }}
+      >
+        {getVersionDisplay()}
+      </Text>
     </ScrollView>
   );
 };

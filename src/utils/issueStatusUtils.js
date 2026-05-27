@@ -14,6 +14,9 @@ const findStatusByProperty = (statuses, property, value = true) => {
 
   return statuses.find((status) => {
     const statusData = status._raw || status;
+    if (value === true) {
+      return !!statusData[property];
+    }
     return statusData[property] === value;
   });
 };
@@ -42,6 +45,7 @@ export const getStatusForAction = (actionType, statuses) => {
   };
 
   const statusFinder = statusMappings[actionType];
+
   const result = statusFinder ? statusFinder() : null;
 
   if (!result && statusFinder) {

@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import moment from 'moment';
+import dayjs from '../utils/dayjs';
 import {
   createDetailLookupMaps,
   enrichIssueData,
@@ -86,7 +86,7 @@ export const useIssueDetail = (issue, lookupData, currentUserId, t) => {
   // Calculate days ago for the issue (memoized to prevent recalculation)
   const issueDaysAgo = useMemo(() => {
     if (!enrichedIssue?.issue_date) return 0;
-    return moment().diff(moment(enrichedIssue.issue_date), 'days');
+    return dayjs().diff(dayjs(enrichedIssue.issue_date), 'day');
   }, [enrichedIssue?.issue_date]);
 
   // ========== COLLAPSIBLE MANAGEMENT ==========
@@ -134,7 +134,7 @@ export const useIssueDetail = (issue, lookupData, currentUserId, t) => {
     setIsUpdating(true);
 
     try {
-      const commentDate = moment().toISOString();
+      const commentDate = dayjs().toISOString();
       const newCommentObj = {
         comment_by: enrichedIssue.reporter.id,
         comment_text: commentStates.newComment,

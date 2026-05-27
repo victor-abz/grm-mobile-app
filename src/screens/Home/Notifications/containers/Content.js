@@ -1,8 +1,16 @@
-import moment from 'moment';
+/* eslint-disable no-use-before-define */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SafeAreaView, View } from 'react-native';
-import { Button, Dialog, Paragraph, Portal, Text } from 'react-native-paper';
+import {
+  Modal,
+  SafeAreaView,
+  StyleSheet as RNStyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import { Text } from 'react-native-paper';
+import dayjs from '../../../../utils/dayjs';
 import UpdatableList from '../../../../components/UpdatableList';
 import { colors } from '../../../../utils/colors';
 import SectionList from '../components/NotificationItem/SectionList';
@@ -10,15 +18,6 @@ import { styles } from './Content.style';
 
 const randomRange = (min, max) => Math.floor(Math.random() * (max - min)) + min;
 
-const theme = {
-  roundness: 12,
-  colors: {
-    ...colors,
-    background: 'white',
-    placeholder: '#dedede',
-    text: '#707070',
-  },
-};
 const generateMockData = (amount) => {
   const data = [];
   for (let i = 0; i < amount; i++) {
@@ -34,11 +33,11 @@ const generateMockData = (amount) => {
       id,
       issue_reference: '',
       isRead: !!isRead,
-      date: moment.now(),
+      date: dayjs().valueOf(),
       type: 'notification',
     });
   }
-  return [];
+  return data;
 };
 
 const Content = () => {
@@ -103,61 +102,131 @@ const Content = () => {
         />
       )}
 
-      {/* DISPLAY NOTIFICATION DETAIL DIALOG */}
-      <Portal>
-        <Dialog visible={showDialog} onDismiss={_hideDialog}>
-          <Dialog.Title>{selected?.title}</Dialog.Title>
-          <Dialog.Content>
-            <Paragraph>{selected?.description}</Paragraph>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              onPress={_hideDialog}
-            >
-              {t('close')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      {/* NOTIFICATION DETAIL MODAL */}
+      <Modal
+        visible={showDialog}
+        transparent
+        animationType="fade"
+        onRequestClose={_hideDialog}
+        statusBarTranslucent
+      >
+        <TouchableWithoutFeedback onPress={_hideDialog}>
+          <View style={dialogStyles.backdrop}>
+            <TouchableWithoutFeedback>
+              <View style={dialogStyles.card}>
+                <View style={dialogStyles.header}>
+                  <Text style={dialogStyles.title}>{selected?.title}</Text>
+                </View>
+                <View style={dialogStyles.body}>
+                  <Text style={dialogStyles.content}>{selected?.description}</Text>
+                </View>
+                <View style={dialogStyles.footer}>
+                  <TouchableOpacity
+                    style={[dialogStyles.button, dialogStyles.secondaryButton]}
+                    onPress={_hideDialog}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[dialogStyles.buttonText, dialogStyles.secondaryButtonText]}>
+                      {t('close')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
-      <Portal>
-        <Dialog visible={showConfirmDialog} onDismiss={_hideConfirmDialog}>
-          <Dialog.Title>{t('confirmation')}?</Dialog.Title>
-          <Dialog.Content>
-            <Paragraph>{t('confirm_deletion')}</Paragraph>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button
-              theme={theme}
-              style={{
-                alignSelf: 'center',
-                backgroundColor: '#E74C3C',
-                paddingLeft: 15,
-                paddingRight: 15,
-              }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={_hideConfirmDialog}
-            >
-              {t('no')}
-            </Button>
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center', margin: 24, paddingLeft: 15, paddingRight: 15 }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              mode="contained"
-              onPress={removeItem}
-            >
-              {t('yes')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      {/* CONFIRM DELETE MODAL */}
+      <Modal
+        visible={showConfirmDialog}
+        transparent
+        animationType="fade"
+        onRequestClose={_hideConfirmDialog}
+        statusBarTranslucent
+      >
+        <TouchableWithoutFeedback onPress={_hideConfirmDialog}>
+          <View style={dialogStyles.backdrop}>
+            <TouchableWithoutFeedback>
+              <View style={dialogStyles.card}>
+                <View style={dialogStyles.header}>
+                  <Text style={dialogStyles.title}>{t('confirmation')}</Text>
+                </View>
+                <View style={dialogStyles.body}>
+                  <Text style={dialogStyles.content}>{t('confirm_deletion')}</Text>
+                </View>
+                <View style={dialogStyles.footer}>
+                  <TouchableOpacity
+                    style={[dialogStyles.button, dialogStyles.secondaryButton]}
+                    onPress={_hideConfirmDialog}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[dialogStyles.buttonText, dialogStyles.secondaryButtonText]}>
+                      {t('no')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[dialogStyles.button, dialogStyles.destructiveButton]}
+                    onPress={removeItem}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[dialogStyles.buttonText, dialogStyles.destructiveButtonText]}>
+                      {t('yes')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </>
   );
 };
+
+const dialogStyles = RNStyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 4 },
+  title: { fontSize: 20, fontFamily: 'Poppins_600SemiBold', color: '#1a1a1a' },
+  body: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8 },
+  content: { fontSize: 15, lineHeight: 22, color: '#555', fontFamily: 'Poppins_400Regular' },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  secondaryButton: { backgroundColor: '#f0f0f0' },
+  destructiveButton: { backgroundColor: '#fef2f2' },
+  buttonText: { fontSize: 15, fontFamily: 'Poppins_500Medium' },
+  secondaryButtonText: { color: '#666' },
+  destructiveButtonText: { color: '#dc2626' },
+});
 
 export default Content;

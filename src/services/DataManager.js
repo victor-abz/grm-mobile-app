@@ -5,6 +5,16 @@ import WatermelonSyncManager from './WatermelonSyncManager';
 import lookupDataManager from './LookupDataManager';
 import { logger } from '../utils/logger';
 
+const withTimeout = (promise, ms, label = 'Operation') =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    }),
+  ]);
+
+const CONNECT_TIMEOUT_MS = 10000;
+
 const DEFAULT_CONFIG = {
   url: '',
   tokenParams: {
@@ -392,11 +402,14 @@ class DataManager {
 
       console.log('🔧 [DATAMANAGER] Authenticating with Frappe...');
 
-      // Authenticate using the working pattern from previous commit
-      const authResult = await frappe.auth().loginWithUsernamePassword({
-        username: credentials.username,
-        password: credentials.password,
-      });
+      const authResult = await withTimeout(
+        frappe.auth().loginWithUsernamePassword({
+          username: credentials.username,
+          password: credentials.password,
+        }),
+        CONNECT_TIMEOUT_MS,
+        'Frappe authentication'
+      );
 
       console.log('🔧 [DATAMANAGER] Authentication result:', {
         success: !!authResult && !authResult.error,
@@ -416,7 +429,11 @@ class DataManager {
       // Test the connection with a simple API call
       try {
         console.log('🔧 [DATAMANAGER] Testing API connection...');
-        const userResponse = await this.call.get('frappe.auth.get_logged_user');
+        const userResponse = await withTimeout(
+          this.call.get('frappe.auth.get_logged_user'),
+          CONNECT_TIMEOUT_MS,
+          'API connection test'
+        );
         console.log(
           '✅ [DATAMANAGER] API connection test successful. User:',
           userResponse?.message

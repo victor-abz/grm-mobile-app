@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import moment from 'moment';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import dayjs from '../../../../utils/dayjs';
 import { colors } from '../../../../utils/colors';
 
 const styles = StyleSheet.create({
@@ -81,7 +81,7 @@ const Item = ({ item, onPress }) => {
             {item.title ? item.title : item.description}
           </Text>
           <Text style={[styles.subTitle]}>
-            {item.citizen}, {item.intake_date && moment(item.intake_date).format('DD-MMM-YYYY')}
+            {item.citizen}, {item.intake_date && dayjs(item.intake_date).format('DD-MMM-YYYY')}
             ,{' '}
           </Text>
           <Text style={styles.subTitle}>
@@ -106,9 +106,12 @@ const Item = ({ item, onPress }) => {
 
 const searchFilter = (issue, searchPhrase) => {
   if (issue) {
+    const phrase = searchPhrase.toLowerCase();
     return (
-      issue.tracking_code.includes(searchPhrase.toLowerCase()) ||
-      issue.internal_code.includes(searchPhrase.toLowerCase())
+      issue.tracking_code?.includes(phrase) ||
+      false ||
+      issue.internal_code?.includes(phrase) ||
+      false
     );
   }
   return false;

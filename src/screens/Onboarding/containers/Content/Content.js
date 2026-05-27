@@ -6,6 +6,7 @@ import { Button, Title } from 'react-native-paper';
 import { styles } from './Content.style';
 // import { PreferencesContext } from "@providers/PreferencesProvider/PreferencesContext";
 import { logger } from '../../../../utils/logger';
+import { getVersionDisplay } from '../../../../utils/version';
 import ThinkingSVG from '../../../../../assets/think.svg';
 import LanguageSelector from '../../../../translations/TranslationComponent';
 
@@ -66,7 +67,16 @@ const Content = () => {
       </View>
       <LanguageSelector />
       <View>
-        <Text>V:1.0.1</Text>
+        <Text
+          style={{
+            textAlign: 'center',
+            color: '#aaa',
+            fontSize: 12,
+            fontFamily: 'Poppins_400Regular',
+          }}
+        >
+          {getVersionDisplay()}
+        </Text>
       </View>
     </View>
   );

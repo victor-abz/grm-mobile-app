@@ -95,7 +95,7 @@ const Profile = () => {
     };
 
     updateOnlineStatus();
-    const checkInterval = setInterval(updateOnlineStatus, 1000);
+    const checkInterval = setInterval(updateOnlineStatus, 15000);
     return () => clearInterval(checkInterval);
   }, [checkNetworkStatus]);
 

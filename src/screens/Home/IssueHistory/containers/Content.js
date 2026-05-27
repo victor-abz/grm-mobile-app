@@ -1,8 +1,17 @@
-import moment from 'moment';
+/* eslint-disable no-use-before-define */
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Text, TouchableOpacity, View } from 'react-native';
-import { Button, Dialog, Divider, Paragraph, Portal } from 'react-native-paper';
+import {
+  FlatList,
+  Modal,
+  StyleSheet as RNStyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import { Divider } from 'react-native-paper';
+import dayjs from '../../../../utils/dayjs';
 import { colors } from '../../../../utils/colors';
 import { logger } from '../../../../utils/logger';
 import { styles } from './Content.styles';
@@ -12,7 +21,7 @@ import {
   shouldShowDetailedContent,
 } from '../../../../utils/issueHistoryUtils';
 
-const theme = {
+const _theme = {
   roundness: 12,
   colors: {
     ...colors,
@@ -143,7 +152,7 @@ const Content = ({ issue, comments: commentsFromDB, users }) => {
             {commentText}
           </Text>
 
-          <Text style={styles.dateLabel}>{moment(commentDate).format('LLL')}</Text>
+          <Text style={styles.dateLabel}>{dayjs(commentDate).format('LLL')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -192,48 +201,125 @@ const Content = ({ issue, comments: commentsFromDB, users }) => {
       )}
 
       {/* ========== ACTIVITY DETAIL DIALOG ========== */}
-      <Portal>
-        <Dialog visible={showDialog} onDismiss={_hideDialog}>
-          <Dialog.Title>{selected?.activity_type || 'Activity'}</Dialog.Title>
-          <Dialog.Content>
-            <Text style={{ fontWeight: 'bold', marginBottom: 5, fontSize: 14 }}>
-              {t('performed_by') || 'Performed by'}: {selected?.comment_by || 'System'}
-            </Text>
-            <Text style={{ fontWeight: 'bold', marginBottom: 10, fontSize: 12, color: 'gray' }}>
-              {selected && moment(selected.comment_date).format('LLL')}
-            </Text>
-
-            {/* Show activity details based on type */}
-            {shouldShowDetailedContent(selected?.activity_type, t) ? (
-              <View>
-                <Text style={{ fontWeight: 'bold', marginBottom: 5, fontSize: 14 }}>
-                  {selected?.activity_type === (t('record_steps_taken') || 'Steps Recorded')
-                    ? t('steps_details') || 'Steps Details'
-                    : t('resolution_details') || 'Resolution Details'}
-                  :
-                </Text>
-                <Paragraph style={{ backgroundColor: '#f5f5f5', padding: 10, borderRadius: 5 }}>
-                  {selected?.full_text || 'No details provided'}
-                </Paragraph>
+      <Modal
+        visible={showDialog}
+        transparent
+        animationType="fade"
+        onRequestClose={_hideDialog}
+        statusBarTranslucent
+      >
+        <TouchableWithoutFeedback onPress={_hideDialog}>
+          <View style={historyDialogStyles.backdrop}>
+            <TouchableWithoutFeedback>
+              <View style={historyDialogStyles.card}>
+                <View style={historyDialogStyles.header}>
+                  <Text style={historyDialogStyles.title}>
+                    {selected?.activity_type || 'Activity'}
+                  </Text>
+                </View>
+                <View style={historyDialogStyles.body}>
+                  <Text style={historyDialogStyles.metaText}>
+                    {t('performed_by') || 'Performed by'}: {selected?.comment_by || 'System'}
+                  </Text>
+                  <Text style={historyDialogStyles.dateText}>
+                    {selected && dayjs(selected.comment_date).format('LLL')}
+                  </Text>
+                  {shouldShowDetailedContent(selected?.activity_type, t) ? (
+                    <View>
+                      <Text style={historyDialogStyles.sectionLabel}>
+                        {selected?.activity_type === (t('record_steps_taken') || 'Steps Recorded')
+                          ? t('steps_details') || 'Steps Details'
+                          : t('resolution_details') || 'Resolution Details'}
+                        :
+                      </Text>
+                      <View style={historyDialogStyles.detailBox}>
+                        <Text style={historyDialogStyles.detailText}>
+                          {selected?.full_text || 'No details provided'}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={historyDialogStyles.contentText}>
+                      {selected?.full_text || 'No comment text'}
+                    </Text>
+                  )}
+                </View>
+                <View style={historyDialogStyles.footer}>
+                  <TouchableOpacity
+                    style={[historyDialogStyles.button, historyDialogStyles.secondaryButton]}
+                    onPress={_hideDialog}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        historyDialogStyles.buttonText,
+                        historyDialogStyles.secondaryButtonText,
+                      ]}
+                    >
+                      {t('close')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            ) : (
-              <Paragraph>{selected?.full_text || 'No comment text'}</Paragraph>
-            )}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button
-              theme={theme}
-              style={{ alignSelf: 'center', backgroundColor: '#d4d4d4' }}
-              labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
-              onPress={_hideDialog}
-            >
-              {t('close')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 };
+
+const historyDialogStyles = RNStyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 4 },
+  title: { fontSize: 20, fontFamily: 'Poppins_600SemiBold', color: '#1a1a1a' },
+  body: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8 },
+  metaText: { fontSize: 14, fontFamily: 'Poppins_500Medium', color: '#333', marginBottom: 4 },
+  dateText: { fontSize: 12, color: '#999', marginBottom: 12, fontFamily: 'Poppins_400Regular' },
+  sectionLabel: { fontSize: 14, fontFamily: 'Poppins_500Medium', color: '#333', marginBottom: 8 },
+  detailBox: {
+    backgroundColor: '#f8f9fa',
+    padding: 14,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  detailText: { fontSize: 14, lineHeight: 20, color: '#555', fontFamily: 'Poppins_400Regular' },
+  contentText: { fontSize: 15, lineHeight: 22, color: '#555', fontFamily: 'Poppins_400Regular' },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  secondaryButton: { backgroundColor: '#f0f0f0' },
+  buttonText: { fontSize: 15, fontFamily: 'Poppins_500Medium' },
+  secondaryButtonText: { color: '#666' },
+});
 
 export default Content;
