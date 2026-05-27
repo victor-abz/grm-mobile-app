@@ -57,14 +57,7 @@
       "expo-font",
       "expo-localization",
       "expo-secure-store",
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "react-native",
-          "organization": "freddy-r-p"
-        }
-      ],
+      
       [
         "expo-build-properties",
         {
