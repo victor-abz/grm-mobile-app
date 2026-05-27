@@ -17,6 +17,7 @@ export abstract class BaseRemoteRepository<T> {
     updated_date: EpochTimeStamp | null,
     deleted_date: EpochTimeStamp | null,
     parentId: string | null,
+    search_param: string | null,
   ): Promise<T[]>;
 
   abstract fetchMore(endpointType: string): Promise<T[]>;

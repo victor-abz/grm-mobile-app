@@ -13,7 +13,7 @@ const remoteRepository = new IssueRemoteRepository();
 
 const issueService = new BaseService<Issue>(localRepository, remoteRepository);
 
-export async function fetchIssueList(endpointType: string, fetchAll: boolean = false, extraQueries: any[] | null = null): Promise<Issue[] | null> {
+export async function fetchIssueList(endpointType: string, fetchAll: boolean = false, extraQueries: any[] | null = null, searchTerm: string | null = null): Promise<Issue[] | null> {
   try {
     const issueList = await issueService.getAll(
       null,
@@ -24,6 +24,7 @@ export async function fetchIssueList(endpointType: string, fetchAll: boolean = f
       'intake_date',
       'desc',
       extraQueries,
+      searchTerm,
     );
     return issueList;
   } catch (error) {

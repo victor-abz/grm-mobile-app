@@ -12,6 +12,15 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
   /**
    * Fetch all issues from a dynamic endpoint.
    * @param endpointType 'assignee' | 'reporter' | etc.
+   * @param sortBy
+   * @param sortOrder
+   * @param page
+   * @param limit
+   * @param allPages
+   * @param created_date
+   * @param updated_date
+   * @param deleted_date
+   * @param search_param
    */
   async fetchAll(
     endpointType: 'assignee' | 'reporter' | null,
@@ -22,7 +31,8 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     allPages: boolean | null,
     created_date: EpochTimeStamp | null,
     updated_date: EpochTimeStamp | null,
-    deleted_date: EpochTimeStamp | null
+    deleted_date: EpochTimeStamp | null,
+    search_param: string | null
   ): Promise<Issue[]> {
     const params: Record<string, string> = {};
 
@@ -33,6 +43,7 @@ export class IssueRemoteRepository extends BaseRemoteRepository<Issue> {
     if (created_date) params.created_date = String(new Date(created_date).toISOString());
     if (updated_date) params.updated_date = String(new Date(updated_date).toISOString());
     if (deleted_date) params.deleted_date = String(new Date(deleted_date).toISOString());
+    if (search_param) params.code = search_param;
 
     const url = `${this.baseUrl}/${endpointType}/`;
 
