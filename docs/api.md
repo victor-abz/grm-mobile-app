@@ -16,29 +16,21 @@ This document provides an overview of the available API endpoints for managing i
 
 **Request Body:**
 
-```js
+```json
 {
-
-  "username": string,
-
-  "password": string
-
+  "username": "string",
+  "password": "string"
 }
 ```
 
 **Response (200):**
 
-```js
+```json
 {
-
-  "token": string,
-
+  "token": "string",
   "user_id": integer,
-
-  "username": string,
-
-  "message": string
-
+  "username": "string",
+  "message": "string"
 }
 ```
 
@@ -50,77 +42,42 @@ This document provides an overview of the available API endpoints for managing i
 
 **Request Body:**
 
-```js
+```json
 {
-
-  "username": string,
-
-  "first_name": string,
-
-  "last_name": string,
-
-  "email": string,
-
-  "phone_number": string,
-
-  "password": string,
-
-  "confirm_password": string
-
+  "username": "string",
+  "first_name": "string",
+  "last_name": "string",
+  "email": "string",
+  "phone_number": "string",
+  "password": "string",
+  "confirm_password": "string"
 }
 ```
 
 **Response (201):**
 
-```js
+```json
 {
-
-"message": "Citizen registered successfully.",
-
-"data": {
-
-
-  "id": integer,
-
-  "username": string,
-
-  "email": string,
-
-  "phone_number": string,
-
-  "first_name": string,
-
-  "last_name": string
-
-
+  "message": "Citizen registered successfully.",
+  "data": {
+    "id": integer,
+    "username": "string",
+    "email": "string",
+    "phone_number": "string",
+    "first_name": "string",
+    "last_name": "string"
   }
-
 }
 ```
 
 **Response (200):**
 
-```js
+```json
 {
-
-  "token": string,
-
+  "token": "string",
   "user_id": integer,
-
-  "username": string,
-
-  "message": string
-
-}
-```
-
-**Response (200):**
-
-```js
-{
-
-  "message": "Password reset email sent successfully"
-
+  "username": "string",
+  "message": "string"
 }
 ```
 
@@ -132,41 +89,23 @@ This document provides an overview of the available API endpoints for managing i
 
 **Response (200):**
 
-```js
+```json
 {
-
   "id": integer,
-
   "user": {
-
     "id": integer,
-
-    "name": string
-
-
+    "name": "string"
   },
-
   "administrative_region": {
-
     "id": integer,
-
-    "name": string,
-
+    "name": "string",
     "administrative_level": integer,
-
     "parent": integer
-
-
   },
-
   "unique_region": boolean,
-
   "village_secretary": boolean,
-
   "created_date": "datetime",
-
   "updated_date": "datetime"
-
 }
 ```
 
@@ -178,31 +117,22 @@ This document provides an overview of the available API endpoints for managing i
 
 **Request Body:**
 
-```js
+```json
 {
-
-  "username": string,
-
-  "password": string,
-
-  "code": string
-
+  "username": "string",
+  "password": "string",
+  "code": "string"
 }
 ```
 
 **Response (204):**
 
-```js
+```json
 {
-
-  "token": string,
-
+  "token": "string",
   "user_id": integer,
-
-  "username": string,
-
-  "message": string
-
+  "username": "string",
+  "message": "string"
 }
 ```
 
@@ -218,117 +148,65 @@ This document provides an overview of the available API endpoints for managing i
 
 **Request Body:**
 
-```js
+```json
 {
-
-  "description": string,
-
+  "description": "string",
   "category": integer,
-
   "issue_type": integer,
-
   "issue_sub_type": integer,
-
   "contact_medium": "phone|email|web|in_person|alert|anonymous",
-
   "contact_method": "email|phone_number|whatsapp|sms",
-
-  "contact_information": string,
-
-  "tracking_code": string,
-
+  "contact_information": "string",
+  "tracking_code": "string",
   "intake_date": "datetime",
-
   "ongoing_issue": boolean,
-
-  "location_description": string,
-
+  "location_description": "string",
   "status": integer,
-
   "administrative_region": integer,
-
   "component": integer,
-
   "sub_component": integer,
-
   "citizen": {
-
-
-    "name": string,
-
-    "age_group": string,
-
-    "type": string,
-
-    "group": string,
-
-    "group_2": string
-
-
-},
-
+    "name": "string",
+    "age_group": "string",
+    "type": "string",
+    "group": "string",
+    "group_2": "string"
+  },
   "reporter": integer,
-
   "assignee": integer
-
 }
 ```
 
 **Response (201):**
 
-```js
+```json
 {
-
   "message": "Issue created successfully.",
-
   "data": {
     "id": integer,
-
     "intake_date": "datetime",
-
     "status": {
-
       "id": integer,
-
-      "name": string
-
+      "name": "string"
     },
-
     "appeal_status": boolean,
-
     "category": {
-
       "id": integer,
-
-      "name": string
-
+      "name": "string"
     },
-
     "issue_type": {
-
       "id": integer,
-
-      "name": string
-
+      "name": "string"
     },
-
     "administrative_region": {
-
       "id": integer,
-
-      "name": string,
-
+      "name": "string",
       "administrative_level": integer,
-
       "parent": integer
-
     },
-
     "created_date": "datetime",
-
     "updated_date": "datetime"
-}
-
+  }
 }
 ```
 
@@ -344,99 +222,47 @@ This document provides an overview of the available API endpoints for managing i
 
 **Response (200):**
 
-```js
+```json
 {
-
   "id": integer,
-
-  "tracking_code": string,
-
-  "title": string,
-
-  "description": string,
-
-  "appeal_reason": string,
-
+  "tracking_code": "string",
+  "title": "string",
+  "description": "string",
+  "appeal_reason": "string",
   "appeal_status": boolean,
-
   "escalate_flag": boolean,
-
-  "escalation_reason": string,
-
+  "escalation_reason": "string",
   "rating": integer,
-
   "reject_flag": boolean,
-
-  "reject_reason": string,
-
-  "research_result": string,
-
+  "reject_reason": "string",
+  "research_result": "string",
   "intake_date": "datetime",
-
   "administrative_region": {
-
-
     "id": integer,
-
-    "name": string
-
-
-},
-
+    "name": "string"
+  },
   "reporter": {
-
-
     "id": integer,
-
-    "name": string
-
-
-},
-
+    "name": "string"
+  },
   "assignee": {
-
-
     "id": integer,
-
-    "name": string
-
-
-},
-
+    "name": "string"
+  },
   "status": {
-
-
     "id": integer,
-
-    "name": string
-
-
-},
-
+    "name": "string"
+  },
   "category": {
-
-
     "id": integer,
-
-    "name": string
-
-
-},
-
+    "name": "string"
+  },
   "issue_type": {
-
-
     "id": integer,
-
-    "name": string
-
-
-},
-
+    "name": "string"
+  },
   "created_date": "datetime",
-
   "updated_date": "datetime"
-
 }
 ```
 
@@ -452,89 +278,50 @@ This document provides an overview of the available API endpoints for managing i
 
 **Request Body:**
 
-```js
+```json
 {
-
-  "appeal_reason": string,
-
+  "appeal_reason": "string",
   "appeal_status": boolean,
-
   "escalate_flag": boolean,
-
-  "escalation_reason": string,
-
+  "escalation_reason": "string",
   "rating": integer,
-
   "reject_flag": boolean,
-
-  "reject_reason": string,
-
-  "research_result": string,
-
+  "reject_reason": "string",
+  "research_result": "string",
   "status": integer
-
 }
 ```
 
 **Response (200):**
 
-```js
+```json
 {
-
   "message": "Issue updated successfully.",
-
   "data": {
-
-
-  "id": integer,
-
-  "intake_date": "datetime",
-
-  "status": {
-
     "id": integer,
-
-    "name": string
-
-},
-
-  "appeal_status": boolean,
-
-  "category": {
-
-    "id": integer,
-
-    "name": string
-
-},
-
-  "issue_type": {
-
-    "id": integer,
-
-    "name": string
-
-},
-
-  "administrative_region": {
-
-    "id": integer,
-
-    "name": string,
-
-    "administrative_level": integer,
-
-    "parent": integer
-
-},
-
-  "created_date": "datetime",
-
-  "updated_date": "datetime"
-
-
-}
-
+    "intake_date": "datetime",
+    "status": {
+      "id": integer,
+      "name": "string"
+    },
+    "appeal_status": boolean,
+    "category": {
+      "id": integer,
+      "name": "string"
+    },
+    "issue_type": {
+      "id": integer,
+      "name": "string"
+    },
+    "administrative_region": {
+      "id": integer,
+      "name": "string",
+      "administrative_level": integer,
+      "parent": integer
+    },
+    "created_date": "datetime",
+    "updated_date": "datetime"
+  }
 }
 ```
 
@@ -550,53 +337,28 @@ This document provides an overview of the available API endpoints for managing i
 
 **Request Body:**
 
-```js
+```json
 {
-
-  "comment": string
-
+  "comment": "string"
 }
 ```
 
 **Response (201):**
 
-```js
+```json
 {
-
-  "comment": string
-
-}
-```
-
-**Response (201):**
-
-```js
-{
-
   "message": "Comment added successfully.",
-
   "data": {
-
     "id": integer,
-
-    "comment": string,
-
+    "comment": "string",
     "user": {
-
       "id": integer,
-
-      "name": string
-
-  },
-
+      "name": "string"
+    },
     "due_date": "datetime",
-
     "created_date": "datetime",
-
     "updated_date": "datetime"
-
   }
-
 }
 ```
 
@@ -616,43 +378,24 @@ This document provides an overview of the available API endpoints for managing i
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
-{
-
-    "id": integer,
-
-    "comment": string,
-
-    "user": {
-
+    {
       "id": integer,
-
-      "name": string
-
-  },
-
-    "due_date": "datetime",
-
-    "created_date": "datetime",
-
-    "updated_date": "datetime"
-
-}
-
-
-]
-
+      "comment": "string",
+      "user": {
+        "id": integer,
+        "name": "string"
+      },
+      "due_date": "datetime",
+      "created_date": "datetime",
+      "updated_date": "datetime"
+    }
+  ]
 }
 ```
 
@@ -668,11 +411,9 @@ This document provides an overview of the available API endpoints for managing i
 
 **Response (204):**
 
-```js
+```json
 {
-
   "message": "Comment deleted successfully"
-
 }
 ```
 
@@ -688,41 +429,27 @@ This document provides an overview of the available API endpoints for managing i
 
 **Request Body:**
 
-```js
+```json
 {
-
   "file": "file"
-
 }
 ```
 
 **Response (201):**
 
-```js
+```json
 {
-
   "message": "Attachment uploaded successfully.",
-
   "data": {
-
     "id": integer,
-
     "file": "file",
-
     "uploaded_by": {
-
       "id": integer,
-
-      "name": string
-
+      "name": "string"
     },
-
     "created_date": "datetime",
-
     "updated_date": "datetime"
-
   }
-
 }
 ```
 
@@ -739,50 +466,29 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, optional): A page number within the paginated result set
-
 - `created_date` (string, optional): Filter attachments created after this datetime
-
 - `updated_date` (string, optional): Filter attachments updated after this datetime
-
 - `deleted_date` (string, optional): Filter attachments deleted after this datetime
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
     {
-
       "id": integer,
-
       "file": "file",
-
       "uploaded_by": {
-
         "id": integer,
-
-        "name": string
-
+        "name": "string"
       },
-
       "created_date": "datetime",
-
       "updated_date": "datetime"
-
     }
-
-
   ]
-
 }
 ```
 
@@ -798,11 +504,9 @@ This document provides an overview of the available API endpoints for managing i
 
 **Response (204):**
 
-```js
+```json
 {
-
-"message": "Attachment deleted successfully"
-
+  "message": "Attachment deleted successfully"
 }
 ```
 
@@ -819,118 +523,63 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of results per page
-
 - `created_date` (string, optional): Filter issues created after this datetime
-
 - `updated_date` (string, optional): Filter issues updated after this datetime
-
 - `code` (string, optional): Tracking code of the issue
 
 **Response (200):**
 
-```js
+```json
 {
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
     {
-
       "id": integer,
-
-      "description": string,
-
-      "appeal_reason": string,
-
+      "description": "string",
+      "appeal_reason": "string",
       "appeal_status": boolean,
-
       "escalate_flag": boolean,
-
-      "escalation_reason": string,
-
+      "escalation_reason": "string",
       "rating": integer,
-
       "reject_flag": boolean,
-
-      "reject_reason": string,
-
-      "research_result": string,
-
-      "tracking_code": string,
-
+      "reject_reason": "string",
+      "research_result": "string",
+      "tracking_code": "string",
       "intake_date": "datetime",
-
       "administrative_region": {
-
-        "administrative_id": string,
-
-        "name": string
-
+        "administrative_id": "string",
+        "name": "string"
       },
-
       "reporter": {
-
         "id": integer,
-
-        "name": string
-
+        "name": "string"
       },
-
       "assignee": {
-
         "id": integer,
-
-        "name": string
-
+        "name": "string"
       },
-
       "status": {
-
         "id": integer,
-
-        "name": string,
-
+        "name": "string",
         "final_status": boolean,
-
         "initial_status": boolean,
-
         "rejected_status": boolean,
-
         "open_status": boolean
-
       },
-
       "category": {
-
         "id": integer,
-
-        "name": string
-
+        "name": "string"
       },
-
       "issue_type": {
-
         "id": integer,
-
-        "name": string
-
+        "name": "string"
       },
-
       "created_date": "datetime",
-
       "updated_date": "datetime"
-
     }
-
-
   ]
-
 }
 ```
 
@@ -943,13 +592,9 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of results per page
-
 - `created_date` (string, optional): Filter issues created after this datetime
-
 - `updated_date` (string, optional): Filter issues updated after this datetime
-
 - `code` (string, optional): Tracking code of the issue
 
 **Response (200):** Same structure as `/issues/assignee/`
@@ -967,76 +612,43 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of items per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
     {
-
       "id": integer,
-
-      "name": string,
-
-      "abbreviation": string,
-
+      "name": "string",
+      "abbreviation": "string",
       "assigned_department": {
-
-        "name": string,
-
+        "name": "string",
         "id": integer,
-
-        "administrative_level": string
-
+        "administrative_level": "string"
       },
-
       "assigned_appeal_department": {
-
-        "name": string,
-
+        "name": "string",
         "id": integer,
-
-        "administrative_level": string
-
+        "administrative_level": "string"
       },
-
       "assigned_escalation_department": {
-
-        "name": string,
-
+        "name": "string",
         "id": integer,
-
-        "administrative_level": string
-
+        "administrative_level": "string"
       },
-
-      "confidentiality_level": string,
-
-      "redirection_protocol": string,
-
-      "label": string,
-
+      "confidentiality_level": "string",
+      "redirection_protocol": "string",
+      "label": "string",
       "value": integer,
-
       "parent_id": integer,
-
       "created_date": "datetime",
-
       "updated_date": "datetime"
-
     }
-
   ]
 }
 ```
@@ -1054,36 +666,23 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of items per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-  {
-
-    "id": integer,
-
-    "name": string,
-
-    "created_date": "datetime",
-
-    "updated_date": "datetime"
-
-  }
-
+    {
+      "id": integer,
+      "name": "string",
+      "created_date": "datetime",
+      "updated_date": "datetime"
+    }
   ]
-
 }
 ```
 
@@ -1096,46 +695,27 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of items per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
-  {
-
-    "id": integer,
-
-    "name": string,
-
-    "parent": {
-
+    {
       "id": integer,
-
-      "name": string
-
-    },
-
-    "created_date": "datetime",
-
-    "updated_date": "datetime"
-
-  }
-
-
+      "name": "string",
+      "parent": {
+        "id": integer,
+        "name": "string"
+      },
+      "created_date": "datetime",
+      "updated_date": "datetime"
+    }
   ]
-
 }
 ```
 
@@ -1148,45 +728,27 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of results per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
     {
-
       "id": integer,
-
-      "name": string,
-
+      "name": "string",
       "final_status": boolean,
-
       "initial_status": boolean,
-
       "rejected_status": boolean,
-
       "open_status": boolean,
-
       "created_date": "datetime",
-
       "updated_date": "datetime"
-
     }
-
-
   ]
-
 }
 ```
 
@@ -1203,46 +765,27 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of results per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
     {
-
       "id": integer,
-
-      "name": string,
-
-      "hierarchical_name": string,
-
+      "name": "string",
+      "hierarchical_name": "string",
       "administrative_level": integer,
-
       "parent": integer,
-
       "created_date": "datetime",
-
       "updated_date": "datetime"
-
     }
-
-
   ]
-
 }
-
 ```
 
 ### List Child Administrative Regions
@@ -1257,27 +800,17 @@ This document provides an overview of the available API endpoints for managing i
 
 **Response (200):**
 
-```js
+```json
 [
-
   {
-
     "id": integer,
-
-    "name": string,
-
-    "hierarchical_name": string,
-
+    "name": "string",
+    "hierarchical_name": "string",
     "administrative_level": integer,
-
     "parent": integer,
-
     "created_date": "datetime",
-
     "updated_date": "datetime"
-
   }
-
 ]
 ```
 
@@ -1294,37 +827,23 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of items per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
     {
-
       "id": integer,
-
-      "name": string,
-
+      "name": "string",
       "created_date": "datetime",
-
       "updated_date": "datetime"
-
     }
-
-
   ]
-
 }
 ```
 
@@ -1337,40 +856,24 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of items per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
-      {
-
-        "id": integer,
-
-        "name": string,
-
-        "type": string,
-
-        "created_date": "datetime",
-
-        "updated_date": "datetime"
-
-      }
-
-
+    {
+      "id": integer,
+      "name": "string",
+      "type": "string",
+      "created_date": "datetime",
+      "updated_date": "datetime"
+    }
   ]
-
 }
 ```
 
@@ -1387,40 +890,24 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of items per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
-      {
-
-        "id": integer,
-
-        "name": string,
-
-        "description": string,
-
-        "created_date": "datetime",
-
-        "updated_date": "datetime"
-
-      }
-
-
+    {
+      "id": integer,
+      "name": "string",
+      "description": "string",
+      "created_date": "datetime",
+      "updated_date": "datetime"
+    }
   ]
-
 }
 ```
 
@@ -1433,52 +920,30 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of items per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
     {
-
       "id": integer,
-
-      "name": string,
-
-      "description": string,
-
+      "name": "string",
+      "description": "string",
       "parent": {
-
         "id": integer,
-
-        "name": string,
-
-        "description": string
-
+        "name": "string",
+        "description": "string"
       },
-
       "created_date": "datetime",
-
       "updated_date": "datetime"
-
     }
-
-
   ]
-
 }
-
 ```
 
 ### List Subproject Groups
@@ -1490,38 +955,23 @@ This document provides an overview of the available API endpoints for managing i
 **Query Parameters:**
 
 - `page` (integer, default: 1): Page number for pagination
-
 - `page_size` (integer, default: 20, max: 100): Number of items per page
 
 **Response (200):**
 
-```js
+```json
 {
-
   "count": integer,
-
-  "next": string,
-
-  "previous": string,
-
+  "next": "string",
+  "previous": "string",
   "results": [
-
-
     {
-
       "id": integer,
-
-      "name": string,
-
+      "name": "string",
       "created_date": "datetime",
-
       "updated_date": "datetime"
-
     }
-
-
   ]
-
 }
 ```
 
@@ -1537,43 +987,23 @@ This document provides an overview of the available API endpoints for managing i
 
 **Response (200):**
 
-```js
+```json
 {
-
   "id": integer,
-
   "user": {
-
-
     "id": integer,
-
-    "name": string
-
-
+    "name": "string"
   },
-
   "administrative_region": {
-
-
     "id": integer,
-
-    "name": string,
-
+    "name": "string",
     "administrative_level": integer,
-
     "parent": integer
-
-
   },
-
   "unique_region": boolean,
-
   "village_secretary": boolean,
-
   "created_date": "datetime",
-
   "updated_date": "datetime"
-
 }
 ```
 
@@ -1583,16 +1013,15 @@ This document provides an overview of the available API endpoints for managing i
 
 All authenticated endpoints require a valid authentication token in the `Authorization` header:
 
+```
 Authorization: Token <token_value>
+```
 
 ---
 
 ## Notes
 
 - All list endpoints support pagination with `page` and `page_size` query parameters
-
 - Maximum page size is 100 for most endpoints
-
 - Date/time filters use ISO 8601 format (e.g., `2024-08-28T10:30:45Z`)
-
 - Access control applies to issue-specific endpoints - only reporters and assignees can access their issues
