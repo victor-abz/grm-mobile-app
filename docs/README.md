@@ -54,6 +54,14 @@ This system uses a TypeScript-based model structure with WatermelonDB for offlin
 
 | `IssueType` | Issue type classifications |
 
+| `IssueSubType` | Issue subtype classifications |
+
+| `IssueSubComponent` | Issue subcomponent classifications |
+
+| `IssueComponent` | Issue component classifications |
+
+| `AdministrativeRegion` | Administrative regions for issue location |
+
 | `IssueStatus` | Status tracking (open, closed, rejected, etc.) |
 
 | `IssueAgeGroup` | Age group demographics |
