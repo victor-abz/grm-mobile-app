@@ -19,9 +19,9 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "username": "string",
+  "username": string,
 
-  "password": "string"
+  "password": string
 
 }
 ```
@@ -31,13 +31,13 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "token": "string",
+  "token": string,
 
   "user_id": integer,
 
-  "username": "string",
+  "username": string,
 
-  "message": "string"
+  "message": string
 
 }
 ```
@@ -53,19 +53,19 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "username": "string",
+  "username": string,
 
-  "first_name": "string",
+  "first_name": string,
 
-  "last_name": "string",
+  "last_name": string,
 
-  "email": "string",
+  "email": string,
 
-  "phone_number": "string",
+  "phone_number": string,
 
-  "password": "string",
+  "password": string,
 
-  "confirm_password": "string"
+  "confirm_password": string
 
 }
 ```
@@ -82,15 +82,15 @@ This document provides an overview of the available API endpoints for managing i
 
   "id": integer,
 
-  "username": "string",
+  "username": string,
 
-  "email": "string",
+  "email": string,
 
-  "phone_number": "string",
+  "phone_number": string,
 
-  "first_name": "string",
+  "first_name": string,
 
-  "last_name": "string"
+  "last_name": string
 
 
   }
@@ -103,13 +103,13 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "token": "string",
+  "token": string,
 
   "user_id": integer,
 
-  "username": "string",
+  "username": string,
 
-  "message": "string"
+  "message": string
 
 }
 ```
@@ -141,7 +141,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 
   },
@@ -150,7 +150,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string",
+    "name": string,
 
     "administrative_level": integer,
 
@@ -181,11 +181,11 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "username": "string",
+  "username": string,
 
-  "password": "string",
+  "password": string,
 
-  "code": "string"
+  "code": string
 
 }
 ```
@@ -195,13 +195,13 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "token": "string",
+  "token": string,
 
   "user_id": integer,
 
-  "username": "string",
+  "username": string,
 
-  "message": "string"
+  "message": string
 
 }
 ```
@@ -221,7 +221,7 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "description": "string",
+  "description": string,
 
   "category": integer,
 
@@ -233,15 +233,15 @@ This document provides an overview of the available API endpoints for managing i
 
   "contact_method": "email|phone_number|whatsapp|sms",
 
-  "contact_information": "string",
+  "contact_information": string,
 
-  "tracking_code": "string",
+  "tracking_code": string,
 
   "intake_date": "datetime",
 
   "ongoing_issue": boolean,
 
-  "location_description": "string",
+  "location_description": string,
 
   "status": integer,
 
@@ -254,15 +254,15 @@ This document provides an overview of the available API endpoints for managing i
   "citizen": {
 
 
-    "name": "string",
+    "name": string,
 
-    "age_group": "string",
+    "age_group": string,
 
-    "type": "string",
+    "type": string,
 
-    "group": "string",
+    "group": string,
 
-    "group_2": "string"
+    "group_2": string
 
 
 },
@@ -290,7 +290,7 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string"
+      "name": string
 
     },
 
@@ -300,7 +300,7 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string"
+      "name": string
 
     },
 
@@ -308,7 +308,7 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string"
+      "name": string
 
     },
 
@@ -316,7 +316,7 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string",
+      "name": string,
 
       "administrative_level": integer,
 
@@ -349,27 +349,27 @@ This document provides an overview of the available API endpoints for managing i
 
   "id": integer,
 
-  "tracking_code": "string",
+  "tracking_code": string,
 
-  "title": "string",
+  "title": string,
 
-  "description": "string",
+  "description": string,
 
-  "appeal_reason": "string",
+  "appeal_reason": string,
 
   "appeal_status": boolean,
 
   "escalate_flag": boolean,
 
-  "escalation_reason": "string",
+  "escalation_reason": string,
 
   "rating": integer,
 
   "reject_flag": boolean,
 
-  "reject_reason": "string",
+  "reject_reason": string,
 
-  "research_result": "string",
+  "research_result": string,
 
   "intake_date": "datetime",
 
@@ -378,7 +378,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 
 },
@@ -388,7 +388,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 
 },
@@ -398,7 +398,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 
 },
@@ -408,7 +408,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 
 },
@@ -418,7 +418,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 
 },
@@ -428,7 +428,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 
 },
@@ -455,21 +455,21 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "appeal_reason": "string",
+  "appeal_reason": string,
 
   "appeal_status": boolean,
 
   "escalate_flag": boolean,
 
-  "escalation_reason": "string",
+  "escalation_reason": string,
 
   "rating": integer,
 
   "reject_flag": boolean,
 
-  "reject_reason": "string",
+  "reject_reason": string,
 
-  "research_result": "string",
+  "research_result": string,
 
   "status": integer
 
@@ -494,7 +494,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 },
 
@@ -504,7 +504,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 },
 
@@ -512,7 +512,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 },
 
@@ -520,7 +520,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string",
+    "name": string,
 
     "administrative_level": integer,
 
@@ -553,7 +553,7 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "comment": "string"
+  "comment": string
 
 }
 ```
@@ -563,7 +563,7 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "comment": "string"
+  "comment": string
 
 }
 ```
@@ -579,13 +579,13 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "comment": "string",
+    "comment": string,
 
     "user": {
 
       "id": integer,
 
-      "name": "string"
+      "name": string
 
   },
 
@@ -621,9 +621,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -632,13 +632,13 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "comment": "string",
+    "comment": string,
 
     "user": {
 
       "id": integer,
 
-      "name": "string"
+      "name": string
 
   },
 
@@ -713,7 +713,7 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string"
+      "name": string
 
     },
 
@@ -753,9 +753,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -770,7 +770,7 @@ This document provides an overview of the available API endpoints for managing i
 
         "id": integer,
 
-        "name": "string"
+        "name": string
 
       },
 
@@ -833,9 +833,9 @@ This document provides an overview of the available API endpoints for managing i
 ```js
 {
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -844,33 +844,33 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "description": "string",
+      "description": string,
 
-      "appeal_reason": "string",
+      "appeal_reason": string,
 
       "appeal_status": boolean,
 
       "escalate_flag": boolean,
 
-      "escalation_reason": "string",
+      "escalation_reason": string,
 
       "rating": integer,
 
       "reject_flag": boolean,
 
-      "reject_reason": "string",
+      "reject_reason": string,
 
-      "research_result": "string",
+      "research_result": string,
 
-      "tracking_code": "string",
+      "tracking_code": string,
 
       "intake_date": "datetime",
 
       "administrative_region": {
 
-        "administrative_id": "string",
+        "administrative_id": string,
 
-        "name": "string"
+        "name": string
 
       },
 
@@ -878,7 +878,7 @@ This document provides an overview of the available API endpoints for managing i
 
         "id": integer,
 
-        "name": "string"
+        "name": string
 
       },
 
@@ -886,7 +886,7 @@ This document provides an overview of the available API endpoints for managing i
 
         "id": integer,
 
-        "name": "string"
+        "name": string
 
       },
 
@@ -894,7 +894,7 @@ This document provides an overview of the available API endpoints for managing i
 
         "id": integer,
 
-        "name": "string",
+        "name": string,
 
         "final_status": boolean,
 
@@ -910,7 +910,7 @@ This document provides an overview of the available API endpoints for managing i
 
         "id": integer,
 
-        "name": "string"
+        "name": string
 
       },
 
@@ -918,7 +918,7 @@ This document provides an overview of the available API endpoints for managing i
 
         "id": integer,
 
-        "name": "string"
+        "name": string
 
       },
 
@@ -977,9 +977,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -987,45 +987,45 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string",
+      "name": string,
 
-      "abbreviation": "string",
+      "abbreviation": string,
 
       "assigned_department": {
 
-        "name": "string",
+        "name": string,
 
         "id": integer,
 
-        "administrative_level": "string"
+        "administrative_level": string
 
       },
 
       "assigned_appeal_department": {
 
-        "name": "string",
+        "name": string,
 
         "id": integer,
 
-        "administrative_level": "string"
+        "administrative_level": string
 
       },
 
       "assigned_escalation_department": {
 
-        "name": "string",
+        "name": string,
 
         "id": integer,
 
-        "administrative_level": "string"
+        "administrative_level": string
 
       },
 
-      "confidentiality_level": "string",
+      "confidentiality_level": string,
 
-      "redirection_protocol": "string",
+      "redirection_protocol": string,
 
-      "label": "string",
+      "label": string,
 
       "value": integer,
 
@@ -1064,9 +1064,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1074,7 +1074,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string",
+    "name": string,
 
     "created_date": "datetime",
 
@@ -1106,9 +1106,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1117,13 +1117,13 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string",
+    "name": string,
 
     "parent": {
 
       "id": integer,
 
-      "name": "string"
+      "name": string
 
     },
 
@@ -1158,9 +1158,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1168,7 +1168,7 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string",
+      "name": string,
 
       "final_status": boolean,
 
@@ -1213,9 +1213,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1224,9 +1224,9 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string",
+      "name": string,
 
-      "hierarchical_name": "string",
+      "hierarchical_name": string,
 
       "administrative_level": integer,
 
@@ -1257,16 +1257,16 @@ This document provides an overview of the available API endpoints for managing i
 
 **Response (200):**
 
-```
+```js
 [
 
   {
 
     "id": integer,
 
-    "name": "string",
+    "name": string,
 
-    "hierarchical_name": "string",
+    "hierarchical_name": string,
 
     "administrative_level": integer,
 
@@ -1304,9 +1304,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1314,7 +1314,7 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string",
+      "name": string,
 
       "created_date": "datetime",
 
@@ -1347,9 +1347,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1358,9 +1358,9 @@ This document provides an overview of the available API endpoints for managing i
 
         "id": integer,
 
-        "name": "string",
+        "name": string,
 
-        "type": "string",
+        "type": string,
 
         "created_date": "datetime",
 
@@ -1397,9 +1397,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1408,9 +1408,9 @@ This document provides an overview of the available API endpoints for managing i
 
         "id": integer,
 
-        "name": "string",
+        "name": string,
 
-        "description": "string",
+        "description": string,
 
         "created_date": "datetime",
 
@@ -1443,9 +1443,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1454,17 +1454,17 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string",
+      "name": string,
 
-      "description": "string",
+      "description": string,
 
       "parent": {
 
         "id": integer,
 
-        "name": "string",
+        "name": string,
 
-        "description": "string"
+        "description": string
 
       },
 
@@ -1500,9 +1500,9 @@ This document provides an overview of the available API endpoints for managing i
 
   "count": integer,
 
-  "next": "string",
+  "next": string,
 
-  "previous": "string",
+  "previous": string,
 
   "results": [
 
@@ -1511,7 +1511,7 @@ This document provides an overview of the available API endpoints for managing i
 
       "id": integer,
 
-      "name": "string",
+      "name": string,
 
       "created_date": "datetime",
 
@@ -1547,7 +1547,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string"
+    "name": string
 
 
   },
@@ -1557,7 +1557,7 @@ This document provides an overview of the available API endpoints for managing i
 
     "id": integer,
 
-    "name": "string",
+    "name": string,
 
     "administrative_level": integer,
 
