@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 import * as IssueService from '../../services/issues/IssueService';
-import type { Issue } from "../../models/issues/Issue";
+import type { Issue } from '../../models/issues/Issue';
 import { useDatabase } from '@nozbe/watermelondb/react';
 import { useSelector } from 'react-redux';
 import { TABLE_NAMES } from '../../migrations/tableName';
@@ -29,6 +29,9 @@ export function useIssue(fetchIssues: boolean = true)  {
     useState(false);
   const [resolvedOfflinePaginationHasStarted, setResolvedOfflinePaginationHasStarted] =
     useState(false);
+  const [filteredAssigneeList, setFilteredAssigneeList] = useState<Issue[]>();
+  const [filteredReporterList, setFilteredReporterList] = useState<Issue[]>();
+  const  [searchTerm, setSearchTerm] = useState(null)
 
   const [endOfReportedListReached, setEndOfReportedListReached] = useState(false);
   const [endOfAssigneeListReached, setEndOfAssigneeListReached] = useState(false);
@@ -74,7 +77,7 @@ export function useIssue(fetchIssues: boolean = true)  {
     if (reporterIssueList && assigneeIssueList) {
       setLoading(false);
     }
-  }, [reporterIssueList, assigneeIssueList]);
+  }, [searchTerm, reporterIssueList, assigneeIssueList]);
 
   useEffect(() => {
     const issuesCollection = database.get(TABLE_NAMES.issue);
@@ -101,10 +104,10 @@ export function useIssue(fetchIssues: boolean = true)  {
 
   useEffect(() => {
     if (assigneeIssueList === undefined) {
-      fetchAssigneeIssueList();
+      fetchAssigneeIssueList(searchTerm);
     }
     if (reporterIssueList === undefined) {
-      fetchReporterIssueList();
+      fetchReporterIssueList(searchTerm);
     }
   }, [assigneeIssueList, reporterIssueList]);
 
@@ -116,12 +119,13 @@ export function useIssue(fetchIssues: boolean = true)  {
     setResolvedOfflinePaginationHasStarted(false);
   };
 
-  const fetchAssigneeIssueList = async () => {
+  const fetchAssigneeIssueList = async (searchTerm: string | null = null) => {
     setLoading(true);
     if (!assigneeIssueList) {
       const issuesList = await IssueService.fetchIssueList('assignee',
         false,
-        [Q.where('assignee', Q.notEq('null'))]
+        [Q.where('assignee', Q.notEq('null'))],
+        searchTerm
       );
       const filteredList = issuesList.filter((issue) =>
         issue.assignee
@@ -129,14 +133,14 @@ export function useIssue(fetchIssues: boolean = true)  {
           : false
       );
       setAssigneeIssueList(filteredList);
-      
+
     }
   };
 
-  const fetchReporterIssueList = async () => {
+  const fetchReporterIssueList = async (searchTerm = null) => {
     setLoading(true);
     if (!reporterIssueList) {
-      const issuesList = await IssueService.fetchIssueList('reporter');
+      const issuesList = await IssueService.fetchIssueList('reporter', searchTerm);
       const filteredList = issuesList.filter((issue) =>
         issue.reporter
           ? session.user_id == issue?.reporter?.id || session.user_id == issue.reporter
@@ -377,18 +381,38 @@ export function useIssue(fetchIssues: boolean = true)  {
   }
   
   const updateIssue = async (issue: Issue) => {
-    const updatedIssue = await IssueService.updateIssue(issue)
-    return updatedIssue;
+    return await IssueService.updateIssue(issue);
   }
-    
+
+  const fetchTrackingCodeIssueList = (term: string | null) => {
+    if (!term || term.length === 0) {
+      setFilteredAssigneeList(assigneeIssueList);
+      setFilteredReporterList(reporterIssueList);
+      return;
+    }
+    const lowerTerm = term.toLowerCase();
+    setFilteredAssigneeList(
+      assigneeIssueList?.filter(issue =>
+        issue.tracking_code?.toLowerCase().includes(lowerTerm)
+      )
+    );
+    setFilteredReporterList(
+      reporterIssueList?.filter(issue =>
+        issue.tracking_code?.toLowerCase().includes(lowerTerm)
+      )
+    );
+
+  };
+
   return {
-    assigneeIssueList,
-    reporterIssueList,
+    assigneeIssueList: filteredAssigneeList ?? assigneeIssueList,
+    reporterIssueList: filteredReporterList ?? reporterIssueList,
     loading,
     createIssue,
     updateIssue,
     fetchMoreReporterIssueList: fetchMoreReporterIssuesList,
     fetchMoreAssigneeIssueList: fetchMoreAssigneeIssuesList,
     fetchMoreResolvedIssueList: fetchMoreResolvedIssueList,
+    fetchTrackingCodeIssueList: fetchTrackingCodeIssueList
   };
 }

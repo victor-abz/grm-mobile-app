@@ -1,37 +1,49 @@
-import React, { useState } from 'react';
-import { View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import List from '../components/List';
-import SearchBar from '../components/SearchBar';
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator } from 'react-native-paper';
+import SearchBar from '../components/SearchBar';
+import IssuesList from "../../shared/IssuesList";
+import { useIssue } from "../../../../hooks/issues/useIssue";
 
-function Content({ issues }) {
-  const navigation = useNavigation();
-  const [searchPhrase, setSearchPhrase] = useState('');
+function Content() {
+   const [searchPhrase, setSearchPhrase] = useState(null);
   const [clicked, setClicked] = useState(false);
+  const {
+    assigneeIssueList,
+    reporterIssueList,
+    loading,
+    fetchTrackingCodeIssueList
+  } = useIssue();
+
+  useEffect(() => {
+    if (searchPhrase && searchPhrase.length > 3) {
+      fetchTrackingCodeIssueList(searchPhrase);
+    } else if (!searchPhrase) {
+      fetchTrackingCodeIssueList(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchPhrase]);
+
+  useEffect(() => {
+    setSearchPhrase(null);
+    fetchTrackingCodeIssueList(searchPhrase);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clicked]);
+
+  if (loading) return <ActivityIndicator style={[{ marginTop: 10 }]} />;
 
   return (
-    <View>
+    <>
       <SearchBar
         searchPhrase={searchPhrase}
         setSearchPhrase={setSearchPhrase}
         clicked={clicked}
         setClicked={setClicked}
       />
-      {
-        !issues ? (
-          <ActivityIndicator size="large" color="#24c38b"/>
-        ) : (
-
-          <List
-            searchPhrase={searchPhrase}
-            data={issues}
-            navigation={navigation}
-            setClicked={setClicked}
-          />
-        )
-      }
-    </View>
+      <IssuesList
+        assigneeIssueList={assigneeIssueList}
+        reporterIssueList={reporterIssueList}
+      />
+    </>
   );
 }
 
