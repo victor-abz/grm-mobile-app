@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text } from 'react-native';
-import { i18n } from "../../../../translations/i18n";
-import { useDispatch } from 'react-redux';
-import styles from './Content.style';
-import ProfileItem from '../components/ProfileItem';
-import { logout } from '../../../../store/ducks/authentication.duck';
+import UserAvatar from '@muhzi/react-native-user-avatar';
+import React, { useEffect, useState } from 'react';
+import { Text, View } from 'react-native';
 import { Button } from 'react-native-paper';
-import SmallCard from '../components/SmallCard';
-import { colors } from '../../../../utils/colors';
+import { useDispatch } from 'react-redux';
 import { baseURL } from '../../../../services/authService';
+import { logout } from '../../../../store/ducks/authentication.duck';
+import { i18n } from "../../../../translations/i18n";
+import { colors } from '../../../../utils/colors';
+import ProfileItem from '../components/ProfileItem';
+import SmallCard from '../components/SmallCard';
+import styles from './Content.style';
+
 
 function Content({ issues, session, profile, department, statuses }) {
   const [photo, setPhoto] = useState(null);
@@ -53,26 +55,7 @@ function Content({ issues, session, profile, department, statuses }) {
   return (
     <View>
       <View style={styles.containerA}>
-        <View
-          style={{
-            borderRadius: 240,
-            height: 120,
-            width: 120,
-            backgroundColor: colors.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {session.username && session.username.length > 0 ? (
-            <Text style={{ color: 'white', fontWeight: '500', fontSize: 30 }}>
-              {session.username.charAt(0).toUpperCase()}
-            </Text>
-          ) : (
-            <Text style={{ color: 'white', fontWeight: '500', fontSize: 30 }}>
-              ?
-            </Text>
-          )}
-        </View>
+        <UserAvatar userName={session.username} src={photo} size={120} />
       </View>
       <Text style={styles.listHeader}>{i18n.t('your_complaint_count')}</Text>
       <View style={styles.cardContainer}>

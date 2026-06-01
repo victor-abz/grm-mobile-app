@@ -3,7 +3,6 @@ import { writer } from '@nozbe/watermelondb/decorators';
 import { SyncStatus } from '@nozbe/watermelondb/Model';
 import { SortOrder } from '@nozbe/watermelondb/QueryDescription';
 import { databaseServiceInstance } from '../../utils/storageManager';
-import * as Sentry from '@sentry/react-native';
 import { parseJson } from '../../utils/utils';
 
 export type LocalGetAllEventInfo = { firstPageRetrievalMade: boolean }
@@ -314,19 +313,6 @@ export abstract class BaseLocalRepository<T> {
           console.log('✅ Succesfully Updated Watermelon DB');
           return createdInstance;
         } catch (e) {
-          Sentry.captureException(e, {
-            tags: {
-              location: 'BaseLocalRepository.createOrUpdate',
-              action: 'local_create_failed'
-            },
-            extra: {
-              tableName: this.tableName,
-              errorMessage: e?.message || String(e),
-              newEntry,
-              configurableId,
-            },
-            level: 'error',
-          });
           console.error('Could not create locally. Reason:', e);
           return;
         }

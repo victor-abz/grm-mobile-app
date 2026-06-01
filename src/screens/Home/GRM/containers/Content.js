@@ -26,14 +26,13 @@ function Content() {
       >
         <Text
           style={{
-            letterSpacing: 0.2,
-            paddingVertical: 12,
-            color: '#111827',
-            fontSize: Dimensions.get('window').width < 400 ? 18 : 22,
-            fontWeight: 'bold',
-            paddingHorizontal: 25,
-            textTransform: 'uppercase',
-          }}
+    letterSpacing: 0.2,
+    paddingVertical: 12,
+    fontSize: Dimensions.get('window').width < 400 ? 18 : 22,
+    fontWeight: '500',
+    color: 'rgb(28,28,30,.99)',
+    paddingHorizontal: 25,
+  }}
         >
           {i18n.t('dashboard')}
         </Text>

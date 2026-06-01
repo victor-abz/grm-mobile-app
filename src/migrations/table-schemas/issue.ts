@@ -34,6 +34,7 @@ export const issueTableSchema: TableSchema = tableSchema({
     { name: 'updated_date', type: 'string' },
     { name: 'escalate_flag', type: 'boolean' }, // DEFAULT FALSE
     { name: 'reject_flag', type: 'boolean' }, // DEFAULT FALSE
+    { name: 'reject_reason', type: 'string', isOptional: true },
     { name: 'rating', type: 'number', isOptional: true },
     { name: 'escalation_reason', type: 'string', isOptional: true },
     { name: 'research_result', type: 'string', isOptional: true },

@@ -38,6 +38,7 @@ export interface Issue extends Base {
   assignee: Base;
   escalate_flag: boolean;
   reject_flag: boolean;
+  reject_reason?: string;
   rating?: number;
   escalation_reason?: string;
   research_result?: string;
@@ -98,6 +99,8 @@ export class IssueLocalModel extends Model {
   @field('confirmed') confirmed;
   // @ts-ignore
   @text('contact_medium') contact_medium;
+  // @ts-ignore
+  @text('reject_reason') reject_reason;
   // @ts-ignore
   @json('contact_information', (json) => json) contact_information;
   // @ts-ignore

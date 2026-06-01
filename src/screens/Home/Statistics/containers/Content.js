@@ -200,7 +200,6 @@ function Content({ issues, ageGroup: ageGroups, citizenGroup1, citizenGroup2, is
     issuePerDate.labels = labels;
     issuePerDate.dataSet = dataSet;
     setDataIssuePerDate(issuePerDate);
-    console.log('dataIssuePerDate: ', dataIssuePerDate);
 
   }, []);
 

@@ -11,13 +11,11 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerText: {
-    fontFamily: 'Poppins_600SemiBold',
     letterSpacing: 0.2,
     paddingVertical: 12,
-    color: '#111827',
     fontSize: Dimensions.get('window').width < 400 ? 18 : 22,
-    fontWeight: 'bold',
+    fontWeight: '500',
+    color: 'rgb(28,28,30,.99)',
     paddingHorizontal: 25,
-    textTransform: 'uppercase',
   },
 });
