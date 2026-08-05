@@ -803,60 +803,54 @@ class WatermelonManager {
   }
 
   /**
-   * Get filtered status-based issue counts for tab badges
+   * Get issue counts for the tab badges, scoped to the regions the user is
+   * responsible for (their assigned regions plus all descendants).
+   *
+   * `regionIds` comes from `utils/regionScope.getAccessibleRegionIds`. An empty
+   * list means the user has no assignments, which must read as zero issues —
+   * never as "every issue".
    */
-  async getIssueCountsByStatus(currentUserId) {
+  async getIssueCountsByRegionScope(regionIds = []) {
     try {
       const db = this.getDatabase();
       const issuesCollection = db.get('grm_issues');
       const statusesCollection = db.get('grm_issue_statuses');
 
-      // Get final status
-      const finalStatus = await statusesCollection
-        .query(Q.or(Q.where('final_status', true)))
-        .fetch();
-      const finalStatusId = finalStatus[0]?.id;
+      const inScope = Q.where('administrative_region', Q.oneOf(regionIds));
 
-      // Get counts for each tab
-      const [assignedCount, openCount, resolvedCount, allCount] = await Promise.all([
-        // Assigned: issues assigned to current user and not final status
-        issuesCollection
-          .query(Q.where('assignee', currentUserId), Q.where('status', Q.notEq(finalStatusId)))
-          .fetchCount(),
+      // The workflow has several closing statuses ("Resolved", "Closed"), so
+      // collect all of them — matching only the first one leaves issues in the
+      // wrong bucket.
+      const finalStatuses = await statusesCollection.query(Q.where('final_status', true)).fetch();
+      const finalStatusIds = finalStatuses.map((status) => status.id);
+      const hasFinalStatuses = finalStatusIds.length > 0;
 
-        // Open: issues involving current user (assigned or reported) and not final status
-        issuesCollection
-          .query(
-            Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
-            Q.where('status', Q.notEq(finalStatusId))
-          )
-          .fetchCount(),
+      const [assignedCount, openCount, resolvedCount] = await Promise.all([
+        // Assigned: everything the user is responsible for, any status
+        issuesCollection.query(inScope).fetchCount(),
 
-        // Resolved: issues involving current user and final status
-        issuesCollection
-          .query(
-            Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
-            Q.where('status', finalStatusId)
-          )
-          .fetchCount(),
+        // Open: in scope and not yet at a final status
+        hasFinalStatuses
+          ? issuesCollection.query(inScope, Q.where('status', Q.notIn(finalStatusIds))).fetchCount()
+          : issuesCollection.query(inScope).fetchCount(),
 
-        // All: total issues
-        issuesCollection.query().fetchCount(),
+        // Resolved: in scope and at a final status
+        hasFinalStatuses
+          ? issuesCollection.query(inScope, Q.where('status', Q.oneOf(finalStatusIds))).fetchCount()
+          : Promise.resolve(0),
       ]);
 
       return {
         assigned: assignedCount,
         open: openCount,
         resolved: resolvedCount,
-        all: allCount,
       };
     } catch (error) {
-      console.error('Error getting issue counts by status:', error);
+      console.error('Error getting issue counts by region scope:', error);
       return {
         assigned: 0,
         open: 0,
         resolved: 0,
-        all: 0,
       };
     }
   }

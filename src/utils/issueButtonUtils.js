@@ -59,8 +59,7 @@ export const isRecordResolutionEnabled = (statuses, enrichedIssue, isIssueAssign
  * 2. Current issue status matches this status
  * Note: Removed user assignment restriction per user request
  */
-export const isRateAppealEnabled = (statuses, enrichedIssue, isIssueAssignedToMe) => {
-  console.log(isIssueAssignedToMe);
+export const isRateAppealEnabled = (statuses, enrichedIssue, _isIssueAssignedToMe) => {
   if (!statuses || !enrichedIssue) {
     return false;
   }

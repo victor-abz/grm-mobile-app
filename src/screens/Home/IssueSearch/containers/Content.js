@@ -138,7 +138,7 @@ const Content = ({
     goToPreviousPage,
     goToPage,
     refreshCurrentTab,
-  } = useIssueSearchPagination(currentUserId, statuses);
+  } = useIssueSearchPagination(currentUserId, statuses, userContext);
 
   console.log('🔍 [IssueSearch] User context:', {
     user: userContext?.user,
@@ -339,18 +339,6 @@ const Content = ({
     [activeTab, t, issueCounts.resolved]
   );
 
-  const renderAllIcon = useCallback(
-    () => (
-      <TabIcon
-        status="all"
-        currentStatus={activeTab}
-        label={`${t('All (Debug)')}${issueCounts.all ? ` (${issueCounts.all})` : ''}`}
-        fontSize={12}
-      />
-    ),
-    [activeTab, t, issueCounts.all]
-  );
-
   return (
     <>
       <ToggleButton.Row
@@ -391,16 +379,6 @@ const Content = ({
           }}
           icon={renderResolvedIcon}
           value="resolved"
-        />
-        <ToggleButton
-          style={{
-            flex: 1,
-            backgroundColor: activeTab === 'all' ? colors.disabled : colors.white,
-            borderBottomColor: activeTab === 'all' ? colors.primary : colors.white,
-            borderBottomWidth: 3,
-          }}
-          icon={renderAllIcon}
-          value="all"
         />
       </ToggleButton.Row>
 

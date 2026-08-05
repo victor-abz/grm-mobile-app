@@ -1,43 +1,46 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import watermelonManager from '../database/watermelonManager';
+import { getAccessibleRegionIds } from '../utils/regionScope';
 
 const PAGE_SIZE = 20;
 
+const emptyTab = () => ({
+  issues: [],
+  pagination: null,
+  loading: false,
+  currentPage: 1,
+  isLoaded: false,
+});
+
+const emptyPagination = (page = 1) => ({
+  currentPage: page,
+  pageSize: PAGE_SIZE,
+  totalCount: 0,
+  totalPages: 0,
+  hasNextPage: false,
+  hasPreviousPage: false,
+  startIndex: 0,
+  endIndex: 0,
+});
+
 /**
- * Custom hook for managing paginated issue search with tab-specific filtering
+ * Custom hook for managing paginated issue search with tab-specific filtering.
+ *
+ * Scope is regional, not personal: a user sees every issue raised in the
+ * regions they are assigned to plus all descendants of those regions, which is
+ * the same rule the dashboard statistics use. Filtering on `assignee` alone
+ * hid a supervisor's whole caseload behind an empty list.
+ *
+ * - assigned  — everything in scope, any status ("what I am responsible for")
+ * - open      — everything in scope that has not reached the final status
+ * - resolved  — everything in scope that has reached the final status
  */
-export const useIssueSearchPagination = (currentUserId, statuses = []) => {
-  // State for each tab's pagination
+export const useIssueSearchPagination = (currentUserId, statuses = [], userContext = null) => {
   const [tabData, setTabData] = useState({
-    open: {
-      issues: [],
-      pagination: null,
-      loading: false,
-      currentPage: 1,
-      isLoaded: false,
-    },
-    assigned: {
-      issues: [],
-      pagination: null,
-      loading: false,
-      currentPage: 1,
-      isLoaded: false,
-    },
-    resolved: {
-      issues: [],
-      pagination: null,
-      loading: false,
-      currentPage: 1,
-      isLoaded: false,
-    },
-    all: {
-      issues: [],
-      pagination: null,
-      loading: false,
-      currentPage: 1,
-      isLoaded: false,
-    },
+    open: emptyTab(),
+    assigned: emptyTab(),
+    resolved: emptyTab(),
   });
 
   const [activeTab, setActiveTab] = useState('assigned');
@@ -45,148 +48,97 @@ export const useIssueSearchPagination = (currentUserId, statuses = []) => {
     open: 0,
     assigned: 0,
     resolved: 0,
-    all: 0,
   });
+  const [regionIds, setRegionIds] = useState(null);
 
   // Use ref to prevent circular dependencies
   const loadedTabsRef = useRef(new Set());
 
-  // Find final status for filtering
-  const finalStatus = useMemo(
+  // Every status that closes an issue. The workflow has more than one
+  // ("Resolved" and "Closed"), so this must stay a set — picking a single
+  // final status silently emptied the resolved tab.
+  const finalStatusIds = useMemo(
     () =>
-      statuses.find(
-        (status) =>
-          status.finalStatus === true ||
-          status.final_status === true ||
-          (status._raw && (status._raw.final_status === true || status._raw.finalStatus === true))
-      ),
+      statuses
+        .filter((status) => {
+          const raw = status._raw || status;
+          return raw.final_status === true || raw.final_status === 1 || status.finalStatus === true;
+        })
+        .map((status) => status.id || status._raw?.id)
+        .filter(Boolean),
     [statuses]
   );
 
-  // Build filters for each tab based on current user and status
-  const getTabFilters = useCallback(
-    (tab) => {
-      const finalStatusId = finalStatus?.id || finalStatus?._raw?.id;
+  // Resolve the user's region scope (assigned regions + all descendants).
+  useEffect(() => {
+    let cancelled = false;
+    if (!userContext) return undefined;
 
-      switch (tab) {
-        case 'assigned':
-          return {
-            assignee: currentUserId,
-            excludeStatus: finalStatusId, // Exclude final status
-          };
-
-        case 'open':
-          return {
-            userInvolved: currentUserId, // Special filter for assignee OR reporter
-            excludeStatus: finalStatusId,
-          };
-
-        case 'resolved':
-          return {
-            userInvolved: currentUserId,
-            status: finalStatusId, // Only final status
-          };
-
-        case 'all':
-          return {}; // No filters for debug view
-
-        default:
-          return {};
+    getAccessibleRegionIds(userContext).then((ids) => {
+      if (!cancelled) {
+        // Region scope changed: every cached tab result is now stale.
+        loadedTabsRef.current.clear();
+        setRegionIds(ids);
       }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userContext]);
+
+  // Build the WatermelonDB clauses for a tab.
+  const getTabQueryClauses = useCallback(
+    (tab) => {
+      const clauses = [Q.where('administrative_region', Q.oneOf(regionIds || []))];
+
+      if (finalStatusIds.length > 0) {
+        if (tab === 'resolved') {
+          clauses.push(Q.where('status', Q.oneOf(finalStatusIds)));
+        } else if (tab === 'open') {
+          clauses.push(Q.where('status', Q.notIn(finalStatusIds)));
+        }
+      }
+
+      return clauses;
     },
-    [currentUserId, finalStatus]
+    [finalStatusIds, regionIds]
   );
 
-  // Enhanced getPaginatedIssues that handles complex filtering
   const fetchTabData = useCallback(
     async (tab, page = 1) => {
-      console.log(
-        `🔍 [IssueSearchPagination] fetchTabData called for tab: ${tab}, page: ${page}, userId: ${currentUserId}`
-      );
-
-      if (!currentUserId || statuses.length === 0) {
-        console.log(
-          `🔍 [IssueSearchPagination] Missing dependencies - userId: ${currentUserId}, statuses: ${statuses.length}`
-        );
+      if (!currentUserId || statuses.length === 0 || regionIds === null) {
         return;
       }
 
-      // Set loading state
       setTabData((prev) => ({
         ...prev,
         [tab]: { ...prev[tab], loading: true },
       }));
 
       try {
-        const filters = getTabFilters(tab);
-        let result;
+        const clauses = getTabQueryClauses(tab);
+        const issuesCollection = watermelonManager.getDatabase().get('grm_issues');
 
-        if (filters.userInvolved) {
-          // Handle complex OR queries for open/resolved tabs
-          const db = watermelonManager.getDatabase();
-          const issuesCollection = db.get('grm_issues');
+        const totalCount = await issuesCollection.query(...clauses).fetchCount();
 
-          // Get total count
-          let countQuery;
-          if (filters.status) {
-            countQuery = issuesCollection.query(
-              Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
-              Q.where('status', filters.status)
-            );
-          } else if (filters.excludeStatus) {
-            countQuery = issuesCollection.query(
-              Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
-              Q.where('status', Q.notEq(filters.excludeStatus))
-            );
-          } else {
-            countQuery = issuesCollection.query(
-              Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId))
-            );
-          }
+        const offset = (page - 1) * PAGE_SIZE;
+        const records = await issuesCollection
+          .query(...clauses, Q.sortBy('issue_date', Q.desc), Q.skip(offset), Q.take(PAGE_SIZE))
+          .fetch();
 
-          const totalCount = await countQuery.fetchCount();
+        const issues = records
+          .filter((issue) => issue && issue._raw)
+          .map((issue) => ({
+            ...issue._raw,
+            name: issue._raw.id || issue._raw.name,
+          }));
 
-          // Get paginated data
-          const offset = (page - 1) * PAGE_SIZE;
-          let paginatedQuery;
-
-          if (filters.status) {
-            paginatedQuery = issuesCollection.query(
-              Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
-              Q.where('status', filters.status),
-              Q.sortBy('issue_date', Q.desc),
-              Q.skip(offset),
-              Q.take(PAGE_SIZE)
-            );
-          } else if (filters.excludeStatus) {
-            paginatedQuery = issuesCollection.query(
-              Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
-              Q.where('status', Q.notEq(filters.excludeStatus)),
-              Q.sortBy('issue_date', Q.desc),
-              Q.skip(offset),
-              Q.take(PAGE_SIZE)
-            );
-          } else {
-            paginatedQuery = issuesCollection.query(
-              Q.or(Q.where('assignee', currentUserId), Q.where('reporter', currentUserId)),
-              Q.sortBy('issue_date', Q.desc),
-              Q.skip(offset),
-              Q.take(PAGE_SIZE)
-            );
-          }
-
-          const issues = await paginatedQuery.fetch();
-
-          // Convert WatermelonDB models to raw data
-          const rawIssues = issues
-            .filter((issue) => issue && issue._raw)
-            .map((issue) => ({
-              ...issue._raw,
-              name: issue._raw.id || issue._raw.name,
-            }));
-
-          result = {
-            issues: rawIssues,
+        setTabData((prev) => ({
+          ...prev,
+          [tab]: {
+            ...prev[tab],
+            issues,
             pagination: {
               currentPage: page,
               pageSize: PAGE_SIZE,
@@ -197,27 +149,6 @@ export const useIssueSearchPagination = (currentUserId, statuses = []) => {
               startIndex: totalCount > 0 ? offset + 1 : 0,
               endIndex: Math.min(offset + PAGE_SIZE, totalCount),
             },
-          };
-        } else {
-          // Use simplified filtering for assigned/all tabs
-          const cleanFilters = { ...filters };
-          delete cleanFilters.excludeStatus;
-
-          if (filters.excludeStatus) {
-            // For assigned tab, we need to exclude final status
-            cleanFilters.excludeStatusId = filters.excludeStatus;
-          }
-
-          result = await watermelonManager.getPaginatedIssues(cleanFilters, page, PAGE_SIZE);
-        }
-
-        // Update tab data
-        setTabData((prev) => ({
-          ...prev,
-          [tab]: {
-            ...prev[tab],
-            issues: result.issues,
-            pagination: result.pagination,
             loading: false,
             currentPage: page,
             isLoaded: true,
@@ -231,38 +162,29 @@ export const useIssueSearchPagination = (currentUserId, statuses = []) => {
             ...prev[tab],
             loading: false,
             issues: [],
-            pagination: {
-              currentPage: page,
-              pageSize: PAGE_SIZE,
-              totalCount: 0,
-              totalPages: 0,
-              hasNextPage: false,
-              hasPreviousPage: false,
-              startIndex: 0,
-              endIndex: 0,
-            },
+            pagination: emptyPagination(page),
           },
         }));
       }
     },
-    [currentUserId, statuses, getTabFilters, finalStatus]
+    [currentUserId, statuses, regionIds, getTabQueryClauses]
   );
 
   // Load issue counts for tab badges
   const loadIssueCounts = useCallback(async () => {
-    if (!currentUserId) return;
+    if (!currentUserId || regionIds === null) return;
 
     try {
-      const counts = await watermelonManager.getIssueCountsByStatus(currentUserId);
+      const counts = await watermelonManager.getIssueCountsByRegionScope(regionIds);
       setIssueCounts(counts);
     } catch (error) {
       console.error('Error loading issue counts:', error);
     }
-  }, [currentUserId]);
+  }, [currentUserId, regionIds]);
 
   // Load data when tab becomes active or when dependencies change
   useEffect(() => {
-    if (currentUserId && statuses.length > 0) {
+    if (currentUserId && statuses.length > 0 && regionIds !== null) {
       loadIssueCounts();
 
       // Load current tab data if not already loaded
@@ -272,7 +194,7 @@ export const useIssueSearchPagination = (currentUserId, statuses = []) => {
         fetchTabData(activeTab, 1);
       }
     }
-  }, [activeTab, currentUserId, statuses.length, loadIssueCounts, fetchTabData]);
+  }, [activeTab, currentUserId, statuses.length, regionIds, loadIssueCounts, fetchTabData]);
 
   // Navigation functions
   const switchTab = useCallback(
@@ -292,16 +214,14 @@ export const useIssueSearchPagination = (currentUserId, statuses = []) => {
   const goToNextPage = useCallback(() => {
     const currentTabData = tabData[activeTab];
     if (currentTabData.pagination?.hasNextPage) {
-      const nextPage = currentTabData.currentPage + 1;
-      fetchTabData(activeTab, nextPage);
+      fetchTabData(activeTab, currentTabData.currentPage + 1);
     }
   }, [activeTab, tabData, fetchTabData]);
 
   const goToPreviousPage = useCallback(() => {
     const currentTabData = tabData[activeTab];
     if (currentTabData.pagination?.hasPreviousPage) {
-      const prevPage = currentTabData.currentPage - 1;
-      fetchTabData(activeTab, prevPage);
+      fetchTabData(activeTab, currentTabData.currentPage - 1);
     }
   }, [activeTab, tabData, fetchTabData]);
 
