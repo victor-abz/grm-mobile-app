@@ -32,7 +32,7 @@
         "distribution": "internal",
         "simulator": false
       },
-      "channel": "development",
+      "channel": "preview",
       "env": {
         "APP_VARIANT": "preview",
         "EXPO_PUBLIC_FRAPPE_BASE_URL": "https://egrm.risa.gov.rw",
@@ -51,7 +51,7 @@
       "autoIncrement": true,
       "env": {
         "APP_VARIANT": "production",
-        "EXPO_PUBLIC_FRAPPE_BASE_URL": "https://production.your-frappe-instance.com",
+        "EXPO_PUBLIC_FRAPPE_BASE_URL": "https://egrm.risa.gov.rw",
         "EXPO_PUBLIC_DEFAULT_LANGUAGE": "rw"
       }
     }
