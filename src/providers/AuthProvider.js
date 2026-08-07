@@ -2,6 +2,8 @@ import React, { createContext, useState, useEffect, useMemo, useCallback, useRef
 import * as SecureStore from 'expo-secure-store';
 import { FrappeApp } from 'frappe-js-sdk';
 import { FRAPPE_BASE_URL, SECURE_AUTH_STATE_KEY } from '../utils/constants';
+import { networkLogger } from '../utils/networkLogger';
+import { uploadPendingLogs } from '../utils/logUploader';
 
 const AuthContext = createContext({});
 
@@ -27,6 +29,7 @@ const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setCredentials(null);
       setUserInfo(null);
+      networkLogger.setUser(null);
     }
   }, [credentials]);
 
@@ -50,6 +53,11 @@ const AuthProvider = ({ children }) => {
       const call = frappe.call();
       const userData = await call.get('frappe.auth.get_logged_user');
       setUserInfo(userData);
+      // Attribute subsequent network log entries to this user, then flush
+      // anything buffered before sign-in now that the session can authorise
+      // the upload.
+      networkLogger.setUser(userData);
+      uploadPendingLogs();
     } catch (error) {
       console.error('Error fetching user info:', error);
       if (error.httpStatus === 403 && logoutRef.current) {

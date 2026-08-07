@@ -446,6 +446,7 @@
   "Documents": "Dosiye",
   "attachments": "Inyandiko",
   "version_label": "Verisiyo",
+  "debug_network_log": "Inyandiko y'ibyasabwe kuri seriveri",
   "update_available": "Ibyavuguruwe birahari",
   "update_available_message": "Verisiyo nshya y'ubu bushakashatsi irahari. Urashaka kuvugurura nonaha?",
   "update_now": "Vugurura nonaha",

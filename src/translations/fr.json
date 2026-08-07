@@ -446,6 +446,7 @@
   "Audio": "Audio",
   "Documents": "Documents",
   "version_label": "Version",
+  "debug_network_log": "Journal des requêtes backend",
   "update_available": "Mise à jour disponible",
   "update_available_message": "Une nouvelle version de l'application est disponible. Voulez-vous mettre à jour maintenant ?",
   "update_now": "Mettre à jour",

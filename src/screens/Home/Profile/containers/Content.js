@@ -17,6 +17,7 @@ import { AuthContext } from '../../../../providers/AuthProvider';
 import LanguageSelector from '../../../../translations/TranslationComponent';
 import { colors } from '../../../../utils/colors';
 import ProfileItem from '../components/ProfileItem';
+import NetworkLogViewer from '../components/NetworkLogViewer';
 import { useFrappe } from '../../../../providers/FrappeProvider';
 import { getVersionDisplay, checkForUpdates } from '../../../../utils/version';
 import styles from './Content.style';
@@ -44,6 +45,7 @@ const Content = ({ profileData, isOnline, error }) => {
   const [passwordError, setPasswordError] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
+  const [showNetworkLog, setShowNetworkLog] = useState(false);
 
   useEffect(() => {
     checkForUpdates(t);
@@ -277,6 +279,17 @@ const Content = ({ profileData, isOnline, error }) => {
         >
           {t('version_label')}: {getVersionDisplay()}
         </Text>
+
+        <Button
+          mode="outlined"
+          icon="wrench"
+          onPress={() => setShowNetworkLog(true)}
+          style={styles.button}
+        >
+          {t('debug_network_log')}
+        </Button>
+
+        <NetworkLogViewer visible={showNetworkLog} onDismiss={() => setShowNetworkLog(false)} />
 
         <Button
           mode="contained"

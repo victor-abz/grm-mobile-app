@@ -446,6 +446,7 @@
   "Audio": "Audio",
   "Doc": "Doc",
   "version_label": "Version",
+  "debug_network_log": "Backend request log",
   "update_available": "Update Available",
   "update_available_message": "A new version of the app is available. Would you like to update now?",
   "update_now": "Update Now",
