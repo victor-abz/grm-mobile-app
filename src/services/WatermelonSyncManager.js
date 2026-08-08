@@ -20,6 +20,15 @@ const BOOTSTRAP_TABLES = [
 ];
 
 /**
+ * Tables the server reconciles against the user's entitlements on every
+ * incremental pull. Reporting how many rows we hold lets the server notice a
+ * device that is missing older records and replay them by itself, instead of
+ * the user having to discover the manual recovery button. Must stay in step
+ * with RECONCILED_SYNC_TABLES in egrm/api/sync.py.
+ */
+const RECONCILED_TABLES = [...BOOTSTRAP_TABLES, 'grm_issue_departments'];
+
+/**
  * WatermelonDB Sync Manager
  * Implements the official WatermelonDB sync protocol to synchronize data
  * with the Frappe backend following the exact specification.
@@ -187,6 +196,27 @@ class WatermelonSyncManager {
   }
 
   /**
+   * Row counts for the reference tables the server reconciles against.
+   *
+   * Returns null on failure so the pull proceeds without the safety net rather
+   * than failing outright.
+   */
+  async getReconciliationCounts() {
+    try {
+      const counts = await Promise.all(
+        RECONCILED_TABLES.map((table) => this.database.get(table).query().fetchCount())
+      );
+      return RECONCILED_TABLES.reduce(
+        (acc, table, index) => ({ ...acc, [table]: counts[index] }),
+        {}
+      );
+    } catch (error) {
+      logger.warn('WatermelonSyncManager: Could not collect reconciliation counts', error);
+      return null;
+    }
+  }
+
+  /**
    * Pull changes from server (WatermelonDB sync protocol)
    */
   async pullChanges({ lastPulledAt }) {
@@ -211,6 +241,15 @@ class WatermelonSyncManager {
         params.fullSync = 1;
       } else if (lastPulledAt) {
         params.lastPulledAt = lastPulledAt;
+        // Tell the server what we already hold. An incremental pull describes
+        // only the window since the watermark, so it can never repair a device
+        // that is short on older records — the server compares these counts to
+        // the user's entitlements and replays the back catalogue on its own if
+        // they don't line up.
+        const localCounts = await this.getReconciliationCounts();
+        if (localCounts) {
+          params.counts = JSON.stringify(localCounts);
+        }
       }
 
       if (fullSync) {
@@ -277,6 +316,16 @@ class WatermelonSyncManager {
       }
 
       logger.info('WatermelonSyncManager: Changes and timestamp extracted successfully');
+
+      // The server upgrades an incremental pull to a full replay when it can
+      // see the device is missing records or the user's scope just widened.
+      // Surface that so a silent recovery is still traceable in the logs.
+      if (responseData.fullSync && !fullSync) {
+        logger.info('WatermelonSyncManager: Server upgraded this pull to a full replay', {
+          reason: responseData.fullSyncReason,
+          requestedWatermark: lastPulledAt,
+        });
+      }
 
       // Log sync data statistics
       logger.info('WatermelonSyncManager: Received sync data', {
