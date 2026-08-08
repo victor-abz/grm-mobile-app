@@ -29,6 +29,16 @@ const BOOTSTRAP_TABLES = [
 const RECONCILED_TABLES = [...BOOTSTRAP_TABLES, 'grm_issue_departments'];
 
 /**
+ * Upper bound on pages fetched in one sync.
+ *
+ * At the server's page size this covers far more history than any real account
+ * holds, so it is not a functional limit — it is the stop that keeps a
+ * server-side cursor bug from spinning the device on the user's battery and
+ * data. Hitting it is logged and the rest arrives on the next sync.
+ */
+const MAX_SYNC_PAGES = 50;
+
+/**
  * WatermelonDB Sync Manager
  * Implements the official WatermelonDB sync protocol to synchronize data
  * with the Frappe backend following the exact specification.
@@ -45,6 +55,16 @@ class WatermelonSyncManager {
     // Set by syncFull() to make the next pull replay the whole back catalogue
     // regardless of the watermark WatermelonDB has stored.
     this.forceFullSync = false;
+    // Set from the server's `hasMore` on every pull. Drives the paging loop in
+    // sync(): the server caps large responses and hands back the cursor to
+    // resume from, so one logical sync can span several requests.
+    this.lastPullHadMore = false;
+    // Same signal, but deliberately NOT cleared between pages or between
+    // syncs — only when a pull comes back with no more pages. It marks "there
+    // is a replay in flight", which is what tells the next request to identify
+    // itself as a continuation. Outliving sync() is the point: a replay that
+    // stopped at the page cap resumes on the next sync instead of restarting.
+    this.replayInProgress = false;
 
     // Immediately calculate initial pending changes (fire & forget)
     this.refreshPendingChanges();
@@ -79,38 +99,79 @@ class WatermelonSyncManager {
 
       logger.info('WatermelonSyncManager: Calling WatermelonDB synchronize function');
 
-      // Use WatermelonDB's standard synchronize function
-      const syncResult = await synchronize({
-        database: this.database,
-        pullChanges: async (args) => {
-          logger.info('WatermelonSyncManager: WatermelonDB calling pullChanges', { args });
-          this.notifyListeners({ phase: 'pulling', progress: 30 });
-          const result = await this.pullChanges(args);
-          logger.info(
-            'WatermelonSyncManager: pullChanges completed, returning result to WatermelonDB'
-          );
-          return result;
-        },
-        pushChanges: async (args) => {
-          logger.info('WatermelonSyncManager: WatermelonDB calling pushChanges', {
-            hasChanges: !!args.changes,
-            lastPulledAt: args.lastPulledAt,
-            changeKeys: args.changes ? Object.keys(args.changes) : null,
+      // The server caps a large response at a page boundary and returns that
+      // boundary as the timestamp, so each round is a complete, committed
+      // WatermelonDB sync whose watermark resumes the next one. Looping here
+      // rather than asking for everything at once keeps every request and every
+      // database transaction bounded: the phone parses a few hundred records at
+      // a time instead of megabytes in one blocking pass, and an interrupted
+      // sync resumes from the last page it committed instead of starting over.
+      let syncResult;
+      let pagesPulled = 0;
+
+      do {
+        this.lastPullHadMore = false;
+
+        // eslint-disable-next-line no-await-in-loop
+        syncResult = await synchronize({
+          database: this.database,
+          pullChanges: async (args) => {
+            logger.info('WatermelonSyncManager: WatermelonDB calling pullChanges', { args });
+            this.notifyListeners({ phase: 'pulling', progress: 30 });
+            const result = await this.pullChanges(args);
+            logger.info(
+              'WatermelonSyncManager: pullChanges completed, returning result to WatermelonDB'
+            );
+            return result;
+          },
+          pushChanges: async (args) => {
+            logger.info('WatermelonSyncManager: WatermelonDB calling pushChanges', {
+              hasChanges: !!args.changes,
+              lastPulledAt: args.lastPulledAt,
+              changeKeys: args.changes ? Object.keys(args.changes) : null,
+            });
+            this.notifyListeners({ phase: 'pushing', progress: 70 });
+            const result = await this.pushChanges(args);
+            logger.info('WatermelonSyncManager: pushChanges completed');
+            return result;
+          },
+          migrationsEnabledAtVersion: this.database.schema.version,
+          log: (message) => {
+            logger.debug('WatermelonSyncManager: WatermelonDB log', { message });
+          },
+          // Add timeout to prevent hanging
+          sendCreatedAsUpdated: false,
+          // Allow WatermelonDB to handle conflict resolution
+          conflictResolver: null,
+        });
+
+        pagesPulled += 1;
+
+        // Only the first page may ask for a replay from the beginning. Leaving
+        // the flag set would make every subsequent page restart from zero and
+        // the loop would never finish.
+        this.forceFullSync = false;
+
+        if (this.lastPullHadMore) {
+          logger.info('WatermelonSyncManager: More pages remain, continuing', { pagesPulled });
+          this.notifyListeners({ phase: 'pulling', progress: 30, page: pagesPulled + 1 });
+          // Hand the JS thread back before the next page so taps and renders
+          // are not queued behind a long run of batch writes.
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise((resolve) => {
+            setTimeout(resolve, 0);
           });
-          this.notifyListeners({ phase: 'pushing', progress: 70 });
-          const result = await this.pushChanges(args);
-          logger.info('WatermelonSyncManager: pushChanges completed');
-          return result;
-        },
-        migrationsEnabledAtVersion: this.database.schema.version,
-        log: (message) => {
-          logger.debug('WatermelonSyncManager: WatermelonDB log', { message });
-        },
-        // Add timeout to prevent hanging
-        sendCreatedAsUpdated: false,
-        // Allow WatermelonDB to handle conflict resolution
-        conflictResolver: null,
-      });
+        }
+      } while (this.lastPullHadMore && pagesPulled < MAX_SYNC_PAGES);
+
+      if (this.lastPullHadMore) {
+        // Not an error: the remaining pages arrive on the next scheduled sync.
+        // The bound exists so a server-side cursor bug cannot spin the device.
+        logger.warn('WatermelonSyncManager: Stopped at page limit, more data remains', {
+          pagesPulled,
+          maxPages: MAX_SYNC_PAGES,
+        });
+      }
 
       // After a successful sync re-evaluate pending changes and notify listeners
       await this.refreshPendingChanges();
@@ -227,28 +288,63 @@ class WatermelonSyncManager {
     let responseProcessingDuration = 0;
 
     try {
+      // A replay is already in flight when the previous page said so, and this
+      // request is the next page of it rather than a fresh incremental pull.
+      const continuingReplay = !!lastPulledAt && this.replayInProgress;
+
       // A stored watermark does not prove the device still holds the data that
       // watermark accounts for. After a reinstall or a cleared database the
       // watermark survives in sync metadata while the tables are empty, and an
       // incremental pull would return only the last few hours of deltas —
       // leaving the user with no projects and so no visible issues. Ask for the
       // full history instead; the server still scopes it to their assignments.
-      const needsBootstrap = lastPulledAt ? await this.isLocalDatabaseEmpty() : false;
-      const fullSync = this.forceFullSync || needsBootstrap;
+      //
+      // But this check reads the very tables a replay is still filling, so it
+      // cannot be trusted mid-replay — and on this backend it is actively wrong
+      // there. Reference data (projects, categories, types, statuses) carries a
+      // newer `modified` than the issue-derived page boundaries, so it drains on
+      // the LAST page of a replay: every page in between sees four empty tables,
+      // concludes "empty database", and asks for a full replay again. The server
+      // restarts from record one and the device re-fetches page one until it
+      // hits the page cap. Measured with that ordering: 3 pages, 3 identical
+      // fullSync requests, zero progress.
+      //
+      // A continuation is by definition not a fresh install, so skip the check
+      // outright — which also saves its four count queries per page.
+      const needsBootstrap =
+        lastPulledAt && !continuingReplay ? await this.isLocalDatabaseEmpty() : false;
+      const fullSync = !continuingReplay && (this.forceFullSync || needsBootstrap);
 
       const params = {};
       if (fullSync) {
         params.fullSync = 1;
       } else if (lastPulledAt) {
         params.lastPulledAt = lastPulledAt;
-        // Tell the server what we already hold. An incremental pull describes
-        // only the window since the watermark, so it can never repair a device
-        // that is short on older records — the server compares these counts to
-        // the user's entitlements and replays the back catalogue on its own if
-        // they don't line up.
-        const localCounts = await this.getReconciliationCounts();
-        if (localCounts) {
-          params.counts = JSON.stringify(localCounts);
+
+        if (continuingReplay) {
+          // Identify this as a continuation so the server leaves its repair
+          // logic alone. Mid-replay the device is genuinely short of records
+          // and its watermark is older than its own assignment row, so both of
+          // the server's escalation checks would fire — and escalating restarts
+          // the replay from record one, after which we walk back to this same
+          // page and trip it again. Measured against the real endpoint: 5
+          // requests to deliver what 3 should have, with the cursor standing
+          // still twice.
+          params.paging = 1;
+        } else {
+          // Tell the server what we already hold. An incremental pull describes
+          // only the window since the watermark, so it can never repair a device
+          // that is short on older records — the server compares these counts to
+          // the user's entitlements and replays the back catalogue on its own if
+          // they don't line up.
+          //
+          // Skipped while continuing a replay: the answer is trivially "short,
+          // still fetching", and the server ignores counts on a paging request
+          // anyway, so building them would only cost local queries per page.
+          const localCounts = await this.getReconciliationCounts();
+          if (localCounts) {
+            params.counts = JSON.stringify(localCounts);
+          }
         }
       }
 
@@ -316,6 +412,15 @@ class WatermelonSyncManager {
       }
 
       logger.info('WatermelonSyncManager: Changes and timestamp extracted successfully');
+
+      // The server capped this response and `timestamp` is the page boundary,
+      // not the current instant. sync() reads this to decide whether to go
+      // round again; WatermelonDB stores the boundary as the new watermark, so
+      // the next request resumes exactly where this one stopped.
+      this.lastPullHadMore = !!responseData.hasMore;
+      // Latches until a pull reports no more pages, so the next request knows
+      // it is a continuation even if it belongs to a later sync().
+      this.replayInProgress = !!responseData.hasMore;
 
       // The server upgrades an incremental pull to a full replay when it can
       // see the device is missing records or the user's scope just widened.
