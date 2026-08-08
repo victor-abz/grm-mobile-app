@@ -5,7 +5,7 @@ const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
 // OTA-only fixes — after an update installs, expo-updates serves the new
 // manifest and `Constants.expoConfig.version` reports this new value, so the
 // number the user sees tracks what they are actually running.
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.2.2';
 const BUILD_NUMBER = 2;
 
 // Native runtime contract — deliberately NOT tied to APP_VERSION.
