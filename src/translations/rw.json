@@ -450,5 +450,7 @@
   "update_available": "Ibyavuguruwe birahari",
   "update_available_message": "Verisiyo nshya y'ubu bushakashatsi irahari. Urashaka kuvugurura nonaha?",
   "update_now": "Vugurura nonaha",
-  "later": "Nyuma"
+  "later": "Nyuma",
+  "Download all my data again": "Ongera ukurure amakuru yanjye yose",
+  "Use this if projects or issues are missing from this device.": "Koresha ibi niba imishinga cyangwa ibibazo bibura kuri iyi telefoni."
 }
