@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Text, View, StyleSheet } from 'react-native';
-import { ActivityIndicator, Snackbar, Card, Divider } from 'react-native-paper';
+import { ActivityIndicator, Snackbar, Card, Divider, Button } from 'react-native-paper';
 import { hasUnsyncedChanges } from '@nozbe/watermelondb/sync';
 import watermelonManager from '../../../database/watermelonManager';
 import { DataContext } from '../../../providers/DataProvider';
@@ -82,6 +82,15 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
+  },
+  fullSyncButton: {
+    marginTop: 8,
+  },
+  fullSyncHint: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
   modalOverlay: {
     flex: 1,
@@ -235,7 +244,7 @@ const SyncAttachments = ({ navigation }) => {
     });
   }, []);
 
-  const handleSync = async () => {
+  const handleSync = async ({ full = false } = {}) => {
     if (!dataManager?.syncManager) {
       logger.warn('SyncAttachments: Sync not available', {
         hasDataManager: !!dataManager,
@@ -245,13 +254,13 @@ const SyncAttachments = ({ navigation }) => {
       return;
     }
 
-    logger.userAction('sync_initiated', 'SyncAttachments', {
+    logger.userAction(full ? 'full_sync_initiated' : 'sync_initiated', 'SyncAttachments', {
       hasPendingChanges: syncStatus.hasPendingChanges,
       pendingCount: syncStatus.pendingCount,
     });
 
     try {
-      await dataManager.performSync();
+      await dataManager.performSync({ full });
       logger.info('SyncAttachments: Sync completed successfully', {
         pendingCount: syncStatus.pendingCount,
       });
@@ -313,10 +322,24 @@ const SyncAttachments = ({ navigation }) => {
       <View style={styles.buttonContainer}>
         <CustomGreenButton
           title={getSyncButtonText()}
-          onPress={handleSync}
+          onPress={() => handleSync()}
           disabled={syncStatus.isLoading}
           loading={syncStatus.isLoading}
         />
+        {/* Recovery path for a device that is missing older records. An
+            ordinary sync only asks for what changed since the last one, so it
+            can never bring back data that failed to arrive earlier. */}
+        <Button
+          mode="text"
+          onPress={() => handleSync({ full: true })}
+          disabled={syncStatus.isLoading}
+          style={styles.fullSyncButton}
+        >
+          {t('Download all my data again')}
+        </Button>
+        <Text style={styles.fullSyncHint}>
+          {t('Use this if projects or issues are missing from this device.')}
+        </Text>
       </View>
 
       <Modal visible={showSuccessModal} animationType="fade" transparent>

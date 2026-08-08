@@ -4,6 +4,22 @@ import * as FileSystem from 'expo-file-system';
 import { logger } from '../utils/logger';
 
 /**
+ * Tables whose emptiness means the device holds no usable data at all.
+ *
+ * Categories, types and statuses are global reference data that every user
+ * receives, so all four being empty means a blank database — a fresh install,
+ * cleared app data, or a restore — rather than a user who simply has no
+ * assignments yet. That distinction matters: the check must not fire forever
+ * for a legitimately unassigned user.
+ */
+const BOOTSTRAP_TABLES = [
+  'grm_projects',
+  'grm_issue_categories',
+  'grm_issue_types',
+  'grm_issue_statuses',
+];
+
+/**
  * WatermelonDB Sync Manager
  * Implements the official WatermelonDB sync protocol to synchronize data
  * with the Frappe backend following the exact specification.
@@ -17,6 +33,9 @@ class WatermelonSyncManager {
     this.syncListeners = [];
     // Track pending changes so UI can reactively show unsynced records
     this.pendingChangesCount = 0;
+    // Set by syncFull() to make the next pull replay the whole back catalogue
+    // regardless of the watermark WatermelonDB has stored.
+    this.forceFullSync = false;
 
     // Immediately calculate initial pending changes (fire & forget)
     this.refreshPendingChanges();
@@ -133,6 +152,41 @@ class WatermelonSyncManager {
   }
 
   /**
+   * Sync, replaying the entire history the user is entitled to.
+   *
+   * For recovery when a device is missing data an incremental pull can no
+   * longer supply — the watermark has already moved past the records that
+   * never arrived, so no ordinary sync will ever fetch them.
+   */
+  async syncFull() {
+    this.forceFullSync = true;
+    try {
+      return await this.sync();
+    } finally {
+      this.forceFullSync = false;
+    }
+  }
+
+  /**
+   * True when none of the core reference tables hold a single record, i.e. the
+   * device has nothing to work with regardless of what the watermark claims.
+   *
+   * Errs towards false: a failure here must not turn every sync into a full
+   * pull.
+   */
+  async isLocalDatabaseEmpty() {
+    try {
+      const counts = await Promise.all(
+        BOOTSTRAP_TABLES.map((table) => this.database.get(table).query().fetchCount())
+      );
+      return counts.every((count) => count === 0);
+    } catch (error) {
+      logger.warn('WatermelonSyncManager: Could not determine local database state', error);
+      return false;
+    }
+  }
+
+  /**
    * Pull changes from server (WatermelonDB sync protocol)
    */
   async pullChanges({ lastPulledAt }) {
@@ -143,7 +197,28 @@ class WatermelonSyncManager {
     let responseProcessingDuration = 0;
 
     try {
-      const params = lastPulledAt ? { lastPulledAt } : {};
+      // A stored watermark does not prove the device still holds the data that
+      // watermark accounts for. After a reinstall or a cleared database the
+      // watermark survives in sync metadata while the tables are empty, and an
+      // incremental pull would return only the last few hours of deltas —
+      // leaving the user with no projects and so no visible issues. Ask for the
+      // full history instead; the server still scopes it to their assignments.
+      const needsBootstrap = lastPulledAt ? await this.isLocalDatabaseEmpty() : false;
+      const fullSync = this.forceFullSync || needsBootstrap;
+
+      const params = {};
+      if (fullSync) {
+        params.fullSync = 1;
+      } else if (lastPulledAt) {
+        params.lastPulledAt = lastPulledAt;
+      }
+
+      if (fullSync) {
+        logger.info('WatermelonSyncManager: Requesting a full pull', {
+          reason: this.forceFullSync ? 'requested' : 'empty local database',
+          discardedWatermark: lastPulledAt,
+        });
+      }
 
       logger.info('WatermelonSyncManager: Making API call to pull_changes', { params });
 

@@ -450,5 +450,7 @@
   "update_available": "Mise à jour disponible",
   "update_available_message": "Une nouvelle version de l'application est disponible. Voulez-vous mettre à jour maintenant ?",
   "update_now": "Mettre à jour",
-  "later": "Plus tard"
+  "later": "Plus tard",
+  "Download all my data again": "Retélécharger toutes mes données",
+  "Use this if projects or issues are missing from this device.": "À utiliser si des projets ou des plaintes manquent sur cet appareil."
 }

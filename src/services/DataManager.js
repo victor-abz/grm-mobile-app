@@ -537,10 +537,15 @@ class DataManager {
 
   /**
    * Perform sync using WatermelonDB sync manager
+   *
+   * With `full`, the pull ignores the stored watermark and replays everything
+   * the user is entitled to. Needed when the device is missing records an
+   * incremental pull can no longer supply, because the watermark has already
+   * advanced past them.
    */
-  async performSync() {
+  async performSync({ full = false } = {}) {
     const startTime = Date.now();
-    logger.info('DataManager: Starting sync operation');
+    logger.info('DataManager: Starting sync operation', { full });
 
     if (!this.syncManager) {
       const error = new Error('Sync manager not initialized');
@@ -549,7 +554,7 @@ class DataManager {
     }
 
     try {
-      await this.syncManager.sync();
+      await (full ? this.syncManager.syncFull() : this.syncManager.sync());
       const duration = Date.now() - startTime;
       logger.performance('DataManager sync', duration);
       logger.info('DataManager: Sync operation completed successfully');
