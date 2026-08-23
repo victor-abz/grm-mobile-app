@@ -1,40 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native';
 import { useSelector } from 'react-redux';
+import { ActivityIndicator } from 'react-native-paper';
 import Content from './containers/Content';
 import { styles } from './CitizenReportStep3.styles';
-import LocalDatabase from '../../../utils/databaseManager';
+import { useIssueStatus } from '../../../hooks/issues/useIssueStatus';
+import { colors } from '../../../utils/colors';
 
 function CitizenReportStep3({ route }) {
   const { params } = route;
   const customStyles = styles();
-  const [eadl, setEadl] = useState(false);
-  const { username } = useSelector((state) => state.get('authentication').toObject());
+  const { session, profile } = useSelector((state) => state.get('authentication').toObject());
+  const { getStatus, loading } = useIssueStatus();
+  const openStatus = getStatus('open_status');
+  
+  if (loading)
+      return <ActivityIndicator style={{ marginTop: 50 }} color={colors.primary} size="small" />;
 
-  useEffect(() => {
-    if (username) {
-      LocalDatabase.find({
-        selector: { 'representative.email': username },
-        // fields: ["_id", "commune", "phases"],
-      })
-        .then((result) => {
-          setEadl(result.docs[0]);
-
-          // handle result
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  }, [username]);
   return (
     <SafeAreaView style={customStyles.container}>
       <Content
-        eadl={eadl}
+        session={session}
+        profile={profile}
         issue={{
           ...params.stepOneParams,
           ...params.stepTwoParams,
           ...params.stepLocationParams,
+          status: openStatus
         }}
       />
     </SafeAreaView>

@@ -1,55 +1,59 @@
-import React, { useState } from 'react';
-
+import { useState } from 'react';
+import { version } from '../../../../package.json';
 import {
   Keyboard,
   Text,
   View,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
-  TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { ActivityIndicator, Button, Title, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Button, TextInput } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { Controller, useForm } from 'react-hook-form';
 import { login } from '../../../store/ducks/authentication.duck';
-import MapBg from '../../../../assets/map-bg.svg';
 import EADLLogo from '../../../../assets/eadl-logo.svg';
 import styles from './Login.style';
 import MESSAGES from '../../../utils/formErrorMessages';
 import { emailRegex, passwordRegex } from '../../../utils/formUtils';
-import API from '../../../services/API';
-import { getEncryptedData } from '../../../utils/storageManager';
-import { titles } from '../../Onboarding/containers/Content/utils';
-import i18n from 'i18n-js';
+import { fetchAuthCredentials } from '../../../services/authService';
+import { i18n } from "../../../translations/i18n";
+import { colors } from '../../../utils/colors';
+import { DB_VERSION } from "../../../services/shared/SyncService";
 
-function Login() {
+const theme = {
+  roundness: 12,
+  colors: {
+    ...colors,
+    background: 'white',
+    placeholder: '#dedede',
+    text: '#707070',
+  },
+};
+
+function Login()
+{
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [isPasswordSecure, setIsPasswordSecure] = useState(true);
+  const [responseError, setResponseError] = useState();
 
-  const onLoginPress = async (data) => {
+  const onLoginPress = async (data) =>
+  {
+    setResponseError(null);
     setLoading(true);
-    const dbConfig = await getEncryptedData(
-      `dbCredentials_${data?.password}_${data?.email.replace('@', '')}`
-    );
-    if (dbConfig) {
-      dispatch(login(dbConfig, { email: data?.email, password: data?.password }));
-    } else {
-      new API()
-        .login({ email: data?.email, password: data?.password })
-        .then((response) => {
-          setLoading(false);
-          if (response.error) {
-            return;
-          }
-          dispatch(login(response, data));
-        })
-        .catch((error) => {
-          setLoading(false);
-          console.error(error);
-        });
+    const response = await fetchAuthCredentials({ username: data?.email, password: data?.password })
+        
+    if (response.error) {
+      setResponseError(response.error);
+      setLoading(false);
+      return;
     }
+
+    setLoading(false);
+    dispatch(login(
+      response,
+    ));
   };
 
   const { control, handleSubmit, errors } = useForm({
@@ -78,7 +82,7 @@ function Login() {
         </View>
 
         <View style={{ marginBottom: 50, marginTop: 70, alignItems: 'center' }}>
-          {/* <EADLLogo height={90} width={180} /> */}
+          <EADLLogo height={90} width={180} />
           <Text
             style={{
               marginBottom: 15,
@@ -92,8 +96,8 @@ function Login() {
               color: '#707070',
             }}
           >
-          {i18n.t('welcome_login')}
-        </Text>
+            {i18n.t('welcome_login')}
+          </Text>
         </View>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.loginScreenContainer}>
@@ -104,13 +108,7 @@ function Login() {
                     control={control}
                     render={({ onChange, onBlur, value }) => (
                       <TextInput
-                        theme={{
-                          roundness: 10,
-                          colors: {
-                            primary: '#24c38b',
-                            placeholder: '#dedede',
-                          },
-                        }}
+                        theme={theme}
                         autoCapitalize="none"
                         label={i18n.t('email')}
                         mode="outlined"
@@ -140,13 +138,7 @@ function Login() {
                     control={control}
                     render={({ onChange, onBlur, value }) => (
                       <TextInput
-                        theme={{
-                          roundness: 10,
-                          colors: {
-                            primary: '#24c38b',
-                            placeholder: '#dedede',
-                          },
-                        }}
+                        theme={theme}
                         mode="outlined"
                         placeholderColor="#dedede"
                         label={i18n.t('password')}
@@ -194,27 +186,34 @@ function Login() {
                 {/*  <Text style={styles.textHint}>Forgo?</Text> */}
                 {/* </TouchableOpacity> */}
               </View>
+              {responseError && <Text style={styles.errorText}>{responseError}</Text>}
             </KeyboardAvoidingView>
             {loading ? (
-              <ActivityIndicator color="#24c38b" />
+              <ActivityIndicator size="large" color="#24c38b" />
             ) : (
               <Button
+                theme={theme}
                 style={[
                   styles.loginButton,
                   {
                     backgroundColor: errors ? '#24c38b' : '#dedede',
-                    marginTop: '40%',
                   },
                 ]}
                 onPress={handleSubmit(onLoginPress)}
                 color="white"
               >
-                {i18n.t('login')}
+                {i18n.t('connect')}
               </Button>
             )}
           </View>
         </TouchableWithoutFeedback>
+
       </KeyboardAvoidingView>
+      <View style={{ marginTop: "auto" }}>
+           <Text style={{ color: colors.secondary, fontSize: 12, textAlign: "center" }}>
+              v {version} - {DB_VERSION}
+           </Text>
+      </View>
     </ScrollView>
   );
 }

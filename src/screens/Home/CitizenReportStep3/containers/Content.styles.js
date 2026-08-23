@@ -28,10 +28,20 @@ export const styles = StyleSheet.create({
     letterSpacing: 0,
     color: "#24c38b",
   },
+  stepLittleText: {
+    marginVertical: 5,
+    fontSize: 18,
+    fontWeight: "bold",
+    fontStyle: "normal",
+    letterSpacing: 0,
+    color: "#24c38b",
+    width: '90%',
+    alignItems: 'flex-start'
+  },
   stepSubtitle: {
     fontFamily: "Poppins_700Bold",
     marginVertical: 5,
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: "bold",
     fontStyle: "normal",
     lineHeight: 18,
@@ -41,13 +51,14 @@ export const styles = StyleSheet.create({
   },
   stepDescription: {
     fontFamily: "Poppins_400Regular",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "normal",
     fontStyle: "normal",
     lineHeight: 15,
     letterSpacing: 0,
     textAlign: "left",
     color: "#707070",
+    marginBottom: 15,
   },
   stepNote: {
     fontFamily: "Poppins_400Regular",
@@ -118,4 +129,22 @@ export const styles = StyleSheet.create({
     borderColor: "#dedede",
     elevation: 3,
   },
+  cardConfirm: {
+    marginLeft: 10,
+    padding: 18,
+    paddingTop: 10,
+    borderRadius: 10,
+    shadowColor: 'rgba(0, 0, 0, 0.05)',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    borderColor: '#f5f5f5',
+    borderWidth: 5,
+    width: '95%',
+    shadowRadius: 15,
+    shadowOpacity: 1,
+    elevation: 2,
+    backgroundColor: 'white',
+  }
 });

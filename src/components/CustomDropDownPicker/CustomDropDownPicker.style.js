@@ -18,7 +18,8 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "normal",
     fontStyle: "normal",
-    lineHeight: 18,
+    lineHeight: 9,
+    paddingVertical: 8,
     letterSpacing: 0,
     textAlign: "left",
     color: "#707070",
@@ -28,7 +29,8 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "normal",
     fontStyle: "normal",
-    lineHeight: 18,
+    lineHeight: 9,
+    paddingVertical: 8,
     letterSpacing: 0,
     textAlign: "left",
     color: "#707070",
@@ -36,6 +38,10 @@ export const styles = StyleSheet.create({
   dropdownContainer: {
     borderColor: "#dedede",
     elevation: 3,
+    maxHeight: 275,
+  },
+  searchContainer: {
+    borderColor: "#dedede",
   },
   dropdownStyle: {
     borderColor: "#dedede",

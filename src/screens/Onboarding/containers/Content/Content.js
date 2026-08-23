@@ -1,14 +1,10 @@
 import React, { useState } from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { styles } from "./Content.style";
-import { titles } from "./utils";
 import { Button, Title } from "react-native-paper";
-// import { PreferencesContext } from "@providers/PreferencesProvider/PreferencesContext";
 import { useNavigation } from "@react-navigation/native";
 import ThinkingSVG from "../../../../../assets/think.svg";
-import EADLLogo from "../../../../../assets/eadl-logo.svg";
-import MapBg from "../../../../../assets/map-bg.svg";
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 
 const Content = () => {
   // const { colors } = useTheme();
@@ -60,9 +56,6 @@ const Content = () => {
         >
           {i18n.t('no')}
         </Button>
-      </View>
-      <View>
-        <Text>V:1.0.1</Text>
       </View>
     </View>
   );

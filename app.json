@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "grm-app",
-    "slug": "grm-app",
+    "name": "MGP-BJ",
+    "description": "Mécanisme de Gestion de Plainte",
+    "slug": "grm",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
-//      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -22,7 +22,8 @@
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
-      }
+      },
+      "bundleIdentifier": "com.setcobj.grmapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -39,7 +40,7 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "package": "com.leonardogutierrezh.grmapp"
+      "package": "com.setcobj.grmapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,7 +48,36 @@
     "plugins": [
       "expo-location",
       "expo-image-picker",
-      "expo-av"
-    ]
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+        }
+      ],
+      "expo-font",
+      "expo-localization",
+      "expo-secure-store",
+      
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          },
+          "ios": {
+            "infoPlist": {
+              "NSAppTransportSecurity": {
+                "NSAllowsArbitraryLoads": true
+              }
+            }
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "504abdaf-f635-4f75-935c-5c96d4a482b8"
+      }
+    }
   }
 }

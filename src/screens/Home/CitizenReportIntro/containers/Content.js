@@ -2,7 +2,7 @@ import React from 'react';
 import { View, ScrollView, Text, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from 'react-native-paper';
-import i18n from 'i18n-js';
+import { i18n } from "../../../../translations/i18n";
 import CrowdImage from '../../../../../assets/crowd.svg';
 import { styles } from './Content.styles';
 import { colors } from '../../../../utils/colors';
@@ -33,14 +33,14 @@ function Content() {
             </View>
           </View>
           <Text style={styles.stepNote}>{i18n.t('intro_text_0')}</Text>
-          <Text style={[styles.stepNote]}>
+          <Text style={[styles.stepNote, { fontFamily: 'Poppins_400Regular_Italic' }]}>
             {i18n.t('intro_text_1')}
           </Text>
-          <Text style={styles.stepNote}>{i18n.t('intro_text_2')}</Text>
-          <Text style={styles.stepNote}>{i18n.t('intro_text_3')}</Text>
-          <Text style={styles.stepNote}>{i18n.t('intro_text_4')}</Text>
-          <Text style={styles.stepNote}>{i18n.t('intro_text_5')}</Text>
-          <Text style={styles.stepNote}>{i18n.t('intro_text_6')}</Text>
+          <Text style={styles.stepNote}>"{i18n.t('intro_text_2')}"</Text>
+          <Text style={styles.stepNote}>"{i18n.t('intro_text_3')}"</Text>
+          <Text style={styles.stepNote}>"{i18n.t('intro_text_4')}"</Text>
+          <Text style={styles.stepNote}>"{i18n.t('intro_text_5')}"</Text>
+          <Text style={styles.stepNote}>"{i18n.t('intro_text_6')}"</Text>
         </View>
 
         <View style={{ paddingHorizontal: 50 }}>
@@ -50,7 +50,7 @@ function Content() {
             labelStyle={{ color: 'white', fontFamily: 'Poppins_500Medium' }}
             mode="contained"
             onPress={() => {
-              navigation.navigate('CitizenReport');
+              navigation.navigate('CitizenReportContactMethod');
             }}
           >
             {i18n.t('next')}

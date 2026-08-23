@@ -3,7 +3,7 @@ import { SafeAreaView, Text } from "react-native";
 import { Button } from "react-native-paper";
 import { logout } from "../../../store/ducks/authentication.duck";
 import { useDispatch } from "react-redux";
-import i18n from 'i18n-js';
+import { i18n } from "../../../translations/i18n";
 
 export function WorkInProgress() {
   const dispatch = useDispatch();

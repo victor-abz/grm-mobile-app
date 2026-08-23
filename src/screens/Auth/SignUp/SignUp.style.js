@@ -1,3 +1,6 @@
+import { Dimensions } from 'react-native';
+
+const { width  } = Dimensions.get("screen");
 
 export default {
   containerView: {
@@ -45,6 +48,8 @@ export default {
   loginFormTextInput: {
     borderRadius: 20,
     backgroundColor: "white",
+    fontSize: 14,
+    color: "#707070",
     // overflow: "hidden",
     // height: 43,
     // borderRadius: 5,
@@ -67,9 +72,12 @@ export default {
   },
   loginButton: {
     alignSelf: "center",
-    // width: 117,
-    height: 36,
-    borderRadius: 7,
+    width: width - 60,
+    height: 47,
+    borderWidth: 1,
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: 'Poppins_500Medium',
     backgroundColor: "#dedede",
   },
   textHint: {
